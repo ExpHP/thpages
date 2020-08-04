@@ -1,37 +1,55 @@
+
+@link-color: #ffcc00;
+@link-color-hover: #ffeb9b;
+@text-color: #f0e7d5;
+@h-color: #e8e8e8;
+@h3-color: #b6b6b6;
+@code-color: #efefef;
+@bg-color: #252525;
+@nav-bg-color: #080808;
+@nav-alpha: 85%;
+
 body {
   /* padding:0px 0 20px 0px;
   margin: 0px; */
-  font: 14px/1.5 "OpenSansRegular", "Helvetica Neue", Helvetica, Arial, sans-serif;
-  color: #f0e7d5;
+  font:14px/1.5 "OpenSansRegular", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color: @text-color;
   font-weight: normal;
   background: #252525;
   margin: 0;
   line-height: 135%;
 }
+
 a {
   color: lightblue;
 }
+
 code {
   background: #14442c;
   display: inline;
   padding: 3px;
 }
+
+
 li {
   margin-bottom: 9px;
   margin-top: 9px;
 }
+
 blockquote {
   border: 1px dashed rgba(255, 255, 255, 0.3);
   border-radius: 8px;
   background: rgba(90, 155, 90, 0.2);
   padding: 5px;
 }
+
 instr {
   background: #14442c;
   display: inline;
   font-family: monospace;
   padding: 3px;
 }
+
 .border-l {
   width: 10%;
   position: fixed;
@@ -50,11 +68,12 @@ instr {
   z-index: -1;
   max-width: 120px;
 }
+
 .header-wrapper {
   width: 80%;
   margin: 0;
   margin-left: 10%;
-  background: rgba(8, 8, 8, 0.85);
+  background: fade(@nav-bg-color, @nav-alpha);
   top: 0px;
   z-index: 10;
 }
@@ -65,19 +84,22 @@ instr {
   margin-left: 30px;
   font-weight: bold;
 }
+
 .header-navigation {
   width: 80%;
   margin: 0;
   margin-left: 10%;
-  background: rgba(8, 8, 8, 0.85);
+  background: fade(@nav-bg-color, @nav-alpha);
   /*height: 100px;*/
   /*border-bottom-left-radius: 15px;
   border-bottom-right-radius: 15px;*/
+
   position: sticky;
   top: 0;
   /*border-bottom-left-radius: 15px;
   border-bottom-right-radius: 15px;*/
   border-collapse: collapse;
+  
 }
 .header-navigation a {
   color: inherit;
@@ -90,7 +112,7 @@ instr {
   height: 40px;
 }
 .navigation-entry.active {
-  border-bottom: 2px rgba(255, 204, 0, 0.85) solid;
+  border-bottom: 2px fade(@link-color, @nav-alpha) solid;
 }
 .navigation-entry:hover {
   background: #222222a0;
@@ -110,7 +132,7 @@ instr {
   margin-left: -1px;
 }
 .navigation-entry-list-item.active {
-  background: rgba(57, 47, 6, 0.85);
+  background: fade(mix(@link-color, @nav-bg-color, 20%), @nav-alpha);
 }
 .navigation-entry-list-item:hover {
   background: #363636;
@@ -119,6 +141,7 @@ instr {
   cursor: pointer;
   padding: 8px;
 }
+
 .navigation-entry-list-item.subgroup-parent > div {
   display: none;
   position: absolute;
@@ -130,6 +153,7 @@ instr {
 .navigation-entry-list-item.subgroup-parent:hover > div {
   display: block;
 }
+
 .content-wrapper {
   width: 80%;
   margin-left: 10%;
@@ -137,14 +161,16 @@ instr {
   box-sizing: border-box;
   margin-bottom: 100px;
 }
+
 .content-wrapper .content {
   background: rgba(0, 0, 0, 0.4);
   margin-top: 20px;
   border-radius: 25px;
   padding: 20px;
-  transition: opacity 0.2s ease;
+  transition: opacity .2s ease;
   overflow-x: auto;
 }
+
 /* some jank to make youtube videos resize */
 .fit-wrapper {
   width: 100%;
@@ -159,7 +185,7 @@ instr {
   padding-top: 100%;
 }
 .fit-wrapper2.yt {
-  padding-top: 56.25%;
+  padding-top: 56.25%;	
 }
 .fit-wrapper2.yt > iframe {
   border: none;
@@ -171,6 +197,7 @@ instr {
   top: 0px;
   left: 0px;
 }
+
 hljs {
   font-family: monospace;
   border: 3px double #07440a;
@@ -180,6 +207,7 @@ hljs {
   white-space: pre-wrap;
   margin: 10px;
 }
+
 hljs .copy-btt {
   opacity: 0.1;
   background: white;
@@ -188,29 +216,31 @@ hljs .copy-btt {
   border-radius: 5px;
   border: 1px solid gray;
   float: right;
-  transition: opacity 0.15s ease;
+  transition: opacity .15s ease;
   cursor: pointer;
 }
+
 hljs:hover .copy-btt {
   opacity: 0.6;
 }
+
 hljs .copy-btt:hover {
   opacity: 0.85;
 }
+
 .clipboard-jank {
   opacity: 0;
   position: absolute;
   left: -999px;
   top: -999px;
 }
-table,
-th,
-td,
-tr {
+
+table, th, td, tr {
   border: 1px solid #ffcc0020;
   border-collapse: collapse;
   padding: 5px;
 }
+
 .tip {
   position: absolute;
   display: none;
@@ -223,6 +253,7 @@ tr {
   z-index: 100;
   font-size: 14px;
 }
+
 .ins-table {
   width: 100%;
 }
@@ -241,11 +272,13 @@ tr {
 .ins-desc {
   width: 57%;
 }
+
 .ins-navigation-entry {
   cursor: pointer;
   text-decoration: underline;
   color: lightblue;
 }
+
 .video-load {
   text-align: center;
   display: flex;
@@ -256,12 +289,15 @@ tr {
   padding: 20px;
   box-sizing: border-box;
 }
+
 .flexbox {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
 }
+
 /* ANIMATIONS */
+
 @keyframes spin {
   0% {
     transform: rotate(0deg);
@@ -270,9 +306,10 @@ tr {
     transform: rotate(360deg);
   }
 }
+
 @keyframes pulse {
   0% {
-    transform: scale(1);
+    transform: scale(1.0);
   }
   100% {
     transform: scale(0.75);
