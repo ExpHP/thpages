@@ -1,13 +1,15 @@
-const MD = new showdown.Converter({
+import {ext} from "./showdown-ext.js";
+import {INDEX, ERROR, EMBED_LOAD_ERROR} from "./index.js";
+
+export const MD = new showdown.Converter({
   extensions: [ext],
   tables: true,
-  strikethrough: true
+  strikethrough: true,
 });
 const $content = document.querySelector(".content-wrapper");
-const $scriptContent = document.querySelector(".script-wrapper");
+export const $scriptContent = document.querySelector(".script-wrapper");
 const cache = {};
 let active = "";
-const activePage = "";
 let $tip = null;
 let $activeTipTarget = null;
 const contentLoadListeners = [];
@@ -19,9 +21,9 @@ function contentLoaded() {
   contentLoadListeners.splice(0, contentLoadListeners.length);
 }
 
-function onContentLoad(clb) {
+window.onContentLoad = function(clb) {
   contentLoadListeners.push(clb);
-}
+};
 
 function initNavigation() {
   const $nav = document.querySelector(".header-navigation");
@@ -117,7 +119,7 @@ function getContent(path, file, clb, err, forceDelay) {
     if (!forceDelay) {
       return clb(cache[realPath]);
     } else {
-      window.setTimeout(() => clb(cache[realPath]), 1);
+      setTimeout(() => clb(cache[realPath]), 1);
     }
   }
   const xhr = new window.XMLHttpRequest();
@@ -129,13 +131,13 @@ function getContent(path, file, clb, err, forceDelay) {
         cache[realPath] = this.responseText;
       } else {
         err.apply(this, args);
-      };
+      }
     }
   };
   xhr.send();
 }
 
-function getInclude(realPath, id) {
+export function getInclude(realPath, id) {
   // getIncludeTarget can't be here, because include target doesn't exist yet when this function is called
   getContent(realPath, "", function(txt) {
     const $target = getIncludeTarget(id);
@@ -178,10 +180,10 @@ function getErrorString(path, file) {
 
   const group = getGroupByPath(path);
   if (group) {
-    str += "  \n  \n  You might be looking for one of the following pages:  \n"
+    str += "  \n  \n  You might be looking for one of the following pages:  \n";
     const list = group.single ? [group] : group.content;
     str += getErrorStringFromList(group, list);
-  };
+  }
   return str;
 }
 
@@ -207,7 +209,7 @@ function getErrorStringFromList(group, list) {
 function getGroupByPath(path) {
   for (let i=0; i<INDEX.length; i++) {
     if (INDEX[i].path == path) return INDEX[i];
-  };
+  }
   return null;
 }
 
@@ -245,7 +247,7 @@ function setWindowTitleGroup(file, group) {
   }
 }
 
-function setWindowTitleDirect(str) {
+export function setWindowTitleDirect(str) {
   document.head.querySelector("title").innerText = str;
 }
 
@@ -257,14 +259,14 @@ function setActiveNavigation(path, file) {
     $active.classList.remove("active");
     const $activeItem = $active.querySelector(".active");
     if ($activeItem != null) $activeItem.classList.remove("active");
-  };
+  }
 
   $active = document.querySelector(".navigation-entry[data-path='"+path+"']");
   if ($active != null) {
     $active.classList.add("active");
     const $activeItem = $active.querySelector("[data-url='"+file+"']");
     if ($activeItem != null) $activeItem.classList.add("active");
-  };
+  }
 }
 
 function initContent() {
@@ -292,15 +294,17 @@ function parseQuery() {
 function buildQuery(query) {
   let str = "";
   let first = true;
-  for (let key in query) {
-    if (first) first = false;
-    else str += "&";
-    str += key + "=" + query[key];
+  for (const key in query) {
+    if (Object.prototype.hasOwnProperty.call(query, key)) {
+      if (first) first = false;
+      else str += "&";
+      str += key + "=" + query[key];
+    }
   }
   return str;
 }
 
-function highlightCode(content) {
+export function highlightCode(content) {
   return hljs.fixMarkup(hljs.highlight("cpp", content, true, false).value).replace(/_/g, "\\_").replace(/\*/g, "\\*");
 }
 
@@ -312,13 +316,13 @@ function resize() {
     let w = "device-width";
     if (window.screen.height < 450) w = "900px";
     document.querySelector("#viewport").setAttribute("content", "width="+w+", user-scalable=no");
-  };
-};
+  }
+}
 
 function initResize() {
   window.onresize = resize;
   resize();
-};
+}
 
 function getElementData($elem, key) {
   do {
@@ -367,7 +371,7 @@ function getTip($targ) {
 }
 
 function initEmbeds() {
-  document.addEventListener("click", e => {
+  document.addEventListener("click", (e) => {
     let [url, $elem] = getElementData(e.target, "video");
     if ($elem != null) {
       $elem = $elem.firstChild; // the wrapper consists of 2 elements

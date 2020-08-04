@@ -1,4 +1,4 @@
-const INDEX = [
+export const INDEX = [
   {
     "groupName": "Home",
     "name": "ExpHP's Touhou pages",
@@ -72,15 +72,15 @@ const INDEX = [
   },
 ];
 
-const DEFAULT = "default";
+export const DEFAULT = "default";
 
-const ERROR = `
+export const ERROR = `
 # An error has occured when loading the page.
 Try reloading using **CTRL+F5**, or **clearing browser cache** of this site.
 If the problem persists, contact me on Discord: **ExpHP#4754**.
 `;
 
-const EMBED_LOAD_ERROR = `
+export const EMBED_LOAD_ERROR = `
 Failed to load embedded content.
 HTTP status code: %code%
 `;

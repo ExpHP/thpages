@@ -1,5 +1,5 @@
 
-const GROUPS_V8 = [
+export const GROUPS_V8 = [
   {
     min: 0,
     max: 299,
@@ -22,7 +22,7 @@ const GROUPS_V8 = [
   },
 ];
 
-const INS_17 = {
+export const INS_17 = {
   641: {
     number: 641,
     game: 14,
@@ -42,7 +42,7 @@ const INS_17 = {
   },
 };
 
-const ARGTYPES = {
+export const ARGTYPES = {
   "S": "int",
   "f": "float",
   "m": "string",

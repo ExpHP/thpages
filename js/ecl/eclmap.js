@@ -1,7 +1,11 @@
 let currentMap = null;
 const cachedMaps = {};
 
-async function loadEclmap(file, name, game) {
+export function getCurrentMap() {
+  return currentMap;
+}
+
+export async function loadEclmap(file, name, game) {
   if (cachedMaps[name]) {
     currentMap = cachedMaps[name];
     return;
@@ -14,6 +18,7 @@ async function loadEclmap(file, name, game) {
   const map = parseEclmap(txt);
   if (!cachedMaps[name]) cachedMaps[name] = map;
 }
+window.loadEclmap = loadEclmap; // HACK: ins.md needs this
 
 async function fileEclmap(file) {
   const fr = new window.FileReader();

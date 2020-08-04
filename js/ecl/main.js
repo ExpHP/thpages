@@ -1,40 +1,7 @@
-function generateVarTable(game) {
-  const normalized = normalizeGameVersion(game);
-
-  let head = `Current table: [game=${normalized}]version ${game}[/game][br]`;
-
-  let table = "";
-  table += "<table>";
-  table += "<tr><th>ID</th><th>type</th><th>access</th><th>scoping</th><th>name</th><th>description</th></tr>";
-
-  const limit = getVarLimits(normalized);
-
-  let total = 0;
-  let documented = 0;
-  for (let i=limit[0]; i<=limit[1]; i++) {
-    const v = getVarNoCheck(normalized, i);
-    if (v) {
-      ++total;
-      if (v.documented) ++documented;
-    }
-    table += getVarTableRow(v);
-  }
-  table += "</table>";
-
-  head += `Documented variables: ${documented}/${total} (${(documented/total*100).toFixed(2)}%)[br]`;
-  head += `Variables marked in <span style='color:red'>red</span> either need further investigation or descriptions for them have not yet been written.`;
-
-  return MD.makeHtml(head) + MD.makeHtml(table);
-}
-
-function getVarTableRow(v) {
-  if (v == null) return "";
-  const idString = v.number + (v.type == "$" ? "" : ".0f");
-  const typeString = v.type == "$" ? "int" : "float";
-  const accessString = v.access == "rw" ? "read/write" : "read-only";
-  const scopeString = v.scope == "g" ? "global" : "local";
-  return `<tr><td>${idString}</td><td>${typeString}</td><td>${accessString}</td><td>${scopeString}</td><td>${getVarName(v.number, v.documented)}</td><td>${v.desc}</td></tr>`;
-}
+import {getCurrentMap} from './eclmap.js';
+import {VARLIMIT_17, VAR_8} from './vars.js';
+import {GROUPS_V8, INS_17, ARGTYPES} from './ins.js';
+import {MD} from '../main.js';
 
 function getVarLimits(game) {
   return VARLIMIT_17;
@@ -55,7 +22,7 @@ function getVarLimits(game) {
   // }
 }
 
-function getVar(game, id) {
+export function getVar(game, id) {
   const lim = getVarLimits(game);
   if (lim[0] <= id && lim[1] >= id) return getVarNoCheck(game, id);
   return null;
@@ -68,7 +35,7 @@ function getVar(game, id) {
 }
 
 function getVarNoCheck(game, id) {
-  return getVarFromList(VAR_17, id);
+  return getVarFromList(VAR_8, id);
   // let ret = null;
   // switch(game) {
   //   case 17:
@@ -108,12 +75,12 @@ function getVarFromList(list, id) {
   return ret;
 }
 
-function getVarName(id, documented) {
-  if (documented) return currentMap.getGlobal(id);
-  return `<span style='color:red'>${currentMap.getGlobal(id)}</span>`;
+export function getVarName(id, documented) {
+  if (documented) return getCurrentMap().getGlobal(id);
+  return `<span style='color:red'>${getCurrentMap().getGlobal(id)}</span>`;
 }
 
-function getVarTip(v) {
+export function getVarTip(v) {
   if (v == null) return "";
   const idString = v.number + (v.type == "$" ? "" : ".0f");
   const typeString = v.type == "$" ? "int" : "float";
@@ -123,7 +90,7 @@ function getVarTip(v) {
   return MD.makeHtml(tip.replace(/\[var=/g, "[var_notip="));
 }
 
-function normalizeGameVersion(num) {
+export function normalizeGameVersion(num) {
   // FIXME: looks suspicious, I doubt this works for all numbers due to rounding
   if (typeof num == "string") num = parseFloat(num);
   while (Math.floor(num) != num) num *= 10;
@@ -180,7 +147,7 @@ function getOpcodeNoCheck(game, num, timeline) {
   // return ret;
 }
 
-function getOpcode(game, num, timeline) {
+export function getOpcode(game, num, timeline) {
   game = normalizeGameVersion(game);
   const groups = getGroups(game);
   // check if the given opcode number exists in the given version.
@@ -202,7 +169,8 @@ function getOpcode(game, num, timeline) {
   return null;
 }
 
-function generateOpcodeTable(game) {
+// FIXME HACK to make available to ins.md
+window.generateOpcodeTable = function(game) {
   const normalized = normalizeGameVersion(game);
   let base = `Current table: [game=${normalized}] version ${game}[/game][br]`;
 
@@ -215,7 +183,7 @@ function generateOpcodeTable(game) {
   for (let i=0; i<groups.length; ++i) {
     const group = groups[i];
 
-    navigation += `- <span class='ins-navigation-entry' data-target='${group.title}'>${group.title} (${group.min}-${group.max})</span><br>`
+    navigation += `- <span class='ins-navigation-entry' data-target='${group.title}'>${group.title} (${group.min}-${group.max})</span><br>`;
 
     table += `<br><h2 data-insnavigation="${group.title}">${group.min}-${group.max}: ${group.title}</h2>`;
     table += "<table class='ins-table'>";
@@ -239,7 +207,7 @@ function generateOpcodeTable(game) {
   base += `Documented instructions: ${documented}/${total} (${(documented/total*100).toFixed(2)}%)[br]`;
   base += "Instructions marked in [c=red]red[/c] either need further investigation or descriptions for them have not yet been written.";
   return MD.makeHtml(base) + navigation + table;
-}
+};
 
 function generateOpcodeTableEntry(ins, num, timeline) {
   return `
@@ -252,8 +220,9 @@ function generateOpcodeTableEntry(ins, num, timeline) {
   `;
 }
 
-function getOpcodeName(num, documented, timeline) {
+export function getOpcodeName(num, documented, timeline) {
   let name;
+  const currentMap = getCurrentMap();
   if (currentMap != null) {
     name = timeline ? currentMap.getTimelineMnemonic(num) : currentMap.getMnemonic(num);
   } else {
@@ -263,12 +232,12 @@ function getOpcodeName(num, documented, timeline) {
   if (documented) {
     return name;
   } else {
-    return `<span style='color:red'>${name}</span>`
+    return `<span style='color:red'>${name}</span>`;
   }
 }
 
 function generateOpcodeParameters(ins) {
-  if (ins == null) return "<span style='color:gray'>No data available.</span>";;
+  if (ins == null) return "<span style='color:gray'>No data available.</span>";
 
   let ret = "";
   for (let i=0; i<ins.args.length; ++i) {
@@ -291,7 +260,7 @@ function generateOpcodeDesc(ins, notip=false) {
   return MD.makeHtml(ret);
 }
 
-function getOpcodeTip(ins, timeline) {
+export function getOpcodeTip(ins, timeline) {
   return escapeTip(`<br><b>${timeline ? "timeline ": ""}${ins.number} - ${getOpcodeName(ins.number, ins.documented, timeline)}(${generateOpcodeParameters(ins)})</b><br><hr>${generateOpcodeDesc(ins, true)}`);
 }
 

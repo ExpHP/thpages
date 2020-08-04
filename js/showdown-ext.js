@@ -1,4 +1,8 @@
-const ext = function() {
+import {loadEclmap} from "./ecl/eclmap.js";
+import {MD, getInclude, highlightCode, setWindowTitleDirect, $scriptContent} from "./main.js";
+import {getOpcodeName, getVar, getVarName, normalizeGameVersion, getOpcode, getOpcodeTip, getVarTip} from "./ecl/main.js";
+
+export const ext = function() {
   const yt = {
     type: "lang",
     regex: /\[yt\](.*?)\[\/yt\]/g,
@@ -17,7 +21,7 @@ const ext = function() {
   const ts = {
     type: "lang",
     regex: /\[timestamp=(.*?)\]/g,
-    replace: "<div style='float: right'>$1</div>"
+    replace: "<div style='float: right'>$1</div>",
   };
   const img = {
     type: "lang",
@@ -39,10 +43,10 @@ const ext = function() {
       let ret = "<hljs>"+highlightCode(content)+"</hljs>";
       // This is some quality jank right here, caused by the fact that I could not find a way to make hljs not escape this html
       ret = ret.replace(/&lt;instr data-tip=<span class="hljs-string">(.*?)<\/span>&gt;(.*?)&lt;\/instr&gt;/g, (match, tip, content) => {
-        return `<span data-tip=${tip.replace(/&amp;/g, "&")}>${content}</span>`
+        return `<span data-tip=${tip.replace(/&amp;/g, "&")}>${content}</span>`;
       });
       ret = ret.replace(/&lt;instr&gt;(.*?)&lt;\/instr&gt;/g, (match, content) => {
-        return `<span>${content}</span>`
+        return `<span>${content}</span>`;
       });
       ret = ret.replace(/\\\\/g, "\\");
       return ret;
@@ -61,7 +65,7 @@ const ext = function() {
   const c = {
     type: "lang",
     regex: /\[c=(.*?)\]([^]*?)\[\/c\]/g,
-    replace: "<span style='color: $1'>$2</span>"
+    replace: "<span style='color: $1'>$2</span>",
   };
 
   let replaceId = 0;
@@ -190,14 +194,14 @@ const ext = function() {
 
   async function requireEclmap(game, content, id) {
     // this must always wait at least some time, to make sure that the function this was called from finished running...
-    await new Promise(resolve => setTimeout(resolve, 1));
+    await new Promise((resolve) => setTimeout(resolve, 1));
     game = parseFloat(game);
     await loadEclmap(null, "?"+game, game);
     const $replace = document.querySelector(`#require-eclmap-${id}`);
     if ($replace != null) {
       $replace.innerHTML = MD.makeHtml(content);
     }
-  };
+  }
 
   let eclmapId = 0;
   const eclmap = {
