@@ -16,6 +16,8 @@
         "max-len": "off",
         "no-unused-vars": "warn",
         "quotes": "off", // bit harsh for an inherited codebase
-        "operator-linebreak": ["error", "before"]
+        "operator-linebreak": ["error", "before"],
+        // allow `let a, b;` but not `let a = 2, b = 3;`
+        "one-var": ["error", {"initialized": "never"}]
     }
 }

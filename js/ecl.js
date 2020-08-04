@@ -15,20 +15,20 @@ function generateVarTable() {
 
 function getVarTableRow(entry, id) {
   if (entry == null) return "";
-  let [game, type, access, scope, name, desc] = entry;
-  let idString = id + (type == "$" ? "" : ".0f");
-  let typeString = type == "$" ? "int" : "float";
-  let accessString = access == "rw" ? "read/write" : "read-only";
-  let scopeString = scope == "g" ? "global" : "local";
+  const [game, type, access, scope, name, desc] = entry;
+  const idString = id + (type == "$" ? "" : ".0f");
+  const typeString = type == "$" ? "int" : "float";
+  const accessString = access == "rw" ? "read/write" : "read-only";
+  const scopeString = scope == "g" ? "global" : "local";
   return `<tr style='color:%GAMECOLOR-${game}%'><td>${idString}</td><td>${typeString}</td><td>${accessString}</td><td>${scopeString}</td><td>${type+name}</td><td>${desc}</td></tr>`;
 }
 
 function addTooltips(txt) {
-  let codeTags = txt.match(/`(.*?)`/g);
-  let dupes = [];
+  const codeTags = txt.match(/`(.*?)`/g);
+  const dupes = [];
   if (codeTags == null) return txt;
   for (let i=0; i<codeTags.length; i++) {
-    let expr = codeTags[i].substring(1, codeTags[i].length-1);
+    const expr = codeTags[i].substring(1, codeTags[i].length-1);
     if (dupes.indexOf(expr) > -1) continue;
     dupes.push(expr);
     let tip;
@@ -43,14 +43,14 @@ function addTooltips(txt) {
 }
 
 function getVarTip(expr) {
-  let [entry, id] = getVariableByName(expr);
+  const [entry, id] = getVariableByName(expr);
   if (entry == null) return "";
-  let [game, type, access, scope, name, desc] = entry;
-  let idString = id + (type == "$" ? "" : ".0f");
-  let typeString = type == "$" ? "int" : "float";
-  let accessString = access == "rw" ? "read/write" : "read-only";
-  let scopeString = scope == "g" ? "global" : "local";
-  let tip = `**${idString} - ${type+name}** - ${scopeString}, ${accessString}, ${typeString} variable[br][hr]${desc}`;
+  const [game, type, access, scope, name, desc] = entry;
+  const idString = id + (type == "$" ? "" : ".0f");
+  const typeString = type == "$" ? "int" : "float";
+  const accessString = access == "rw" ? "read/write" : "read-only";
+  const scopeString = scope == "g" ? "global" : "local";
+  const tip = `**${idString} - ${type+name}** - ${scopeString}, ${accessString}, ${typeString} variable[br][hr]${desc}`;
   return tip;
 }
 
@@ -63,7 +63,7 @@ function getVariableByName(expr) {
     type = "$";
     name = expr.substring(2);
   }
-  for (let i in VARS) {
+  for (const i in VARS) {
     if (VARS[i] == null) continue;
     if (VARS[i][4] == name && VARS[i][1] == type) return [VARS[i], i];
   }
@@ -71,7 +71,7 @@ function getVariableByName(expr) {
 }
 
 function getOpcodeTip(expr) {
-  let opcode = getOpcodeByName(expr);
+  const opcode = getOpcodeByName(expr);
   if (opcode == null) return "";
   let args = "";
   let desc = opcode.description;
@@ -84,7 +84,7 @@ function getOpcodeTip(expr) {
 }
 
 function getOpcodeByName(name) {
-  for (let i in INS) {
+  for (const i in INS) {
     if (INS[i].name == name) return INS[i];
   }
   return null;
