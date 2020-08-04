@@ -13,22 +13,22 @@ const VARLIMIT_165 = [-10000, -9903];
 const VARLIMIT_17 = [-10000, -9899];
 
 const VAR_8 = {
-    10000: {
-        number: 10000,
-        game: 8,
-        type: "$",
-        access: "rw",
-        scope: "l",
-        desc: "Integer variable local to the enemy. Inherited by spawned enemies.",
-        documented: true
-    },
-    10001: {
-        number: 10001,
-        game: 8,
-        type: "$",
-        access: "rw",
-        scope: "l",
-        desc: "Integer variable local to the enemy. Inherited by spawned enemies.",
-        documented: true
-    },
+  10000: {
+    number: 10000,
+    game: 8,
+    type: '$',
+    access: 'rw',
+    scope: 'l',
+    desc: 'Integer variable local to the enemy. Inherited by spawned enemies.',
+    documented: true,
+  },
+  10001: {
+    number: 10001,
+    game: 8,
+    type: '$',
+    access: 'rw',
+    scope: 'l',
+    desc: 'Integer variable local to the enemy. Inherited by spawned enemies.',
+    documented: true,
+  },
 };

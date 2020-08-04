@@ -1,0 +1,21 @@
+{
+    "extends": ["eslint:recommended", "google"],
+    "env": {
+        "es6": true
+    },
+    "parserOptions": {
+        "ecmaVersion": 8
+    },
+    "globals": {
+        // do NOT do env: browser: true, we do not want trash like "name"
+        "document": true,
+        "window": true
+    },
+    "rules": {
+        "require-jsdoc": "off",
+        "max-len": "off",
+        "no-unused-vars": "warn",
+        "quotes": "off", // bit harsh for an inherited codebase
+        "operator-linebreak": ["error", "before"]
+    }
+}
