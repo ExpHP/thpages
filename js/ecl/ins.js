@@ -22,67 +22,67 @@ const INS_12 = {
 const INS_14 = {
   inherit: null,
   ins: {
-    0: UNASSIGNED,
-    1: UNASSIGNED,
-    2: UNASSIGNED,
-    3: UNASSIGNED,
-    4: UNASSIGNED,
-    5: UNASSIGNED,
-    6: UNASSIGNED,
-    7: UNASSIGNED,
+    0: {id: 'anm:nop'},
+    1: {id: 'anm:delete'},
+    2: {id: 'anm:static'},
+    3: {id: 'anm:stop'},
+    4: {id: 'anm:stop2'},
+    5: {id: 'anm:case'},
+    6: {id: 'anm:wait'},
+    7: {id: 'anm:v8-7'},
 
-    100: UNASSIGNED,
-    101: UNASSIGNED,
-    102: UNASSIGNED,
-    103: UNASSIGNED,
-    104: UNASSIGNED,
-    105: UNASSIGNED,
-    106: UNASSIGNED,
-    107: UNASSIGNED,
-    108: UNASSIGNED,
-    109: UNASSIGNED,
-    110: UNASSIGNED,
-    111: UNASSIGNED,
-    112: UNASSIGNED,
-    113: UNASSIGNED,
-    114: UNASSIGNED,
-    115: UNASSIGNED,
-    116: UNASSIGNED,
-    117: UNASSIGNED,
-    118: UNASSIGNED,
-    119: UNASSIGNED,
-    120: UNASSIGNED,
-    121: UNASSIGNED,
-    122: UNASSIGNED,
-    123: UNASSIGNED,
-    124: UNASSIGNED,
-    125: UNASSIGNED,
-    126: UNASSIGNED,
-    127: UNASSIGNED,
-    128: UNASSIGNED,
-    129: UNASSIGNED,
-    130: UNASSIGNED,
-    131: UNASSIGNED,
+    100: {id: 'anm:set'},
+    101: {id: 'anm:setF'},
+    102: {id: 'anm:add'},
+    103: {id: 'anm:addF'},
+    104: {id: 'anm:sub'},
+    105: {id: 'anm:subF'},
+    106: {id: 'anm:mul'},
+    107: {id: 'anm:mulF'},
+    108: {id: 'anm:div'},
+    109: {id: 'anm:divF'},
+    110: {id: 'anm:mod'},
+    111: {id: 'anm:modF'},
+    112: {id: 'anm:add3'},
+    113: {id: 'anm:addF3'},
+    114: {id: 'anm:sub3'},
+    115: {id: 'anm:subF3'},
+    116: {id: 'anm:mul3'},
+    117: {id: 'anm:mulF3'},
+    118: {id: 'anm:div3'},
+    119: {id: 'anm:divF3'},
+    120: {id: 'anm:mod3'},
+    121: {id: 'anm:modF3'},
+    122: {id: 'anm:rand'},
+    123: {id: 'anm:randF'},
+    124: {id: 'anm:mathSin'},
+    125: {id: 'anm:mathCos'},
+    126: {id: 'anm:mathTan'},
+    127: {id: 'anm:mathAcos'},
+    128: {id: 'anm:mathAtan'},
+    129: {id: 'anm:mathReduceAngle'},
+    130: {id: 'anm:mathCirclePos'},
+    131: {id: 'anm:mathCirclePosRand'},
 
-    200: UNASSIGNED,
-    201: UNASSIGNED,
-    202: UNASSIGNED,
-    203: UNASSIGNED,
-    204: UNASSIGNED,
-    205: UNASSIGNED,
-    206: UNASSIGNED,
-    207: UNASSIGNED,
-    208: UNASSIGNED,
-    209: UNASSIGNED,
-    210: UNASSIGNED,
-    211: UNASSIGNED,
-    212: UNASSIGNED,
-    213: UNASSIGNED,
+    200: {id: 'anm:jmp'},
+    201: {id: 'anm:jmpDec'},
+    202: {id: 'anm:jmpEq'},
+    203: {id: 'anm:jmpEqF'},
+    204: {id: 'anm:jmpNe'},
+    205: {id: 'anm:jmpNeF'},
+    206: {id: 'anm:jmpLt'},
+    207: {id: 'anm:jmpLtF'},
+    208: {id: 'anm:jmpLe'},
+    209: {id: 'anm:jmpLeF'},
+    210: {id: 'anm:jmpGt'},
+    211: {id: 'anm:jmpGtF'},
+    212: {id: 'anm:jmpGe'},
+    213: {id: 'anm:jmpGeF'},
 
     300: {id: 'anm:sprite'},
     301: {id: 'anm:spriteRand'},
     302: {id: 'anm:renderMode'},
-    303: UNASSIGNED,
+    303: {id: 'anm:blendMode'},
     304: {id: 'anm:layer'},
     305: UNASSIGNED,
     306: UNASSIGNED,
@@ -197,6 +197,72 @@ export const DUMMY_DATA = {sig: '', args: [], wip: 2, desc: '[wip=2]No data.[/wi
 
 // Lookup table by ref id. (game-independent, anmmap-independent name)
 export const ANM_INS_DATA = {
+  'nop': {sig: '', args: [], desc: "Does nothing."},
+  'delete': {sig: '', args: [], desc: "Destroys the animation."},
+  'static': {sig: '', args: [], wip: 1, desc: `[wip=1]Chinese wiki says "makes a static texture", sounds straightforward but more investigation wouldn't hurt.[/wip]`},
+  'stop': {sig: '', args: [], desc: "Stops executing the script and waits for a switch to occur. (see [ref=anm:case])"},
+  'stop2': {sig: '', args: [], wip: 1, desc: "This is [ref=anm:stop] except that it additionally clears an unknown bitflag..."},
+  'case': {
+    sig: 'S', args: ['n'], desc: dedent`
+    A label used to externally control an ANM.
+
+    [wip]TODO: more details, show example code[/wip]
+
+    Enemies can invoke this using the \`anmSwitch\` instruction.  Furthermore, the game internally uses [ref=anm:case] labels for all sorts
+    of different purposes.  For instance, it is used to handle animations on the Pause menu and main menu, it is used to make player options
+    appear and disappear based on power, and it is even used to make the season gauge go transparent when the player gets near.
+
+    [ref=anm:case](1) is almost universally used to mean "go away permanently." (i.e. it almost always ends in [ref=anm:delete])
+
+    Miscellaneous notes:
+    * If multiple switches occur on one frame, only the **last** takes effect.
+    * \`[ref=anm:case](0)\` doesn't work due to how pending switch numbers are stored.
+    * [wip]\`[ref=anm:case](-1)\` appears to work differently from the others...[/wip]
+    * [wip]Can switching interrupt code that is not at a [ins=anm:stop]? Testing needed.[/wip]
+  `},
+  'wait': {sig: 'S', args: ['t'], desc: 'Wait %1 frames.'},
+  'v8-7': {sig: '', args: [], wip: 1, desc: "dunno but it looks important lol"},
+  'jmp': {
+    sig: 'SS', args: ['dest', 't'], desc: dedent`
+    Jumps to %1 and sets time to %2.  \`thanm\` accepts a label name for %1.
+
+    [wip=2]Chinese wiki says some confusing recommendation about setting a=0, can someone explain to me?[/wip]
+
+    [wip]What is %1 relative to? Beginning of current script?[/wip]
+  `},
+  'jmpDec': {
+    sig: '$SS', args: ['x', 'dest', 't'], desc: dedent`
+    Decrement %1 and then jump if it is \`> 0\`.  You can use this to repeat a loop a fixed number of times.
+
+    [code]
+      [ref=anm:set]([10000], 3);
+    loop:
+      // ...
+      // anything in this block will be done 3 times
+      // ...
+      [ref=anm:jmpDec]([10000], loop);
+    [/code]
+  `},
+
+  'rand': {sig: '$S', args: ['x', 'n'], desc: 'Draw a random integer `0 <= %1 < %2`.'},
+  'randF': {sig: '%f', args: ['x', 'r'], desc: 'Draw a random float `0 <= %1 <= %2`.'},
+
+  'mathSin': {sig: '%f', args: ['dest', 'θ'], desc: 'Compute `sin(%1)` (%1 in radians).'},
+  'mathCos': {sig: '%f', args: ['dest', 'θ'], desc: 'Compute `cos(%1)` (%1 in radians).'},
+  'mathTan': {sig: '%f', args: ['dest', 'θ'], desc: 'Compute `tan(%1)` (%1 in radians).'},
+  'mathAcos': {sig: '%f', args: ['dest', 'θ'], desc: 'Compute `acos(%1)` (output in radians).'},
+  'mathAtan': {sig: '%f', args: ['dest', 'θ'], desc: 'Compute `atan(%1)` (output in radians).'},
+  'mathReduceAngle': {sig: '%', args: ['θ'], desc: 'Reduce an angle modulo `2*PI` into the range `[-PI, +PI]`.'},
+  'mathCirclePos': {sig: '%%ff', args: ['x', 'y', 'θ', 'r'], desc: '`%1 = %4*cos(%3); %2 = %4*sin(%3);`'},
+  'mathCirclePosRand': {
+    sig: '%%ff', args: ['x', 'y', 'rmin', 'rmax'], desc: dedent`
+    Uniformly draws a random radius \`r\` in the interval given by %3 and %4, and picks a random angle. (both using the anm RNG)
+    Then basically computes [ref=anm:mathCirclePos] on those.
+
+    This isn't the right way to uniformly draw points on a ring shape, but I don't think that's what it's used for anyways.
+    (it's more like for just making a random vector with a random magnitude)
+  `},
+
   // =========================
   // ==== RENDER SETTINGS ====
   // =========================
@@ -214,6 +280,30 @@ export const ANM_INS_DATA = {
   'spriteRand': {
     sig: 'SS', args: ['a', 'b'], desc: dedent`
     Selects a random sprite from %1 (inclusive) to %1 + %2 (exclusive) using the animation RNG.
+  `},
+  'blendMode': {
+    sig: 'S', args: ['mode'], desc: dedent`
+    Set color blending mode.
+
+    Modes for DDC: (other games may be different)
+
+    | Mode | \`SRCBLEND\` | \`DESTBLEND\` | \`BLENDOP\` | Meaning |
+    | ---         | ---           | --- | --- | --- |
+    | 0 | \`SRCALPHA\` | \`INVSRCALPHA\` | \`ADD\` | Normal |
+    | 1 | \`SRCALPHA\` | \`ONE\` | \`ADD\` | Add |
+    | 2 | \`SRCALPHA\` | \`ONE\` | \`REVSUBTRACT\` | Subtract (but weird?)† |
+    | 3 | \`ONE\` | \`ZERO\` | \`ADD\` | Replace |
+    | 4 | \`INVDESTCOLOR\` | \`INVSRCCOLOR\` | \`ADD\` | Screen? (S + D - SD) |
+    | 5 | \`DESTCOLOR\` | \`ZERO\` | \`ADD\` | Multiply, I guess? |
+    | 6 | \`INVSRCCOLOR\` | \`INVSRCALPHA\` | \`ADD\` | *uh.*  (S(1-S) + D(1-alpha)) |
+    | 7 | \`DESTALPHA\` | \`INVDESTALPHA\` | \`ADD\` | Normal but src is drawn *behind* dest |
+    | 8 | \`SRCALPHA\` | \`ONE\` | \`MIN\` | Darken only? |
+    | 9 | \`SRCALPHA\` | \`ONE\` | \`MAX\` | Lighten only? |
+
+    [wip]These are all untested, I only looked at assembly.[/wip]
+
+    † Weird because it seems this would also subtract alpha. (so if the thing you're drawing is fully opaque,
+    the result will be fully transparent, deleting even the background...)
   `},
   // TODO: Maybe link to RenderType enum.
   'renderMode': {
@@ -240,6 +330,17 @@ export const ANM_INS_DATA = {
     **Different layer numbers may behave differently!** Each game only has a finite number of layers, and certain groups of these layers
     are drawn at different stages in the rendering pipeline.  Be especially careful when porting something from one game to another,
     as the layer groupings may have changed.
+  `},
+  'flipX': {sig: '', args: [], desc: "Toggles mirroring on the x axis.  [wip](sounds straightforward, but which things are affected?[/wip]"},
+  'flipY': {sig: '', args: [], desc: "Toggles mirroring on the y axis.  [wip](sounds straightforward, but which things are affected?[/wip]"},
+  'resampleMode': {
+    sig: 'S', args: ['n'], desc: dedent`
+    Determines how a sprite is resampled when scale is greater or less than 1f.
+
+    0 - \`D3DTEXF_LINE\` (linear interpolation; blurry)
+    1 - \`D3DTEXF_POINT\` (nearest-point sampling; big pixels)
+
+    [c=red]TODO: image[/c]
   `},
 
   // =================
@@ -305,6 +406,40 @@ export const ANM_INS_DATA = {
   `},
 };
 
+const OPERATOR_DATA = {set: "=", add: "+=", sub: "-=", mul: "*=", div: "/=", mod: "%="};
+for (const [mnemonic, operator] of Object.entries(OPERATOR_DATA)) {
+  for (const [suffix, refTy, valTy] of [['', '$', 'S'], ['F', '%', 'f']]) {
+    ANM_INS_DATA[`${mnemonic}${suffix}`] = {
+      sig: `${refTy}${valTy}`,
+      args: ['a', 'b'],
+      desc: `Does \`a ${operator} b\`.`,
+    };
+  }
+}
+
+const OPERATOR_3_DATA = {add: "+", sub: "-", mul: "*", div: "/", mod: "%"};
+for (const [mnemonic, operator] of Object.entries(OPERATOR_3_DATA)) {
+  for (const [suffix, refTy, valTy] of [['', '$', 'S'], ['F', '%', 'f']]) {
+    ANM_INS_DATA[`${mnemonic}${suffix}3`] = {
+      sig: `${refTy}${valTy}${valTy}`,
+      args: ['x', 'a', 'b'],
+      desc: `Does \`a = b ${operator} c\`.`,
+    };
+  }
+}
+
+const JUMP_DATA = {jmpEq: "==", jmpNe: "!=", jmpLt: "<", jmpLe: "<=", jmpGt: ">", jmpGe: ">="};
+for (const [mnemonic, operator] of Object.entries(JUMP_DATA)) {
+  for (const [suffix, ty] of [['', 'S'], ['F', 'f']]) {
+    ANM_INS_DATA[`${mnemonic}${suffix}`] = {
+      sig: `${ty}${ty}SS`,
+      args: ['a', 'b', 'dest', 't'],
+      desc: `Jumps if \`a ${operator} b\`.`,
+    };
+  }
+}
+
+// Validate
 for (const [key, value] of Object.entries(ANM_INS_DATA)) {
   value.wip = value.wip || 0;
   value.problems = value.problems || [];
@@ -341,4 +476,8 @@ export const ARGTYPES = {
   "f": "float",
   "m": "string",
   "o": "label",
+  "s": "short",
+  "b": "byte",
+  "$": "int&",
+  "%": "float&",
 };

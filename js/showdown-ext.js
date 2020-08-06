@@ -1,6 +1,7 @@
 import {loadEclmap} from "./ecl/eclmap.js";
 import {MD, highlightCode, $scriptContent} from "./main.js";
 import {getRefHtml} from "./ref.js";
+import dedent from "./lib/dedent.js";
 
 export const ext = function() {
   const yt = {
@@ -40,7 +41,7 @@ export const ext = function() {
     type: "lang",
     regex: /\[code\]([^]+?)\[\/code\]/g,
     replace: function(match, content) {
-      let ret = "<hljs>"+highlightCode(content)+"</hljs>";
+      let ret = "<hljs>"+dedent(highlightCode(content))+"</hljs>";
       // This is some quality jank right here, caused by the fact that I could not find a way to make hljs not escape this html
       ret = ret.replace(/&lt;instr data-tip=<span class="hljs-string">(.*?)<\/span>&gt;(.*?)&lt;\/instr&gt;/g, (match, tip, content) => {
         return `<span data-tip=${tip.replace(/&amp;/g, "&")}>${content}</span>`;
@@ -242,7 +243,7 @@ export const ext = function() {
 
   const wip = {
     type: "lang",
-    regex: /\[wip(=[012])?\]([^]*?)\[\/wip\]/g,
+    regex: /\[wip(?:=([012]))?\]([^]*?)\[\/wip\]/g,
     replace: function(match, severity, content) {
       if (severity == null) {
         severity = "1";

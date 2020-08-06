@@ -50,10 +50,10 @@ export default function dedent(strings) {
   var lines = result.split("\n");
   var mindent = null;
   lines.forEach(function (l) {
-    var m = l.match(/^(\s+)\S+/);
+    var m = l.match(/^(\s*)\S+/);
     if (m) {
       var indent = m[1].length;
-      if (!mindent) {
+      if (mindent == null) {
         // this is the first indented line
         mindent = indent;
       } else {
@@ -73,7 +73,9 @@ export default function dedent(strings) {
 
   return result.
   // dedent eats leading and trailing whitespace too
-  trim().
+  replace(/^[\n\r]/, '').
+  // replace(/^[\n\r]+/, '').
+  // trimEnd().
   // handle escaped newlines at the end to ensure they don't get stripped too
   replace(/\\n/g, "\n");
 }

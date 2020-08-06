@@ -130,5 +130,9 @@ function anmInsDataByRef(ref) {
   }
 
   const out = ANM_INS_DATA[ref];
-  return out === undefined ? null : out;
+  if (out == null) {
+    window.console.warn(`bad anm crossref: ${ref}`);
+    return null;
+  }
+  return out;
 }

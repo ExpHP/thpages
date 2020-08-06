@@ -20,16 +20,20 @@ function splitNamespace(id) {
 // }
 
 export function getRefHtml({id, tip, url}) {
+  if (id.startsWith('anm:')) {
+
+  }
+
   const urlStr = "a";
   const tipStr = "b";
   const name = "c";
 
   let out = name;
-  if (url !== null) {
-    out = `<a href="${url}">${out}</a>`;
+  if (urlStr !== null) {
+    out = `<a href="${urlStr}">${out}</a>`;
   }
   if (tipStr) {
-    out = `<instr data-tip="${tip}">${out}</instr>`;
+    out = `<instr data-tip="${tipStr}">${out}</instr>`;
   } else {
     out = `<instr>${out}</instr>`;
   }
