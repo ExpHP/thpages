@@ -18,7 +18,6 @@ export async function loadEclmap(file, name, game) {
   const map = parseEclmap(txt);
   if (!cachedMaps[name]) cachedMaps[name] = map;
 }
-window.loadEclmap = loadEclmap; // HACK: ins.md needs this
 
 async function fileEclmap(file) {
   const fr = new window.FileReader();
@@ -45,7 +44,6 @@ async function autoEclmap(game) {
 
 class Eclmap {
   constructor(txt) {
-    this.is_new = false;
     this.kind = null;
 
     // old eclmaps
@@ -71,30 +69,20 @@ class Eclmap {
     this.parse();
   }
   getMnemonic(num) {
-    if (!this.is_new) {
-      if (this.opcodes[num]) return this.opcodes[num];
-    } else {
-      const ent = this.seqmapGet(this.ins, num);
-      if (ent != null) return ent.name;
-    }
+    const ent = this.seqmapGet(this.ins, num);
+    if (ent != null) return ent.name;
+
     return `ins_${num}`;
   }
   getTimelineMnemonic(num) {
-    if (!this.is_new) {
-      if (this.timeline_opcodes[num]) return this.timeline_opcodes[num];
-    } else {
-      const ent = this.seqmapGet(this.timeline_ins, num);
-      if (ent != null) return ent.name;
-    }
+    const ent = this.seqmapGet(this.timeline_ins, num);
+    if (ent != null) return ent.name;
+
     return `ins_${num}`;
   }
   getGlobal(num) {
-    if (!this.is_new) {
-      if (this.globals[num]) return this.globals[num];
-    } else {
-      const ent = this.seqmapGet(this.var, num);
-      if (ent != null) return ent.name;
-    }
+    const ent = this.seqmapGet(this.var, num);
+    if (ent != null) return ent.name;
 
     return `[${num}]`;
   }
@@ -122,42 +110,14 @@ class Eclmap {
   parse() {
     const magic = this.fgets();
     if (magic == "!eclmap") {
-      this.is_new = true;
       this.kind = "ecl";
       this.parseNew(magic);
     } else if (magic == "!anmmap") {
-      this.is_new = true;
       this.kind = "anm";
       this.parseNewAnm(magic);
     } else {
-      this.err(magic);
-      // old format
-      this.kind = "ecl";
-      this.parseOld();
-    }
-  }
-  parseOld() {
-    let line;
-    while ((line = this.fgets()) != null) {
-      // Remove comments.
-      line = line.split("#")[0];
-      let token = this.strtok(line, " \t\n");
-      if (!token) continue; // 0 tokens = empty line
-      const num = parseInt(token);
-      if (isNaN(num)) return this.err("opcode is not a number");
-
-      token = this.strtok(null, " \t\n");
-      if (!token) return this.err("not enough tokens");
-      const group = token == '?' ? this.opcodes : (token == '@' ? this.timeline_opcodes : this.globals);
-
-      token = this.strtok(null, " \t\n");
-      if (!token) return this.err("not enough tokens");
-
-      // validate mnemonic
-      if (!token.match(/[a-zA-Z_][a-zA-Z_0-9]*/)) return this.err(token + "isn't a valid identifier");
-      if (token.substring(0, 4) == "ins_") return this.err("mnemonic can't start with ins_");
-
-      group[num] = token;
+      this.err("map file has bad magic: ${magic}");
+      this.kind = null;
     }
   }
 

@@ -1,6 +1,6 @@
 import {loadEclmap} from "./ecl/eclmap.js";
-import {MD, getInclude, highlightCode, setWindowTitleDirect, $scriptContent} from "./main.js";
-import {getOpcodeName, getVar, getVarName, normalizeGameVersion, getOpcode, getOpcodeTip, getVarTip} from "./ecl/main.js";
+import {MD, highlightCode, $scriptContent} from "./main.js";
+import {getRefHtml} from "./ref.js";
 
 export const ext = function() {
   const yt = {
@@ -57,7 +57,7 @@ export const ext = function() {
     type: "lang",
     regex: /\[title=(.*?)\]\n/,
     replace: function(match, content) {
-      setWindowTitleDirect(content);
+      document.head.querySelector("title").innerText = content;
       return "";
     },
   };
@@ -66,17 +66,6 @@ export const ext = function() {
     type: "lang",
     regex: /\[c=(.*?)\]([^]*?)\[\/c\]/g,
     replace: "<span style='color: $1'>$2</span>",
-  };
-
-  let replaceId = 0;
-  const include = {
-    type: "lang",
-    regex: /\[include=(.*?)\]/g,
-    replace: function(match, include) {
-      const id = replaceId++;
-      getInclude(include, id);
-      return "<div id='included-content-"+id+"'>Loading...</div>";
-    },
   };
 
   const colors = {
@@ -133,58 +122,70 @@ export const ext = function() {
     },
   };
 
-  const ins = {
+  // const ins = {
+  //   type: "lang",
+  //   regex: /\[ins=(.*?),(.*?)\]/g,
+  //   replace: function(match, num, game) {
+  //     const ins = getOpcode(game, parseInt(num));
+  //     if (ins == null) return "`opcode_error_"+num+"`";
+  //     const tip = getOpcodeTip(ins);
+  //     const name = getOpcodeName(ins.number, ins.documented);
+  //     return `<instr data-tip="${tip}">${name}</instr>`;
+  //   },
+  // };
+  // const insNotip = {
+  //   type: "lang",
+  //   regex: /\[ins_notip=(.*?),(.*?)\]/g,
+  //   replace: function(match, num, game) {
+  //     const ins = getOpcode(parseFloat(game), parseInt(num));
+  //     if (ins == null) return "`opcode_error_"+num+"`";
+  //     return `<instr>${getOpcodeName(ins.number, ins.documented)}</instr>`;
+  //   },
+  // };
+
+  const ref = {
     type: "lang",
-    regex: /\[ins=(.*?),(.*?)\]/g,
-    replace: function(match, num, game) {
-      let timeline = false;
-      if (game[0] == "t") {
-        timeline = true;
-        game = game.substring(1);
-      }
-      const ins = getOpcode(parseFloat(game), parseInt(num), timeline);
-      if (ins == null) return "`opcode_error_"+num+"`";
-      const tip = getOpcodeTip(ins, timeline);
-      const name = getOpcodeName(ins.number, ins.documented, timeline);
-      return `<instr data-tip="${tip}">${name}</instr>`;
-    },
-  };
-  const insNotip = {
-    type: "lang",
-    regex: /\[ins_notip=(.*?),(.*?)\]/g,
-    replace: function(match, num, game) {
-      let timeline = false;
-      if (game[0] == "t") {
-        timeline = true;
-        game = game.substring(1);
-      }
-      const ins = getOpcode(parseFloat(game), parseInt(num), timeline);
-      if (ins == null) return "`opcode_error_"+num+"`";
-      return `<instr>${getOpcodeName(ins.number, ins.documented, timeline)}</instr>`;
+    regex: /\[ref=(.*?)\]/g,
+    replace: function(match, id) {
+      const ref = getRefHtml({id: id, tip: true, url: true});
+      if (ref == null) return `\`${match}\``;
+
+      return ref;
     },
   };
 
-  const variable = {
+  const refNotip = {
     type: "lang",
-    regex: /\[var=(-?.*?),(.*?)\]/g,
-    replace: function(match, num, game) {
-      const variable = getVar(normalizeGameVersion(game), parseInt(num));
-      if (variable == null) return "<instr>variable_error_"+num+"</instr>";
-      const tip = getVarTip(variable);
-      const name = getVarName(num, variable.documented);
-      return `<instr data-tip="${tip}">${name}</instr>`;
+    regex: /\[ref-notip=(.*?)\]/g,
+    replace: function(match, id) {
+      const ref = getRefHtml({id: id, tip: true, url: true});
+      if (ref == null) return `\`${match}\``;
+
+      return ref;
     },
   };
 
-  const variableNotip = {
-    type: "lang",
-    regex: /\[var_notip=(-?.*?),(.*?)\]/g,
-    replace: function(match, num, game) {
-      const variable = getVar(normalizeGameVersion(game), parseInt(num));
-      if (variable == null) return `<instr>variable_error_${num}</instr>`;
-      return `<instr>${getVarName(num, variable.documented)}</instr>`;
-    },
-  };
+  // const variable = {
+  //   type: "lang",
+  //   regex: /\[var=(-?.*?),(.*?)\]/g,
+  //   replace: function(match, num, game) {
+  //     const variable = getVar(normalizeGameVersion(game), parseInt(num));
+  //     if (variable == null) return "<instr>variable_error_"+num+"</instr>";
+  //     const tip = getVarTip(variable);
+  //     const name = getVarName(num, variable.documented);
+  //     return `<instr data-tip="${tip}">${name}</instr>`;
+  //   },
+  // };
+
+  // const variableNotip = {
+  //   type: "lang",
+  //   regex: /\[var_notip=(-?.*?),(.*?)\]/g,
+  //   replace: function(match, num, game) {
+  //     const variable = getVar(normalizeGameVersion(game), parseInt(num));
+  //     if (variable == null) return `<instr>variable_error_${num}</instr>`;
+  //     return `<instr>${getVarName(num, variable.documented)}</instr>`;
+  //   },
+  // };
 
   const tip = {
     type: "lang",
@@ -239,5 +240,23 @@ export const ext = function() {
     replace: '<div class="flexbox" style="align-items: $1">$2</div>',
   };
 
-  return [eclmap, yt, hr, br, ts, img, imgSmall, ins, insNotip, variable, variableNotip, code, title, c, include, game, rawGame, html, script, tip, video, flex, flex2];
+  const wip = {
+    type: "lang",
+    regex: /\[wip(=[012])?\]([^]*?)\[\/wip\]/g,
+    replace: function(match, severity, content) {
+      if (severity == null) {
+        severity = "1";
+      }
+      switch (parseInt(severity, 10)) {
+        case 0: return content;
+        case 1: return `<span class="wip">${content}</span>`;
+        case 2: return `<span class="wip2">${content}</span>`;
+      }
+    },
+  };
+
+  return [
+    eclmap, yt, hr, br, ts, img, imgSmall, ref, refNotip,
+    code, title, c, game, rawGame, html, script, tip, video, flex, flex2, wip,
+  ];
 };

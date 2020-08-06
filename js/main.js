@@ -1,5 +1,18 @@
 import {ext} from "./showdown-ext.js";
 import {INDEX, ERROR, EMBED_LOAD_ERROR} from "./index.js";
+import {initAnm} from "./ecl/main.js";
+
+export function init() {
+  window.onContentLoad = function(clb) {
+    contentLoadListeners.push(clb);
+  };
+  initAnm();
+  initNavigation();
+  initContent();
+  initResize();
+  initTips();
+  initEmbeds();
+}
 
 export const MD = new showdown.Converter({
   extensions: [ext],
@@ -20,10 +33,6 @@ function contentLoaded() {
   }
   contentLoadListeners.splice(0, contentLoadListeners.length);
 }
-
-window.onContentLoad = function(clb) {
-  contentLoadListeners.push(clb);
-};
 
 function initNavigation() {
   const $nav = document.querySelector(".header-navigation");
@@ -137,21 +146,6 @@ function getContent(path, file, clb, err, forceDelay) {
   xhr.send();
 }
 
-export function getInclude(realPath, id) {
-  // getIncludeTarget can't be here, because include target doesn't exist yet when this function is called
-  getContent(realPath, "", function(txt) {
-    const $target = getIncludeTarget(id);
-    $target.innerHTML = MD.makeHtml(txt);
-  }, function() {
-    const $target = getIncludeTarget(id);
-    $target.innerHTML = EMBED_LOAD_ERROR.replace("%code%", this.status);
-  }, true);
-}
-
-function getIncludeTarget(id) {
-  return document.querySelector("#included-content-"+id);
-}
-
 function loadContent(path, file, writeQuery=true) {
   if (active && active == file) return;
   const group = getGroupByPath(path);
@@ -245,10 +239,6 @@ function setWindowTitleGroup(file, group) {
     if (item.type == "subgroup") setWindowTitleGroup(file, item.children);
     else if (item.url == file) document.head.querySelector("title").innerText = item.name;
   }
-}
-
-export function setWindowTitleDirect(str) {
-  document.head.querySelector("title").innerText = str;
 }
 
 function setActiveNavigation(path, file) {
@@ -393,13 +383,3 @@ function initEmbeds() {
     }
   });
 }
-
-function init() {
-  initNavigation();
-  initContent();
-  initResize();
-  initTips();
-  initEmbeds();
-}
-
-init();
