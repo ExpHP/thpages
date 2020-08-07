@@ -97,27 +97,27 @@ const INS_14 = {
     314: UNASSIGNED,
     315: UNASSIGNED,
 
-    400: UNASSIGNED,
-    401: UNASSIGNED,
-    402: UNASSIGNED,
-    403: UNASSIGNED,
-    404: UNASSIGNED,
-    405: UNASSIGNED,
-    406: UNASSIGNED,
-    407: UNASSIGNED,
-    408: UNASSIGNED,
-    409: UNASSIGNED,
-    410: UNASSIGNED,
-    411: UNASSIGNED,
-    412: UNASSIGNED,
-    413: UNASSIGNED,
-    414: UNASSIGNED,
-    415: UNASSIGNED,
-    416: UNASSIGNED,
-    417: UNASSIGNED,
+    400: {id: 'anm:pos'},
+    401: {id: 'anm:rotate'},
+    402: {id: 'anm:scale'},
+    403: {id: 'anm:alpha'},
+    404: {id: 'anm:rgb'},
+    405: {id: 'anm:alpha2'},
+    406: {id: 'anm:rgb2'},
+    407: {id: 'anm:posTime'},
+    408: {id: 'anm:rgbTime'},
+    409: {id: 'anm:alphaTime'},
+    410: {id: 'anm:rotateTime'},
+    411: {id: 'anm:rotateTime2D'},
+    412: {id: 'anm:scaleTime'},
+    413: {id: 'anm:rgb2Time'},
+    414: {id: 'anm:alpha2Time'},
+    415: {id: 'anm:angleVel'},
+    416: {id: 'anm:scaleGrowth'},
+    417: {id: 'anm:alphaTime2'},
     418: {id: 'anm:v8-418'},
     419: UNASSIGNED,
-    420: UNASSIGNED,
+    420: {id: 'anm:posBezier'},
     421: UNASSIGNED,
     422: UNASSIGNED,
     423: UNASSIGNED,
@@ -197,7 +197,9 @@ export const ANM_BY_OPCODE = {
 export const DUMMY_DATA = {sig: '', args: [], wip: 2, desc: '[wip=2]*No data.*[/wip]'};
 
 // Lookup table by ref id. (game-independent, anmmap-independent name)
-export const ANM_INS_DATA = {
+export const ANM_INS_DATA = {}
+
+Object.assign(ANM_INS_DATA, {
   'nop': {sig: '', args: [], desc: "Does nothing."},
   'delete': {sig: '', args: [], desc: "Destroys the animation."},
   'static': {sig: '', args: [], wip: 1, desc: `[wip=1]Chinese wiki says "makes a static texture", sounds straightforward but more investigation wouldn't hurt.[/wip]`},
@@ -207,8 +209,9 @@ export const ANM_INS_DATA = {
     sig: 'S', args: ['n'], desc: dedent`
     A label used to externally control an ANM.
 
-    [wip]TODO: more details, show example code[/wip]
+    [wip]TODO: show example code[/wip]
 
+    <!-- FIXME: use eclmap for anmSwitch or link to something -->
     Enemies can invoke this using the \`anmSwitch\` instruction.  Furthermore, the game internally uses [ref=anm:case] labels for all sorts
     of different purposes.  For instance, it is used to handle animations on the Pause menu and main menu, it is used to make player options
     appear and disappear based on power, and it is even used to make the season gauge go transparent when the player gets near.
@@ -221,8 +224,11 @@ export const ANM_INS_DATA = {
     * [wip]\`[ref=anm:case](-1)\` appears to work differently from the others...[/wip]
     * [wip]Can switching interrupt code that is not at a [ins=anm:stop]? Testing needed.[/wip]
   `},
-  'wait': {sig: 'S', args: ['t'], desc: 'Wait %1 frames.'},
-  'v8-7': {sig: '', args: [], wip: 2, desc: "[wip=2]*dunno but it looks important lol*[/wip]"},
+  'wait': {sig: 'S', args: ['t'], desc: `Wait %1 frames.`},
+  'v8-7': {sig: '', args: [], wip: 2, desc: `[wip=2]*dunno but it looks important lol*[/wip]`},
+});
+
+Object.assign(ANM_INS_DATA, {
   'jmp': {
     sig: 'SS', args: ['dest', 't'], desc: dedent`
     Jumps to %1 and sets time to %2.  \`thanm\` accepts a label name for %1.
@@ -244,7 +250,21 @@ export const ANM_INS_DATA = {
       [ref=anm:jmpDec]([10000], loop);
     [/code]
   `},
+});
 
+const JUMP_DATA = {jmpEq: "==", jmpNe: "!=", jmpLt: "<", jmpLe: "<=", jmpGt: ">", jmpGe: ">="};
+for (const [mnemonic, operator] of Object.entries(JUMP_DATA)) {
+  for (const [suffix, ty] of [['', 'S'], ['F', 'f']]) {
+    ANM_INS_DATA[`${mnemonic}${suffix}`] = {
+      sig: `${ty}${ty}SS`,
+      args: ['a', 'b', 'dest', 't'],
+      desc: `Jumps if \`a ${operator} b\`.`,
+    };
+  }
+}
+
+
+Object.assign(ANM_INS_DATA, {
   'rand': {sig: '$S', args: ['x', 'n'], desc: 'Draw a random integer `0 <= %1 < %2`.'},
   'randF': {sig: '%f', args: ['x', 'r'], desc: 'Draw a random float `0 <= %1 <= %2`.'},
 
@@ -263,10 +283,12 @@ export const ANM_INS_DATA = {
     This isn't the right way to uniformly draw points on a ring shape, but I don't think that's what it's used for anyways.
     (it's more like for just making a random vector with a random magnitude)
   `},
+});
 
-  // =========================
-  // ==== RENDER SETTINGS ====
-  // =========================
+// =========================
+// ==== RENDER SETTINGS ====
+// =========================
+Object.assign(ANM_INS_DATA, {
   'sprite': {
     sig: 'S', args: ['id'], desc: dedent`
     Sets the image used by this VM to one of the sprites defined in the ANM file.
@@ -343,10 +365,108 @@ export const ANM_INS_DATA = {
 
     [c=red]TODO: image[/c]
   `},
+});
 
-  // =================
-  // ==== DRAWING ====
-  // =================
+// ==================
+// ==== DA BASICS ===
+// ==================
+Object.assign(ANM_INS_DATA, {
+  'pos': {
+    sig: 'fff', args: ['x', 'y', 'z'], desc: dedent`
+    Sets the position of the animation.
+
+    Believe it or not, even this instruction still has some mysteries!
+    There is a bit flag that, when activated, causes [ref=anm:pos] to write to a *different* vector.
+    These two vectors are typically added together at the end, like ECL's absolute and relative positions.
+    [wip]The method of setting this bitflag, and its purpose, is unknown.[/wip]
+  `},
+  'rotate': {
+    sig: 'fff', args: ['rx', 'ry', 'rz'], desc: dedent`
+    Set the animation's rotation.  For 2D objects, only the z rotation matters.
+    In some rare cases, x rotation has a special meaning for special drawing instructions.
+    Animations rotate around their anchor point (see [ref=anm:anchor]).
+
+    (if nothing seems to be happening when you call this, check your [ref=anm:renderMode] setting!)
+  `},
+  'rotationSystem': {sig: 'S', args: ['mode'], desc: dedent`Sets the conventions for 3D rotation (e.g. XYZ, ZYX, etc.). [wip]TODO: Define the modes.[/wip]`},
+  'scale': {
+    sig: 'ff', args: ['sx', 'sy'], desc: dedent`
+    Scales the ANM independently along the x and y axis.
+    Animations grow around their anchor point (see [ref=anm:anchor]).
+    Some special drawing instructions give the x and y scales special meaning.
+  `},
+  'scale2': {
+    sig: 'ff', args: ['s2x', 's2y'], wip: 1, desc: dedent`
+    *As far as we know,* this is just an extra set of scale factors that apply separately (multiplicatively)
+    to [ref=anm:scale].
+
+    All special drawing instructions ignore this (which is a shame, because it means you still can't
+    draw ellipses...).
+  `},
+  'posBezier': {
+    sig: 'Sfffffffff', args: ['t', 'x1', 'y1', 'z1', 'x2', 'y2', 'z2', 'x3', 'y3', 'z3'],
+    desc: `
+    In %1 frames, moves to (%5,%6,%7) using Bezier interpolation.
+
+    <!--
+    according to images by @rue#1846 on the zuncode discord it looks like the last two numbers for floatTime mode 8
+    are proportional to initial/final velocities; these may correspond to xyz1 and xyz3 but I'm too lazy to verify right now.
+    -->
+    [wip]I am too lazy to document this right now.[/wip]  See https://thwiki.cc/%E8%84%9A%E6%9C%AC%E5%AF%B9%E7%85%A7%E8%A1%A8/ANM/%E7%AC%AC%E5%9B%9B%E4%B8%96%E4%BB%A3.
+  `},
+  'rgb': {
+    sig: 'SSS', args: ['r', 'g', 'b'], desc: `
+    Set a color which gets blended with this sprite.
+    Set white (255, 255, 255) to eliminate the effect.
+
+    ([wip]what's the blend operation?[/wip] Probably multiply, since white is the identity...)
+  `},
+  'alpha': {sig: 'S', args: ['alpha'], desc: `Set alpha (opacity) to a value 0-255.`},
+  'rgb2': {sig: 'SSS', args: ['r', 'g', 'b'], desc: `Set a second color, which some drawing instructions use to create a gradient.`},
+  'alpha2': {sig: 'S', args: ['alpha'], desc: `Set alpha for the gradient's second color.`},
+
+  'angleVel': {sig: 'fff', args: ['ωx', 'ωy', 'ωz'], desc: `Set a constant angular velocity, in radians per frame.`},
+  'scaleGrowth': {sig: 'ff', args: ['gx', 'gy'], desc: `
+    Every frame, it increases the values of [ref=anm:scale] as \`sx -> sx + gx\` and \`sy -> sy + gy\`.
+    Basically, [ref=anm:scaleGrowth] is to [ref=anm:scale] as [ref=anm:angleVel] is to [ref=anm:rotate].
+    (they even share implemenation details...)
+  `},
+  // TODO: link to texture coordinates concept
+  'uVel': {sig: 'f', args: ['vel'], desc: `
+    Add %1 to the texture u coordinate every frame (in units of \`1 / total_image_width\`),
+    causing the displayed sprite to scroll horizontally through the image file.
+  `},
+  'vVel': {sig: 'f', args: ['vel'], desc: `
+    Add %1 to the texture v coordinate every frame (in units of \`1 / total_image_height\`),
+    causing the displayed sprite to scroll vertically through the image file.
+  `},
+  'uvScale': {sig: 'ff', args: ['uscale', 'vscale'], desc: "Scales texture uv coordinates. [wip]TODO: link to uv tutorial[/wip]"},
+
+  'posTime': {sig: 'SSfff', args: ['t', 'mode', 'x', 'y', 'z'], desc: `Over the next %1 frames, changes the setting of [ref=anm:pos] to the given values using interpolation mode %2.`},
+  'rotateTime': {sig: 'SSfff', args: ['t', 'mode', 'rx', 'ry', 'rz'], desc: `Over the next %1 frames, changes the setting of [ref=anm:rotate] to the given values using interpolation mode %2.`},
+  'alphaTime': {sig: 'SSS', args: ['t', 'mode', 'alpha'], desc: `Over the next %1 frames, changes the setting of [ref=anm:alpha] to the given values using interpolation mode %2.`},
+  'alpha2Time': {sig: 'SSS', args: ['t', 'mode', 'alpha'], desc: `Over the next %1 frames, changes the setting of [ref=anm:alpha2] to the given value using interpolation mode %2.`},
+  'scaleTime': {sig: 'SSff', args: ['t', 'mode', 'sx', 'sy'], desc: `Over the next %1 frames, changes the setting of [ref=anm:scale] to the given values using interpolation mode %2.`},
+  'scale2Time': {sig: 'SSff', args: ['t', 'mode', 'sx', 'sy'], desc: `Over the next %1 frames, changes the setting of [ref=anm:scale2] to the given values using interpolation mode %2.`},
+  'rgbTime': {sig: 'SSSSS', args: ['t', 'mode', 'r', 'g', 'b'], desc: `Over the next %1 frames, changes the setting of [ref=anm:rgb] to the given value using interpolation mode %2.`},
+  'rgb2Time': {sig: 'SSSSS', args: ['t', 'mode', 'r', 'g', 'b'], desc: `Over the next %1 frames, changes the setting of [ref=anm:rgb2] to the given value using interpolation mode %2.`},
+  'uVelTime': {sig: 'SSf', args: ['t', 'mode', 'vel'], wip: 1, desc: `[wip]Based on the code this is clearly a time version of [ref=anm:uVel], but it didn't work when I tested it...[/wip]`},
+  'vVelTime': {sig: 'SSf', args: ['t', 'mode', 'vel'], wip: 1, desc: `[wip]Based on the code this is clearly a time version of [ref=anm:vVel], but it didn't work when I tested it...[/wip]`},
+  'rotateTime2D': {
+    sig: 'SSf', args: ['t', 'mode', 'rz'], desc: `
+    A compact version of [ref=anm:rotateTime] that only interpolates the z rotation.
+
+    (note: [ref=anm:rotateTime2D] and [ref=anm:rotateTime] are tracked separately, but judging from the code, they **are not** meant
+    to be used together and their effects do not stack properly. [wip]somebody test plz[/wip])
+  `},
+
+  'alphaTime2': {sig: 'SS', args: ['alpha', 'time'], wip: 1, desc: `[wip]This is, uh, similar to but different from [ref=anm:alphaTime] somehow.[/wip]`},
+});
+
+// =================
+// ==== DRAWING ====
+// =================
+Object.assign(ANM_INS_DATA, {
   'drawRect': {
     sig: 'ff', args: ['w', 'h'], desc: dedent`
     Draws a filled rectangle with the given dimensions.  No gradients.
@@ -354,7 +474,7 @@ export const ANM_INS_DATA = {
   `},
   'drawRectGrad': {
     sig: 'ff', args: ['w', 'h'], desc: dedent`
-    Same as [ref=anm:drawRect] but supports gradients ([ref=anm:color2]), which go from left to right.
+    Same as [ref=anm:drawRect] but supports gradients ([ref=anm:rgb2]), which go from left to right.
   `},
   // TODO: find a way to "collapse" this by default
   'drawRectShadow': {
@@ -374,7 +494,7 @@ export const ANM_INS_DATA = {
   `},
   'drawRectShadowGrad': {
     sig: 'ff', args: ['w', 'h'], desc: dedent`
-    Same as [ref=anm:drawRect] but supports gradients ([ref=anm:color2]), which go from left to right.
+    Same as [ref=anm:drawRect] but supports gradients ([ref=anm:rgb2]), which go from left to right.
   `},
   'drawRectBorder': {
     sig: 'ff', args: ['w', 'h'], desc: dedent`
@@ -389,10 +509,12 @@ export const ANM_INS_DATA = {
 
     If you want to change its direction, you must use [ref=anm:rotate].
   `},
+});
 
-  // ============================
-  // ==== WEIRD-ASS NONSENSE ====
-  // ============================
+// ============================
+// ==== WEIRD-ASS NONSENSE ====
+// ============================
+Object.assign(ANM_INS_DATA, {
   'v8-418': {
     sig: '', args: [], wip: 1, desc: dedent`
     A bizarre and **unused** (?) instruction that appears to select a new sprite in the image file based on the anm's coordinates.
@@ -405,7 +527,7 @@ export const ANM_INS_DATA = {
 
     Presumably this lets you do weird things like use a rotated region of a .png file as a sprite.
   `},
-};
+});
 
 const OPERATOR_DATA = {set: "=", add: "+=", sub: "-=", mul: "*=", div: "/=", mod: "%="};
 for (const [mnemonic, operator] of Object.entries(OPERATOR_DATA)) {
@@ -425,17 +547,6 @@ for (const [mnemonic, operator] of Object.entries(OPERATOR_3_DATA)) {
       sig: `${refTy}${valTy}${valTy}`,
       args: ['x', 'a', 'b'],
       desc: `Does \`a = b ${operator} c\`.`,
-    };
-  }
-}
-
-const JUMP_DATA = {jmpEq: "==", jmpNe: "!=", jmpLt: "<", jmpLe: "<=", jmpGt: ">", jmpGe: ">="};
-for (const [mnemonic, operator] of Object.entries(JUMP_DATA)) {
-  for (const [suffix, ty] of [['', 'S'], ['F', 'f']]) {
-    ANM_INS_DATA[`${mnemonic}${suffix}`] = {
-      sig: `${ty}${ty}SS`,
-      args: ['a', 'b', 'dest', 't'],
-      desc: `Jumps if \`a ${operator} b\`.`,
     };
   }
 }
