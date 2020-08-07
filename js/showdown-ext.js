@@ -248,11 +248,7 @@ export const ext = function() {
       if (severity == null) {
         severity = "1";
       }
-      switch (parseInt(severity, 10)) {
-        case 0: return content;
-        case 1: return `<span class="wip">${content}</span>`;
-        case 2: return `<span class="wip2">${content}</span>`;
-      }
+      return `<span data-wip="${severity}">${content}</span>`;
     },
   };
 

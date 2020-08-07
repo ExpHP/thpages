@@ -9,13 +9,28 @@
 @nav-bg-color: #080808;
 @nav-alpha: 85%;
 
+// blog original colors:
+//    code block outline: #121212
+//    code block bg: #191919
+//    inline code bg: #101020
+//
+// why did inline code and code blocks have different bgs?
+// I assume I did it for a reason...
+
+@code-block-bg: #02020240;
+@code-inline-bg: #10102080;
+@monospace: Monaco, Bitstream Vera Sans Mono, Lucida Console, Terminal, monospace;
+@sans-serif: OpenSansRegular, Helvetica Neue, Helvetica, Arial, sans-serif;
+
 body {
   /* padding:0px 0 20px 0px;
   margin: 0px; */
-  font:14px/1.5 "OpenSansRegular", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font:14px/1.5 @sans-serif;
   color: @text-color;
   font-weight: normal;
   background: #252525;
+  background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'><g fill='%23111' fill-opacity='0.45'><path fill-rule='evenodd' d='M0 0h40v40H0V0zm40 40h40v40H40V40zm0-40h2l-2 2V0zm0 4l4-4h2l-6 6V4zm0 4l8-8h2L40 10V8zm0 4L52 0h2L40 14v-2zm0 4L56 0h2L40 18v-2zm0 4L60 0h2L40 22v-2zm0 4L64 0h2L40 26v-2zm0 4L68 0h2L40 30v-2zm0 4L72 0h2L40 34v-2zm0 4L76 0h2L40 38v-2zm0 4L80 0v2L42 40h-2zm4 0L80 4v2L46 40h-2zm4 0L80 8v2L50 40h-2zm4 0l28-28v2L54 40h-2zm4 0l24-24v2L58 40h-2zm4 0l20-20v2L62 40h-2zm4 0l16-16v2L66 40h-2zm4 0l12-12v2L70 40h-2zm4 0l8-8v2l-6 6h-2zm4 0l4-4v2l-2 2h-2z'/></g></svg>");
+  background-attachment: fixed;
   margin: 0;
   line-height: 135%;
 }
@@ -24,12 +39,15 @@ a {
   color: lightblue;
 }
 
-code {
-  background: #14442c;
+code, instr {
+  background: @code-block-bg;
+  font-family: @monospace;
+  border-radius: 5px;
   display: inline;
-  padding: 3px;
-}
 
+  color: @code-color;
+  padding: 4px 6px;
+}
 
 li {
   margin-bottom: 9px;
@@ -41,13 +59,6 @@ blockquote {
   border-radius: 8px;
   background: rgba(90, 155, 90, 0.2);
   padding: 5px;
-}
-
-instr {
-  background: #14442c;
-  display: inline;
-  font-family: monospace;
-  padding: 3px;
 }
 
 .border-l {
@@ -80,7 +91,7 @@ instr {
 .header-text {
   line-height: 60px;
   font-size: 30px;
-  font-family: sans-serif;
+  font-family: @sans-serif;
   margin-left: 30px;
   font-weight: bold;
 }
@@ -106,7 +117,7 @@ instr {
   text-decoration: inherit;
 }
 .navigation-entry {
-  font-family: sans-serif;
+  font-family: @sans-serif;
   display: inline-table;
   width: 100px;
   height: 40px;
@@ -163,7 +174,7 @@ instr {
 }
 
 .content-wrapper .content {
-  background: rgba(0, 0, 0, 0.4);
+  background: #ffffff10;
   margin-top: 20px;
   border-radius: 25px;
   padding: 20px;
@@ -199,11 +210,11 @@ instr {
 }
 
 hljs {
-  font-family: monospace;
-  border: 3px double #07440a;
+  font-family: @monospace;
+  border: 2px solid #12121280;
   display: inline-block;
   padding: 5px;
-  background: #122300;
+  background: @code-block-bg;
   white-space: pre-wrap;
   margin: 10px;
 }
@@ -254,29 +265,67 @@ table, th, td, tr {
   font-size: 14px;
 }
 
-.ins-table {
-  width: 100%;
-}
-.ins-table * {
-  box-sizing: border-box;
-}
-.ins-id {
-  width: 3%;
-}
-.ins-name {
-  width: 15%;
-}
-.ins-args {
-  width: 25%;
-}
-.ins-desc {
-  width: 57%;
-}
-
 .ins-navigation-entry {
   cursor: pointer;
   text-decoration: underline;
-  color: lightblue;
+  color: @link-color;
+
+  &:hover {
+    color: @link-color-hover;
+  }
+}
+
+.ins-table {
+  display: table;
+  width: 100%;
+
+  // disable borders on THIS table only
+  //
+  // FIXME: this seems awfully delicate, maybe ins-table should be using divs with
+  //        display: table etc. instead of an actual table
+  &,
+  >tbody >tr,
+  >tbody >tr >td {
+    border: none;
+  }
+
+  // (note: present on priw's site, uncertain of purpose...)
+  * { box-sizing: border-box; }
+
+  .col-id { width: 3em; }
+  .col-name { width: 20%; min-width: 10em; }
+  .col-desc { width: 85%; }
+
+  .ins-table-header { display: table-row; }
+  .ins-table-entry { display: table-row; }
+
+  td { vertical-align: text-top; }
+
+  .ins-table-entry .col-name {
+    font-family: @monospace;
+
+    // (couldn't figure out how to get a hanging indent in the cell
+    //  without adding this div around the cell's contents...)
+    .hanging-indent-wrapper {
+      text-indent: -2em;
+      margin-left: 2em;
+    }
+
+    .punct { color: #ffffff30; }
+
+    .ins-name {
+      &[data-wip="0"] { color: @text-color; }
+      font-weight: bold;
+      font-size: 1.1em;
+    }
+
+    .ins-params {
+      font-size: 0.91em;
+      // .type.mut { font-weight: bold; } // eh.
+      .type.float { color: #32e875; }
+      .type.int { color: #53ceff; }
+    }
+  }
 }
 
 .video-load {
@@ -296,29 +345,10 @@ table, th, td, tr {
   align-items: center;
 }
 
-.wip {
-  color: rgba(235, 124, 0, 0.85);
+[data-wip="1"] {
+  color: rgb(250, 150, 74);
 }
-.wip2 {
-  color: rgba(180, 180, 180, 0.4);
-}
-
-/* ANIMATIONS */
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes pulse {
-  0% {
-    transform: scale(1.0);
-  }
-  100% {
-    transform: scale(0.75);
-  }
+[data-wip="2"] {
+  color: rgba(255, 255, 255, 0.4);
+  &:hover { color: rgba(255, 255, 255, 0.5); }
 }

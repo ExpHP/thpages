@@ -1,5 +1,5 @@
 import {getCurrentMap, loadEclmap} from './eclmap.js';
-import {GROUPS_V8, ANM_INS_DATA, ANM_BY_OPCODE, ARGTYPES, DUMMY_DATA} from './ins.js';
+import {GROUPS_V8, ANM_INS_DATA, ANM_BY_OPCODE, DUMMY_DATA} from './ins.js';
 import {MD} from '../main.js';
 
 function getGroups(game) {
@@ -12,10 +12,27 @@ export function initAnm() {
   window.loadEclmap = loadEclmap;
 }
 
+const ARGTYPES_TEXT = {
+  "S": "int",
+  "s": "short",
+  "b": "byte",
+  "$": "int&",
+  "f": "float",
+  "%": "float&",
+};
+const ARGTYPES_HTML = {
+  "S": /* html */`<span class="type int">int</span>`,
+  "s": /* html */`<span class="type int">short</span>`,
+  "b": /* html */`<span class="type int">byte</span>`,
+  "$": /* html */`<span class="type int mut">int&</span>`,
+  "f": /* html */`<span class="type float">float</span>`,
+  "%": /* html */`<span class="type float mut">float&</span>`,
+};
+
 function generateOpcodeTable(game) {
   let base = `Current table: [game=${game}] version ${game}[/game][br]`;
 
-  let navigation = "<div class='ins-navigation'><h3>Navigation</h3>";
+  let navigation = /* html */`<div class='ins-navigation'><h3>Navigation</h3>`;
   let table = "";
 
   let total = 0;
@@ -24,11 +41,11 @@ function generateOpcodeTable(game) {
   for (let i=0; i<groups.length; ++i) {
     const group = groups[i];
 
-    navigation += `- <span class='ins-navigation-entry' data-target='${group.title}'>${group.title} (${group.min}-${group.max})</span><br>`;
+    navigation += /* html */`- <span class='ins-navigation-entry' data-target='${group.title}'>${group.title} (${group.min}-${group.max})</span><br>`;
 
-    table += `<br><h2 data-insnavigation="${group.title}">${group.min}-${group.max}: ${group.title}</h2>`;
-    table += "<table class='ins-table'>";
-    table += "<tr><th class='ins-id'>ID</th><th class='ins-name'>name</th><th class='ins-args'>parameters</th><th class='ins-desc'>description</th></tr>";
+    table += /* html */`<br><h2 data-insnavigation="${group.title}">${group.min}-${group.max}: ${group.title}</h2>`;
+    table += /* html */`<table class='ins-table'>`;
+    // table += /* html */`<div class='ins-table-header'><th class="col-id"></th><th class='col-name'></th><th class='col-desc'></th></th>`;
 
     for (let num=group.min; num<=group.max; ++num) {
       const refObj = anmInsRefByOpcode(game, num);
@@ -65,33 +82,45 @@ function getOpcodeName(opcode) {
 }
 
 function generateOpcodeTableEntry(ins, opcode) {
-  return `
-  <tr>
-  <td>${opcode}</td>
-  <td>${getOpcodeName(opcode)}
-  <td>${generateOpcodeParameters(ins)}
-  <td>${generateOpcodeDesc(ins)}</td>
+  const lParen = /* html */`<span class="punct">${"("}</span>`;
+  const rParen = /* html */`<span class="punct">${")"}</span>`;
+  const name = /* html */`<span class="ins-name" data-wip="${ins.wip}">${getOpcodeName(opcode)}</span>`;
+  const params = /* html */`<span class="ins-params">${generateAnmInsParameters(ins)}</span>`;
+  return /* html */`
+  <tr class="ins-table-entry">
+    <td class="col-id">${opcode}</td>
+    <td class="col-name"><div class="hanging-indent-wrapper">${name}${lParen}${params}${rParen}</div></td>
+    <td class="col-desc">${generateAnmInsDesc(ins)}</td>
   </tr>
   `;
 }
 
-function generateOpcodeParameters(ins) {
-  if (ins == null) return "<span style='color:gray'>No data available.</span>";
-
+function generateAnmInsParameters(ins) {
+  const comma = /* html */`<span class="punct">${","}</span>`;
   let ret = "";
   for (let i=0; i<ins.args.length; ++i) {
-    if (i != 0) ret += ", ";
-    ret += '<span style="white-space: nowrap;">' + ARGTYPES[ins.sig[i]] + " " + ins.args[i] + '</span>';
+    switch (i) {
+      // Avoid situations like:
+      //
+      //    reallyLongInstructionName(int a,
+      //          int b)
+      //
+      // by making it prefer to break after the '(' rather than after the first comma.
+      case 0: ret += `<wbr>`; break;
+      case 1: ret += `${comma}&nbsp;`; break;
+      default: ret += `${comma} `; break;
+    }
+    ret += ARGTYPES_HTML[ins.sig[i]] + "&nbsp;" + ins.args[i];
   }
   return ret;
 }
 
-function generateOpcodeDesc(ins, notip=false) {
+function generateAnmInsDesc(ins, notip=false) {
   if (ins == null) return "<span style='color:gray'>No description available.</span>";
 
   let ret = ins.desc;
   for (let i=0; i<ins.sig.length; i++) {
-    ret = ret.replace(new RegExp("%"+(i+1)+"(?=[^0-9])", "g"), "[tip=Parameter "+(i+1)+", "+ARGTYPES[ins.sig[i]]+"]`"+ins.args[i]+"`[/tip]");
+    ret = ret.replace(new RegExp("%"+(i+1)+"(?=[^0-9])", "g"), "[tip=Parameter "+(i+1)+", "+ARGTYPES_TEXT[ins.sig[i]]+"]`"+ins.args[i]+"`[/tip]");
   }
   if (notip) {
     ret = ret.replace(/\[ref=/g, "[ref-notip=");

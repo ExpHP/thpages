@@ -1,6 +1,7 @@
 import dedent from "../lib/dedent.js";
 
 export const UNASSIGNED = {id: null, wip: 2};
+export const UNKNOWN_SIG = {};
 
 export const GROUPS_V8 = [
   {min: 0, max: 299, title: 'System'},
@@ -193,7 +194,7 @@ export const ANM_BY_OPCODE = {
 // ==========================================================================
 // ==========================================================================
 
-export const DUMMY_DATA = {sig: '', args: [], wip: 2, desc: '[wip=2]No data.[/wip]'};
+export const DUMMY_DATA = {sig: '', args: [], wip: 2, desc: '[wip=2]*No data.*[/wip]'};
 
 // Lookup table by ref id. (game-independent, anmmap-independent name)
 export const ANM_INS_DATA = {
@@ -221,7 +222,7 @@ export const ANM_INS_DATA = {
     * [wip]Can switching interrupt code that is not at a [ins=anm:stop]? Testing needed.[/wip]
   `},
   'wait': {sig: 'S', args: ['t'], desc: 'Wait %1 frames.'},
-  'v8-7': {sig: '', args: [], wip: 1, desc: "dunno but it looks important lol"},
+  'v8-7': {sig: '', args: [], wip: 2, desc: "[wip=2]*dunno but it looks important lol*[/wip]"},
   'jmp': {
     sig: 'SS', args: ['dest', 't'], desc: dedent`
     Jumps to %1 and sets time to %2.  \`thanm\` accepts a label name for %1.
@@ -272,9 +273,9 @@ export const ANM_INS_DATA = {
     A value of \`-1\` means to not use an image (this is frequently used with shape-drawing instructions).
     thanm also lets you use the sprite's name instead of an index.
 
-    [wip]Under some conditions, these sprite indices are transformed by a "sprite-mapping" function; e.g. many
-    bullet scripts use false indices, presumably to avoid repeating the same script for 16 different colors.
-    The precise mechanism of this is not yet fully understood.[/wip]
+    [wip]Under some unknown conditions[/wip], these sprite indices are transformed by a "sprite-mapping"
+    function; e.g. many bullet scripts use false indices, presumably to avoid repeating the same script
+    for 16 different colors.  [wip]The precise mechanism of this is not yet fully understood.[/wip]
   `},
   // TODO: link to RNG concept page once it exists
   'spriteRand': {
@@ -285,7 +286,7 @@ export const ANM_INS_DATA = {
     sig: 'S', args: ['mode'], desc: dedent`
     Set color blending mode.
 
-    Modes for DDC: (other games may be different)
+    Modes for [game=14]DDC[/game]: (other games may be different)
 
     | Mode | \`SRCBLEND\` | \`DESTBLEND\` | \`BLENDOP\` | Meaning |
     | ---         | ---           | --- | --- | --- |
@@ -357,7 +358,7 @@ export const ANM_INS_DATA = {
   `},
   // TODO: find a way to "collapse" this by default
   'drawRectShadow': {
-    sig: 'ff', args: ['w', 'h'], wip: 1, desc: dedent`
+    sig: 'ff', args: ['w', 'h'], desc: dedent`
     Don't use this.
 
     The implementation does the following:
@@ -372,7 +373,7 @@ export const ANM_INS_DATA = {
     (this works because both rectangles are drawn with the same position and anchoring)
   `},
   'drawRectShadowGrad': {
-    sig: 'ff', args: ['w', 'h'], wip: 1, desc: dedent`
+    sig: 'ff', args: ['w', 'h'], desc: dedent`
     Same as [ref=anm:drawRect] but supports gradients ([ref=anm:color2]), which go from left to right.
   `},
   'drawRectBorder': {
@@ -443,41 +444,12 @@ for (const [mnemonic, operator] of Object.entries(JUMP_DATA)) {
 for (const [key, value] of Object.entries(ANM_INS_DATA)) {
   value.wip = value.wip || 0;
   value.problems = value.problems || [];
-  if (value.wip) {
-    value.problems.push('docs');
+  if (value.desc === undefined) window.console.error(`TABLE CORRUPT: anm ref ${key} has no 'desc'`);
+  if (value.sig === undefined) window.console.error(`TABLE CORRUPT: anm ref ${key} has no 'sig'`);
+  if (value.sig != null && value.args === undefined) window.console.error(`TABLE CORRUPT: anm ref ${key} has no 'args'`);
+  if (value.sig && value.sig.length !== value.args.length) {
+    window.console.error(`TABLE CORRUPT: anm ref ${key} has arg count mismatch`);
   }
-  if (value.sig.length !== value.args.length) {
-    window.console.log(`arg count mismatch in anm ins info for ${key}`);
-  }
+
+  if (value.wip) value.problems.push('docs');
 }
-
-// export const INS_17 = {
-//   641: {
-//     number: 641,
-//     game: 14,
-//     args: 'S',
-//     argnames: ['etId'],
-//     description: `Subtracts 1 from the index used by [ins=611,13] and [ins=612,13], unless it's already 0. This basically changes where the next transformation will be appended.`,
-//     documented: true,
-//   },
-
-//   712: {
-//     number: 712,
-//     game: 14,
-//     args: 'ff',
-//     argnames: ["w", "h"],
-//     description: "Cancels all bullets in rectangle of width %1 and height %2. The area is affected by rotation set by [ins=564,14].",
-//     documented: true,
-//   },
-// };
-
-export const ARGTYPES = {
-  "S": "int",
-  "f": "float",
-  "m": "string",
-  "o": "label",
-  "s": "short",
-  "b": "byte",
-  "$": "int&",
-  "%": "float&",
-};
