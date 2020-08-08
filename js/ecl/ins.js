@@ -8,7 +8,9 @@ export const UNKNOWN_SIG = {};
 // ===================    LOOKUP TABLE BY OPCODE    =========================
 
 export const GROUPS_V8 = [
-  {min: 0, max: 299, title: 'System'},
+  {min: 0, max: 99, title: 'System'},
+  {min: 100, max: 199, title: 'Math'},
+  {min: 200, max: 299, title: 'Jumps'},
   {min: 300, max: 499, title: 'General'},
   {min: 500, max: 599, title: 'Child management'},
   {min: 600, max: 699, title: 'Drawing'},
@@ -92,7 +94,7 @@ const INS_14 = {
   310: UNASSIGNED,
   311: UNASSIGNED,
   312: UNASSIGNED,
-  313: UNASSIGNED,
+  313: {id: 'anm:resolutionMode'},
   314: UNASSIGNED,
   315: UNASSIGNED,
 
@@ -117,24 +119,24 @@ const INS_14 = {
   418: {id: 'anm:v8-418'},
   419: UNASSIGNED,
   420: {id: 'anm:posBezier'},
-  421: UNASSIGNED,
+  421: {id: 'anm:anchor'},
   422: UNASSIGNED,
-  423: UNASSIGNED,
-  424: UNASSIGNED,
-  425: UNASSIGNED,
-  426: UNASSIGNED,
-  427: UNASSIGNED,
-  428: UNASSIGNED,
-  429: UNASSIGNED,
-  430: UNASSIGNED,
+  423: {id: 'anm:colorMode'},
+  424: {id: 'anm:rotateAuto'},
+  425: {id: 'anm:uVel'},
+  426: {id: 'anm:vVel'},
+  427: {id: 'anm:uVelTime'},
+  428: {id: 'anm:vVelTime'},
+  429: {id: 'anm:uvScale'},
+  430: {id: 'anm:uvScaleTime'},
   431: UNASSIGNED,
   432: UNASSIGNED,
   433: UNASSIGNED,
-  434: UNASSIGNED,
-  435: UNASSIGNED,
-  436: UNASSIGNED,
+  434: {id: 'anm:scale2'},
+  435: {id: 'anm:scale2Time'},
+  436: {id: 'anm:anchorOffset'},
   437: UNASSIGNED,
-  438: UNASSIGNED,
+  438: {id: 'anm:originMode'},
 
   500: UNASSIGNED,
   501: UNASSIGNED,
@@ -228,7 +230,7 @@ Object.assign(ANM_INS_DATA, {
   'stop': {sig: '', args: [], desc: "Stops executing the script and waits for a switch to occur. (see [ref=anm:case])"},
   'stop2': {sig: '', args: [], wip: 1, desc: "This is [ref=anm:stop] except that it additionally clears an unknown bitflag..."},
   'case': {
-    sig: 'S', args: ['n'], desc: dedent`
+    sig: 'S', args: ['n'], desc: `
     A label used to externally control an ANM.
 
     [wip]TODO: show example code[/wip]
@@ -244,7 +246,7 @@ Object.assign(ANM_INS_DATA, {
     * If multiple switches occur on one frame, only the **last** takes effect.
     * [ref=anm:case](0) doesn't work due to how pending switch numbers are stored.
     * [wip][ref=anm:case](-1) appears to work differently from the others...[/wip]
-    * [wip]Can switching interrupt code that is not at a [ins=anm:stop]? Testing needed.[/wip]
+    * [wip]Can switching interrupt code that is not at a [ref=anm:stop]? Testing needed.[/wip]
   `},
   'wait': {sig: 'S', args: ['t'], desc: `Wait %1 frames.`},
   'v8-7': {sig: '', args: [], wip: 2, desc: `[wip=2]*dunno but it looks important lol*[/wip]`},
@@ -255,7 +257,7 @@ Object.assign(ANM_INS_DATA, {
 // =====================
 Object.assign(ANM_INS_DATA, {
   'jmp': {
-    sig: 'SS', args: ['dest', 't'], desc: dedent`
+    sig: 'SS', args: ['dest', 't'], desc: `
     Jumps to %1 and sets time to %2.  \`thanm\` accepts a label name for %1.
 
     [wip=2]Chinese wiki says some confusing recommendation about setting a=0, can someone explain to me?[/wip]
@@ -263,7 +265,7 @@ Object.assign(ANM_INS_DATA, {
     [wip]What is %1 relative to? Beginning of current script?[/wip]
   `},
   'jmpDec': {
-    sig: '$SS', args: ['x', 'dest', 't'], desc: dedent`
+    sig: '$SS', args: ['x', 'dest', 't'], desc: `
     Decrement %1 and then jump if it is \`> 0\`.  You can use this to repeat a loop a fixed number of times.
 
     [code]
@@ -322,7 +324,7 @@ Object.assign(ANM_INS_DATA, {
   'mathReduceAngle': {sig: '%', args: ['θ'], desc: 'Reduce an angle modulo `2*PI` into the range `[-PI, +PI]`.'},
   'mathCirclePos': {sig: '%%ff', args: ['x', 'y', 'θ', 'r'], desc: '`%1 = %4*cos(%3); %2 = %4*sin(%3);`'},
   'mathCirclePosRand': {
-    sig: '%%ff', args: ['x', 'y', 'rmin', 'rmax'], desc: dedent`
+    sig: '%%ff', args: ['x', 'y', 'rmin', 'rmax'], desc: `
     Uniformly draws a random radius \`r\` in the interval given by %3 and %4, and picks a random angle. (both using the anm RNG)
     Then basically computes [ref=anm:mathCirclePos] on those.
 
@@ -336,7 +338,7 @@ Object.assign(ANM_INS_DATA, {
 // =========================
 Object.assign(ANM_INS_DATA, {
   'sprite': {
-    sig: 'S', args: ['id'], desc: dedent`
+    sig: 'S', args: ['id'], desc: `
     Sets the image used by this VM to one of the sprites defined in the ANM file.
     A value of \`-1\` means to not use an image (this is frequently used with shape-drawing instructions).
     thanm also lets you use the sprite's name instead of an index.
@@ -347,11 +349,11 @@ Object.assign(ANM_INS_DATA, {
   `},
   // TODO: link to RNG concept page once it exists
   'spriteRand': {
-    sig: 'SS', args: ['a', 'b'], desc: dedent`
+    sig: 'SS', args: ['a', 'b'], desc: `
     Selects a random sprite from %1 (inclusive) to %1 + %2 (exclusive) using the animation RNG.
   `},
   'blendMode': {
-    sig: 'S', args: ['mode'], desc: dedent`
+    sig: 'S', args: ['mode'], desc: `
     Set color blending mode.
 
     Modes for [game=14]DDC[/game]: (other games may be different)
@@ -376,7 +378,7 @@ Object.assign(ANM_INS_DATA, {
   `},
   // TODO: Maybe link to RenderType enum.
   'renderMode': {
-    sig: 'S', args: ['t'], desc: dedent`
+    sig: 'S', args: ['t'], desc: `
     Determines how the ANM is rendered.
 
     Mode numbers can change between games, but the most popular modes have pretty stable numbers:
@@ -393,7 +395,7 @@ Object.assign(ANM_INS_DATA, {
   // TODO: link to layer concept.
   // TODO: link to stages of drawing.
   'layer': {
-    sig: 'S', args: ['n'], desc: dedent`
+    sig: 'S', args: ['n'], desc: `
     Sets the layer of the ANM.  [wip]This may or may not affect z-ordering? It's weird...[/wip]
 
     **Different layer numbers may behave differently!** Each game only has a finite number of layers, and certain groups of these layers
@@ -403,13 +405,44 @@ Object.assign(ANM_INS_DATA, {
   'flipX': {sig: '', args: [], desc: "Toggles mirroring on the x axis.  [wip](sounds straightforward, but which things are affected?[/wip]"},
   'flipY': {sig: '', args: [], desc: "Toggles mirroring on the y axis.  [wip](sounds straightforward, but which things are affected?[/wip]"},
   'resampleMode': {
-    sig: 'S', args: ['n'], desc: dedent`
+    sig: 'S', args: ['n'], desc: `
     Determines how a sprite is resampled when scale is greater or less than 1f.
 
     0 - \`D3DTEXF_LINE\` (linear interpolation; blurry)
     1 - \`D3DTEXF_POINT\` (nearest-point sampling; big pixels)
 
     [c=red]TODO: image[/c]
+  `},
+  // TODO: link to stages of drawing.
+  'originMode': {
+    sig: 'S', args: ['mode'], wip: 1, desc: `
+    Determines the origin used by the sprite.
+
+    | Value | Origin | Appropriate for |
+    | ---   | ---    | --- |
+    | 0     | Top left of target surface. | Border around the game. |
+    | 1     | Location of ECL's (0,0) in early rendering stages | Game elements always drawn at 640x480. |
+    | 2     | Location of ECL's (0,0) in late rendering stages | Game elements drawn at full res (e.g. boss HP). |
+
+    **If your sprite is correctly positioned at 640x480 resolution but not at larger resolutions,
+    you may want to check this setting.** (as well as [ref=anm:resolutionMode])
+
+    Typically, [ref=anm:layer] will automatically set this to a good default.
+    [wip]Clear guidelines are not yet known for when you are required to override that default.[/wip]
+
+    This only has an effect on root VMs. (for child animations, the root is always the parent's position)
+  `},
+  'resolutionMode': {
+    sig: 'S', args: ['n'], wip: 1, desc: `
+    Determines how certain aspects of the game are scaled to the current resolution.
+
+    [c=red]TODO: details[/c]
+
+    Typically, [ref=anm:layer] will automatically set this to a good default.
+    [wip]Clear guidelines are not yet known for when you are required to override that default.[/wip]
+
+    **If your sprite is correctly positioned at 640x480 resolution but not at larger resolutions,
+    you may want to check this setting.** (as well as [ref=anm:originMode])
   `},
 });
 
@@ -418,7 +451,7 @@ Object.assign(ANM_INS_DATA, {
 // ==================
 Object.assign(ANM_INS_DATA, {
   'pos': {
-    sig: 'fff', args: ['x', 'y', 'z'], desc: dedent`
+    sig: 'fff', args: ['x', 'y', 'z'], desc: `
     Sets the position of the animation.
 
     Believe it or not, even this instruction still has some mysteries!
@@ -427,86 +460,149 @@ Object.assign(ANM_INS_DATA, {
     [wip]The method of setting this bitflag, and its purpose, is unknown.[/wip]
   `},
   'rotate': {
-    sig: 'fff', args: ['rx', 'ry', 'rz'], desc: dedent`
+    sig: 'fff', args: ['rx', 'ry', 'rz'], desc: `
     Set the animation's rotation.  For 2D objects, only the z rotation matters.
     In some rare cases, x rotation has a special meaning for special drawing instructions.
     Animations rotate around their anchor point (see [ref=anm:anchor]).
 
     (if nothing seems to be happening when you call this, check your [ref=anm:renderMode] setting!)
   `},
-  'rotationSystem': {sig: 'S', args: ['mode'], desc: dedent`Sets the conventions for 3D rotation (e.g. XYZ, ZYX, etc.). [wip]TODO: Define the modes.[/wip]`},
+  'rotateAuto': {
+    sig: 'b', args: ['mode'], desc: `
+    Sets the auto-rotate flag, which causes sprites to rotate to face their direction of motion.
+  `},
+  'rotationSystem': {
+    sig: 'S', args: ['mode'], desc: `
+    Sets the conventions for 3D rotation (e.g. XYZ, ZYX, etc.).
+    [wip]TODO: Define the modes.[/wip]
+  `},
   'scale': {
-    sig: 'ff', args: ['sx', 'sy'], desc: dedent`
+    sig: 'ff', args: ['sx', 'sy'], desc: `
     Scales the ANM independently along the x and y axis.
     Animations grow around their anchor point (see [ref=anm:anchor]).
     Some special drawing instructions give the x and y scales special meaning.
   `},
   'scale2': {
-    sig: 'ff', args: ['s2x', 's2y'], wip: 1, desc: dedent`
+    sig: 'ff', args: ['sx', 'sy'], wip: 1, desc: `
     *As far as we know,* this is just an extra set of scale factors that apply separately (multiplicatively)
     to [ref=anm:scale].
 
     All special drawing instructions ignore this (which is a shame, because it means you still can't
     draw ellipses...).
   `},
+  'rgb': {
+    sig: 'SSS', args: ['r', 'g', 'b'], desc: `
+    Set a color which gets blended with this sprite.
+    Set white (255, 255, 255) to eliminate the effect.
+
+    ([wip]what's the blend operation?[/wip] Probably multiply, since white is the identity...)
+  `},
+  'alpha': {
+    sig: 'S', args: ['alpha'], desc: `
+    Set alpha (opacity) to a value 0-255.
+  `},
+  // TODO: link special drawing instructions
+  'rgb2': {
+    sig: 'SSS', args: ['r', 'g', 'b'], desc: `
+    Set a second color for gradients.  Gradients are used by certain special drawing instructions, and can be enabled
+    on regular sprites using [ref=anm:colorMode].
+  `},
+  'alpha2': {sig: 'S', args: ['alpha'], desc: `
+    Set a second alpha for gradients.  Gradients are used by certain special drawing instructions, and can be enabled
+    on regular sprites using [ref=anm:colorMode].
+  `},
+  'colorMode': {
+    sig: 'S', args: ['mode'], desc: `
+    Lets you enable gradients on regular sprites.
+
+    | Value | Effect |
+    |  ---  |   ---  |
+    |   0   | Only use color set by [ref=anm:rgb] and [ref=anm:alpha]. |
+    |   1   | Only use color set by [ref=anm:rgb2] and [ref=anm:alpha2]. |
+    |   2   | Horizontal gradient. |
+    |   3   | Vertical gradient. |
+
+    This has no effect on special drawing instructions.
+
+    For some strange reason, [ref=anm:rgb2Time] and [ref=anm:alpha2Time] automatically do [ref-notip=anm:colorMode](1).
+    Therefore, if you use those instructions, you must call this *afterwards,* not before.
+  `},
+  'angleVel': {sig: 'fff', args: ['ωx', 'ωy', 'ωz'], desc: `Set a constant angular velocity, in radians per frame.`},
+  'scaleGrowth': {sig: 'ff', args: ['gx', 'gy'], desc: `
+    Every frame, it increases the values of [ref=anm:scale] as \`sx -> sx + gx\` and \`sy -> sy + gy\`.
+    Basically, [ref=anm:scaleGrowth] is to [ref=anm:scale] as [ref=anm:angleVel] is to [ref=anm:rotate].
+    (they even share implemenation details...)
+  `},
+  // TODO: link to texture coordinates concept
+  'uVel': {sig: 'f', args: ['vel'], desc: `
+    Add %1 to the texture u coordinate every frame (in units of \`1 / total_image_width\`),
+    causing the displayed sprite to scroll horizontally through the image file.
+  `},
+  'vVel': {sig: 'f', args: ['vel'], desc: `
+    Add %1 to the texture v coordinate every frame (in units of \`1 / total_image_height\`),
+    causing the displayed sprite to scroll vertically through the image file.
+  `},
+  'uvScale': {sig: 'ff', args: ['uscale', 'vscale'], desc: "Scales texture uv coordinates. [wip]TODO: link to uv tutorial[/wip]"},
+  'anchor': {sig: 'ss', args: ['h', 'v'], desc: `
+    Set the horizontal and vertical anchoring of the sprite.  Notice the args are each two bytes.
+    For further fine-tuning see [ref=anm:anchorOffset].
+
+    | Args  |  0     |  1   | 2      |
+    | ---   | ---    | ---  | ---    |
+    |  %1   | Center | Left | Right  |
+    |  %2   | Center | Top  | Bottom |
+  `},
+  'anchorOffset': {sig: 'ss', args: ['dx', 'dy'], desc: `
+    Nudge the anchor point of the sprite right by %1 pixels and down by %2 pixels in the source image.
+    The anchor position serves as the center point for rotation and scaling.
+
+    [wip]TODO: image[/wip]
+  `},
+});
+
+// more timely basics
+Object.assign(ANM_INS_DATA, {
+  'posTime': {sig: 'SSfff', args: ['t', 'mode', 'x', 'y', 'z'], desc: `Over the next %1 frames, changes [ref=anm:pos] to the given values using interpolation mode %2.`},
+  'rotateTime': {sig: 'SSfff', args: ['t', 'mode', 'rx', 'ry', 'rz'], desc: `Over the next %1 frames, changes [ref=anm:rotate] to the given values using interpolation mode %2.`},
+  'scaleTime': {sig: 'SSff', args: ['t', 'mode', 'sx', 'sy'], desc: `Over the next %1 frames, changes [ref=anm:scale] to the given values using interpolation mode %2.`},
+  'scale2Time': {sig: 'SSff', args: ['t', 'mode', 'sx', 'sy'], desc: `Over the next %1 frames, changes [ref=anm:scale2] to the given values using interpolation mode %2.`},
+  'uvScaleTime': {sig: 'SSff', args: ['t', 'mode', 'uscale', 'vscale'], desc: `Over the next %1 frames, changes [ref=anm:uvScale] to the given values using interpolation mode %2.`},
+  'alphaTime': {sig: 'SSS', args: ['t', 'mode', 'alpha'], desc: `Over the next %1 frames, changes [ref=anm:alpha] to the given values using interpolation mode %2.`},
+  'alpha2Time': {sig: 'SSS', args: ['t', 'mode', 'alpha'], desc: `
+    Over the next %1 frames, changes [ref=anm:alpha2] to the given value using interpolation mode %2.
+
+    For some reason, this also does [ref=anm:colorMode](1), which can be a mild inconvenience.
+  `},
+  'rgbTime': {sig: 'SSSSS', args: ['t', 'mode', 'r', 'g', 'b'], desc: `Over the next %1 frames, changes [ref=anm:rgb] to the given value using interpolation mode %2.`},
+  'rgb2Time': {sig: 'SSSSS', args: ['t', 'mode', 'r', 'g', 'b'], desc: `
+    Over the next %1 frames, changes [ref=anm:rgb2] to the given value using interpolation mode %2.
+
+    For some reason, this also does [ref=anm:colorMode](1), which can be a mild inconvenience.
+  `},
+  'uVelTime': {sig: 'SSf', args: ['t', 'mode', 'vel'], wip: 1, desc: `[wip]Based on the code this is clearly a time version of [ref=anm:uVel], but it didn't work when I tested it...[/wip]`},
+  'vVelTime': {sig: 'SSf', args: ['t', 'mode', 'vel'], wip: 1, desc: `[wip]Based on the code this is clearly a time version of [ref=anm:vVel], but it didn't work when I tested it...[/wip]`},
+  'rotateTime2D': {
+    sig: 'SSf', args: ['t', 'mode', 'rz'], desc: `
+    A compact version of [ref=anm:rotateTime] that only interpolates the z rotation.
+
+    (note: [ref=anm:rotateTime2D] and [ref=anm:rotateTime] are tracked separately, but judging from the code, they **are not** meant
+    to be used together and their effects do not stack properly. [wip]somebody test plz[/wip])
+  `},
+  'alphaTime2': {
+    sig: 'SS', args: ['alpha', 'time'], wip: 1, desc: `
+    [wip]This is, uh, similar to but different from [ref=anm:alphaTime] somehow.[/wip]
+  `},
   'posBezier': {
     sig: 'Sfffffffff', args: ['t', 'x1', 'y1', 'z1', 'x2', 'y2', 'z2', 'x3', 'y3', 'z3'],
-    desc: dedent`
+    desc: `
     In %1 frames, moves to (%5,%6,%7) using Bezier interpolation.
 
     <!--
     according to images by @rue#1846 on the zuncode discord it looks like the last two numbers for floatTime mode 8
     are proportional to initial/final velocities; these may correspond to xyz1 and xyz3 but I'm too lazy to verify right now.
     -->
-    [wip]I am too lazy to document this right now.[/wip]  See https://thwiki.cc/脚本对照表/ANM/第四世代.
+    [wip]I am too lazy to document this right now.[/wip]  [See the chinese wiki](https://thwiki.cc/脚本对照表/ANM/第四世代).
   `},
-  'rgb': {
-    sig: 'SSS', args: ['r', 'g', 'b'], desc: dedent`
-    Set a color which gets blended with this sprite.
-    Set white (255, 255, 255) to eliminate the effect.
-
-    ([wip]what's the blend operation?[/wip] Probably multiply, since white is the identity...)
-  `},
-  'alpha': {sig: 'S', args: ['alpha'], desc: `Set alpha (opacity) to a value 0-255.`},
-  'rgb2': {sig: 'SSS', args: ['r', 'g', 'b'], desc: `Set a second color, which some drawing instructions use to create a gradient.`},
-  'alpha2': {sig: 'S', args: ['alpha'], desc: `Set alpha for the gradient's second color.`},
-
-  'angleVel': {sig: 'fff', args: ['ωx', 'ωy', 'ωz'], desc: `Set a constant angular velocity, in radians per frame.`},
-  'scaleGrowth': {sig: 'ff', args: ['gx', 'gy'], desc: dedent`
-    Every frame, it increases the values of [ref=anm:scale] as \`sx -> sx + gx\` and \`sy -> sy + gy\`.
-    Basically, [ref=anm:scaleGrowth] is to [ref=anm:scale] as [ref=anm:angleVel] is to [ref=anm:rotate].
-    (they even share implemenation details...)
-  `},
-  // TODO: link to texture coordinates concept
-  'uVel': {sig: 'f', args: ['vel'], desc: dedent`
-    Add %1 to the texture u coordinate every frame (in units of \`1 / total_image_width\`),
-    causing the displayed sprite to scroll horizontally through the image file.
-  `},
-  'vVel': {sig: 'f', args: ['vel'], desc: dedent`
-    Add %1 to the texture v coordinate every frame (in units of \`1 / total_image_height\`),
-    causing the displayed sprite to scroll vertically through the image file.
-  `},
-  'uvScale': {sig: 'ff', args: ['uscale', 'vscale'], desc: "Scales texture uv coordinates. [wip]TODO: link to uv tutorial[/wip]"},
-
-  'posTime': {sig: 'SSfff', args: ['t', 'mode', 'x', 'y', 'z'], desc: `Over the next %1 frames, changes the setting of [ref=anm:pos] to the given values using interpolation mode %2.`},
-  'rotateTime': {sig: 'SSfff', args: ['t', 'mode', 'rx', 'ry', 'rz'], desc: `Over the next %1 frames, changes the setting of [ref=anm:rotate] to the given values using interpolation mode %2.`},
-  'alphaTime': {sig: 'SSS', args: ['t', 'mode', 'alpha'], desc: `Over the next %1 frames, changes the setting of [ref=anm:alpha] to the given values using interpolation mode %2.`},
-  'alpha2Time': {sig: 'SSS', args: ['t', 'mode', 'alpha'], desc: `Over the next %1 frames, changes the setting of [ref=anm:alpha2] to the given value using interpolation mode %2.`},
-  'scaleTime': {sig: 'SSff', args: ['t', 'mode', 'sx', 'sy'], desc: `Over the next %1 frames, changes the setting of [ref=anm:scale] to the given values using interpolation mode %2.`},
-  'scale2Time': {sig: 'SSff', args: ['t', 'mode', 'sx', 'sy'], desc: `Over the next %1 frames, changes the setting of [ref=anm:scale2] to the given values using interpolation mode %2.`},
-  'rgbTime': {sig: 'SSSSS', args: ['t', 'mode', 'r', 'g', 'b'], desc: `Over the next %1 frames, changes the setting of [ref=anm:rgb] to the given value using interpolation mode %2.`},
-  'rgb2Time': {sig: 'SSSSS', args: ['t', 'mode', 'r', 'g', 'b'], desc: `Over the next %1 frames, changes the setting of [ref=anm:rgb2] to the given value using interpolation mode %2.`},
-  'uVelTime': {sig: 'SSf', args: ['t', 'mode', 'vel'], wip: 1, desc: `[wip]Based on the code this is clearly a time version of [ref=anm:uVel], but it didn't work when I tested it...[/wip]`},
-  'vVelTime': {sig: 'SSf', args: ['t', 'mode', 'vel'], wip: 1, desc: `[wip]Based on the code this is clearly a time version of [ref=anm:vVel], but it didn't work when I tested it...[/wip]`},
-  'rotateTime2D': {
-    sig: 'SSf', args: ['t', 'mode', 'rz'], desc: dedent`
-    A compact version of [ref=anm:rotateTime] that only interpolates the z rotation.
-
-    (note: [ref=anm:rotateTime2D] and [ref=anm:rotateTime] are tracked separately, but judging from the code, they **are not** meant
-    to be used together and their effects do not stack properly. [wip]somebody test plz[/wip])
-  `},
-
-  'alphaTime2': {sig: 'SS', args: ['alpha', 'time'], wip: 1, desc: `[wip]This is, uh, similar to but different from [ref=anm:alphaTime] somehow.[/wip]`},
 });
 
 // =================
@@ -514,17 +610,17 @@ Object.assign(ANM_INS_DATA, {
 // =================
 Object.assign(ANM_INS_DATA, {
   'drawRect': {
-    sig: 'ff', args: ['w', 'h'], desc: dedent`
+    sig: 'ff', args: ['w', 'h'], desc: `
     Draws a filled rectangle with the given dimensions.  No gradients.
     If you want to control the dimensions from ECL, consider passing in \`1.0\` and changing the anm's scale instead.
   `},
   'drawRectGrad': {
-    sig: 'ff', args: ['w', 'h'], desc: dedent`
+    sig: 'ff', args: ['w', 'h'], desc: `
     Same as [ref=anm:drawRect] but supports gradients ([ref=anm:rgb2]), which go from left to right.
   `},
   // TODO: find a way to "collapse" this by default
   'drawRectShadow': {
-    sig: 'ff', args: ['w', 'h'], desc: dedent`
+    sig: 'ff', args: ['w', 'h'], desc: `
     Don't use this.
 
     The implementation does the following:
@@ -539,18 +635,18 @@ Object.assign(ANM_INS_DATA, {
     (this works because both rectangles are drawn with the same position and anchoring)
   `},
   'drawRectShadowGrad': {
-    sig: 'ff', args: ['w', 'h'], desc: dedent`
+    sig: 'ff', args: ['w', 'h'], desc: `
     Same as [ref=anm:drawRect] but supports gradients ([ref=anm:rgb2]), which go from left to right.
   `},
   'drawRectBorder': {
-    sig: 'ff', args: ['w', 'h'], desc: dedent`
+    sig: 'ff', args: ['w', 'h'], desc: `
     Draws a 1-pixel thick outline of a rectangle.  No gradients.
 
     Just like [ref=anm:drawRect], you can control the dimensions externally using [ref=anm:scale].
     (the border will remain 1 pixel thick even when scaled)
   `},
   'drawLine': {
-    sig: 'ff', args: ['len', 'unused'], desc: dedent`
+    sig: 'ff', args: ['len', 'unused'], desc: `
     Draws a 1-pixel thick horizontal line.  The second argument is unused.  No gradients.
 
     If you want to change its direction, you must use [ref=anm:rotate].
@@ -562,7 +658,7 @@ Object.assign(ANM_INS_DATA, {
 // ============================
 Object.assign(ANM_INS_DATA, {
   'v8-418': {
-    sig: '', args: [], wip: 1, desc: dedent`
+    sig: '', args: [], wip: 1, desc: `
     A bizarre and **unused** (?) instruction that appears to select a new sprite in the image file based on the anm's coordinates.
 
     The code appears to do the following: [wip](expect inaccuracies!)[/wip]
@@ -585,6 +681,8 @@ for (const [key, value] of Object.entries(ANM_INS_DATA)) {
   if (value.sig && value.sig.length !== value.args.length) {
     window.console.error(`TABLE CORRUPT: anm ref ${key} has arg count mismatch`);
   }
+
+  value.desc = dedent(value.desc);
 
   if (value.wip) value.problems.push('docs');
 }

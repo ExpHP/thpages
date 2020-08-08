@@ -125,14 +125,18 @@ function generateOpcodeTable(game) {
     table += /* html */`<table class='ins-table'>`;
     // table += /* html */`<div class='ins-table-header'><th class="col-id"></th><th class='col-name'></th><th class='col-desc'></th></th>`;
 
-    for (let num=group.min; num<=group.max; ++num) {
-      const refObj = anmInsRefByOpcode(game, num);
+    for (let opcode=group.min; opcode<=group.max; ++opcode) {
+      const refObj = anmInsRefByOpcode(game, opcode);
       if (refObj == null) continue; // instruction doesn't exist
 
       // instruction exists, but our docs may suck
-      window.console.log(refObj);
       let {id, wip, problems} = refObj;
-      const ins = id === null ? DUMMY_DATA : anmInsDataByRef(id);
+      let ins = id === null ? DUMMY_DATA : anmInsDataByRef(id); // id null for UNASSIGNED
+      if (!ins) {
+        // instruction is assigned, but ref has no entry in table
+        window.console.error(`ref ${id} is assigned to anm opcode ${game}:${opcode} but has no data`);
+        ins = DUMMY_DATA;
+      }
       wip = Math.max(wip, ins.wip || 0);
       problems = [...problems, ...(ins.problems || [])];
 
@@ -140,7 +144,7 @@ function generateOpcodeTable(game) {
         documented += 1;
       }
       total += 1;
-      table += generateOpcodeTableEntry(game, ins, num);
+      table += generateOpcodeTableEntry(game, ins, opcode);
     }
 
     table += "</table>";
