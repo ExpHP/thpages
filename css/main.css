@@ -222,9 +222,16 @@ tr {
   max-width: 320px;
   z-index: 100;
   font-size: 14px;
-  max-height: 13em;
+}
+#tip .contents {
+  max-height: 10em;
   overflow-y: hidden;
   overflow-x: hidden;
+}
+#tip .heading {
+  font-size: 1.1em;
+  margin-top: 0.8em;
+  margin-bottom: 0em;
 }
 #tip .omitted-info {
   opacity: 75%;

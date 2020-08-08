@@ -267,9 +267,17 @@ table, th, td, tr {
   font-size: 14px;
 
   // Put a hard limit on tip height even if we forget to curate a tip's content
-  max-height: 13em;
-  overflow-y: hidden;
-  overflow-x: hidden; // otherwise overflow-y: hidden makes a horizontal scrollbar. Yes.
+  .contents {
+    max-height: 10em;
+    overflow-y: hidden;
+    overflow-x: hidden; // otherwise overflow-y: hidden makes a horizontal scrollbar. Yes.
+  }
+
+  .heading {
+    font-size: 1.1em;
+    margin-top: 0.8em;
+    margin-bottom: 0em;
+  }
 
   .omitted-info {
     &::after {

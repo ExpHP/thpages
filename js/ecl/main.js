@@ -254,5 +254,5 @@ function generateAnmTip(ins, ref) {
   let [desc, omittedInfo] = handleTipHide(ins.desc, true);
   desc = postprocessAnmInsDesc(desc, ins, true);
   const siggy = generateAnmInsSiggy(ins, getRefNameKey(ref));
-  return {contents: `<br>${siggy}<br><hr>${desc}`, omittedInfo};
+  return {heading: siggy, contents: desc, omittedInfo};
 }

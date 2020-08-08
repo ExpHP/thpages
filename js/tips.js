@@ -17,12 +17,13 @@ export function initTips() {
  * @param {object} tip
  * @param {string} tip.contents
  * @param {boolean} tip.omittedInfo
+ * @param {?string} tip.heading
  */
-export function registerTip(key, {contents, omittedInfo}) {
+export function registerTip(key, {contents, omittedInfo, heading}) {
   if (typeof key !== 'string') throw new TypeError('expected string key');
   if (contents === undefined) throw new TypeError('missing contents');
   if (omittedInfo === undefined) throw new TypeError('missing omittedInfo');
-  TIP_REGISTRY[key] = {contents, omittedInfo};
+  TIP_REGISTRY[key] = {contents, omittedInfo, heading};
 }
 
 export function getTip(key) {
@@ -43,6 +44,9 @@ function showTip(tip, $targ, $realTarg) {
   $tip.style.display = "block";
 
   let tipHtml = `<div class="contents">${tip.contents}</div>`;
+  if (tip.heading) {
+    tipHtml = `<div class="heading">${tip.heading}</div>` + tipHtml;
+  }
   if (tip.omittedInfo) {
     tipHtml += `<div class="omitted-info"></div>`;
   }
@@ -69,7 +73,9 @@ function tipOut(e) {
 }
 
 function getAncestorTip($targ) {
+  // Embedded tips are used for short strings. ([tip] tags)
   const [embedText, $embedElem] = getAncestorElementData($targ, "tip");
+  // Registered tips are more elaborate and can have headings and etc.
   const [refKey, refElem] = getAncestorElementData($targ, "tipId");
   const referenced = [TIP_REGISTRY[refKey], refElem];
 
@@ -81,8 +87,7 @@ function getAncestorTip($targ) {
   // else use a registered tip
   if (referenced[1]) return referenced;
   // no tip
-  const tip = {contents: "", omittedInfo: false};
-  return [tip, null];
+  return [null, null];
 }
 
 function getAncestorElementData($elem, key) {
