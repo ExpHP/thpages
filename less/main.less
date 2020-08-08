@@ -252,7 +252,7 @@ table, th, td, tr {
   padding: 5px;
 }
 
-.tip {
+#tip {
   position: absolute;
   display: none;
   padding-left: 7px;
@@ -299,32 +299,30 @@ table, th, td, tr {
   .ins-table-header { display: table-row; }
   .ins-table-entry { display: table-row; }
 
+  .col-name .anm-ins-siggy-wrapper .punct { color: #ffffff30; }
+
   td { vertical-align: text-top; }
+}
 
-  .ins-table-entry .col-name {
-    font-family: @monospace;
+.anm-ins-siggy-wrapper {
+  font-family: @monospace;
 
-    // (couldn't figure out how to get a hanging indent in the cell
-    //  without adding this div around the cell's contents...)
-    .hanging-indent-wrapper {
-      text-indent: -2em;
-      margin-left: 2em;
-    }
+  // (couldn't figure out how to get a hanging indent in the cell
+  //  without adding this div around the cell's contents...)
+  text-indent: -2em;
+  margin-left: 2em;
 
-    .punct { color: #ffffff30; }
+  .ins-name {
+    &[data-wip="0"] { color: @text-color; }
+    font-weight: bold;
+    font-size: 1.1em;
+  }
 
-    .ins-name {
-      &[data-wip="0"] { color: @text-color; }
-      font-weight: bold;
-      font-size: 1.1em;
-    }
-
-    .ins-params {
-      font-size: 0.91em;
-      // .type.mut { font-weight: bold; } // eh.
-      .type.float { color: #32e875; }
-      .type.int { color: #53ceff; }
-    }
+  .ins-params {
+    font-size: 0.91em;
+    // .type.mut { font-weight: bold; } // eh.
+    .type.float { color: #32e875; }
+    .type.int { color: #53ceff; }
   }
 }
 

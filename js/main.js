@@ -1,7 +1,11 @@
 import {ext} from "./showdown-ext.js";
-import {INDEX, ERROR, EMBED_LOAD_ERROR} from "./index.js";
+import {INDEX, ERROR} from "./index.js";
 import {initAnm} from "./ecl/main.js";
+import {initTips} from "./tips.js";
 
+/**
+ * Do early initialization before page-specific scripts run.
+ */
 export function init() {
   window.onContentLoad = function(clb) {
     contentLoadListeners.push(clb);
@@ -18,20 +22,21 @@ export const MD = new showdown.Converter({
   extensions: [ext],
   tables: true,
   strikethrough: true,
+  literalMidWordUnderscores: true,
 });
 const $content = document.querySelector(".content-wrapper");
 export const $scriptContent = document.querySelector(".script-wrapper");
 const cache = {};
 let active = "";
-let $tip = null;
-let $activeTipTarget = null;
+export const NAMES = {};
+
 const contentLoadListeners = [];
 
 function contentLoaded() {
   for (let i=0; i<contentLoadListeners.length; ++i) {
     contentLoadListeners[i]();
   }
-  contentLoadListeners.splice(0, contentLoadListeners.length);
+  contentLoadListeners.length = 0;
 }
 
 function initNavigation() {
@@ -314,7 +319,7 @@ function initResize() {
   resize();
 }
 
-function getElementData($elem, key) {
+function getAncestorElementData($elem, key) {
   do {
     if (typeof $elem.dataset[key] != "undefined") {
       return [$elem.dataset[key], $elem];
@@ -323,46 +328,9 @@ function getElementData($elem, key) {
   return ["", null];
 }
 
-function initTips() {
-  $tip = document.querySelector(".tip");
-  document.body.addEventListener("mouseover", tipIn);
-  document.body.addEventListener("mouseout", tipOut);
-}
-
-function tipIn(e) {
-  const [tip, $targ] = getTip(e.target);
-  if (tip) showTip(tip, $targ, e.target);
-}
-
-function showTip(tip, $targ, $realTarg) {
-  $activeTipTarget = $realTarg;
-  $tip.style.display = "block";
-  $tip.innerHTML = tip;
-  const tipRect = $tip.getBoundingClientRect();
-  const rect = $targ.getBoundingClientRect();
-  const top = rect.top - /* rect.height/2 - */ tipRect.height + window.scrollY;
-  let left = rect.left + rect.width/2 - tipRect.width/2;
-  if (left < 0) left = 0;
-  const max = document.body.offsetWidth - tipRect.width;
-  if (left > max) left = max;
-  $tip.style.top = top + "px";
-  $tip.style.left = left + "px";
-}
-
-function tipOut(e) {
-  if (e.target == $activeTipTarget) {
-    $tip.style.display = "none";
-    $activeTipTarget = null;
-  }
-}
-
-function getTip($targ) {
-  return getElementData($targ, "tip");
-}
-
 function initEmbeds() {
   document.addEventListener("click", (e) => {
-    let [url, $elem] = getElementData(e.target, "video");
+    let [url, $elem] = getAncestorElementData(e.target, "video");
     if ($elem != null) {
       $elem = $elem.firstChild; // the wrapper consists of 2 elements
       $elem.removeChild($elem.firstChild);
@@ -373,7 +341,7 @@ function initEmbeds() {
       $video.appendChild($source);
       $elem.appendChild($video);
     }
-    [url, $elem] = getElementData(e.target, "yt");
+    [url, $elem] = getAncestorElementData(e.target, "yt");
     if ($elem != null) {
       $elem = $elem.firstChild;
       $elem.removeChild($elem.firstChild);

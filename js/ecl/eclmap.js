@@ -35,6 +35,8 @@ function parseEclmap(txt, name) {
 }
 
 async function autoEclmap(game) {
+  game; // eventually we should be matching on this to pick the right file...
+
   const res = await window.fetch(`eclmap/anmmap/v8.anmm`);
   if (res.ok) {
     const txt = await res.text();
@@ -43,15 +45,10 @@ async function autoEclmap(game) {
 }
 
 class Eclmap {
+  // FIXME: What the fuck is the public API of this thing, there's so many public methods that should not be...
   constructor(txt) {
     this.kind = null;
 
-    // old eclmaps
-    this.opcodes = {};
-    this.timeline_opcodes = {};
-    this.globals = {};
-
-    // new eclmaps
     this.ins = [];
     this.timeline_ins = [];
     this.var = [];
@@ -70,12 +67,6 @@ class Eclmap {
   }
   getMnemonic(num) {
     const ent = this.seqmapGet(this.ins, num);
-    if (ent != null) return ent.name;
-
-    return `ins_${num}`;
-  }
-  getTimelineMnemonic(num) {
-    const ent = this.seqmapGet(this.timeline_ins, num);
     if (ent != null) return ent.name;
 
     return `ins_${num}`;

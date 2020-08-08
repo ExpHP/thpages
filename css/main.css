@@ -211,7 +211,7 @@ tr {
   border-collapse: collapse;
   padding: 5px;
 }
-.tip {
+#tip {
   position: absolute;
   display: none;
   padding-left: 7px;
@@ -259,33 +259,31 @@ tr {
 .ins-table .ins-table-entry {
   display: table-row;
 }
+.ins-table .col-name .anm-ins-siggy-wrapper .punct {
+  color: #ffffff30;
+}
 .ins-table td {
   vertical-align: text-top;
 }
-.ins-table .ins-table-entry .col-name {
+.anm-ins-siggy-wrapper {
   font-family: Monaco, Bitstream Vera Sans Mono, Lucida Console, Terminal, monospace;
-}
-.ins-table .ins-table-entry .col-name .hanging-indent-wrapper {
   text-indent: -2em;
   margin-left: 2em;
 }
-.ins-table .ins-table-entry .col-name .punct {
-  color: #ffffff30;
-}
-.ins-table .ins-table-entry .col-name .ins-name {
+.anm-ins-siggy-wrapper .ins-name {
   font-weight: bold;
   font-size: 1.1em;
 }
-.ins-table .ins-table-entry .col-name .ins-name[data-wip="0"] {
+.anm-ins-siggy-wrapper .ins-name[data-wip="0"] {
   color: #f0e7d5;
 }
-.ins-table .ins-table-entry .col-name .ins-params {
+.anm-ins-siggy-wrapper .ins-params {
   font-size: 0.91em;
 }
-.ins-table .ins-table-entry .col-name .ins-params .type.float {
+.anm-ins-siggy-wrapper .ins-params .type.float {
   color: #32e875;
 }
-.ins-table .ins-table-entry .col-name .ins-params .type.int {
+.anm-ins-siggy-wrapper .ins-params .type.int {
   color: #53ceff;
 }
 .video-load {

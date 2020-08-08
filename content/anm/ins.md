@@ -2,7 +2,6 @@
 
 blah blah
 
-[html]
 <!--
 Select game version:
 <select class='ecl-table-game-select'>
@@ -26,7 +25,6 @@ Eclmap for instruction names:<br><br>
 <button class="ecl-table-btt">Get table</button>
 -->
 <div class='ecl-table-wrapper'></div>
-[/html]
 
 [script]
 onContentLoad(async function() {
@@ -72,7 +70,7 @@ onContentLoad(async function() {
 //        target.innerHTML = generateOpcodeTable(game);
 //        initTableNavigation();
 //    } else {
-        await loadEclmap(null, "?17", 17);
+        await loadEclmapAndSetGame(null, "?17", 17);
         target.innerHTML = generateOpcodeTable(17);
         initTableNavigation();
 //    }

@@ -1,16 +1,13 @@
 import {getCurrentMap, loadEclmap} from './eclmap.js';
 import {GROUPS_V8, ANM_INS_DATA, ANM_BY_OPCODE, DUMMY_DATA} from './ins.js';
+import {registerRefTip, getRefNameKey} from '../ref.js';
 import {MD} from '../main.js';
+import globalNames from '../names.js';
 
-function getGroups(game) {
-  return GROUPS_V8;
-}
-
-export function initAnm() {
-  // FIXME HACK to make available to ins.md
-  window.generateOpcodeTable = generateOpcodeTable;
-  window.loadEclmap = loadEclmap;
-}
+/**
+ * A game number as a string with no period, e.g. "14" or "125".
+ * @typedef {string} Game
+ */
 
 const ARGTYPES_TEXT = {
   "S": "int",
@@ -28,6 +25,86 @@ const ARGTYPES_HTML = {
   "f": /* html */`<span class="type float">float</span>`,
   "%": /* html */`<span class="type float mut">float&</span>`,
 };
+
+export function initAnm() {
+  // FIXME HACK to make available to ins.md
+  window.generateOpcodeTable = generateOpcodeTable;
+  window.loadEclmapAndSetGame = loadEclmapAndSetGame;
+
+  initDefaultOpcodeNames(globalNames);
+
+  for (const [id, ins] of Object.entries(ANM_INS_DATA)) {
+    registerRefTip('anm:' + id, generateAnmTip(ins, id));
+  }
+}
+
+function getGroups(game) {
+  return GROUPS_V8;
+}
+
+function getOpcodeNameKey(game, opcode) {
+  return `anm:${game}-${opcode}`;
+}
+
+// Sets `ins_n` names for everything.
+function initDefaultOpcodeNames(names) {
+  for (const game of Object.keys(ANM_BY_OPCODE)) {
+    for (const opcodeStr of Object.keys(ANM_BY_OPCODE[game])) {
+      const opcode = parseInt(opcodeStr, 10);
+      const key = getOpcodeNameKey(game, opcode);
+      names.set(key, `ins_${opcode}`);
+    }
+  }
+}
+
+/**
+ * Loads names from an anmmap.
+ * @param {module} names Object to be updated.
+ * @param {Game} game
+ * @param {Eclmap} map
+ */
+function setOpcodeNamesFromAnmmap(names, game, map) {
+  for (const opcodeStr of Object.keys(ANM_BY_OPCODE[game])) {
+    const opcode = parseInt(opcodeStr, 10);
+    const key = getOpcodeNameKey(game, opcode);
+    const name = map.getMnemonic(opcode);
+    if (name) {
+      names.set(key, name);
+    }
+  }
+}
+
+/**
+ * Make <code>anm:</code> refs derive their names from a given game's opcodes where available.
+ * @param {module} names Object to be updated.
+ * @param {Game} game
+ */
+function linkRefNamesToGameOpcodes(names, game) {
+  for (const [opcodeStr, entry] of Object.entries(ANM_BY_OPCODE[game])) {
+    if (entry.id == null) continue;
+    const opcode = parseInt(opcodeStr, 10);
+    const opcodeKey = getOpcodeNameKey(game, opcode);
+    const refKey = getRefNameKey(entry.id);
+    names.setAlias(refKey, opcodeKey);
+  }
+}
+
+/**
+ * Load an anmmap and set things up to resolve names from it whenever possible.
+ *
+ * (does not fix names in existing HTML however.  Do that yourself by calling names.transformHtml...)
+ * @param {?string} file
+ * @param {string} name Used for cacheing I think?
+ * @param {Game} game Selects default file when file arg is null.
+ */
+export async function loadEclmapAndSetGame(file, name, game) {
+  await loadEclmap(file, name, game);
+  const map = getCurrentMap();
+  if (map !== null) {
+    setOpcodeNamesFromAnmmap(globalNames, game, map);
+    linkRefNamesToGameOpcodes(globalNames, game);
+  }
+}
 
 function generateOpcodeTable(game) {
   let base = `Current table: [game=${game}] version ${game}[/game][br]`;
@@ -52,6 +129,7 @@ function generateOpcodeTable(game) {
       if (refObj == null) continue; // instruction doesn't exist
 
       // instruction exists, but our docs may suck
+      window.console.log(refObj);
       let {id, wip, problems} = refObj;
       const ins = id === null ? DUMMY_DATA : anmInsDataByRef(id);
       wip = Math.max(wip, ins.wip || 0);
@@ -61,7 +139,7 @@ function generateOpcodeTable(game) {
         documented += 1;
       }
       total += 1;
-      table += generateOpcodeTableEntry(ins, num);
+      table += generateOpcodeTableEntry(game, ins, num);
     }
 
     table += "</table>";
@@ -72,24 +150,21 @@ function generateOpcodeTable(game) {
   return MD.makeHtml(base) + navigation + table;
 }
 
-function getOpcodeName(opcode) {
-  const map = getCurrentMap();
-  if (map !== null) {
-    return map.getMnemonic(opcode);
-  } else {
-    return `ins_${opcode}`;
-  }
-}
-
-function generateOpcodeTableEntry(ins, opcode) {
+function generateAnmInsSiggy(ins, nameKey) {
   const lParen = /* html */`<span class="punct">${"("}</span>`;
   const rParen = /* html */`<span class="punct">${")"}</span>`;
-  const name = /* html */`<span class="ins-name" data-wip="${ins.wip}">${getOpcodeName(opcode)}</span>`;
   const params = /* html */`<span class="ins-params">${generateAnmInsParameters(ins)}</span>`;
+  let name = globalNames.getHtml(nameKey);
+  name = /* html */`<span class="ins-name" data-wip="${ins.wip}">${name}</span>`;
+  return /* html */`<div class="anm-ins-siggy-wrapper">${name}${lParen}${params}${rParen}</div>`;
+}
+
+function generateOpcodeTableEntry(game, ins, opcode) {
+  const nameKey = getOpcodeNameKey(game, opcode);
   return /* html */`
   <tr class="ins-table-entry">
     <td class="col-id">${opcode}</td>
-    <td class="col-name"><div class="hanging-indent-wrapper">${name}${lParen}${params}${rParen}</div></td>
+    <td class="col-name">${generateAnmInsSiggy(ins, nameKey)}</td>
     <td class="col-desc">${generateAnmInsDesc(ins)}</td>
   </tr>
   `;
@@ -116,8 +191,6 @@ function generateAnmInsParameters(ins) {
 }
 
 function generateAnmInsDesc(ins, notip=false) {
-  if (ins == null) return "<span style='color:gray'>No description available.</span>";
-
   let ret = ins.desc;
   for (let i=0; i<ins.sig.length; i++) {
     ret = ret.replace(new RegExp("%"+(i+1)+"(?=[^0-9])", "g"), "[tip=Parameter "+(i+1)+", "+ARGTYPES_TEXT[ins.sig[i]]+"]`"+ins.args[i]+"`[/tip]");
@@ -128,22 +201,11 @@ function generateAnmInsDesc(ins, notip=false) {
   return MD.makeHtml(ret);
 }
 
-// export function getOpcodeTip(ins) {
-//   return escapeTip(`<br><b>${getOpcodeName(ins.number, ins.documented)}(${generateOpcodeParameters(ins)})</b><br><hr>${generateOpcodeDesc(ins, true)}`);
-// }
-
-// function escapeTip(tip) {
-//   return tip.replace(/"/g, "&quot;").replace(/'/g, "&apos;").replace(/_/g, "_").replace(/</g, "&lt;").replace(/>/g, "&gt;"); // .replace(/\[ins=/g, "[ins_notip=");
-// }
-
 function anmInsRefByOpcode(game, opcode) {
-  let table = ANM_BY_OPCODE[game];
-  while (table != null && table.ins[opcode] == null) {
-    table = table.inherit;
-  }
-  if (table == null) return null;
+  const entry = ANM_BY_OPCODE[game][opcode];
+  if (entry === undefined) return null;
 
-  const out = table.ins[opcode];
+  const out = Object.assign({}, entry);
   out.wip = out.wip || 0;
   out.problems = out.problems || [];
   if (out.wip) {
@@ -152,16 +214,25 @@ function anmInsRefByOpcode(game, opcode) {
   return out;
 }
 
-// Get instruction data for an 'anm:' ref id.
-function anmInsDataByRef(ref) {
+function stripRefPrefix(ref) {
   if (ref.startsWith("anm:")) {
     ref = ref.substring(4);
   }
+  return ref;
+}
 
-  const out = ANM_INS_DATA[ref];
+// Get instruction data for an 'anm:' ref id.
+function anmInsDataByRef(ref) {
+  const out = ANM_INS_DATA[stripRefPrefix(ref)];
   if (out == null) {
     window.console.warn(`bad anm crossref: ${ref}`);
     return null;
   }
   return out;
+}
+
+function generateAnmTip(ins, ref) {
+  const desc = generateAnmInsDesc(ins, true);
+  const siggy = generateAnmInsSiggy(ins, getRefNameKey(ref));
+  return `<br>${siggy}<br><hr>${desc}`;
 }

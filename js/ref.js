@@ -1,14 +1,5 @@
-import {ANM_INS_DATA} from "./ecl/ins.js";
-
-function splitNamespace(id) {
-  let [namespace, rest] = id.split(':', 2);
-  if (rest === undefined) {
-    rest = namespace;
-    return [null, rest];
-  } else {
-    return [namespace, rest];
-  }
-}
+import {TIP_REGISTRY} from './tips.js';
+import globalNames from './names.js';
 
 // function getRefTip(id) {
 //   const [ns, rest] = splitNamespace(id);
@@ -19,23 +10,66 @@ function splitNamespace(id) {
 //   return null;
 // }
 
+// FIXME tips should be stored as Elements or maybe NodeLists, i dunno what's idiomatic, just not strings
+/**
+ * Set tooltip inner HTML for a reference.
+ *
+ * @param {string} id Ref id.
+ * @param {string} tip Tip HTML string.
+ */
+export function registerRefTip(id, tip) {
+  TIP_REGISTRY[getRefTipKey(id)] = tip;
+}
+
+/**
+ * Get tooltip inner HTML for a reference, if it has any.
+ *
+ * @param {string} id Ref id.
+ * @return {?string}
+ */
+export function getRefTip(id) {
+  return TIP_REGISTRY[getRefTipKey(id)] || null;
+}
+
+/**
+ * Get tooltip key of a reference.
+ *
+ * @param {string} id Ref id.
+ * @return {string} Tooltip id.
+ */
+export function getRefTipKey(id) {
+  return 'ref:' + id;
+}
+
+/**
+ * Get name key of a reference.
+ *
+ * @param {string} id Ref id.
+ * @return {string} Name id.
+ */
+export function getRefNameKey(id) {
+  return 'ref:' + id;
+}
+
+/**
+ * Get HTML string to substitute in for a <code>[ref=...]</code>.
+ *
+ * @param {object} args
+ * @param {string} args.id Reference id.
+ * @param {boolean} args.tip Include a tooltip.
+ * @param {boolean} args.url Include a hyperlink.
+ * @return {string}
+ */
 export function getRefHtml({id, tip, url}) {
-  if (id.startsWith('anm:')) {
-
-  }
-
-  const urlStr = "a";
-  const tipStr = "b";
-  const name = "c";
-
-  let out = name;
-  if (urlStr !== null) {
-    out = `<a href="${urlStr}">${out}</a>`;
-  }
-  if (tipStr) {
-    out = `<instr data-tip="${tipStr}">${out}</instr>`;
+  let out = globalNames.getHtml(getRefNameKey(id));
+  if (tip) {
+    out = `<instr data-tip-id="${getRefTipKey(id)}">${out}</instr>`;
   } else {
     out = `<instr>${out}</instr>`;
+  }
+  if (url) {
+    // TODO
+    // out = `<a href="${parts.url}">${out}</a>`;
   }
   return out;
 }

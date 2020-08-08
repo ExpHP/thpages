@@ -1,6 +1,7 @@
-import {loadEclmap} from "./ecl/eclmap.js";
+import {loadEclmapAndSetGame} from "./ecl/main.js";
 import {MD, highlightCode, $scriptContent} from "./main.js";
 import {getRefHtml} from "./ref.js";
+import globalNames from './names.js';
 import dedent from "./lib/dedent.js";
 
 export const ext = function() {
@@ -43,11 +44,17 @@ export const ext = function() {
     replace: function(match, content) {
       let ret = "<hljs>"+dedent(highlightCode(content))+"</hljs>";
       // This is some quality jank right here, caused by the fact that I could not find a way to make hljs not escape this html
+      ret = ret.replace(/&lt;instr data-tip-id=<span class="hljs-string">(.*?)<\/span>&gt;(.*?)&lt;\/instr&gt;/g, (match, tip, content) => {
+        return `<span data-tip-id=${tip.replace(/&amp;/g, "&")}>${content}</span>`;
+      });
       ret = ret.replace(/&lt;instr data-tip=<span class="hljs-string">(.*?)<\/span>&gt;(.*?)&lt;\/instr&gt;/g, (match, tip, content) => {
         return `<span data-tip=${tip.replace(/&amp;/g, "&")}>${content}</span>`;
       });
       ret = ret.replace(/&lt;instr&gt;(.*?)&lt;\/instr&gt;/g, (match, content) => {
         return `<span>${content}</span>`;
+      });
+      ret = ret.replace(/&lt;a href=<span class="hljs-string">(.*?)<\/span>&gt;(.*?)&lt;\/a&gt;/g, (match, url, content) => {
+        return `<a href=${url.replace(/&amp;/g, "&")}>${content}</a>`;
       });
       ret = ret.replace(/\\\\/g, "\\");
       return ret;
@@ -105,13 +112,6 @@ export const ext = function() {
     },
   };
 
-  // disable markdown in region
-  const html = {
-    type: "lang",
-    regex: /\[html\]([^]*?)\[\/html\]/g,
-    replace: "$1",
-  };
-
   const script = {
     type: "lang",
     regex: /\[script\]([^]*?)\[\/script\]/g,
@@ -122,27 +122,6 @@ export const ext = function() {
       return "";
     },
   };
-
-  // const ins = {
-  //   type: "lang",
-  //   regex: /\[ins=(.*?),(.*?)\]/g,
-  //   replace: function(match, num, game) {
-  //     const ins = getOpcode(game, parseInt(num));
-  //     if (ins == null) return "`opcode_error_"+num+"`";
-  //     const tip = getOpcodeTip(ins);
-  //     const name = getOpcodeName(ins.number, ins.documented);
-  //     return `<instr data-tip="${tip}">${name}</instr>`;
-  //   },
-  // };
-  // const insNotip = {
-  //   type: "lang",
-  //   regex: /\[ins_notip=(.*?),(.*?)\]/g,
-  //   replace: function(match, num, game) {
-  //     const ins = getOpcode(parseFloat(game), parseInt(num));
-  //     if (ins == null) return "`opcode_error_"+num+"`";
-  //     return `<instr>${getOpcodeName(ins.number, ins.documented)}</instr>`;
-  //   },
-  // };
 
   const ref = {
     type: "lang",
@@ -159,34 +138,12 @@ export const ext = function() {
     type: "lang",
     regex: /\[ref-notip=(.*?)\]/g,
     replace: function(match, id) {
-      const ref = getRefHtml({id: id, tip: true, url: true});
+      const ref = getRefHtml({id: id, tip: false, url: true});
       if (ref == null) return `\`${match}\``;
 
       return ref;
     },
   };
-
-  // const variable = {
-  //   type: "lang",
-  //   regex: /\[var=(-?.*?),(.*?)\]/g,
-  //   replace: function(match, num, game) {
-  //     const variable = getVar(normalizeGameVersion(game), parseInt(num));
-  //     if (variable == null) return "<instr>variable_error_"+num+"</instr>";
-  //     const tip = getVarTip(variable);
-  //     const name = getVarName(num, variable.documented);
-  //     return `<instr data-tip="${tip}">${name}</instr>`;
-  //   },
-  // };
-
-  // const variableNotip = {
-  //   type: "lang",
-  //   regex: /\[var_notip=(-?.*?),(.*?)\]/g,
-  //   replace: function(match, num, game) {
-  //     const variable = getVar(normalizeGameVersion(game), parseInt(num));
-  //     if (variable == null) return `<instr>variable_error_${num}</instr>`;
-  //     return `<instr>${getVarName(num, variable.documented)}</instr>`;
-  //   },
-  // };
 
   const tip = {
     type: "lang",
@@ -198,10 +155,11 @@ export const ext = function() {
     // this must always wait at least some time, to make sure that the function this was called from finished running...
     await new Promise((resolve) => setTimeout(resolve, 1));
     game = parseFloat(game);
-    await loadEclmap(null, "?"+game, game);
+    await loadEclmapAndSetGame(null, "?"+game, game);
     const $replace = document.querySelector(`#require-eclmap-${id}`);
     if ($replace != null) {
       $replace.innerHTML = MD.makeHtml(content);
+      globalNames.transformHtml($replace);
     }
   }
 
@@ -254,6 +212,6 @@ export const ext = function() {
 
   return [
     eclmap, yt, hr, br, ts, img, imgSmall, ref, refNotip,
-    code, title, c, game, rawGame, html, script, tip, video, flex, flex2, wip,
+    code, title, c, game, rawGame, script, tip, video, flex, flex2, wip,
   ];
 };

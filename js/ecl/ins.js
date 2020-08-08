@@ -3,6 +3,10 @@ import dedent from "../lib/dedent.js";
 export const UNASSIGNED = {id: null, wip: 2};
 export const UNKNOWN_SIG = {};
 
+// ==========================================================================
+// ==========================================================================
+// ===================    LOOKUP TABLE BY OPCODE    =========================
+
 export const GROUPS_V8 = [
   {min: 0, max: 299, title: 'System'},
   {min: 300, max: 499, title: 'General'},
@@ -11,176 +15,164 @@ export const GROUPS_V8 = [
 ];
 
 const INS_12 = {
-  inherit: null,
-  ins: {
-    67: {id: 'type'},
-    68: {id: 'layer'},
-    106: {id: 'scaleUV', wip: 1},
-    102: {id: 'drawRect', wip: 1},
-  },
+  67: {id: 'anm:type'},
+  68: {id: 'anm:layer'},
+  106: {id: 'anm:scaleUV', wip: 1},
+  102: {id: 'anm:drawRect', wip: 1},
 };
 
 const INS_14 = {
-  inherit: null,
-  ins: {
-    0: {id: 'anm:nop'},
-    1: {id: 'anm:delete'},
-    2: {id: 'anm:static'},
-    3: {id: 'anm:stop'},
-    4: {id: 'anm:stop2'},
-    5: {id: 'anm:case'},
-    6: {id: 'anm:wait'},
-    7: {id: 'anm:v8-7'},
+  0: {id: 'anm:nop'},
+  1: {id: 'anm:delete'},
+  2: {id: 'anm:static'},
+  3: {id: 'anm:stop'},
+  4: {id: 'anm:stop2'},
+  5: {id: 'anm:case'},
+  6: {id: 'anm:wait'},
+  7: {id: 'anm:v8-7'},
 
-    100: {id: 'anm:set'},
-    101: {id: 'anm:setF'},
-    102: {id: 'anm:add'},
-    103: {id: 'anm:addF'},
-    104: {id: 'anm:sub'},
-    105: {id: 'anm:subF'},
-    106: {id: 'anm:mul'},
-    107: {id: 'anm:mulF'},
-    108: {id: 'anm:div'},
-    109: {id: 'anm:divF'},
-    110: {id: 'anm:mod'},
-    111: {id: 'anm:modF'},
-    112: {id: 'anm:add3'},
-    113: {id: 'anm:addF3'},
-    114: {id: 'anm:sub3'},
-    115: {id: 'anm:subF3'},
-    116: {id: 'anm:mul3'},
-    117: {id: 'anm:mulF3'},
-    118: {id: 'anm:div3'},
-    119: {id: 'anm:divF3'},
-    120: {id: 'anm:mod3'},
-    121: {id: 'anm:modF3'},
-    122: {id: 'anm:rand'},
-    123: {id: 'anm:randF'},
-    124: {id: 'anm:mathSin'},
-    125: {id: 'anm:mathCos'},
-    126: {id: 'anm:mathTan'},
-    127: {id: 'anm:mathAcos'},
-    128: {id: 'anm:mathAtan'},
-    129: {id: 'anm:mathReduceAngle'},
-    130: {id: 'anm:mathCirclePos'},
-    131: {id: 'anm:mathCirclePosRand'},
+  100: {id: 'anm:set'},
+  101: {id: 'anm:setF'},
+  102: {id: 'anm:add'},
+  103: {id: 'anm:addF'},
+  104: {id: 'anm:sub'},
+  105: {id: 'anm:subF'},
+  106: {id: 'anm:mul'},
+  107: {id: 'anm:mulF'},
+  108: {id: 'anm:div'},
+  109: {id: 'anm:divF'},
+  110: {id: 'anm:mod'},
+  111: {id: 'anm:modF'},
+  112: {id: 'anm:add3'},
+  113: {id: 'anm:addF3'},
+  114: {id: 'anm:sub3'},
+  115: {id: 'anm:subF3'},
+  116: {id: 'anm:mul3'},
+  117: {id: 'anm:mulF3'},
+  118: {id: 'anm:div3'},
+  119: {id: 'anm:divF3'},
+  120: {id: 'anm:mod3'},
+  121: {id: 'anm:modF3'},
+  122: {id: 'anm:rand'},
+  123: {id: 'anm:randF'},
+  124: {id: 'anm:mathSin'},
+  125: {id: 'anm:mathCos'},
+  126: {id: 'anm:mathTan'},
+  127: {id: 'anm:mathAcos'},
+  128: {id: 'anm:mathAtan'},
+  129: {id: 'anm:mathReduceAngle'},
+  130: {id: 'anm:mathCirclePos'},
+  131: {id: 'anm:mathCirclePosRand'},
 
-    200: {id: 'anm:jmp'},
-    201: {id: 'anm:jmpDec'},
-    202: {id: 'anm:jmpEq'},
-    203: {id: 'anm:jmpEqF'},
-    204: {id: 'anm:jmpNe'},
-    205: {id: 'anm:jmpNeF'},
-    206: {id: 'anm:jmpLt'},
-    207: {id: 'anm:jmpLtF'},
-    208: {id: 'anm:jmpLe'},
-    209: {id: 'anm:jmpLeF'},
-    210: {id: 'anm:jmpGt'},
-    211: {id: 'anm:jmpGtF'},
-    212: {id: 'anm:jmpGe'},
-    213: {id: 'anm:jmpGeF'},
+  200: {id: 'anm:jmp'},
+  201: {id: 'anm:jmpDec'},
+  202: {id: 'anm:jmpEq'},
+  203: {id: 'anm:jmpEqF'},
+  204: {id: 'anm:jmpNe'},
+  205: {id: 'anm:jmpNeF'},
+  206: {id: 'anm:jmpLt'},
+  207: {id: 'anm:jmpLtF'},
+  208: {id: 'anm:jmpLe'},
+  209: {id: 'anm:jmpLeF'},
+  210: {id: 'anm:jmpGt'},
+  211: {id: 'anm:jmpGtF'},
+  212: {id: 'anm:jmpGe'},
+  213: {id: 'anm:jmpGeF'},
 
-    300: {id: 'anm:sprite'},
-    301: {id: 'anm:spriteRand'},
-    302: {id: 'anm:renderMode'},
-    303: {id: 'anm:blendMode'},
-    304: {id: 'anm:layer'},
-    305: UNASSIGNED,
-    306: UNASSIGNED,
-    307: UNASSIGNED,
-    308: UNASSIGNED,
-    309: UNASSIGNED,
-    310: UNASSIGNED,
-    311: UNASSIGNED,
-    312: UNASSIGNED,
-    313: UNASSIGNED,
-    314: UNASSIGNED,
-    315: UNASSIGNED,
+  300: {id: 'anm:sprite'},
+  301: {id: 'anm:spriteRand'},
+  302: {id: 'anm:renderMode'},
+  303: {id: 'anm:blendMode'},
+  304: {id: 'anm:layer'},
+  305: UNASSIGNED,
+  306: UNASSIGNED,
+  307: UNASSIGNED,
+  308: UNASSIGNED,
+  309: UNASSIGNED,
+  310: UNASSIGNED,
+  311: UNASSIGNED,
+  312: UNASSIGNED,
+  313: UNASSIGNED,
+  314: UNASSIGNED,
+  315: UNASSIGNED,
 
-    400: {id: 'anm:pos'},
-    401: {id: 'anm:rotate'},
-    402: {id: 'anm:scale'},
-    403: {id: 'anm:alpha'},
-    404: {id: 'anm:rgb'},
-    405: {id: 'anm:alpha2'},
-    406: {id: 'anm:rgb2'},
-    407: {id: 'anm:posTime'},
-    408: {id: 'anm:rgbTime'},
-    409: {id: 'anm:alphaTime'},
-    410: {id: 'anm:rotateTime'},
-    411: {id: 'anm:rotateTime2D'},
-    412: {id: 'anm:scaleTime'},
-    413: {id: 'anm:rgb2Time'},
-    414: {id: 'anm:alpha2Time'},
-    415: {id: 'anm:angleVel'},
-    416: {id: 'anm:scaleGrowth'},
-    417: {id: 'anm:alphaTime2'},
-    418: {id: 'anm:v8-418'},
-    419: UNASSIGNED,
-    420: {id: 'anm:posBezier'},
-    421: UNASSIGNED,
-    422: UNASSIGNED,
-    423: UNASSIGNED,
-    424: UNASSIGNED,
-    425: UNASSIGNED,
-    426: UNASSIGNED,
-    427: UNASSIGNED,
-    428: UNASSIGNED,
-    429: UNASSIGNED,
-    430: UNASSIGNED,
-    431: UNASSIGNED,
-    432: UNASSIGNED,
-    433: UNASSIGNED,
-    434: UNASSIGNED,
-    435: UNASSIGNED,
-    436: UNASSIGNED,
-    437: UNASSIGNED,
-    438: UNASSIGNED,
+  400: {id: 'anm:pos'},
+  401: {id: 'anm:rotate'},
+  402: {id: 'anm:scale'},
+  403: {id: 'anm:alpha'},
+  404: {id: 'anm:rgb'},
+  405: {id: 'anm:alpha2'},
+  406: {id: 'anm:rgb2'},
+  407: {id: 'anm:posTime'},
+  408: {id: 'anm:rgbTime'},
+  409: {id: 'anm:alphaTime'},
+  410: {id: 'anm:rotateTime'},
+  411: {id: 'anm:rotateTime2D'},
+  412: {id: 'anm:scaleTime'},
+  413: {id: 'anm:rgb2Time'},
+  414: {id: 'anm:alpha2Time'},
+  415: {id: 'anm:angleVel'},
+  416: {id: 'anm:scaleGrowth'},
+  417: {id: 'anm:alphaTime2'},
+  418: {id: 'anm:v8-418'},
+  419: UNASSIGNED,
+  420: {id: 'anm:posBezier'},
+  421: UNASSIGNED,
+  422: UNASSIGNED,
+  423: UNASSIGNED,
+  424: UNASSIGNED,
+  425: UNASSIGNED,
+  426: UNASSIGNED,
+  427: UNASSIGNED,
+  428: UNASSIGNED,
+  429: UNASSIGNED,
+  430: UNASSIGNED,
+  431: UNASSIGNED,
+  432: UNASSIGNED,
+  433: UNASSIGNED,
+  434: UNASSIGNED,
+  435: UNASSIGNED,
+  436: UNASSIGNED,
+  437: UNASSIGNED,
+  438: UNASSIGNED,
 
-    500: UNASSIGNED,
-    501: UNASSIGNED,
-    502: UNASSIGNED,
-    503: UNASSIGNED,
-    504: UNASSIGNED,
-    505: UNASSIGNED,
-    506: UNASSIGNED,
-    507: UNASSIGNED,
-    508: UNASSIGNED,
-    509: UNASSIGNED,
+  500: UNASSIGNED,
+  501: UNASSIGNED,
+  502: UNASSIGNED,
+  503: UNASSIGNED,
+  504: UNASSIGNED,
+  505: UNASSIGNED,
+  506: UNASSIGNED,
+  507: UNASSIGNED,
+  508: UNASSIGNED,
+  509: UNASSIGNED,
 
-    600: UNASSIGNED,
-    601: UNASSIGNED,
-    602: UNASSIGNED,
-    603: {id: 'anm:drawRect'},
-    604: UNASSIGNED,
-    605: UNASSIGNED,
-    606: {id: 'anm:drawRectGrad'},
-    607: {id: 'anm:drawRectShadow'},
-    608: {id: 'anm:drawRectShadowGrad'},
-    609: UNASSIGNED,
-    610: UNASSIGNED,
-  },
+  600: UNASSIGNED,
+  601: UNASSIGNED,
+  602: UNASSIGNED,
+  603: {id: 'anm:drawRect'},
+  604: UNASSIGNED,
+  605: UNASSIGNED,
+  606: {id: 'anm:drawRectGrad'},
+  607: {id: 'anm:drawRectShadow'},
+  608: {id: 'anm:drawRectShadowGrad'},
+  609: UNASSIGNED,
+  610: UNASSIGNED,
 };
 
-const INS_15 = {
-  inherit: INS_14,
-  ins: {
-  },
-};
+const INS_15 = Object.assign({}, INS_14, {
+  // TODO: new instructions in TH15
+});
 
-const INS_16 = {
-  inherit: INS_15,
-  ins: {
-    612: {id: 'anm:drawRectBorder'},
-    613: {id: 'anm:drawLine'},
-  },
-};
+const INS_16 = Object.assign({}, INS_15, {
+  612: {id: 'anm:drawRectBorder'},
+  613: {id: 'anm:drawLine'},
+  // TODO: new instructions in TH16
+});
 
-const INS_17 = {
-  inherit: INS_16,
-  ins: {
-  },
-};
+const INS_17 = Object.assign({}, INS_16, {
+  // TODO: new instructions in TH17
+});
 
 export const ANM_BY_OPCODE = {
   // TODO: point games as e.g. "125"
@@ -191,14 +183,44 @@ export const ANM_BY_OPCODE = {
   "17": INS_17,
 };
 
+// // ==========================================================================
+// // ==========================================================================
+// // ==================    REVERSE LOOKUP TABLE     ===========================
+
+// // This table gets an opcode from a ref, so that the name can be looked up in an eclmap.
+
+// export const ANM_OPCODE_REVERSE = {};
+// for (const [game, inner] of Object.entries(ANM_BY_OPCODE)) {
+//   ANM_OPCODE_REVERSE[game] = {};
+//   for (const [opcodeStr, {id}] of Object.entries(inner)) {
+//     if (id === null) continue; // no associated data entry yet
+
+//     if (!id.startsWith('anm:')) {
+//       window.console.error(`wrong prefix in anm lookup table: (game ${game}, opcode ${opcodeStr}): ${id}`);
+//       continue;
+//     }
+
+//     const opcode = parseInt(opcodeStr, 10);
+//     if (Number.isNaN(opcode)) {
+//       window.console.error(`bad opcode: (game ${game}, opcode ${opcodeStr})`);
+//       continue;
+//     }
+//     ANM_OPCODE_REVERSE[id] = opcode;
+//   }
+// }
+
 // ==========================================================================
 // ==========================================================================
+// =====================    INSTRUCTION DATA    =============================
 
 export const DUMMY_DATA = {sig: '', args: [], wip: 2, desc: '[wip=2]*No data.*[/wip]'};
 
 // Lookup table by ref id. (game-independent, anmmap-independent name)
-export const ANM_INS_DATA = {}
+export const ANM_INS_DATA = {};
 
+// ==============
+// ==== CORE ====
+// ==============
 Object.assign(ANM_INS_DATA, {
   'nop': {sig: '', args: [], desc: "Does nothing."},
   'delete': {sig: '', args: [], desc: "Destroys the animation."},
@@ -212,7 +234,7 @@ Object.assign(ANM_INS_DATA, {
     [wip]TODO: show example code[/wip]
 
     <!-- FIXME: use eclmap for anmSwitch or link to something -->
-    Enemies can invoke this using the \`anmSwitch\` instruction.  Furthermore, the game internally uses [ref=anm:case] labels for all sorts
+    Enemies can invoke this using the \`anmSwitch\` ECL instruction.  The game also internally uses [ref=anm:case] labels for all sorts
     of different purposes.  For instance, it is used to handle animations on the Pause menu and main menu, it is used to make player options
     appear and disappear based on power, and it is even used to make the season gauge go transparent when the player gets near.
 
@@ -220,14 +242,17 @@ Object.assign(ANM_INS_DATA, {
 
     Miscellaneous notes:
     * If multiple switches occur on one frame, only the **last** takes effect.
-    * \`[ref=anm:case](0)\` doesn't work due to how pending switch numbers are stored.
-    * [wip]\`[ref=anm:case](-1)\` appears to work differently from the others...[/wip]
+    * [ref=anm:case](0) doesn't work due to how pending switch numbers are stored.
+    * [wip][ref=anm:case](-1) appears to work differently from the others...[/wip]
     * [wip]Can switching interrupt code that is not at a [ins=anm:stop]? Testing needed.[/wip]
   `},
   'wait': {sig: 'S', args: ['t'], desc: `Wait %1 frames.`},
   'v8-7': {sig: '', args: [], wip: 2, desc: `[wip=2]*dunno but it looks important lol*[/wip]`},
 });
 
+// =====================
+// ==== OPS N JUMPS ====
+// =====================
 Object.assign(ANM_INS_DATA, {
   'jmp': {
     sig: 'SS', args: ['dest', 't'], desc: dedent`
@@ -263,6 +288,27 @@ for (const [mnemonic, operator] of Object.entries(JUMP_DATA)) {
   }
 }
 
+const OPERATOR_DATA = {set: "=", add: "+=", sub: "-=", mul: "*=", div: "/=", mod: "%="};
+for (const [mnemonic, operator] of Object.entries(OPERATOR_DATA)) {
+  for (const [suffix, refTy, valTy] of [['', '$', 'S'], ['F', '%', 'f']]) {
+    ANM_INS_DATA[`${mnemonic}${suffix}`] = {
+      sig: `${refTy}${valTy}`,
+      args: ['a', 'b'],
+      desc: `Does \`a ${operator} b\`.`,
+    };
+  }
+}
+
+const OPERATOR_3_DATA = {add: "+", sub: "-", mul: "*", div: "/", mod: "%"};
+for (const [mnemonic, operator] of Object.entries(OPERATOR_3_DATA)) {
+  for (const [suffix, refTy, valTy] of [['', '$', 'S'], ['F', '%', 'f']]) {
+    ANM_INS_DATA[`${mnemonic}${suffix}3`] = {
+      sig: `${refTy}${valTy}${valTy}`,
+      args: ['x', 'a', 'b'],
+      desc: `Does \`a = b ${operator} c\`.`,
+    };
+  }
+}
 
 Object.assign(ANM_INS_DATA, {
   'rand': {sig: '$S', args: ['x', 'n'], desc: 'Draw a random integer `0 <= %1 < %2`.'},
@@ -405,17 +451,17 @@ Object.assign(ANM_INS_DATA, {
   `},
   'posBezier': {
     sig: 'Sfffffffff', args: ['t', 'x1', 'y1', 'z1', 'x2', 'y2', 'z2', 'x3', 'y3', 'z3'],
-    desc: `
+    desc: dedent`
     In %1 frames, moves to (%5,%6,%7) using Bezier interpolation.
 
     <!--
     according to images by @rue#1846 on the zuncode discord it looks like the last two numbers for floatTime mode 8
     are proportional to initial/final velocities; these may correspond to xyz1 and xyz3 but I'm too lazy to verify right now.
     -->
-    [wip]I am too lazy to document this right now.[/wip]  See https://thwiki.cc/%E8%84%9A%E6%9C%AC%E5%AF%B9%E7%85%A7%E8%A1%A8/ANM/%E7%AC%AC%E5%9B%9B%E4%B8%96%E4%BB%A3.
+    [wip]I am too lazy to document this right now.[/wip]  See https://thwiki.cc/脚本对照表/ANM/第四世代.
   `},
   'rgb': {
-    sig: 'SSS', args: ['r', 'g', 'b'], desc: `
+    sig: 'SSS', args: ['r', 'g', 'b'], desc: dedent`
     Set a color which gets blended with this sprite.
     Set white (255, 255, 255) to eliminate the effect.
 
@@ -426,17 +472,17 @@ Object.assign(ANM_INS_DATA, {
   'alpha2': {sig: 'S', args: ['alpha'], desc: `Set alpha for the gradient's second color.`},
 
   'angleVel': {sig: 'fff', args: ['ωx', 'ωy', 'ωz'], desc: `Set a constant angular velocity, in radians per frame.`},
-  'scaleGrowth': {sig: 'ff', args: ['gx', 'gy'], desc: `
+  'scaleGrowth': {sig: 'ff', args: ['gx', 'gy'], desc: dedent`
     Every frame, it increases the values of [ref=anm:scale] as \`sx -> sx + gx\` and \`sy -> sy + gy\`.
     Basically, [ref=anm:scaleGrowth] is to [ref=anm:scale] as [ref=anm:angleVel] is to [ref=anm:rotate].
     (they even share implemenation details...)
   `},
   // TODO: link to texture coordinates concept
-  'uVel': {sig: 'f', args: ['vel'], desc: `
+  'uVel': {sig: 'f', args: ['vel'], desc: dedent`
     Add %1 to the texture u coordinate every frame (in units of \`1 / total_image_width\`),
     causing the displayed sprite to scroll horizontally through the image file.
   `},
-  'vVel': {sig: 'f', args: ['vel'], desc: `
+  'vVel': {sig: 'f', args: ['vel'], desc: dedent`
     Add %1 to the texture v coordinate every frame (in units of \`1 / total_image_height\`),
     causing the displayed sprite to scroll vertically through the image file.
   `},
@@ -453,7 +499,7 @@ Object.assign(ANM_INS_DATA, {
   'uVelTime': {sig: 'SSf', args: ['t', 'mode', 'vel'], wip: 1, desc: `[wip]Based on the code this is clearly a time version of [ref=anm:uVel], but it didn't work when I tested it...[/wip]`},
   'vVelTime': {sig: 'SSf', args: ['t', 'mode', 'vel'], wip: 1, desc: `[wip]Based on the code this is clearly a time version of [ref=anm:vVel], but it didn't work when I tested it...[/wip]`},
   'rotateTime2D': {
-    sig: 'SSf', args: ['t', 'mode', 'rz'], desc: `
+    sig: 'SSf', args: ['t', 'mode', 'rz'], desc: dedent`
     A compact version of [ref=anm:rotateTime] that only interpolates the z rotation.
 
     (note: [ref=anm:rotateTime2D] and [ref=anm:rotateTime] are tracked separately, but judging from the code, they **are not** meant
@@ -528,28 +574,6 @@ Object.assign(ANM_INS_DATA, {
     Presumably this lets you do weird things like use a rotated region of a .png file as a sprite.
   `},
 });
-
-const OPERATOR_DATA = {set: "=", add: "+=", sub: "-=", mul: "*=", div: "/=", mod: "%="};
-for (const [mnemonic, operator] of Object.entries(OPERATOR_DATA)) {
-  for (const [suffix, refTy, valTy] of [['', '$', 'S'], ['F', '%', 'f']]) {
-    ANM_INS_DATA[`${mnemonic}${suffix}`] = {
-      sig: `${refTy}${valTy}`,
-      args: ['a', 'b'],
-      desc: `Does \`a ${operator} b\`.`,
-    };
-  }
-}
-
-const OPERATOR_3_DATA = {add: "+", sub: "-", mul: "*", div: "/", mod: "%"};
-for (const [mnemonic, operator] of Object.entries(OPERATOR_3_DATA)) {
-  for (const [suffix, refTy, valTy] of [['', '$', 'S'], ['F', '%', 'f']]) {
-    ANM_INS_DATA[`${mnemonic}${suffix}3`] = {
-      sig: `${refTy}${valTy}${valTy}`,
-      args: ['x', 'a', 'b'],
-      desc: `Does \`a = b ${operator} c\`.`,
-    };
-  }
-}
 
 // Validate
 for (const [key, value] of Object.entries(ANM_INS_DATA)) {
