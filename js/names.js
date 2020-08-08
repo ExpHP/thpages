@@ -78,7 +78,7 @@ function nameGetHtml(id) {
 
 function _nameGetInnerText(id) {
   const name = nameGetNow(id);
-  return name ? `NAME_ERROR(${id})` : name;
+  return name ? name : `NAME_ERROR(${id})`;
 }
 
 // FIXME blech, this is basically a singleton in a trenchcoat

@@ -51,7 +51,7 @@ export const INDEX = [
     "path": null,
     "content": [
       {
-        "name": "Github",
+        "name": "My Github",
         "type": "href",
         "newTab": true,
         "url": "https://github.com/ExpHP",

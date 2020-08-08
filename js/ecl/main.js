@@ -34,7 +34,8 @@ export function initAnm() {
   initDefaultOpcodeNames(globalNames);
 
   for (const [id, ins] of Object.entries(ANM_INS_DATA)) {
-    registerRefTip('anm:' + id, generateAnmTip(ins, id));
+    const ref = 'anm:' + id;
+    registerRefTip(ref, generateAnmTip(ins, ref));
   }
 }
 

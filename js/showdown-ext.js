@@ -44,6 +44,10 @@ export const ext = function() {
     replace: function(match, content) {
       let ret = "<hljs>"+dedent(highlightCode(content))+"</hljs>";
       // This is some quality jank right here, caused by the fact that I could not find a way to make hljs not escape this html
+      // <span data-name="ref:anm:set">
+      ret = ret.replace(/&lt;span data-name=<span class="hljs-string">(.*?)<\/span>&gt;(.*?)&lt;\/span&gt;/g, (match, name, content) => {
+        return `<span data-name=${name.replace(/&amp;/g, "&")}>${content}</span>`;
+      });
       ret = ret.replace(/&lt;instr data-tip-id=<span class="hljs-string">(.*?)<\/span>&gt;(.*?)&lt;\/instr&gt;/g, (match, tip, content) => {
         return `<span data-tip-id=${tip.replace(/&amp;/g, "&")}>${content}</span>`;
       });
