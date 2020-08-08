@@ -2,7 +2,7 @@
 import globalNames from './names.js';
 
 /** Maps tip ids to tip inner HTML. */
-export const TIP_REGISTRY = {};
+const TIP_REGISTRY = {};
 let $tip = null;
 let $activeTipTarget = null;
 
@@ -12,9 +12,27 @@ export function initTips() {
   document.body.addEventListener("mouseout", tipOut);
 }
 
+/**
+ * @param {string} key
+ * @param {object} tip
+ * @param {string} tip.contents
+ * @param {boolean} tip.omittedInfo
+ */
+export function registerTip(key, {contents, omittedInfo}) {
+  if (typeof key !== 'string') throw new TypeError('expected string key');
+  if (contents === undefined) throw new TypeError('missing contents');
+  if (omittedInfo === undefined) throw new TypeError('missing omittedInfo');
+  TIP_REGISTRY[key] = {contents, omittedInfo};
+}
+
+export function getTip(key) {
+  const entry = TIP_REGISTRY[key];
+  return entry === undefined ? null : entry;
+}
+
 function tipIn(e) {
-  const [tip, $targ] = getTip(e.target);
-  if (tip) {
+  const [tip, $targ] = getAncestorTip(e.target);
+  if ($targ) {
     showTip(tip, $targ, e.target);
     e.stopImmediatePropagation();
   }
@@ -23,7 +41,13 @@ function tipIn(e) {
 function showTip(tip, $targ, $realTarg) {
   $activeTipTarget = $realTarg;
   $tip.style.display = "block";
-  $tip.innerHTML = tip;
+
+  let tipHtml = `<div class="contents">${tip.contents}</div>`;
+  if (tip.omittedInfo) {
+    tipHtml += `<div class="omitted-info"></div>`;
+  }
+  $tip.innerHTML = tipHtml;
+
   globalNames.transformHtml($tip);
 
   const tipRect = $tip.getBoundingClientRect();
@@ -44,17 +68,21 @@ function tipOut(e) {
   }
 }
 
-function getTip($targ) {
-  const embedded = getAncestorElementData($targ, "tip");
+function getAncestorTip($targ) {
+  const [embedText, $embedElem] = getAncestorElementData($targ, "tip");
   const [refKey, refElem] = getAncestorElementData($targ, "tipId");
   const referenced = [TIP_REGISTRY[refKey], refElem];
 
   // prefer an embedded tip
-  if (embedded[1]) return embedded;
+  if ($embedElem) {
+    const tip = {contents: embedText, omittedInfo: false};
+    return [tip, $embedElem];
+  }
   // else use a registered tip
   if (referenced[1]) return referenced;
   // no tip
-  return ["", null];
+  const tip = {contents: "", omittedInfo: false};
+  return [tip, null];
 }
 
 function getAncestorElementData($elem, key) {

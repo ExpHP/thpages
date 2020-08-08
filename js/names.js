@@ -3,7 +3,8 @@ const RECURSION_LIMIT = 16;
 
 /**
  * Finds every node in the DOM that has a data-name attribute and replaces its
- * textual content with the name assigned to that id.
+ * textual content with the name assigned to that id.  This is used to implement
+ * display of names from eclmaps and etc.
  *
  * @param {Element} $root
  * @return {Element} $root, modified in-place.

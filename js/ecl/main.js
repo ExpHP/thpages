@@ -166,11 +166,14 @@ function generateAnmInsSiggy(ins, nameKey) {
 
 function generateOpcodeTableEntry(game, ins, opcode) {
   const nameKey = getOpcodeNameKey(game, opcode);
+  let [desc] = handleTipHide(ins.desc, false);
+  desc = postprocessAnmInsDesc(desc, ins, false);
+
   return /* html */`
   <tr class="ins-table-entry">
     <td class="col-id">${opcode}</td>
     <td class="col-name">${generateAnmInsSiggy(ins, nameKey)}</td>
-    <td class="col-desc">${generateAnmInsDesc(ins)}</td>
+    <td class="col-desc">${desc}</td>
   </tr>
   `;
 }
@@ -195,13 +198,24 @@ function generateAnmInsParameters(ins) {
   return ret;
 }
 
-function generateAnmInsDesc(ins, notip=false) {
-  let ret = ins.desc;
-  for (let i=0; i<ins.sig.length; i++) {
-    ret = ret.replace(new RegExp("%"+(i+1)+"(?=[^0-9])", "g"), "[tip=Parameter "+(i+1)+", "+ARGTYPES_TEXT[ins.sig[i]]+"]`"+ins.args[i]+"`[/tip]");
+function handleTipHide(desc, isTip) {
+  const hasHidden = !!desc.match(/\[tiphide\]/g);
+  if (isTip) {
+    desc = desc.replace(/\[tiphide\][^]*?\[\/tiphide\]( *\n)?/g, '');
+  } else {
+    desc = desc.replace(/\[(\/)?tiphide\]( *\n)?/g, '');
   }
-  if (notip) {
+  return [desc, hasHidden];
+}
+
+function postprocessAnmInsDesc(desc, ins, isTip) {
+  let ret = desc;
+  if (isTip) {
     ret = ret.replace(/\[ref=/g, "[ref-notip=");
+  } else {
+    for (let i=0; i<ins.sig.length; i++) {
+      ret = ret.replace(new RegExp("%"+(i+1)+"(?=[^0-9])", "g"), "[tip=Parameter "+(i+1)+", "+ARGTYPES_TEXT[ins.sig[i]]+"]`"+ins.args[i]+"`[/tip]");
+    }
   }
   return MD.makeHtml(ret);
 }
@@ -237,7 +251,8 @@ function anmInsDataByRef(ref) {
 }
 
 function generateAnmTip(ins, ref) {
-  const desc = generateAnmInsDesc(ins, true);
+  let [desc, omittedInfo] = handleTipHide(ins.desc, true);
+  desc = postprocessAnmInsDesc(desc, ins, true);
   const siggy = generateAnmInsSiggy(ins, getRefNameKey(ref));
-  return `<br>${siggy}<br><hr>${desc}`;
+  return {contents: `<br>${siggy}<br><hr>${desc}`, omittedInfo};
 }

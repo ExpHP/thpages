@@ -233,6 +233,7 @@ Object.assign(ANM_INS_DATA, {
     sig: 'S', args: ['n'], desc: `
     A label used to externally control an ANM.
 
+    [tiphide]
     [wip]TODO: show example code[/wip]
 
     <!-- FIXME: use eclmap for anmSwitch or link to something -->
@@ -247,6 +248,7 @@ Object.assign(ANM_INS_DATA, {
     * [ref=anm:case](0) doesn't work due to how pending switch numbers are stored.
     * [wip][ref=anm:case](-1) appears to work differently from the others...[/wip]
     * [wip]Can switching interrupt code that is not at a [ref=anm:stop]? Testing needed.[/wip]
+    [/tiphide]
   `},
   'wait': {sig: 'S', args: ['t'], desc: `Wait %1 frames.`},
   'v8-7': {sig: '', args: [], wip: 2, desc: `[wip=2]*dunno but it looks important lol*[/wip]`},
@@ -260,14 +262,17 @@ Object.assign(ANM_INS_DATA, {
     sig: 'SS', args: ['dest', 't'], desc: `
     Jumps to %1 and sets time to %2.  \`thanm\` accepts a label name for %1.
 
+    [tiphide]
     [wip=2]Chinese wiki says some confusing recommendation about setting a=0, can someone explain to me?[/wip]
 
     [wip]What is %1 relative to? Beginning of current script?[/wip]
+    [/tiphide]
   `},
   'jmpDec': {
     sig: '$SS', args: ['x', 'dest', 't'], desc: `
     Decrement %1 and then jump if it is \`> 0\`.  You can use this to repeat a loop a fixed number of times.
 
+    [tiphide]
     [code]
       [ref=anm:set]([10000], 3);
     loop:
@@ -276,6 +281,7 @@ Object.assign(ANM_INS_DATA, {
       // ...
       [ref=anm:jmpDec]([10000], loop);
     [/code]
+    [/tiphide]
   `},
 });
 
@@ -356,6 +362,7 @@ Object.assign(ANM_INS_DATA, {
     sig: 'S', args: ['mode'], desc: `
     Set color blending mode.
 
+    [tiphide]
     Modes for [game=14]DDC[/game]: (other games may be different)
 
     | Mode | \`SRCBLEND\` | \`DESTBLEND\` | \`BLENDOP\` | Meaning |
@@ -375,12 +382,14 @@ Object.assign(ANM_INS_DATA, {
 
     † Weird because it seems this would also subtract alpha. (so if the thing you're drawing is fully opaque,
     the result will be fully transparent, deleting even the background...)
+    [/tiphide]
   `},
   // TODO: Maybe link to RenderType enum.
   'renderMode': {
     sig: 'S', args: ['t'], desc: `
     Determines how the ANM is rendered.
 
+    [tiphide]
     Mode numbers can change between games, but the most popular modes have pretty stable numbers:
 
     * Mode 0 is for 2D sprites that do not require rotation.
@@ -391,16 +400,17 @@ Object.assign(ANM_INS_DATA, {
     * [wip]Any other modes used in scripts are a total mystery at this time.[/wip]
     * Many mode numbers are not intended for use by ANM scripts, and are instead reserved for instructions
       like [ref=anm:texCircle] and [ref=anm:drawRect] (each one has its own mode).
+    [/tiphide]
   `},
   // TODO: link to layer concept.
   // TODO: link to stages of drawing.
   'layer': {
     sig: 'S', args: ['n'], desc: `
-    Sets the layer of the ANM.  [wip]This may or may not affect z-ordering? It's weird...[/wip]
+    Sets the layer of the ANM.  [tiphide][wip]This may or may not affect z-ordering? It's weird...[/wip][/tiphide]
 
-    **Different layer numbers may behave differently!** Each game only has a finite number of layers, and certain groups of these layers
+    [tiphide]**Different layer numbers may behave differently!** Each game only has a finite number of layers, and certain groups of these layers
     are drawn at different stages in the rendering pipeline.  Be especially careful when porting something from one game to another,
-    as the layer groupings may have changed.
+    as the layer groupings may have changed.[/tiphide]
   `},
   'flipX': {sig: '', args: [], desc: "Toggles mirroring on the x axis.  [wip](sounds straightforward, but which things are affected?[/wip]"},
   'flipY': {sig: '', args: [], desc: "Toggles mirroring on the y axis.  [wip](sounds straightforward, but which things are affected?[/wip]"},
@@ -408,16 +418,19 @@ Object.assign(ANM_INS_DATA, {
     sig: 'S', args: ['n'], desc: `
     Determines how a sprite is resampled when scale is greater or less than 1f.
 
+    [tiphide]
     0 - \`D3DTEXF_LINE\` (linear interpolation; blurry)
     1 - \`D3DTEXF_POINT\` (nearest-point sampling; big pixels)
 
     [c=red]TODO: image[/c]
+    [/tiphide]
   `},
   // TODO: link to stages of drawing.
   'originMode': {
     sig: 'S', args: ['mode'], wip: 1, desc: `
     Determines the origin used by the sprite.
 
+    [tiphide]
     | Value | Origin | Appropriate for |
     | ---   | ---    | --- |
     | 0     | Top left of target surface. | Border around the game. |
@@ -426,11 +439,14 @@ Object.assign(ANM_INS_DATA, {
 
     **If your sprite is correctly positioned at 640x480 resolution but not at larger resolutions,
     you may want to check this setting.** (as well as [ref=anm:resolutionMode])
+    [/tiphide]
 
     Typically, [ref=anm:layer] will automatically set this to a good default.
     [wip]Clear guidelines are not yet known for when you are required to override that default.[/wip]
 
+    [tiphide]
     This only has an effect on root VMs. (for child animations, the root is always the parent's position)
+    [/tiphide]
   `},
   'resolutionMode': {
     sig: 'S', args: ['n'], wip: 1, desc: `
@@ -441,8 +457,10 @@ Object.assign(ANM_INS_DATA, {
     Typically, [ref=anm:layer] will automatically set this to a good default.
     [wip]Clear guidelines are not yet known for when you are required to override that default.[/wip]
 
+    [tiphide]
     **If your sprite is correctly positioned at 640x480 resolution but not at larger resolutions,
     you may want to check this setting.** (as well as [ref=anm:originMode])
+    [/tiphide]
   `},
 });
 
@@ -454,18 +472,22 @@ Object.assign(ANM_INS_DATA, {
     sig: 'fff', args: ['x', 'y', 'z'], desc: `
     Sets the position of the animation.
 
+    [tiphide]
     Believe it or not, even this instruction still has some mysteries!
     There is a bit flag that, when activated, causes [ref=anm:pos] to write to a *different* vector.
     These two vectors are typically added together at the end, like ECL's absolute and relative positions.
     [wip]The method of setting this bitflag, and its purpose, is unknown.[/wip]
+    [/tiphide]
   `},
   'rotate': {
     sig: 'fff', args: ['rx', 'ry', 'rz'], desc: `
     Set the animation's rotation.  For 2D objects, only the z rotation matters.
+    [tiphide]
     In some rare cases, x rotation has a special meaning for special drawing instructions.
     Animations rotate around their anchor point (see [ref=anm:anchor]).
 
     (if nothing seems to be happening when you call this, check your [ref=anm:renderMode] setting!)
+    [/tiphide]
   `},
   'rotateAuto': {
     sig: 'b', args: ['mode'], desc: `
@@ -515,6 +537,7 @@ Object.assign(ANM_INS_DATA, {
     sig: 'S', args: ['mode'], desc: `
     Lets you enable gradients on regular sprites.
 
+    [tiphide]
     | Value | Effect |
     |  ---  |   ---  |
     |   0   | Only use color set by [ref=anm:rgb] and [ref=anm:alpha]. |
@@ -526,6 +549,7 @@ Object.assign(ANM_INS_DATA, {
 
     For some strange reason, [ref=anm:rgb2Time] and [ref=anm:alpha2Time] automatically do [ref-notip=anm:colorMode](1).
     Therefore, if you use those instructions, you must call this *afterwards,* not before.
+    [/tiphide]
   `},
   'angleVel': {sig: 'fff', args: ['ωx', 'ωy', 'ωz'], desc: `Set a constant angular velocity, in radians per frame.`},
   'scaleGrowth': {sig: 'ff', args: ['gx', 'gy'], desc: `
@@ -547,10 +571,12 @@ Object.assign(ANM_INS_DATA, {
     Set the horizontal and vertical anchoring of the sprite.  Notice the args are each two bytes.
     For further fine-tuning see [ref=anm:anchorOffset].
 
+    [tiphide]
     | Args  |  0     |  1   | 2      |
     | ---   | ---    | ---  | ---    |
     |  %1   | Center | Left | Right  |
     |  %2   | Center | Top  | Bottom |
+    [/tiphide]
   `},
   'anchorOffset': {sig: 'ss', args: ['dx', 'dy'], desc: `
     Nudge the anchor point of the sprite right by %1 pixels and down by %2 pixels in the source image.
@@ -571,13 +597,13 @@ Object.assign(ANM_INS_DATA, {
   'alpha2Time': {sig: 'SSS', args: ['t', 'mode', 'alpha'], desc: `
     Over the next %1 frames, changes [ref=anm:alpha2] to the given value using interpolation mode %2.
 
-    For some reason, this also does [ref=anm:colorMode](1), which can be a mild inconvenience.
+    [tiphide]For some reason, this also does [ref=anm:colorMode](1), which can be a mild inconvenience.[/tiphide]
   `},
   'rgbTime': {sig: 'SSSSS', args: ['t', 'mode', 'r', 'g', 'b'], desc: `Over the next %1 frames, changes [ref=anm:rgb] to the given value using interpolation mode %2.`},
   'rgb2Time': {sig: 'SSSSS', args: ['t', 'mode', 'r', 'g', 'b'], desc: `
     Over the next %1 frames, changes [ref=anm:rgb2] to the given value using interpolation mode %2.
 
-    For some reason, this also does [ref=anm:colorMode](1), which can be a mild inconvenience.
+    [tiphide]For some reason, this also does [ref=anm:colorMode](1), which can be a mild inconvenience.[/tiphide]
   `},
   'uVelTime': {sig: 'SSf', args: ['t', 'mode', 'vel'], wip: 1, desc: `[wip]Based on the code this is clearly a time version of [ref=anm:uVel], but it didn't work when I tested it...[/wip]`},
   'vVelTime': {sig: 'SSf', args: ['t', 'mode', 'vel'], wip: 1, desc: `[wip]Based on the code this is clearly a time version of [ref=anm:vVel], but it didn't work when I tested it...[/wip]`},
@@ -585,8 +611,10 @@ Object.assign(ANM_INS_DATA, {
     sig: 'SSf', args: ['t', 'mode', 'rz'], desc: `
     A compact version of [ref=anm:rotateTime] that only interpolates the z rotation.
 
+    [tiphide]
     (note: [ref=anm:rotateTime2D] and [ref=anm:rotateTime] are tracked separately, but judging from the code, they **are not** meant
     to be used together and their effects do not stack properly. [wip]somebody test plz[/wip])
+    [/tiphide]
   `},
   'alphaTime2': {
     sig: 'SS', args: ['alpha', 'time'], wip: 1, desc: `
@@ -623,6 +651,7 @@ Object.assign(ANM_INS_DATA, {
     sig: 'ff', args: ['w', 'h'], desc: `
     Don't use this.
 
+    [tiphide]
     The implementation does the following:
     1. Draw a rectangle like [ref=anm:drawRect] but of size \`(w+1, h+1)\`, and \`0.5 * alpha\`.
     2. Then draw a rectangle exactly like [ref=anm:drawRect].
@@ -633,6 +662,7 @@ Object.assign(ANM_INS_DATA, {
 
     You can force the shadow onto a given side by anchoring the opposite side.
     (this works because both rectangles are drawn with the same position and anchoring)
+    [/tiphide]
   `},
   'drawRectShadowGrad': {
     sig: 'ff', args: ['w', 'h'], desc: `
@@ -661,6 +691,7 @@ Object.assign(ANM_INS_DATA, {
     sig: '', args: [], wip: 1, desc: `
     A bizarre and **unused** (?) instruction that appears to select a new sprite in the image file based on the anm's coordinates.
 
+    [tiphide]
     The code appears to do the following: [wip](expect inaccuracies!)[/wip]
     * Using the current position, scale, etc. and [ref=anm:renderMode] setting (which must be \`<= 3\`),
       compute the corners of the rectangle that the ANM would occupy on the surface it is being drawn to.
@@ -668,6 +699,7 @@ Object.assign(ANM_INS_DATA, {
     * Use those as fractional uv coordinates for a region to pull sprite data from.
 
     Presumably this lets you do weird things like use a rotated region of a .png file as a sprite.
+    [/tiphide]
   `},
 });
 

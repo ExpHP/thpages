@@ -8,6 +8,7 @@
 @bg-color: #252525;
 @nav-bg-color: #080808;
 @nav-alpha: 85%;
+@tip-bg-color: #000000;
 
 // blog original colors:
 //    code block outline: #121212
@@ -25,7 +26,8 @@
 body {
   /* padding:0px 0 20px 0px;
   margin: 0px; */
-  font:14px/1.5 @sans-serif;
+  // font:14px/1.5 @sans-serif;
+  font-family: @sans-serif;
   color: @text-color;
   font-weight: normal;
   background: #252525;
@@ -259,10 +261,26 @@ table, th, td, tr {
   padding-right: 7px;
   border: 1px gray solid;
   border-radius: 9px;
-  background: black;
+  background: @tip-bg-color;
   max-width: 320px;
   z-index: 100;
   font-size: 14px;
+
+  // Put a hard limit on tip height even if we forget to curate a tip's content
+  max-height: 13em;
+  overflow-y: hidden;
+  overflow-x: hidden; // otherwise overflow-y: hidden makes a horizontal scrollbar. Yes.
+
+  .omitted-info {
+    &::after {
+      content: "See the table entry for more info.";
+    }
+    opacity: 75%;
+    font-size: 0.8em;
+    font-style: italic;
+    float: right;
+    clear: right;
+  }
 }
 
 .ins-navigation-entry {

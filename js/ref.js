@@ -1,4 +1,4 @@
-import {TIP_REGISTRY} from './tips.js';
+import {registerTip, getTip} from './tips.js';
 import globalNames from './names.js';
 
 // function getRefTip(id) {
@@ -15,20 +15,20 @@ import globalNames from './names.js';
  * Set tooltip inner HTML for a reference.
  *
  * @param {string} id Ref id.
- * @param {string} tip Tip HTML string.
+ * @param {object} tip Tip object.
  */
 export function registerRefTip(id, tip) {
-  TIP_REGISTRY[getRefTipKey(id)] = tip;
+  registerTip(getRefTipKey(id), tip);
 }
 
 /**
  * Get tooltip inner HTML for a reference, if it has any.
  *
  * @param {string} id Ref id.
- * @return {?string}
+ * @return {?object}
  */
 export function getRefTip(id) {
-  return TIP_REGISTRY[getRefTipKey(id)] || null;
+  return getTip(getRefTipKey(id));
 }
 
 /**

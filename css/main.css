@@ -1,7 +1,7 @@
 body {
   /* padding:0px 0 20px 0px;
   margin: 0px; */
-  font: 14px/1.5 OpenSansRegular, Helvetica Neue, Helvetica, Arial, sans-serif;
+  font-family: OpenSansRegular, Helvetica Neue, Helvetica, Arial, sans-serif;
   color: #f0e7d5;
   font-weight: normal;
   background: #252525;
@@ -218,10 +218,23 @@ tr {
   padding-right: 7px;
   border: 1px gray solid;
   border-radius: 9px;
-  background: black;
+  background: #000000;
   max-width: 320px;
   z-index: 100;
   font-size: 14px;
+  max-height: 13em;
+  overflow-y: hidden;
+  overflow-x: hidden;
+}
+#tip .omitted-info {
+  opacity: 75%;
+  font-size: 0.8em;
+  font-style: italic;
+  float: right;
+  clear: right;
+}
+#tip .omitted-info::after {
+  content: "See the table entry for more info.";
 }
 .ins-navigation-entry {
   cursor: pointer;
