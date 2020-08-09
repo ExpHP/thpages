@@ -207,7 +207,7 @@ table,
 th,
 td,
 tr {
-  border: 1px solid #ffcc0020;
+  border: 1px solid #ffcc0060;
   border-collapse: collapse;
   padding: 5px;
 }
@@ -242,6 +242,9 @@ tr {
 }
 #tip .omitted-info::after {
   content: "See the table entry for more info.";
+}
+.headless-table > table > thead {
+  display: none;
 }
 .ins-navigation-entry {
   cursor: pointer;

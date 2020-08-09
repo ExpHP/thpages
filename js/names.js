@@ -89,4 +89,5 @@ export default {
   set: nameSet,
   setAlias: nameSetAlias,
   transformHtml: transformHtml,
+  __namesDict: NAMES, // for debugging only
 };

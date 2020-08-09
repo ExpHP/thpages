@@ -67,15 +67,11 @@ class Eclmap {
   }
   getMnemonic(num) {
     const ent = this.seqmapGet(this.ins, num);
-    if (ent != null) return ent.name;
-
-    return `ins_${num}`;
+    return ent != null ? ent.name : null;
   }
   getGlobal(num) {
     const ent = this.seqmapGet(this.var, num);
-    if (ent != null) return ent.name;
-
-    return `[${num}]`;
+    return ent != null ? ent.name : null;
   }
   err(txt) {
     window.alert(`eclmap parse error at line ${this.line}: ${txt}`);

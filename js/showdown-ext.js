@@ -203,6 +203,16 @@ export const ext = function() {
     replace: '<div class="flexbox" style="align-items: $1">$2</div>',
   };
 
+  const headlessTable = {
+    type: "lang",
+    regex: /\[headless-table\]([^]*?)\[\/headless-table\]/g,
+    replace: function(match, tableMd) {
+      // need to handle inner markdown early since MD is disabled in block elements
+      const tableHtml = MD.makeHtml(`${tableMd}`);
+      return `<div class="headless-table">${tableHtml}</div>`;
+    },
+  };
+
   const wip = {
     type: "lang",
     regex: /\[wip(?:=([012]))?\]([^]*?)\[\/wip\]/g,
@@ -215,7 +225,7 @@ export const ext = function() {
   };
 
   return [
-    eclmap, yt, hr, br, ts, img, imgSmall, ref, refNotip,
+    eclmap, yt, hr, br, ts, img, imgSmall, ref, refNotip, headlessTable,
     code, title, c, game, rawGame, script, tip, video, flex, flex2, wip,
   ];
 };

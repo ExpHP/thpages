@@ -76,8 +76,8 @@ function getAncestorTip($targ) {
   // Embedded tips are used for short strings. ([tip] tags)
   const [embedText, $embedElem] = getAncestorElementData($targ, "tip");
   // Registered tips are more elaborate and can have headings and etc.
-  const [refKey, refElem] = getAncestorElementData($targ, "tipId");
-  const referenced = [TIP_REGISTRY[refKey], refElem];
+  const [refKey, $refElem] = getAncestorElementData($targ, "tipId");
+  const referencedTip = TIP_REGISTRY[refKey];
 
   // prefer an embedded tip
   if ($embedElem) {
@@ -85,7 +85,7 @@ function getAncestorTip($targ) {
     return [tip, $embedElem];
   }
   // else use a registered tip
-  if (referenced[1]) return referenced;
+  if (referencedTip) return [referencedTip, $refElem];
   // no tip
   return [null, null];
 }

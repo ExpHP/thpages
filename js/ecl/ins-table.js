@@ -17,6 +17,7 @@ export const GROUPS_V8 = [
 ];
 
 const INS_12 = {
+  // FIXME: rename id to ref to avoid confusion (we use 'id' to refer to the part after 'anm:')
   67: {id: 'anm:type'},
   68: {id: 'anm:layer'},
   106: {id: 'anm:scaleUV', wip: 1},
@@ -89,11 +90,11 @@ const INS_14 = {
   305: UNASSIGNED,
   306: UNASSIGNED,
   307: UNASSIGNED,
-  308: UNASSIGNED,
-  309: UNASSIGNED,
+  308: {id: 'anm:flipX'},
+  309: {id: 'anm:flipY'},
   310: UNASSIGNED,
-  311: UNASSIGNED,
-  312: UNASSIGNED,
+  311: {id: 'anm:resampleMode'},
+  312: {id: 'anm:scrollMode'},
   313: {id: 'anm:resolutionMode'},
   314: UNASSIGNED,
   315: UNASSIGNED,
@@ -147,33 +148,34 @@ const INS_14 = {
   506: UNASSIGNED,
   507: UNASSIGNED,
   508: UNASSIGNED,
-  509: UNASSIGNED,
+  509: {id: 'anm:copyParentVars'},
 
-  600: UNASSIGNED,
-  601: UNASSIGNED,
-  602: UNASSIGNED,
+  600: {id: 'anm:textureCircle'},
+  601: {id: 'anm:textureArcEven'},
+  602: {id: 'anm:textureArc'},
   603: {id: 'anm:drawRect'},
-  604: UNASSIGNED,
-  605: UNASSIGNED,
+  604: {id: 'anm:drawPoly'},
+  605: {id: 'anm:drawPolyBorder'},
   606: {id: 'anm:drawRectGrad'},
   607: {id: 'anm:drawRectShadow'},
   608: {id: 'anm:drawRectShadowGrad'},
-  609: UNASSIGNED,
-  610: UNASSIGNED,
+  609: {id: 'anm:textureCylinder3D'},
+  610: {id: 'anm:textureRing3D'},
 };
 
 const INS_15 = Object.assign({}, INS_14, {
-  // TODO: new instructions in TH15
+  316: UNASSIGNED,
+  317: UNASSIGNED,
+  611: {id: 'anm:drawRing'},
 });
 
 const INS_16 = Object.assign({}, INS_15, {
   612: {id: 'anm:drawRectBorder'},
   613: {id: 'anm:drawLine'},
-  // TODO: new instructions in TH16
 });
 
 const INS_17 = Object.assign({}, INS_16, {
-  // TODO: new instructions in TH17
+  // nothing was added
 });
 
 export const ANM_BY_OPCODE = {
@@ -274,12 +276,12 @@ Object.assign(ANM_INS_DATA, {
 
     [tiphide]
     [code]
-      [ref=anm:set]([10000], 3);
+      [ref=anm:set]([ref=anmvar:i0], 3);
     loop:
       // ...
       // anything in this block will be done 3 times
       // ...
-      [ref=anm:jmpDec]([10000], loop);
+      [ref=anm:jmpDec]([ref=anmvar:i0], loop);
     [/code]
     [/tiphide]
   `},
@@ -318,17 +320,18 @@ for (const [mnemonic, operator] of Object.entries(OPERATOR_3_DATA)) {
   }
 }
 
+// TODO: Strip out parameter tooltips, they're easy to mess up anyways.
 Object.assign(ANM_INS_DATA, {
-  'rand': {sig: '$S', args: ['x', 'n'], desc: 'Draw a random integer `0 <= %1 < %2`.'},
-  'randF': {sig: '%f', args: ['x', 'r'], desc: 'Draw a random float `0 <= %1 <= %2`.'},
+  'rand': {sig: '$S', args: ['x', 'n'], desc: 'Draw a random integer `0 <= x < n`.'},
+  'randF': {sig: '%f', args: ['x', 'r'], desc: 'Draw a random float `0 <= x <= r`.'},
 
-  'mathSin': {sig: '%f', args: ['dest', 'θ'], desc: 'Compute `sin(%1)` (%1 in radians).'},
-  'mathCos': {sig: '%f', args: ['dest', 'θ'], desc: 'Compute `cos(%1)` (%1 in radians).'},
-  'mathTan': {sig: '%f', args: ['dest', 'θ'], desc: 'Compute `tan(%1)` (%1 in radians).'},
-  'mathAcos': {sig: '%f', args: ['dest', 'θ'], desc: 'Compute `acos(%1)` (output in radians).'},
-  'mathAtan': {sig: '%f', args: ['dest', 'θ'], desc: 'Compute `atan(%1)` (output in radians).'},
+  'mathSin': {sig: '%f', args: ['dest', 'θ'], desc: 'Compute `sin(θ)` (%2 in radians).'},
+  'mathCos': {sig: '%f', args: ['dest', 'θ'], desc: 'Compute `cos(θ)` (%2 in radians).'},
+  'mathTan': {sig: '%f', args: ['dest', 'θ'], desc: 'Compute `tan(θ)` (%2 in radians).'},
+  'mathAcos': {sig: '%f', args: ['dest', 'θ'], desc: 'Compute `acos(θ)` (output in radians).'},
+  'mathAtan': {sig: '%f', args: ['dest', 'θ'], desc: 'Compute `atan(θ)` (output in radians).'},
   'mathReduceAngle': {sig: '%', args: ['θ'], desc: 'Reduce an angle modulo `2*PI` into the range `[-PI, +PI]`.'},
-  'mathCirclePos': {sig: '%%ff', args: ['x', 'y', 'θ', 'r'], desc: '`%1 = %4*cos(%3); %2 = %4*sin(%3);`'},
+  'mathCirclePos': {sig: '%%ff', args: ['x', 'y', 'θ', 'r'], desc: '%1` = `%4`* cos(`%3`);`<br>%2` = `%4`* sin(`%3`);`'},
   'mathCirclePosRand': {
     sig: '%%ff', args: ['x', 'y', 'rmin', 'rmax'], desc: `
     Uniformly draws a random radius \`r\` in the interval given by %3 and %4, and picks a random angle. (both using the anm RNG)
@@ -419,10 +422,14 @@ Object.assign(ANM_INS_DATA, {
     Determines how a sprite is resampled when scale is greater or less than 1f.
 
     [tiphide]
-    0 - \`D3DTEXF_LINE\` (linear interpolation; blurry)
-    1 - \`D3DTEXF_POINT\` (nearest-point sampling; big pixels)
+    | Mode | D3D constant | Meaning | Layman's terms |
+    | ---  | --- | --- | ---
+    | 0    | \`D3DTEXF_LINE\` | linear interpolation | blurry |
+    | 1    | \`D3DTEXF_POINT\` | nearest-point sampling | big pixels |
 
-    [c=red]TODO: image[/c]
+    As an example, Reimu's sprite in [game=14]DDC[/game] uses [ref-notip=anm:resampleMode]\`(1)\`, while her hitbox animation does not.
+    Here you can see the effect of enabling it on the hitbox during Shinmyoumaru's survival spell.<br>
+    <img src="./content/anm/img/ins-v8-311.png" height="200px">
     [/tiphide]
   `},
   // TODO: link to stages of drawing.
@@ -445,7 +452,7 @@ Object.assign(ANM_INS_DATA, {
     [wip]Clear guidelines are not yet known for when you are required to override that default.[/wip]
 
     [tiphide]
-    This only has an effect on root VMs. (for child animations, the root is always the parent's position)
+    This only has an effect on root animations. (for child animations, the origin is always the parent's position)
     [/tiphide]
   `},
   'resolutionMode': {
@@ -505,7 +512,7 @@ Object.assign(ANM_INS_DATA, {
     Some special drawing instructions give the x and y scales special meaning.
   `},
   'scale2': {
-    sig: 'ff', args: ['sx', 'sy'], wip: 1, desc: `
+    sig: 'ff', args: ['sx', 'sy'], desc: `
     *As far as we know,* this is just an extra set of scale factors that apply separately (multiplicatively)
     to [ref=anm:scale].
 
@@ -636,11 +643,140 @@ Object.assign(ANM_INS_DATA, {
 // =================
 // ==== DRAWING ====
 // =================
+
+// 2D texture circles
+Object.assign(ANM_INS_DATA, {
+  'textureCircle': {
+    sig: 'S', args: ['nmax'], desc: `
+    Wraps a texture into a thin ring (annulus).  The argument determines the size of an internal buffer.
+
+    [tiphide]
+    First, the texture is repeated an integer number of times along the y axis.
+    Then, it is stretched and wrapped into an annular shape as follows:
+
+    * The x-scale from [ref=anm:scale] is the **width** of the annulus (R2-R1).
+    * The y-scale is the **radius** of the "middle" of the texture. (0.5*(R1+R2))
+    * [ref=anmvar:i0] is the **number of points** to create along this arc section.
+    * [ref=anmvar:i1] is the **number of times the texture is repeated**.
+
+    After calling this command you can **change these parameters in real-time** simply by
+    modifying [ref=anm:scale], [ref=anmvar:i0] and [ref=anmvar:i1]. Further notes:
+
+    * **[ref=anmvar:i0] MUST be \`<=\` %1 at all times!**
+    * For this command, the last point is equal to the first point, so n points makes an (n-1)gon.
+    * The repeating of the texture is done in a manner affected by [ref=anm:scrollMode],
+      and the sprite is assumed to span the full height of its image file.
+    * The image is reversed; use a negative x-scale to make it normal.
+
+    [wip]Out of all five 600-series instructions that contort textures, this instruction is unique in that it
+    appears to support gradients whenever [ref=anm:colorMode] is nonzero, but I haven't tested this.[/wip]
+
+    Comparison image of the two-dimensional texture circle instructions in TH17:<br>
+    ![600, 601, 602 comparison](./content/anm/img/ins-v8-texCircle.png)
+    [/tiphide]
+  `},
+  'textureArc': {
+    sig: 'S', args: ['nmax'], desc: `
+    Similar to [ref=anm:textureCircle], but creates an arc segment beginning from an angle of zero and running clockwise.
+    In addition to all of the settings [ref=anm:textureCircle], this has one additional parameter:
+    * The x rotation from [ref=anm:rotate] defines **the angle subtended by the arc.**
+
+    Note that the shape will always contain [ref=anmvar:i1] full copies of the image. (they stretch and shrink with
+    \`rotx\` rather than being cut off).
+  `},
+  'textureArcEven': {
+    sig: 'S', args: ['nmax'], desc: `
+    Identical to [ref=anm:textureArc] but awkwardly centered around angle 0 rather than starting at 0.
+  `},
+  'textureCylinder3D': {
+    sig: 'S', args: ['nmax'], desc: `
+    Wraps a texture into the 3D surface of a cylindrical section.
+    The argument determines the size of an internal buffer.
+
+    [tiphide]
+    First, the texture is repeated an integer number of times along the y axis.
+    (this is done in a manner affected by [ref=anm:scrollMode],
+    and the sprite is assumed to span the full height of its image file).
+    Then, it is turned on its side in 3D space, stretched and wrapped into a section
+    of a cylinder as follows:
+
+    * [ref=anmvar:f0] is the **total angle** subtended by the arc section.  (\`2PI\` = a full cylinder)
+    * [ref=anmvar:f1] is the **height**.
+    * [ref=anmvar:f2] is the **radius**.
+    * [ref=anmvar:f3] is the **center angle** of the arc section, measured towards +z from the x-axis (see image).
+    * [ref=anmvar:i0] is the **number of points** to create along this arc section.  (this MUST be <= the argument %1 at all times!)
+    * [ref=anmvar:i1] is the **number of times the texture is repeated**.
+
+    After calling this command you can modify these variables to change the shape in real-time.
+
+    <img src="./content/anm/img/ins-v8-609.png" height="250px">
+    [/tiphide]
+  `},
+  'textureRing3D': {
+    sig: 'S', args: ['nmax'], desc: `
+    Wraps a texture into a thin ring (annulus) positioned in 3D space (i.e. the stage background).
+    The argument determines the size of an internal buffer.
+
+    [tiphide]
+    First, the texture is repeated an integer number of times along the y axis.
+    (this is done in a manner affected by [ref=anm:scrollMode],
+    and the sprite is assumed to span the full height of its image file).
+    Then, it is laid flat on the xz-plane in 3D space, and then
+    stretched and wrapped into an annular shape as follows:
+
+    * [ref=anmvar:f0] is the **total angle** subtended by the arc section.  (\`2PI\` = a full cylinder)
+    * [ref=anmvar:f1] is the **width** of the annulus. (R2 - R1)
+    * [ref=anmvar:f2] is the **radius of the "middle"** of the texture.  (1/2 * (R1 + R2))
+    * [ref=anmvar:f3] is the **center angle** of the arc section, measured towards +z from the x-axis (see image).
+    * [ref=anmvar:i0] is the **number of points** to create along this arc section.  (this MUST be <= the argument %1 at all times!)
+    * [ref=anmvar:i1] is the **number of times the texture is repeated**.
+
+    After calling this command you can modify these variables to change the shape in real-time.
+
+    <img src="./content/anm/img/ins-v8-610.png" height="250px">
+    [/tiphide]
+  `},
+});
+
+// Circle-drawing family
+Object.assign(ANM_INS_DATA, {
+  'drawPoly': {
+    sig: 'fS', args: ['radius', 'nInit'], desc: `
+    Draws a filled regular n-gon with a gradient going from center to edge.
+    [tiphide]
+    %2 will be stored in the integer variable [ref=anmvar:i0], where you can change it at any time.
+    If you want to change the radius in real-time or from ECL, you can adjust the x-scale from [ref=anm:scale]
+    (which gets multiplied into the %1 argument).
+    [/tiphide]
+  `},
+  'drawPolyBorder': {
+    sig: 'fS', args: ['radius', 'nInit'], desc: `
+    Like [ref=anm:drawPoly] but draws a 1-pixel border. No gradients.
+  `},
+  'drawRing': {
+    sig: 'ffS', args: ['radius', 'thickness', 'nInit'], desc: `
+    Draws a filled ring (annulus) with n sides.  No gradients.
+    [tiphide]
+    %3 is stored in $I0 like [ref=anm:drawPoly] and [ref=anm:drawPolyBorder].
+    %1 is mean radius (0.5*(R1+R2)), %2 is (R2 - R1).
+    If you want to change the parameters in real-time or from ECL,
+    use the [ref=anm:scale] instruction; x-scale is multiplied into radius,
+    y-scale is multiplied into thickness.
+    [/tiphide]
+  `},
+});
+
+// Rectangle-drawing family
 Object.assign(ANM_INS_DATA, {
   'drawRect': {
     sig: 'ff', args: ['w', 'h'], desc: `
     Draws a filled rectangle with the given dimensions.  No gradients.
     If you want to control the dimensions from ECL, consider passing in \`1.0\` and changing the anm's scale instead.
+
+    [tiphide]
+    Image of the rectangle-drawing family of instructions in TH17:<br>
+    ![Overview of rectangle-drawing instructions in TH17.](./content/anm/img/ins-v8-drawRect.png)
+    [/tiphide]
   `},
   'drawRectGrad': {
     sig: 'ff', args: ['w', 'h'], desc: `
@@ -699,6 +835,25 @@ Object.assign(ANM_INS_DATA, {
     * Use those as fractional uv coordinates for a region to pull sprite data from.
 
     Presumably this lets you do weird things like use a rotated region of a .png file as a sprite.
+    [/tiphide]
+  `},
+  'copyParentVars': {
+    sig: '', args: [], desc: `
+    When called on a child animation, copies over a number of variables from its parent.
+
+    [tiphide]
+    [headless-table]
+    | | | | |
+    | --- | --- | --- | --- |
+    | [ref=anmvar:i0] | [ref=anmvar:f0] | [ref=anmvar:i4]             | [ref=anmvar:rand-param-int] |
+    | [ref=anmvar:i1] | [ref=anmvar:f1] | [ref=anmvar:i5]             | [ref=anmvar:mystery-angle-x]  |
+    | [ref=anmvar:i2] | [ref=anmvar:f2] | [ref=anmvar:rand-param-one] | [ref=anmvar:mystery-angle-y]  |
+    | [ref=anmvar:i3] | [ref=anmvar:f3] | [ref=anmvar:rand-param-pi]  | [ref=anmvar:mystery-angle-z]  |
+    [/headless-table]
+
+    [wip](example use case? the game uses it a lot...)[/wip]
+
+    ![copyParentVars demonstration](./content/anm/img/ins-v8-509.gif)
     [/tiphide]
   `},
 });
