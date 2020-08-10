@@ -87,17 +87,17 @@ const INS_14 = {
   302: {id: 'anm:renderMode'},
   303: {id: 'anm:blendMode'},
   304: {id: 'anm:layer'},
-  305: UNASSIGNED,
-  306: UNASSIGNED,
-  307: UNASSIGNED,
+  305: {id: 'anm:noZBuffer'},
+  306: {id: 'anm:v8-306'},
+  307: UNASSIGNED, // sets a bitflag
   308: {id: 'anm:flipX'},
   309: {id: 'anm:flipY'},
-  310: UNASSIGNED,
+  310: UNASSIGNED, // sets a bitflag
   311: {id: 'anm:resampleMode'},
   312: {id: 'anm:scrollMode'},
   313: {id: 'anm:resolutionMode'},
-  314: UNASSIGNED,
-  315: UNASSIGNED,
+  314: {id: 'anm:attached'},
+  315: UNASSIGNED, // sets. a. bitflag.
 
   400: {id: 'anm:pos'},
   401: {id: 'anm:rotate'},
@@ -118,10 +118,10 @@ const INS_14 = {
   416: {id: 'anm:scaleGrowth'},
   417: {id: 'anm:alphaTime2'},
   418: {id: 'anm:v8-418'},
-  419: UNASSIGNED,
+  419: UNASSIGNED, // sets. A BITFLAG!!
   420: {id: 'anm:posBezier'},
   421: {id: 'anm:anchor'},
-  422: UNASSIGNED,
+  422: UNASSIGNED, // copies true_final_pos to pos and sets true_final_pos to 0. Hm. I need to rename that field...
   423: {id: 'anm:colorMode'},
   424: {id: 'anm:rotateAuto'},
   425: {id: 'anm:uVel'},
@@ -130,24 +130,24 @@ const INS_14 = {
   428: {id: 'anm:vVelTime'},
   429: {id: 'anm:uvScale'},
   430: {id: 'anm:uvScaleTime'},
-  431: UNASSIGNED,
-  432: UNASSIGNED,
-  433: UNASSIGNED,
+  431: UNASSIGNED, // BITFLAAAAG
+  432: UNASSIGNED, // BETFLARG
+  433: UNASSIGNED, // Some kind of pos-time variant
   434: {id: 'anm:scale2'},
   435: {id: 'anm:scale2Time'},
   436: {id: 'anm:anchorOffset'},
-  437: UNASSIGNED,
+  437: UNASSIGNED, // BIIIIIIIIIT
   438: {id: 'anm:originMode'},
 
-  500: UNASSIGNED,
-  501: UNASSIGNED,
-  502: UNASSIGNED,
-  503: UNASSIGNED,
-  504: UNASSIGNED,
-  505: UNASSIGNED,
-  506: UNASSIGNED,
-  507: UNASSIGNED,
-  508: UNASSIGNED,
+  500: {id: 'anm:createChild'},
+  501: {id: 'anm:prependChild'},
+  502: {id: 'anm:createChildUi'},
+  503: {id: 'anm:prependChildUi'},
+  504: {id: 'anm:create-504'},
+  505: {id: 'anm:create-505'},
+  506: {id: 'anm:create-506'},
+  507: {id: 'anm:ignoreParent'},
+  508: {id: 'anm:createEffect'},
   509: {id: 'anm:copyParentVars'},
 
   600: {id: 'anm:textureCircle'},
@@ -164,8 +164,8 @@ const INS_14 = {
 };
 
 const INS_15 = Object.assign({}, INS_14, {
-  316: UNASSIGNED,
-  317: UNASSIGNED,
+  316: UNASSIGNED, // enables a bitflag
+  317: UNASSIGNED, // disables that bitflag
   611: {id: 'anm:drawRing'},
 });
 
@@ -230,7 +230,7 @@ Object.assign(ANM_INS_DATA, {
   'delete': {sig: '', args: [], desc: "Destroys the animation."},
   'static': {sig: '', args: [], wip: 1, desc: `[wip=1]Chinese wiki says "makes a static texture", sounds straightforward but more investigation wouldn't hurt.[/wip]`},
   'stop': {sig: '', args: [], desc: "Stops executing the script and waits for a switch to occur. (see [ref=anm:case])"},
-  'stop2': {sig: '', args: [], wip: 1, desc: "This is [ref=anm:stop] except that it additionally clears an unknown bitflag..."},
+  'stop2': {sig: '', args: [], wip: 2, desc: "This is [ref=anm:stop] except that it additionally clears an unknown bitflag..."},
   'case': {
     sig: 'S', args: ['n'], desc: `
     A label used to externally control an ANM.
@@ -328,8 +328,8 @@ Object.assign(ANM_INS_DATA, {
   'mathSin': {sig: '%f', args: ['dest', 'θ'], desc: 'Compute `sin(θ)` (%2 in radians).'},
   'mathCos': {sig: '%f', args: ['dest', 'θ'], desc: 'Compute `cos(θ)` (%2 in radians).'},
   'mathTan': {sig: '%f', args: ['dest', 'θ'], desc: 'Compute `tan(θ)` (%2 in radians).'},
-  'mathAcos': {sig: '%f', args: ['dest', 'θ'], desc: 'Compute `acos(θ)` (output in radians).'},
-  'mathAtan': {sig: '%f', args: ['dest', 'θ'], desc: 'Compute `atan(θ)` (output in radians).'},
+  'mathAcos': {sig: '%f', args: ['dest', 'x'], desc: 'Compute `acos(x)` (output in radians).'},
+  'mathAtan': {sig: '%f', args: ['dest', 'm'], desc: 'Compute `atan(m)` (output in radians).'},
   'mathReduceAngle': {sig: '%', args: ['θ'], desc: 'Reduce an angle modulo `2*PI` into the range `[-PI, +PI]`.'},
   'mathCirclePos': {sig: '%%ff', args: ['x', 'y', 'θ', 'r'], desc: '%1` = `%4`* cos(`%3`);`<br>%2` = `%4`* sin(`%3`);`'},
   'mathCirclePosRand': {
@@ -411,9 +411,11 @@ Object.assign(ANM_INS_DATA, {
     sig: 'S', args: ['n'], desc: `
     Sets the layer of the ANM.  [tiphide][wip]This may or may not affect z-ordering? It's weird...[/wip][/tiphide]
 
-    [tiphide]**Different layer numbers may behave differently!** Each game only has a finite number of layers, and certain groups of these layers
+    [tiphide]
+    **Different layer numbers may behave differently!** Each game only has a finite number of layers, and certain groups of these layers
     are drawn at different stages in the rendering pipeline.  Be especially careful when porting something from one game to another,
-    as the layer groupings may have changed.[/tiphide]
+    as the layer groupings may have changed.
+    [/tiphide]
   `},
   'flipX': {sig: '', args: [], desc: "Toggles mirroring on the x axis.  [wip](sounds straightforward, but which things are affected?[/wip]"},
   'flipY': {sig: '', args: [], desc: "Toggles mirroring on the y axis.  [wip](sounds straightforward, but which things are affected?[/wip]"},
@@ -423,7 +425,7 @@ Object.assign(ANM_INS_DATA, {
 
     [tiphide]
     | Mode | D3D constant | Meaning | Layman's terms |
-    | ---  | --- | --- | ---
+    | ---  | --- | --- | --- |
     | 0    | \`D3DTEXF_LINE\` | linear interpolation | blurry |
     | 1    | \`D3DTEXF_POINT\` | nearest-point sampling | big pixels |
 
@@ -516,8 +518,10 @@ Object.assign(ANM_INS_DATA, {
     *As far as we know,* this is just an extra set of scale factors that apply separately (multiplicatively)
     to [ref=anm:scale].
 
+    [tiphide]
     All special drawing instructions ignore this (which is a shame, because it means you still can't
     draw ellipses...).
+    [/tiphide]
   `},
   'rgb': {
     sig: 'SSS', args: ['r', 'g', 'b'], desc: `
@@ -561,7 +565,7 @@ Object.assign(ANM_INS_DATA, {
   'angleVel': {sig: 'fff', args: ['ωx', 'ωy', 'ωz'], desc: `Set a constant angular velocity, in radians per frame.`},
   'scaleGrowth': {sig: 'ff', args: ['gx', 'gy'], desc: `
     Every frame, it increases the values of [ref=anm:scale] as \`sx -> sx + gx\` and \`sy -> sy + gy\`.
-    Basically, [ref=anm:scaleGrowth] is to [ref=anm:scale] as [ref=anm:angleVel] is to [ref=anm:rotate].
+    Basically, [ref-notip=anm:scaleGrowth] is to [ref=anm:scale] as [ref=anm:angleVel] is to [ref=anm:rotate].
     (they even share implemenation details...)
   `},
   // TODO: link to texture coordinates concept
@@ -587,9 +591,20 @@ Object.assign(ANM_INS_DATA, {
   `},
   'anchorOffset': {sig: 'ss', args: ['dx', 'dy'], desc: `
     Nudge the anchor point of the sprite right by %1 pixels and down by %2 pixels in the source image.
-    The anchor position serves as the center point for rotation and scaling.
+    Important for asymmetric bullet sprites because the anchor position is the center point for rotation and scaling.
 
-    [wip]TODO: image[/wip]
+    [tiphide]
+    A tip to getting a good anchor position is to set [ref=anm:anchor]\`(1, 1)\` to anchor the top left corner,
+    then nudge it to the desired offset within the sprite.  In the image below, both hearts
+    are rotating using [ref=anm:angleVel]\`(0f, 0f, rad(3))\`, but the pink heart additionally has:
+
+    [code]
+      [ref=anm:anchor](1, 1);
+      [ref=anm:anchorOffset](9.5f, 25f);
+    [/code]
+
+    ![anchorOffset demo](./content/anm/img/ins-v8-436.gif)
+    [/tiphide]
   `},
 });
 
@@ -819,6 +834,100 @@ Object.assign(ANM_INS_DATA, {
   `},
 });
 
+// ==================
+// ==== CHILDREN ====
+// ==================
+Object.assign(ANM_INS_DATA, {
+  // TODO: Link world list and UI list
+  'createChild': {
+    sig: 'S', args: ['script'], desc: `
+    The standard way to create a child animation.  The new VM is inserted at the back of the world list.
+
+    [wip]TODO: Link to page on world list, UI list, and execution order trickiness[/wip]
+  `},
+  'prependChild': {
+    sig: 'S', args: ['script'], wip: 1, desc: `
+    Create a child animation, but insert it at the *front* of the world list.
+
+    [wip]The nuances of execution order are still not fully understood.[/wip]
+  `},
+  'createChildUi': {
+    sig: 'S', args: ['script'], desc: `
+    Create a child animation, but insert it at the back of the UI list instead.
+    UI ANMs run even when the game is paused.
+  `},
+  'prependChildUi': {
+    sig: 'S', args: ['script'], wip: 1, desc: `
+    Create a child animation, but insert it at the front of the UI list.
+
+    [wip]The nuances of execution order are still not fully understood.[/wip]
+  `},
+  'attached': {
+    sig: 'S', args: ['enable'], wip: 1, desc: `
+    Sets a bitflag.  When the bitflag is enabled, the animation will move as its parent rotates.
+    (picture a person holding a shield; as the person rotates, the shield moves around them)
+
+    [wip]Where is it used? Are there other effects?[/wip]
+  `},
+  'createEffect': {
+    sig: 'S', args: ['kind'], wip: 1, desc: `
+    Creates a special child animation that may have additional hardcoded behavior.
+
+    [tiphide]
+    [wip]Haven't gotten to playing around with this or reverse engineering any of those hardcoded behaviors yet.[/wip]
+    [/tiphide]
+  `},
+  'create-504': {
+    sig: 'S', args: ['script'], wip: 1, desc: `
+    Creates a child and puts it in the back of the world list, but copies more state from the parent than normal.
+    [wip]What gets copied? Why?[/wip]
+  `},
+  'create-505': {
+    sig: 'Sff', args: ['script', 'x', 'y'], wip: 1, desc: `
+    Creates a child and puts it in the back of the world list, and then... welllllll....
+
+    [tiphide]
+    [wip]You know that mysterious "alternate position" vector mentioned in the entry for [ref=anm:pos]?
+    That's where the \`x\` and \`y\` args get written.  WHAT IS THAT THING[/wip]
+    [/tiphide]
+  `},
+  'create-506': {
+    sig: 'Sff', args: ['script', 'x', 'y'], wip: 1, desc: `
+    Combines the effects of [ref=anm:create-504] and [ref=anm:create-505].
+  `},
+  'ignoreParent': {
+    sig: 'S', args: ['ignore'], wip: 2, desc: `
+    Sets a bitflag.  If the bitflag is 1, then in many different contexts, the ANM will e.g. ignore the
+    parent's scale and rotation and it will be allowed to use [ref=anm:originMode] as though it were root, etc.
+
+    [tiphide]
+    Completely unused in games with ANM version 8.  Well, it's used, but only by one thing (I think it's the
+    copyright logo in TH15-17?) to set [ref-notip=anm:ignoreParent]\`(0)\`, which is unnecessary because
+    the flag is already zero by default.
+    [/tiphide]
+  `},
+  'copyParentVars': {
+    sig: '', args: [], desc: `
+    When called on a child animation, copies over a number of variables from its parent.
+
+    [tiphide]
+    They are:
+    [headless-table]
+    | | | | |
+    | --- | --- | --- | --- |
+    | [ref=anmvar:i0] | [ref=anmvar:f0] | [ref=anmvar:i4]             | [ref=anmvar:rand-param-int] |
+    | [ref=anmvar:i1] | [ref=anmvar:f1] | [ref=anmvar:i5]             | [ref=anmvar:mystery-angle-x]  |
+    | [ref=anmvar:i2] | [ref=anmvar:f2] | [ref=anmvar:rand-param-one] | [ref=anmvar:mystery-angle-y]  |
+    | [ref=anmvar:i3] | [ref=anmvar:f3] | [ref=anmvar:rand-param-pi]  | [ref=anmvar:mystery-angle-z]  |
+    [/headless-table]
+
+    [wip](example use case? the game uses it a lot...)[/wip]
+
+    ![copyParentVars demonstration](./content/anm/img/ins-v8-509.gif)
+    [/tiphide]
+  `},
+});
+
 // ============================
 // ==== WEIRD-ASS NONSENSE ====
 // ============================
@@ -837,24 +946,25 @@ Object.assign(ANM_INS_DATA, {
     Presumably this lets you do weird things like use a rotated region of a .png file as a sprite.
     [/tiphide]
   `},
-  'copyParentVars': {
-    sig: '', args: [], desc: `
-    When called on a child animation, copies over a number of variables from its parent.
+  'noZBuffer': {
+    sig: 'S', args: ['disable'], wip: 1, desc: `
+    If \`disable\` is 1, writing to the z-buffer is disabled.  Otherwise, it is enabled.
+    This can matter in cases where z-testing is used to filter writes.
+    ([wip]under what conditions are z-testing enabled, anyway?[/wip])
+    [wip]This seems strange. Are there other, unknown effects?[/wip]
 
     [tiphide]
-    [headless-table]
-    | | | | |
-    | --- | --- | --- | --- |
-    | [ref=anmvar:i0] | [ref=anmvar:f0] | [ref=anmvar:i4]             | [ref=anmvar:rand-param-int] |
-    | [ref=anmvar:i1] | [ref=anmvar:f1] | [ref=anmvar:i5]             | [ref=anmvar:mystery-angle-x]  |
-    | [ref=anmvar:i2] | [ref=anmvar:f2] | [ref=anmvar:rand-param-one] | [ref=anmvar:mystery-angle-y]  |
-    | [ref=anmvar:i3] | [ref=anmvar:f3] | [ref=anmvar:rand-param-pi]  | [ref=anmvar:mystery-angle-z]  |
-    [/headless-table]
+    It is extremely difficult to find examples where this has any noticeable effect,
+    but there's an example in stage 4:
 
-    [wip](example use case? the game uses it a lot...)[/wip]
-
-    ![copyParentVars demonstration](./content/anm/img/ins-v8-509.gif)
+    <img src="./content/anm/img/ins-v8-305.png" height:"200px">
     [/tiphide]
+  `},
+  'v8-306': {
+    sig: 'S', args: ['enable'], wip: 2, desc: `
+    Sets the state of a bitflag.  When this flag is enabled, [wip]some unknown vector from the stage background
+    camera data is added to some poorly-understood position-related vector on the ANM, for an even more
+    unknown purpose.[/wip]
   `},
 });
 

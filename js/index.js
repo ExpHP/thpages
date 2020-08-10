@@ -25,6 +25,11 @@ export const INDEX = [
         "url": "concepts",
       },
       {
+        "name": "Stages of rendering",
+        "type": "site",
+        "url": "stages-of-rendering",
+      },
+      {
         "name": "Instruction reference",
         "type": "site",
         "url": "ins",
