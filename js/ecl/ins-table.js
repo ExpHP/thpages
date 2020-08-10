@@ -97,7 +97,7 @@ const INS_14 = {
   312: {id: 'anm:scrollMode'},
   313: {id: 'anm:resolutionMode'},
   314: {id: 'anm:attached'},
-  315: UNASSIGNED, // sets. a. bitflag.
+  315: UNASSIGNED, // sets. a. bitflag.  color-related?
 
   400: {id: 'anm:pos'},
   401: {id: 'anm:rotate'},
@@ -136,7 +136,7 @@ const INS_14 = {
   434: {id: 'anm:scale2'},
   435: {id: 'anm:scale2Time'},
   436: {id: 'anm:anchorOffset'},
-  437: UNASSIGNED, // BIIIIIIIIIT
+  437: {id: 'anm:rotationSystem'},
   438: {id: 'anm:originMode'},
 
   500: {id: 'anm:createChild'},
@@ -252,7 +252,7 @@ Object.assign(ANM_INS_DATA, {
     * [wip]Can switching interrupt code that is not at a [ref=anm:stop]? Testing needed.[/wip]
     [/tiphide]
   `},
-  'wait': {sig: 'S', args: ['t'], desc: `Wait %1 frames.`},
+  'wait': {sig: 'S', args: ['t'], desc: `Wait \`t\` frames.`},
   'v8-7': {sig: '', args: [], wip: 2, desc: `[wip=2]*dunno but it looks important lol*[/wip]`},
 });
 
@@ -262,17 +262,17 @@ Object.assign(ANM_INS_DATA, {
 Object.assign(ANM_INS_DATA, {
   'jmp': {
     sig: 'SS', args: ['dest', 't'], desc: `
-    Jumps to %1 and sets time to %2.  \`thanm\` accepts a label name for %1.
+    Jumps to \`dest\` and sets time to \`t\`.  \`thanm\` accepts a label name for \`dest\`.
 
     [tiphide]
     [wip=2]Chinese wiki says some confusing recommendation about setting a=0, can someone explain to me?[/wip]
 
-    [wip]What is %1 relative to? Beginning of current script?[/wip]
+    [wip]What is \`dest\` relative to? Beginning of current script?[/wip]
     [/tiphide]
   `},
   'jmpDec': {
     sig: '$SS', args: ['x', 'dest', 't'], desc: `
-    Decrement %1 and then jump if it is \`> 0\`.  You can use this to repeat a loop a fixed number of times.
+    Decrement \`x\` and then jump if \`x > 0\`.  You can use this to repeat a loop a fixed number of times.
 
     [tiphide]
     [code]
@@ -325,16 +325,16 @@ Object.assign(ANM_INS_DATA, {
   'rand': {sig: '$S', args: ['x', 'n'], desc: 'Draw a random integer `0 <= x < n`.'},
   'randF': {sig: '%f', args: ['x', 'r'], desc: 'Draw a random float `0 <= x <= r`.'},
 
-  'mathSin': {sig: '%f', args: ['dest', 'θ'], desc: 'Compute `sin(θ)` (%2 in radians).'},
-  'mathCos': {sig: '%f', args: ['dest', 'θ'], desc: 'Compute `cos(θ)` (%2 in radians).'},
-  'mathTan': {sig: '%f', args: ['dest', 'θ'], desc: 'Compute `tan(θ)` (%2 in radians).'},
+  'mathSin': {sig: '%f', args: ['dest', 'θ'], desc: 'Compute `sin(θ)` (`θ` in radians).'},
+  'mathCos': {sig: '%f', args: ['dest', 'θ'], desc: 'Compute `cos(θ)` (`θ` in radians).'},
+  'mathTan': {sig: '%f', args: ['dest', 'θ'], desc: 'Compute `tan(θ)` (`θ` in radians).'},
   'mathAcos': {sig: '%f', args: ['dest', 'x'], desc: 'Compute `acos(x)` (output in radians).'},
   'mathAtan': {sig: '%f', args: ['dest', 'm'], desc: 'Compute `atan(m)` (output in radians).'},
   'mathReduceAngle': {sig: '%', args: ['θ'], desc: 'Reduce an angle modulo `2*PI` into the range `[-PI, +PI]`.'},
-  'mathCirclePos': {sig: '%%ff', args: ['x', 'y', 'θ', 'r'], desc: '%1` = `%4`* cos(`%3`);`<br>%2` = `%4`* sin(`%3`);`'},
+  'mathCirclePos': {sig: '%%ff', args: ['x', 'y', 'θ', 'r'], desc: '`x = r*cos(θ);`<br>`y = r*sin(θ);`'},
   'mathCirclePosRand': {
     sig: '%%ff', args: ['x', 'y', 'rmin', 'rmax'], desc: `
-    Uniformly draws a random radius \`r\` in the interval given by %3 and %4, and picks a random angle. (both using the anm RNG)
+    Uniformly draws a random radius \`r\` in the interval given by \`rmin\` and \`rmax\`, and picks a random angle. (both using the anm RNG)
     Then basically computes [ref=anm:mathCirclePos] on those.
 
     This isn't the right way to uniformly draw points on a ring shape, but I don't think that's what it's used for anyways.
@@ -359,7 +359,7 @@ Object.assign(ANM_INS_DATA, {
   // TODO: link to RNG concept page once it exists
   'spriteRand': {
     sig: 'SS', args: ['a', 'b'], desc: `
-    Selects a random sprite from %1 (inclusive) to %1 + %2 (exclusive) using the animation RNG.
+    Selects a random sprite from \`a\` (inclusive) to \`a + b\` (exclusive) using the animation RNG.
   `},
   'blendMode': {
     sig: 'S', args: ['mode'], desc: `
@@ -396,7 +396,9 @@ Object.assign(ANM_INS_DATA, {
     Mode numbers can change between games, but the most popular modes have pretty stable numbers:
 
     * Mode 0 is for 2D sprites that do not require rotation.
-    * Mode 1 is for 2D sprites that require rotation around the z-axis.
+    * Mode 1 is for 2D sprites that require rotation around the z-axis. <br>
+      [wip]When you activate mode 1, things may suddenly become a bit blurry.  Visually it looks identical to
+      mode 2 at zero rotation, but the cause seems different based on the code?[/wip]
     * Mode 8 is for sprites that need to rotate in 3D space.
     * [wip]Mode 2 is like mode 0, but shifts the position by (-0.5, -0.5) pixels, making it appear ever-so-slightly
         larger and blurrier.[/wip]
@@ -570,11 +572,11 @@ Object.assign(ANM_INS_DATA, {
   `},
   // TODO: link to texture coordinates concept
   'uVel': {sig: 'f', args: ['vel'], desc: `
-    Add %1 to the texture u coordinate every frame (in units of \`1 / total_image_width\`),
+    Add \`vel\` to the texture u coordinate every frame (in units of \`1 / total_image_width\`),
     causing the displayed sprite to scroll horizontally through the image file.
   `},
   'vVel': {sig: 'f', args: ['vel'], desc: `
-    Add %1 to the texture v coordinate every frame (in units of \`1 / total_image_height\`),
+    Add \`vel\` to the texture v coordinate every frame (in units of \`1 / total_image_height\`),
     causing the displayed sprite to scroll vertically through the image file.
   `},
   'uvScale': {sig: 'ff', args: ['uscale', 'vscale'], desc: "Scales texture uv coordinates. [wip]TODO: link to uv tutorial[/wip]"},
@@ -585,12 +587,12 @@ Object.assign(ANM_INS_DATA, {
     [tiphide]
     | Args  |  0     |  1   | 2      |
     | ---   | ---    | ---  | ---    |
-    |  %1   | Center | Left | Right  |
-    |  %2   | Center | Top  | Bottom |
+    | \`h\` | Center | Left | Right  |
+    | \`v\` | Center | Top  | Bottom |
     [/tiphide]
   `},
   'anchorOffset': {sig: 'ss', args: ['dx', 'dy'], desc: `
-    Nudge the anchor point of the sprite right by %1 pixels and down by %2 pixels in the source image.
+    Nudge the anchor point of the sprite right by \`dx\` pixels and down by \`dy\` pixels in the source image.
     Important for asymmetric bullet sprites because the anchor position is the center point for rotation and scaling.
 
     [tiphide]
@@ -610,20 +612,20 @@ Object.assign(ANM_INS_DATA, {
 
 // more timely basics
 Object.assign(ANM_INS_DATA, {
-  'posTime': {sig: 'SSfff', args: ['t', 'mode', 'x', 'y', 'z'], desc: `Over the next %1 frames, changes [ref=anm:pos] to the given values using interpolation mode %2.`},
-  'rotateTime': {sig: 'SSfff', args: ['t', 'mode', 'rx', 'ry', 'rz'], desc: `Over the next %1 frames, changes [ref=anm:rotate] to the given values using interpolation mode %2.`},
-  'scaleTime': {sig: 'SSff', args: ['t', 'mode', 'sx', 'sy'], desc: `Over the next %1 frames, changes [ref=anm:scale] to the given values using interpolation mode %2.`},
-  'scale2Time': {sig: 'SSff', args: ['t', 'mode', 'sx', 'sy'], desc: `Over the next %1 frames, changes [ref=anm:scale2] to the given values using interpolation mode %2.`},
-  'uvScaleTime': {sig: 'SSff', args: ['t', 'mode', 'uscale', 'vscale'], desc: `Over the next %1 frames, changes [ref=anm:uvScale] to the given values using interpolation mode %2.`},
-  'alphaTime': {sig: 'SSS', args: ['t', 'mode', 'alpha'], desc: `Over the next %1 frames, changes [ref=anm:alpha] to the given values using interpolation mode %2.`},
+  'posTime': {sig: 'SSfff', args: ['t', 'mode', 'x', 'y', 'z'], desc: `Over the next \`t\` frames, changes [ref=anm:pos] to the given values using interpolation mode \`mode\`.`},
+  'rotateTime': {sig: 'SSfff', args: ['t', 'mode', 'rx', 'ry', 'rz'], desc: `Over the next \`t\` frames, changes [ref=anm:rotate] to the given values using interpolation mode \`mode\`.`},
+  'scaleTime': {sig: 'SSff', args: ['t', 'mode', 'sx', 'sy'], desc: `Over the next \`t\` frames, changes [ref=anm:scale] to the given values using interpolation mode \`mode\`.`},
+  'scale2Time': {sig: 'SSff', args: ['t', 'mode', 'sx', 'sy'], desc: `Over the next \`t\` frames, changes [ref=anm:scale2] to the given values using interpolation mode \`mode\`.`},
+  'uvScaleTime': {sig: 'SSff', args: ['t', 'mode', 'uscale', 'vscale'], desc: `Over the next \`t\` frames, changes [ref=anm:uvScale] to the given values using interpolation mode \`mode\`.`},
+  'alphaTime': {sig: 'SSS', args: ['t', 'mode', 'alpha'], desc: `Over the next \`t\` frames, changes [ref=anm:alpha] to the given values using interpolation mode \`mode\`.`},
   'alpha2Time': {sig: 'SSS', args: ['t', 'mode', 'alpha'], desc: `
-    Over the next %1 frames, changes [ref=anm:alpha2] to the given value using interpolation mode %2.
+    Over the next \`t\` frames, changes [ref=anm:alpha2] to the given value using interpolation mode \`mode\`.
 
     [tiphide]For some reason, this also does [ref=anm:colorMode](1), which can be a mild inconvenience.[/tiphide]
   `},
-  'rgbTime': {sig: 'SSSSS', args: ['t', 'mode', 'r', 'g', 'b'], desc: `Over the next %1 frames, changes [ref=anm:rgb] to the given value using interpolation mode %2.`},
+  'rgbTime': {sig: 'SSSSS', args: ['t', 'mode', 'r', 'g', 'b'], desc: `Over the next \`t\` frames, changes [ref=anm:rgb] to the given value using interpolation mode \`mode\`.`},
   'rgb2Time': {sig: 'SSSSS', args: ['t', 'mode', 'r', 'g', 'b'], desc: `
-    Over the next %1 frames, changes [ref=anm:rgb2] to the given value using interpolation mode %2.
+    Over the next \`t\` frames, changes [ref=anm:rgb2] to the given value using interpolation mode \`mode\`.
 
     [tiphide]For some reason, this also does [ref=anm:colorMode](1), which can be a mild inconvenience.[/tiphide]
   `},
@@ -645,7 +647,7 @@ Object.assign(ANM_INS_DATA, {
   'posBezier': {
     sig: 'Sfffffffff', args: ['t', 'x1', 'y1', 'z1', 'x2', 'y2', 'z2', 'x3', 'y3', 'z3'],
     desc: `
-    In %1 frames, moves to (%5,%6,%7) using Bezier interpolation.
+    In \`t\` frames, moves to \`(x2, y2, z2)\` using Bezier interpolation.
 
     <!--
     according to images by @rue#1846 on the zuncode discord it looks like the last two numbers for floatTime mode 8
@@ -677,7 +679,7 @@ Object.assign(ANM_INS_DATA, {
     After calling this command you can **change these parameters in real-time** simply by
     modifying [ref=anm:scale], [ref=anmvar:i0] and [ref=anmvar:i1]. Further notes:
 
-    * **[ref=anmvar:i0] MUST be \`<=\` %1 at all times!**
+    * **[ref=anmvar:i0] MUST be \`<= nmax\` at all times!**
     * For this command, the last point is equal to the first point, so n points makes an (n-1)gon.
     * The repeating of the texture is done in a manner affected by [ref=anm:scrollMode],
       and the sprite is assumed to span the full height of its image file.
@@ -693,11 +695,13 @@ Object.assign(ANM_INS_DATA, {
   'textureArc': {
     sig: 'S', args: ['nmax'], desc: `
     Similar to [ref=anm:textureCircle], but creates an arc segment beginning from an angle of zero and running clockwise.
+    [tiphide]
     In addition to all of the settings [ref=anm:textureCircle], this has one additional parameter:
     * The x rotation from [ref=anm:rotate] defines **the angle subtended by the arc.**
 
     Note that the shape will always contain [ref=anmvar:i1] full copies of the image. (they stretch and shrink with
     \`rotx\` rather than being cut off).
+    [/tiphide]
   `},
   'textureArcEven': {
     sig: 'S', args: ['nmax'], desc: `
@@ -719,7 +723,7 @@ Object.assign(ANM_INS_DATA, {
     * [ref=anmvar:f1] is the **height**.
     * [ref=anmvar:f2] is the **radius**.
     * [ref=anmvar:f3] is the **center angle** of the arc section, measured towards +z from the x-axis (see image).
-    * [ref=anmvar:i0] is the **number of points** to create along this arc section.  (this MUST be <= the argument %1 at all times!)
+    * [ref=anmvar:i0] is the **number of points** to create along this arc section.  (this MUST be \`<= nmax\` at all times!)
     * [ref=anmvar:i1] is the **number of times the texture is repeated**.
 
     After calling this command you can modify these variables to change the shape in real-time.
@@ -743,7 +747,7 @@ Object.assign(ANM_INS_DATA, {
     * [ref=anmvar:f1] is the **width** of the annulus. (R2 - R1)
     * [ref=anmvar:f2] is the **radius of the "middle"** of the texture.  (1/2 * (R1 + R2))
     * [ref=anmvar:f3] is the **center angle** of the arc section, measured towards +z from the x-axis (see image).
-    * [ref=anmvar:i0] is the **number of points** to create along this arc section.  (this MUST be <= the argument %1 at all times!)
+    * [ref=anmvar:i0] is the **number of points** to create along this arc section.  (this MUST be \`<= nmax\` at all times!)
     * [ref=anmvar:i1] is the **number of times the texture is repeated**.
 
     After calling this command you can modify these variables to change the shape in real-time.
@@ -759,9 +763,9 @@ Object.assign(ANM_INS_DATA, {
     sig: 'fS', args: ['radius', 'nInit'], desc: `
     Draws a filled regular n-gon with a gradient going from center to edge.
     [tiphide]
-    %2 will be stored in the integer variable [ref=anmvar:i0], where you can change it at any time.
+    \`nInit\` will be stored in the integer variable [ref=anmvar:i0], where you can change it at any time.
     If you want to change the radius in real-time or from ECL, you can adjust the x-scale from [ref=anm:scale]
-    (which gets multiplied into the %1 argument).
+    (which gets multiplied into the \`radius\` argument).
     [/tiphide]
   `},
   'drawPolyBorder': {
@@ -772,11 +776,11 @@ Object.assign(ANM_INS_DATA, {
     sig: 'ffS', args: ['radius', 'thickness', 'nInit'], desc: `
     Draws a filled ring (annulus) with n sides.  No gradients.
     [tiphide]
-    %3 is stored in $I0 like [ref=anm:drawPoly] and [ref=anm:drawPolyBorder].
-    %1 is mean radius (0.5*(R1+R2)), %2 is (R2 - R1).
+    \`nInit\` is stored in $I0 like [ref=anm:drawPoly] and [ref=anm:drawPolyBorder].
+    \`radius\` is mean radius (0.5*(R1+R2)), \`thickness\` is (R2 - R1).
     If you want to change the parameters in real-time or from ECL,
-    use the [ref=anm:scale] instruction; x-scale is multiplied into radius,
-    y-scale is multiplied into thickness.
+    use the [ref=anm:scale] instruction; x-scale is multiplied into \`radius\`,
+    y-scale is multiplied into \`thickness\`.
     [/tiphide]
   `},
 });
@@ -878,12 +882,12 @@ Object.assign(ANM_INS_DATA, {
     [/tiphide]
   `},
   'create-504': {
-    sig: 'S', args: ['script'], wip: 1, desc: `
+    sig: 'S', args: ['script'], wip: 2, desc: `
     Creates a child and puts it in the back of the world list, but copies more state from the parent than normal.
     [wip]What gets copied? Why?[/wip]
   `},
   'create-505': {
-    sig: 'Sff', args: ['script', 'x', 'y'], wip: 1, desc: `
+    sig: 'Sff', args: ['script', 'x', 'y'], wip: 2, desc: `
     Creates a child and puts it in the back of the world list, and then... welllllll....
 
     [tiphide]
@@ -892,7 +896,7 @@ Object.assign(ANM_INS_DATA, {
     [/tiphide]
   `},
   'create-506': {
-    sig: 'Sff', args: ['script', 'x', 'y'], wip: 1, desc: `
+    sig: 'Sff', args: ['script', 'x', 'y'], wip: 2, desc: `
     Combines the effects of [ref=anm:create-504] and [ref=anm:create-505].
   `},
   'ignoreParent': {

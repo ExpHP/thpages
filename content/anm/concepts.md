@@ -52,6 +52,9 @@ Notice how I said "default behavior."  Using [ref=anm:scrollMode], you can confi
 
 @@@@@@@@ TODO: SCROLL MODES @@@@@@@@@
 
+## RNGs
+
+COMING SOON (TM)
 
 ## Layers and `on_draw`
 

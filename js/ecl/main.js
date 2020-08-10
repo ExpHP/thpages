@@ -10,14 +10,6 @@ import globalNames from '../names.js';
  * @typedef {string} Game
  */
 
-const ARGTYPES_TEXT = {
-  "S": "int",
-  "s": "short",
-  "b": "byte",
-  "$": "int&",
-  "f": "float",
-  "%": "float&",
-};
 const ARGTYPES_HTML = {
   "S": /* html */`<span class="type int">int</span>`,
   "s": /* html */`<span class="type int">short</span>`,
@@ -213,7 +205,7 @@ function generateAnmVarHeader(avar, nameKey) {
 function generateOpcodeTableEntry(game, ins, opcode) {
   const nameKey = getOpcodeNameKey(game, opcode);
   let [desc] = handleTipHide(ins.desc, false);
-  desc = postprocessAnmInsDesc(desc, ins, false);
+  desc = postprocessAnmDesc(desc, false);
 
   return /* html */`
   <tr class="ins-table-entry">
@@ -250,19 +242,7 @@ function handleTipHide(desc, isTip) {
   return [desc, hasHidden];
 }
 
-function postprocessAnmInsDesc(desc, ins, isTip) {
-  let ret = desc;
-  if (isTip) {
-    ret = disableTooltips(ret);
-  } else {
-    for (let i=0; i<ins.sig.length; i++) {
-      ret = ret.replace(new RegExp("%"+(i+1)+"(?=[^0-9])", "g"), "[tip=Parameter "+(i+1)+", "+ARGTYPES_TEXT[ins.sig[i]]+"]`"+ins.args[i]+"`[/tip]");
-    }
-  }
-  return MD.makeHtml(ret);
-}
-
-function postprocessAnmVarDesc(desc, avar, isTip) {
+function postprocessAnmDesc(desc, isTip) {
   let ret = desc;
   if (isTip) {
     ret = disableTooltips(ret);
@@ -319,14 +299,14 @@ function anmVarDataByRef(ref) {
 
 function generateAnmInsTip(ins, ref) {
   const [desc, omittedInfo] = handleTipHide(ins.desc, true);
-  const contents = postprocessAnmInsDesc(desc, ins, true);
+  const contents = postprocessAnmDesc(desc, true);
   const heading = generateAnmInsSiggy(ins, getRefNameKey(ref));
   return {heading, contents, omittedInfo};
 }
 
 function generateAnmVarTip(avar, ref) {
   const [desc, omittedInfo] = handleTipHide(avar.desc, true);
-  const contents = postprocessAnmVarDesc(desc, avar, true);
+  const contents = postprocessAnmDesc(desc, true);
   const heading = generateAnmVarHeader(avar, getRefNameKey(ref));
   return {heading, contents, omittedInfo};
 }
