@@ -46,19 +46,19 @@ export const ext = function() {
       // This is some quality jank right here, caused by the fact that I could not find a way to make hljs not escape this html
       // <span data-name="ref:anm:set">
       ret = ret.replace(/&lt;span data-name=<span class="hljs-string">(.*?)<\/span>&gt;(.*?)&lt;\/span&gt;/g, (match, name, content) => {
-        return `<span data-name=${name.replace(/&amp;/g, "&")}>${content}</span>`;
+        return `<span data-name=${name.replace(/&quot;/g, '"')}>${content}</span>`;
       });
       ret = ret.replace(/&lt;instr data-tip-id=<span class="hljs-string">(.*?)<\/span>&gt;(.*?)&lt;\/instr&gt;/g, (match, tip, content) => {
-        return `<span data-tip-id=${tip.replace(/&amp;/g, "&")}>${content}</span>`;
+        return `<span data-tip-id=${tip.replace(/&quot;/g, '"')}>${content}</span>`;
       });
       ret = ret.replace(/&lt;instr data-tip=<span class="hljs-string">(.*?)<\/span>&gt;(.*?)&lt;\/instr&gt;/g, (match, tip, content) => {
-        return `<span data-tip=${tip.replace(/&amp;/g, "&")}>${content}</span>`;
+        return `<span data-tip=${tip.replace(/&quot;/g, '"').replace(/&amp;/g, "&")}>${content}</span>`;
       });
       ret = ret.replace(/&lt;instr&gt;(.*?)&lt;\/instr&gt;/g, (match, content) => {
         return `<span>${content}</span>`;
       });
       ret = ret.replace(/&lt;a href=<span class="hljs-string">(.*?)<\/span>&gt;(.*?)&lt;\/a&gt;/g, (match, url, content) => {
-        return `<a href=${url.replace(/&amp;/g, "&")}>${content}</a>`;
+        return `<a href=${url.replace(/&quot;/g, '"').replace(/&amp;/g, "&")}>${content}</a>`;
       });
       ret = ret.replace(/\\\\/g, "\\");
       return ret;
