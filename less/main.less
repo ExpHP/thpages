@@ -267,6 +267,11 @@ table, th, td, tr {
   z-index: 100;
   font-size: 14px;
 
+  // prevent a perfectly-placed pointer from making the tip flicker
+  &, * {
+    pointer-events: none;
+  }
+
   // Put a hard limit on tip height even if we forget to curate a tip's content
   .contents {
     max-height: 10em;

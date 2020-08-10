@@ -223,6 +223,10 @@ tr {
   z-index: 100;
   font-size: 14px;
 }
+#tip,
+#tip * {
+  pointer-events: none;
+}
 #tip .contents {
   max-height: 10em;
   overflow-y: hidden;

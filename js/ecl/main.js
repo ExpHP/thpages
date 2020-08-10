@@ -67,7 +67,6 @@ function initDefaultNames(names) {
       const numSuffix = avar.type === '%' ? '.0' : '';
       const name = `[${num}${numSuffix}]`;
       names.set(key, name);
-      window.console.log(key, name);
     }
   }
 }

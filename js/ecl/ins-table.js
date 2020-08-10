@@ -230,7 +230,7 @@ Object.assign(ANM_INS_DATA, {
   'delete': {sig: '', args: [], desc: "Destroys the animation."},
   'static': {sig: '', args: [], wip: 1, desc: `[wip=1]Chinese wiki says "makes a static texture", sounds straightforward but more investigation wouldn't hurt.[/wip]`},
   'stop': {sig: '', args: [], desc: "Stops executing the script and waits for a switch to occur. (see [ref=anm:case])"},
-  'stop2': {sig: '', args: [], wip: 2, desc: "This is [ref=anm:stop] except that it additionally clears an unknown bitflag..."},
+  'stop2': {sig: '', args: [], wip: 2, desc: "[wip=2]This is [ref=anm:stop] except that it additionally clears an unknown bitflag...[/wip]"},
   'case': {
     sig: 'S', args: ['n'], desc: `
     A label used to externally control an ANM.
@@ -248,7 +248,7 @@ Object.assign(ANM_INS_DATA, {
     Miscellaneous notes:
     * If multiple switches occur on one frame, only the **last** takes effect.
     * [ref=anm:case](0) doesn't work due to how pending switch numbers are stored.
-    * [wip][ref=anm:case](-1) appears to work differently from the others...[/wip]
+    * [wip=2][ref=anm:case](-1) appears to work differently from the others...[/wip]
     * [wip]Can switching interrupt code that is not at a [ref=anm:stop]? Testing needed.[/wip]
     [/tiphide]
   `},
@@ -349,12 +349,14 @@ Object.assign(ANM_INS_DATA, {
   'sprite': {
     sig: 'S', args: ['id'], desc: `
     Sets the image used by this VM to one of the sprites defined in the ANM file.
+    [tiphide]
     A value of \`-1\` means to not use an image (this is frequently used with shape-drawing instructions).
     thanm also lets you use the sprite's name instead of an index.
 
-    [wip]Under some unknown conditions[/wip], these sprite indices are transformed by a "sprite-mapping"
+    [wip=2]Under some unknown conditions, these sprite indices are transformed by a "sprite-mapping"
     function; e.g. many bullet scripts use false indices, presumably to avoid repeating the same script
-    for 16 different colors.  [wip]The precise mechanism of this is not yet fully understood.[/wip]
+    for 16 different colors.  The precise mechanism of this is not yet fully understood.[/wip]
+    [/tiphide]
   `},
   // TODO: link to RNG concept page once it exists
   'spriteRand': {
@@ -404,7 +406,7 @@ Object.assign(ANM_INS_DATA, {
         larger and blurrier.[/wip]
     * [wip]Any other modes used in scripts are a total mystery at this time.[/wip]
     * Many mode numbers are not intended for use by ANM scripts, and are instead reserved for instructions
-      like [ref=anm:texCircle] and [ref=anm:drawRect] (each one has its own mode).
+      like [ref=anm:textureCircle] and [ref=anm:drawRect] (each one has its own mode).
     [/tiphide]
   `},
   // TODO: link to layer concept.
@@ -961,12 +963,12 @@ Object.assign(ANM_INS_DATA, {
     It is extremely difficult to find examples where this has any noticeable effect,
     but there's an example in stage 4:
 
-    <img src="./content/anm/img/ins-v8-305.png" height:"200px">
+    <a href="./content/anm/img/ins-v8-305.png" target="_blank"><img src="./content/anm/img/ins-v8-305.png" style="max-width:100%;"></a>
     [/tiphide]
   `},
   'v8-306': {
     sig: 'S', args: ['enable'], wip: 2, desc: `
-    Sets the state of a bitflag.  When this flag is enabled, [wip]some unknown vector from the stage background
+    [wip=2]Sets the state of a bitflag.  When this flag is enabled, some unknown vector from the stage background
     camera data is added to some poorly-understood position-related vector on the ANM, for an even more
     unknown purpose.[/wip]
   `},
@@ -982,6 +984,10 @@ for (const [key, value] of Object.entries(ANM_INS_DATA)) {
   if (value.sig && value.sig.length !== value.args.length) {
     window.console.error(`TABLE CORRUPT: anm ref ${key} has arg count mismatch`);
   }
+
+  // automatically remove tips from self-references
+  const re = new RegExp(`\\[ref=anm:${key}\\]`, 'g');
+  value.desc = value.desc.replace(re, `[tip=YOU ARE HERE][ref-notip=anm:${key}][/tip]`);
 
   value.desc = dedent(value.desc);
 
