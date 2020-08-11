@@ -15,7 +15,7 @@ Understanding this may help you understand at least *some* of the funky business
 
 ## The three surfaces
 
-There are three different surfaces that an ANM may be drawn to when it is rendered.  One of these, of course, is **the Direct3D BackBuffer**. (i.e. the next frame about to be drawn).  But most things are *not* drawn there directly (only the main menu and game border is).  Inside `ascii.anm`, two of the textures use a special filename `"@R"`:
+There are three different surfaces that an ANM may be drawn to when it is rendered.  One of these, of course, is **the Direct3D BackBuffer**. (i.e. the next frame about to be drawn).  But most things are *not* drawn there directly (only the main menu and game border is).  Inside `text.anm`, two of the textures use a special filename `"@R"`:
 
 [code]
 // Some fields removed for brevity
@@ -51,7 +51,7 @@ entry entry3 {
 
 ## The actual stages
 
-### Stage 1: 3D Background
+<h3 id='stage-1'>Stage 1: 3D Background</h3>
 
 First, surface 0 is cleared to white, and then **the 3D stage background is rendered to a 408x472 region in the center of surface 0.**  During this time, animations with **layers 0-5 and 30-31** (again, these numbers are for [game=14]DDC[/game] only!) are also drawn.  At the end of this stage, the surface looks like the following (click for actual size):
 
@@ -73,7 +73,7 @@ script script61 {
 
 Notice that sprite82 (defined earlier above) does indeed define the location and size of that 408x472 rectangle on this 1280x960 canvas. There are also two similar scripts 59 and 60 using different sprites and coordinates, which are used when the game is in 640x480 or 960x720 (they have different sprites/scripts because, even though this region is always drawn at 408x472, the size of the temporary surfaces (and therefore the location of their centers) changes.)!
 
-### Stage 2: Enemies
+<h3 id='stage-2'>Stage 2: Enemies</h3>
 
 Now **layers 6-11 are drawn**.  As far as I can tell **this is basically just enemies**.... I don't know why they're singled out.
 
@@ -97,7 +97,7 @@ script script67 {
 }
 [/code]
 
-### Stage 3: Other game elements
+<h3 id='stage-3'>Stage 3: Other game elements</h3>
 
 Back on surface 0, all remaining content to be upscaled is drawn.  Specifically, this is **layers 12-19,** as well as **bullets, lasers, items, and the player** (all these regardless of layer).
 
@@ -120,7 +120,7 @@ script script64 {
 
 This script has a very important addition compared to before:  **It scales the image up by 2x** (1.5x for 960x720, 1x for 640x480)!!  That's right, this script handles the upscaling to 1280x960!  Because it also uses [ref=anm:resampleMode]`(1)`, we get a nice pixely effect.
 
-### Stage 4: In-game UI
+<h3 id='stage-4'>Stage 4: In-game UI</h3>
 
 Back on surface 1, we draw **anything we want to draw at full resolution inside the game region.**  These are **ascii group 1 and layers 20-23.**  In our current example, two things are drawn: The boss name in the upper left, and the boss's HP gauge.
 
@@ -151,7 +151,7 @@ Here is what gets drawn to the Direct3D BackBuffer:
 
 Basically, script70 handles all of the rotation and mirroring for Seija's effects.  It also handles the placement of the game region in the location where it finally belongs, over on the left side of the screen.
 
-### Stage 5: Other UI
+<h3 id='stage-5'>Stage 5: Other UI</h3>
 
 At this point, all remaining rendering occurs by drawing directly to the backbuffer.  This draws **layers 24-29 and 34-35,** as well as **ascii groups 0 and 2.**  It draws the spell name and history, the pause menu, the main menu, the border around the game, your score and lives, etc., all at a full resolution of 1280x960.
 

@@ -1,6 +1,8 @@
 ## ANM instruction reference
 
-blah blah
+Currently **all documentation here is for ANM version 8.**  That is [game=14]DDC[/game] to [game=17]WBaWC[/game].
+
+Support for other game versions and custom anmmaps is Coming Soon (TM), after I sort out other problems with the site.
 
 <!--
 Select game version:

@@ -447,8 +447,8 @@ Object.assign(ANM_INS_DATA, {
     | Value | Origin | Appropriate for |
     | ---   | ---    | --- |
     | 0     | Top left of target surface. | Border around the game. |
-    | 1     | Location of ECL's (0,0) in early rendering stages | Game elements always drawn at 640x480. |
-    | 2     | Location of ECL's (0,0) in late rendering stages | Game elements drawn at full res (e.g. boss HP). |
+    | 1     | Location of ECL's (0, 0) in [rendering stages 1 to 3](#s=anm/stages-of-rendering&a=stage-1) | Game elements always drawn at 640x480. |
+    | 2     | Location of ECL's (0, 0) in [rendering stage 4](#s=anm/stages-of-rendering&a=stage-4) | Game elements drawn at full res (e.g. boss HP). |
 
     **If your sprite is correctly positioned at 640x480 resolution but not at larger resolutions,
     you may want to check this setting.** (as well as [ref=anm:resolutionMode])
