@@ -32,7 +32,7 @@ const INS_14 = {
   4: {id: 'anm:stop2'},
   5: {id: 'anm:case'},
   6: {id: 'anm:wait'},
-  7: {id: 'anm:v8-7'},
+  7: {id: 'anm:caseReturn'},
 
   100: {id: 'anm:set'},
   101: {id: 'anm:setF'},
@@ -228,7 +228,15 @@ export const ANM_INS_DATA = {};
 Object.assign(ANM_INS_DATA, {
   'nop': {sig: '', args: [], desc: "Does nothing."},
   'delete': {sig: '', args: [], desc: "Destroys the animation."},
-  'static': {sig: '', args: [], wip: 1, desc: `[wip=1]Chinese wiki says "makes a static texture", sounds straightforward but more investigation wouldn't hurt.[/wip]`},
+  'static': {
+    sig: '', args: [], desc: `
+    Freezes the texture until it is destroyed externally.
+
+    [tiphide]
+    Any interpolation instructions like [ref=anm:posTime] will no longer advance.
+    No [ref=anm:case] labels will run.
+    [/tiphide]
+  `},
   'stop': {sig: '', args: [], desc: "Stops executing the script and waits for a switch to occur. (see [ref=anm:case])"},
   'stop2': {sig: '', args: [], wip: 2, desc: "[wip=2]This is [ref=anm:stop] except that it additionally clears an unknown bitflag...[/wip]"},
   'case': {
@@ -243,17 +251,30 @@ Object.assign(ANM_INS_DATA, {
     of different purposes.  For instance, it is used to handle animations on the Pause menu and main menu, it is used to make player options
     appear and disappear based on power, and it is even used to make the season gauge go transparent when the player gets near.
 
+    The game always searches for [ref=anm:case] labels starting from the *beginning* of the function. (not from the [ref=anm:stop])
+
     [ref=anm:case](1) is almost universally used to mean "go away permanently." (i.e. it almost always ends in [ref=anm:delete])
 
     Miscellaneous notes:
     * If multiple switches occur on one frame, only the **last** takes effect.
     * [ref=anm:case](0) doesn't work due to how pending switch numbers are stored.
-    * [wip=2][ref=anm:case](-1) appears to work differently from the others...[/wip]
+    * [wip=2][ref=anm:case](-1) appears to work differently from the others...
+      Could it be a \`default:\` label? According to 32th System it is ignored...[/wip]
     * [wip]Can switching interrupt code that is not at a [ref=anm:stop]? Testing needed.[/wip]
     [/tiphide]
   `},
   'wait': {sig: 'S', args: ['t'], desc: `Wait \`t\` frames.`},
-  'v8-7': {sig: '', args: [], wip: 2, desc: `[wip=2]*dunno but it looks important lol*[/wip]`},
+  'caseReturn': {sig: '', args: [], wip: 1, desc: `
+    Used at the end of a [ref=anm:case] to return back to the moment just before it
+    last executed the [ref=anm:stop] instruction.
+
+    [tiphide]
+    The difference between this and simply executing [ref=anm:stop] again is that it
+    restores the original time as well.
+
+    [wip=1]Example use case?[/wip]
+    [/tiphide]
+  `},
 });
 
 // =====================
@@ -262,7 +283,7 @@ Object.assign(ANM_INS_DATA, {
 Object.assign(ANM_INS_DATA, {
   'jmp': {
     sig: 'SS', args: ['dest', 't'], desc: `
-    Jumps to \`dest\` and sets time to \`t\`.  \`thanm\` accepts a label name for \`dest\`.
+    Jumps to offset \`dest\` from the function start and sets time to \`t\`.  \`thanm\` accepts a label name for \`dest\`.
 
     [tiphide]
     [wip=2]Chinese wiki says some confusing recommendation about setting a=0, can someone explain to me?[/wip]
