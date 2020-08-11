@@ -19,7 +19,7 @@ export function init() {
   };
   initAnm();
   initNavigation();
-  initContent();
+  initOrScrollToContent();
   initResize();
   initTips();
   initEmbeds();
@@ -32,6 +32,7 @@ export const MD = new showdown.Converter({
   literalMidWordUnderscores: true,
 });
 const $content = document.querySelector(".content-wrapper");
+let lastQuery = null;
 export const $scriptContent = document.querySelector(".script-wrapper");
 const cache = {};
 let active = "";
@@ -51,7 +52,7 @@ function initNavigation() {
   const html = getNavigation(INDEX);
   $nav.innerHTML = html;
   $nav.addEventListener("click", handleNavigation);
-  window.addEventListener("hashchange", initContent, false);
+  window.addEventListener("hashchange", initOrScrollToContent, false);
 }
 
 function getNavigation(data) {
@@ -271,14 +272,39 @@ function setActiveNavigation(path, file) {
   }
 }
 
-function initContent() {
+function initOrScrollToContent() {
   const query = parseQuery();
-  if (query.s) { // site
-    const spl = query.s.split("/");
-    const file = spl.pop();
-    const path = spl.join("/") + "/";
-    loadContent(path, file, false);
-  } else loadContent("/", "index");
+
+  // don't reload same page (also works for index, where query.s === undefined)
+  if (!(lastQuery && lastQuery.s === query.s)) {
+    if (query.s) { // site
+      const spl = query.s.split("/");
+      const file = spl.pop();
+      const path = spl.join("/") + "/";
+      loadContent(path, file, false);
+    } else loadContent("/", "index");
+  }
+
+  lastQuery = query;
+
+  // FIXME this is absolute jank, all I want is for &a= to work like # normally does...
+  if (query.a) {
+    const trySeveralTimes = (times) => {
+      if (times == 0) {
+        window.console.error(`Invalid anchor: ${query.a}`);
+        return;
+      }
+
+      const $elem = document.getElementById(query.a);
+      if ($elem) {
+        $elem.scrollIntoView();
+        window.scrollBy(0, -60);
+      } else {
+        setTimeout(() => trySeveralTimes(times - 1), 100);
+      }
+    };
+    trySeveralTimes(50);
+  }
 }
 
 function parseQuery() {
