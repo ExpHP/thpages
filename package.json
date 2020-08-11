@@ -20,7 +20,7 @@
     "typescript": "^3.9.7"
   },
   "scripts": {
-    "start": "parcel index.html",
+    "start": "parcel index.html -d dev",
     "build": "parcel build index.html --public-url='/thpages/'",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
