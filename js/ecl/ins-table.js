@@ -89,15 +89,15 @@ const INS_14 = {
   304: {id: 'anm:layer'},
   305: {id: 'anm:noZBuffer'},
   306: {id: 'anm:v8-306'},
-  307: UNASSIGNED, // sets a bitflag
+  307: {id: 'anm:v8-flag-307'},
   308: {id: 'anm:flipX'},
   309: {id: 'anm:flipY'},
-  310: UNASSIGNED, // sets a bitflag
+  310: {id: 'anm:v8-flag-310'},
   311: {id: 'anm:resampleMode'},
   312: {id: 'anm:scrollMode'},
   313: {id: 'anm:resolutionMode'},
   314: {id: 'anm:attached'},
-  315: UNASSIGNED, // sets. a. bitflag.  color-related?
+  315: {id: 'anm:v8-flag-315'},
 
   400: {id: 'anm:pos'},
   401: {id: 'anm:rotate'},
@@ -118,10 +118,10 @@ const INS_14 = {
   416: {id: 'anm:scaleGrowth'},
   417: {id: 'anm:alphaTime2'},
   418: {id: 'anm:v8-418'},
-  419: UNASSIGNED, // sets. A BITFLAG!!
+  419: {id: 'anm:v8-flag-419'},
   420: {id: 'anm:posBezier'},
   421: {id: 'anm:anchor'},
-  422: UNASSIGNED, // copies true_final_pos to pos and sets true_final_pos to 0. Hm. I need to rename that field...
+  422: {id: 'anm:posAdopt'},
   423: {id: 'anm:colorMode'},
   424: {id: 'anm:rotateAuto'},
   425: {id: 'anm:uVel'},
@@ -130,9 +130,9 @@ const INS_14 = {
   428: {id: 'anm:vVelTime'},
   429: {id: 'anm:uvScale'},
   430: {id: 'anm:uvScaleTime'},
-  431: UNASSIGNED, // BITFLAAAAG
-  432: UNASSIGNED, // BETFLARG
-  433: UNASSIGNED, // Some kind of pos-time variant
+  431: {id: 'anm:v8-flag-431'},
+  432: {id: 'anm:v8-flag-432'},
+  433: {id: 'anm:posTime2D'},
   434: {id: 'anm:scale2'},
   435: {id: 'anm:scale2Time'},
   436: {id: 'anm:anchorOffset'},
@@ -164,8 +164,8 @@ const INS_14 = {
 };
 
 const INS_15 = Object.assign({}, INS_14, {
-  316: UNASSIGNED, // enables a bitflag
-  317: UNASSIGNED, // disables that bitflag
+  316: {id: 'anm:v8-flag-316'},
+  317: {id: 'anm:v8-flag-317'},
   611: {id: 'anm:drawRing'},
 });
 
@@ -438,7 +438,19 @@ Object.assign(ANM_INS_DATA, {
     <img src="./content/anm/img/ins-v8-311.png" height="200px">
     [/tiphide]
   `},
-  // TODO: link to stages of drawing.
+  'scrollMode': {
+    sig: 'SS', args: ['xmode', 'ymode'], desc: `
+    Determines how a sprite pulls image data when an instruction like [ref=anm:uvScale], [ref=anm:uVel],
+    or [ref=anm:textureCircle] causes it to pull from [uv coords outside the \`(0,0)-(1,1)\` rectangle](#s=anm/concepts&a=uv-coords).
+
+    [tiphide]
+    | Mode | D3D constant | Meaning | Layman's terms |
+    | ---  | --- | --- | --- |
+    | 0    | \`D3DTADDRESS_WRAP\` | texture repeats infinitely |
+    | 1    | \`D3DTADDRESS_CLAMP\` | pixels at the edge extend to infinity |
+    | 2    | \`D3DTADDRESS_MIRROR\` | like 0 every other image is mirrored |
+    [/tiphide]
+  `},
   'originMode': {
     sig: 'S', args: ['mode'], wip: 1, desc: `
     Determines the origin used by the sprite.
@@ -581,7 +593,19 @@ Object.assign(ANM_INS_DATA, {
     Add \`vel\` to the texture v coordinate every frame (in units of \`1 / total_image_height\`),
     causing the displayed sprite to scroll vertically through the image file.
   `},
-  'uvScale': {sig: 'ff', args: ['uscale', 'vscale'], desc: "Scales texture uv coordinates. [wip]TODO: link to uv tutorial[/wip]"},
+  'uvScale': {sig: 'ff', args: ['uscale', 'vscale'], desc: `
+    Scales [texture uv coordinates](#s=anm/concepts&a=uv-coords).  [tiphide]Values greater than 1 means that a larger
+    region of the texture (spritesheet) is shown.  Typically used to make a texture repeat multiple times, but you
+    can also use [ref=anm:scrollMode] to change what happens.
+    [/tiphide]
+
+    [tiphide]
+    Here is a demonstration using [ref=anm:uvScaleTime] to change \`uscale\` to 3 on the left,
+    and \`vscale\` to 3 on the right.  (in this case, the sprite occupies the full texture)
+
+    <img src="content/anm/img/ins-uv-scale.gif" height="200px">
+    [/tiphide]
+  `},
   'anchor': {sig: 'ss', args: ['h', 'v'], desc: `
     Set the horizontal and vertical anchoring of the sprite.  Notice the args are each two bytes.
     For further fine-tuning see [ref=anm:anchorOffset].
@@ -656,6 +680,9 @@ Object.assign(ANM_INS_DATA, {
     are proportional to initial/final velocities; these may correspond to xyz1 and xyz3 but I'm too lazy to verify right now.
     -->
     [wip]I am too lazy to document this right now.[/wip]  [See the chinese wiki](https://thwiki.cc/脚本对照表/ANM/第四世代).
+  `},
+  'posTime2D': {sig: 'SSff', args: ['t', 'mode', 'x', 'y'], wip: 1, desc: `
+    Looks like a 2D version of [ref=anm:posTime]?  ([wip]Is that all? Seems pointless[/wip])
   `},
 });
 
@@ -853,18 +880,18 @@ Object.assign(ANM_INS_DATA, {
   `},
   'prependChild': {
     sig: 'S', args: ['script'], wip: 1, desc: `
-    Create a child animation, but insert it at the *front* of the world list.
+    Create a child animation, but insert it **at the front** of the world list.
 
     [wip]The nuances of execution order are still not fully understood.[/wip]
   `},
   'createChildUi': {
     sig: 'S', args: ['script'], desc: `
-    Create a child animation, but insert it at the back of the UI list instead.
+    Create a child animation, but insert it at the back **of the UI list** instead.
     UI ANMs run even when the game is paused.
   `},
   'prependChildUi': {
     sig: 'S', args: ['script'], wip: 1, desc: `
-    Create a child animation, but insert it at the front of the UI list.
+    Create a child animation, but insert it **at the front of the UI list**.
 
     [wip]The nuances of execution order are still not fully understood.[/wip]
   `},
@@ -972,6 +999,19 @@ Object.assign(ANM_INS_DATA, {
     camera data is added to some poorly-understood position-related vector on the ANM, for an even more
     unknown purpose.[/wip]
   `},
+  'posAdopt': {
+    sig: '', args: [], wip: 2, desc: `
+    [wip=2]Takes one of the three vectors related to position <!-- the one I used to name true_final_pos... -->,
+    copies it into the vector that's normally controlled by [ref=anm:pos], and then zeros out the original vector.[/wip]
+  `},
+  'v8-flag-307': {sig: 'b', args: ['enable'], wip: 2, desc: `[wip=2]Sets the state of an unknown bitflag.[/wip]`},
+  'v8-flag-310': {sig: 'b', args: ['enable'], wip: 2, desc: `[wip=2]Sets the state of an unknown bitflag.[/wip]`},
+  'v8-flag-315': {sig: 'b', args: ['enable'], wip: 2, desc: `[wip=2]Sets the state of an unknown bitflag. Has something to do with color?[/wip]`},
+  'v8-flag-316': {sig: '', args: [], wip: 2, desc: `[wip=2]Enables an unknown bitflag. Clear with [ref=anm:v8-flag-317].[/wip]`},
+  'v8-flag-317': {sig: '', args: [], wip: 2, desc: `[wip=2]Clears the bitflag from [ref=anm:v8-flag-316].[/wip]`},
+  'v8-flag-419': {sig: 'S', args: ['enable'], wip: 2, desc: `[wip=2]Sets the state of an unknown bitflag.[/wip]`},
+  'v8-flag-431': {sig: 'S', args: ['enable'], wip: 2, desc: `[wip=2]Sets the state of an unknown bitflag.[/wip]`},
+  'v8-flag-432': {sig: 'S', args: ['enable'], wip: 2, desc: `[wip=2]Sets the state of an unknown bitflag.[/wip]`},
 });
 
 // Validate
