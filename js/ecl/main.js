@@ -4,6 +4,7 @@ import {ANM_VAR_DATA, ANM_VARS_BY_NUMBER} from './var-table.js';
 import {registerRefTip, getRefNameKey} from '../ref.js';
 import {MD} from '../main.js';
 import globalNames from '../names.js';
+import {parseQuery, buildQuery} from '../url-format.js';
 
 /**
  * A game number as a string with no period, e.g. "14" or "125".
@@ -142,8 +143,10 @@ export async function loadEclmapAndSetGame(file, name, game) {
 function generateOpcodeTable(game) {
   let base = `Current table: [game=${game}] version ${game}[/game][br]`;
 
-  let navigation = /* html */`<div class='ins-navigation'><h3>Navigation</h3>`;
+  let navigation = /* md */`### Navigation`;
   let table = "";
+
+  const currentQuery = parseQuery(window.location.hash);
 
   let total = 0;
   let documented = 0;
@@ -151,9 +154,12 @@ function generateOpcodeTable(game) {
   for (let i=0; i<groups.length; ++i) {
     const group = groups[i];
 
-    navigation += /* html */`- <span class='ins-navigation-entry' data-target='${group.title}'>${group.title} (${group.min}-${group.max})</span><br>`;
+    const groupAnchor = `group-${group.min}`;
+    const navQuery = Object.assign({}, currentQuery, {a: groupAnchor});
+    const navDest = '#' + buildQuery(navQuery);
+    navigation += `\n- [${group.title} (${group.min}..)](${navDest})`;
 
-    table += /* html */`<br><h2 data-insnavigation="${group.title}">${group.min}-${group.max}: ${group.title}</h2>`;
+    table += /* html */`\n<h2 id="${groupAnchor}">${group.min}-${group.max}: ${group.title}</h2>`;
     table += /* html */`<table class='ins-table'>`;
     // table += /* html */`<div class='ins-table-header'><th class="col-id"></th><th class='col-name'></th><th class='col-desc'></th></th>`;
 
@@ -184,7 +190,7 @@ function generateOpcodeTable(game) {
   navigation += "</div>";
   base += `Documented instructions: ${documented}/${total} (${(documented/total*100).toFixed(2)}%)[br]`;
   base += "Instructions marked [wip=1]like this[/wip] are not fully understood.  Items [wip=2]like this[/wip] are complete mysteries.";
-  return MD.makeHtml(base) + navigation + table;
+  return MD.makeHtml(base) + MD.makeHtml(navigation) + table;
 }
 
 function generateAnmInsSiggy(ins, nameKey) {

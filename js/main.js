@@ -3,6 +3,7 @@ import {ext} from "./showdown-ext.js";
 import {INDEX, ERROR} from "./index.js";
 import {initAnm} from "./ecl/main.js";
 import {initTips} from "./tips.js";
+import {buildQuery, parseQuery} from "./url-format.js";
 
 import hljs from "highlight.js/lib/core";
 import hljsCLike from "highlight.js/lib/languages/c-like";
@@ -273,7 +274,7 @@ function setActiveNavigation(path, file) {
 }
 
 function initOrScrollToContent() {
-  const query = parseQuery();
+  const query = parseQuery(window.location.hash);
 
   // don't reload same page (also works for index, where query.s === undefined)
   if (!(lastQuery && lastQuery.s === query.s)) {
@@ -289,8 +290,11 @@ function initOrScrollToContent() {
 
   // FIXME this is absolute jank, all I want is for &a= to work like # normally does...
   if (query.a) {
+    // Don't want to wait forever because the user technically never leaves this page,
+    // and so we don't want to potentially leave behind an "anchor time-bomb" that could
+    // suddenly activate at an unexpected time...
     const trySeveralTimes = (times) => {
-      if (times == 0) {
+      if (times <= 0) {
         window.console.error(`Invalid anchor: ${query.a}`);
         return;
       }
@@ -305,31 +309,6 @@ function initOrScrollToContent() {
     };
     trySeveralTimes(50);
   }
-}
-
-function parseQuery() {
-  const ret = {};
-  let s = window.location.hash;
-  s = s.substring(1);
-  const spl = s.split("&");
-  for (let i=0; i<spl.length; i++) {
-    const [key, val] = spl[i].split("=");
-    ret[key] = val;
-  }
-  return ret;
-}
-
-function buildQuery(query) {
-  let str = "";
-  let first = true;
-  for (const key in query) {
-    if (Object.prototype.hasOwnProperty.call(query, key)) {
-      if (first) first = false;
-      else str += "&";
-      str += key + "=" + query[key];
-    }
-  }
-  return str;
 }
 
 export function highlightCode(content) {
