@@ -230,7 +230,7 @@ Object.assign(ANM_INS_DATA, {
   'delete': {sig: '', args: [], desc: "Destroys the animation."},
   'static': {
     sig: '', args: [], desc: `
-    Freezes the texture until it is destroyed externally.
+    Freezes the animation until it is destroyed externally.
 
     [tiphide]
     Any interpolation instructions like [ref=anm:posTime] will no longer advance.
@@ -283,12 +283,11 @@ Object.assign(ANM_INS_DATA, {
 Object.assign(ANM_INS_DATA, {
   'jmp': {
     sig: 'SS', args: ['dest', 't'], desc: `
-    Jumps to offset \`dest\` from the function start and sets time to \`t\`.  \`thanm\` accepts a label name for \`dest\`.
+    Jumps to byte offset \`dest\` from the script's beginning and sets the time to \`t\`.
+    \`thanm\` accepts a label name for \`dest\`.
 
     [tiphide]
     [wip=2]Chinese wiki says some confusing recommendation about setting a=0, can someone explain to me?[/wip]
-
-    [wip]What is \`dest\` relative to? Beginning of current script?[/wip]
     [/tiphide]
   `},
   'jmpDec': {
@@ -465,11 +464,11 @@ Object.assign(ANM_INS_DATA, {
     or [ref=anm:textureCircle] causes it to pull from [uv coords outside the \`(0,0)-(1,1)\` rectangle](#s=anm/concepts&a=uv-coords).
 
     [tiphide]
-    | Mode | D3D constant | Meaning | Layman's terms |
-    | ---  | --- | --- | --- |
+    | Mode | D3D constant | Meaning |
+    | ---  | --- | --- |
     | 0    | \`D3DTADDRESS_WRAP\` | texture repeats infinitely |
     | 1    | \`D3DTADDRESS_CLAMP\` | pixels at the edge extend to infinity |
-    | 2    | \`D3DTADDRESS_MIRROR\` | like 0 every other image is mirrored |
+    | 2    | \`D3DTADDRESS_MIRROR\` | like 0 but every other image is mirrored |
     [/tiphide]
   `},
   'originMode': {
@@ -638,7 +637,7 @@ Object.assign(ANM_INS_DATA, {
     | \`v\` | Center | Top  | Bottom |
     [/tiphide]
   `},
-  'anchorOffset': {sig: 'ss', args: ['dx', 'dy'], desc: `
+  'anchorOffset': {sig: 'SS', args: ['dx', 'dy'], desc: `
     Nudge the anchor point of the sprite right by \`dx\` pixels and down by \`dy\` pixels in the source image.
     Important for asymmetric bullet sprites because the anchor position is the center point for rotation and scaling.
 
@@ -676,8 +675,20 @@ Object.assign(ANM_INS_DATA, {
 
     [tiphide]For some reason, this also does [ref=anm:colorMode](1), which can be a mild inconvenience.[/tiphide]
   `},
-  'uVelTime': {sig: 'SSf', args: ['t', 'mode', 'vel'], wip: 1, desc: `[wip]Based on the code this is clearly a time version of [ref=anm:uVel], but it didn't work when I tested it...[/wip]`},
-  'vVelTime': {sig: 'SSf', args: ['t', 'mode', 'vel'], wip: 1, desc: `[wip]Based on the code this is clearly a time version of [ref=anm:vVel], but it didn't work when I tested it...[/wip]`},
+  'uVelTime': {sig: 'SSf', args: ['t', 'mode', 'vel'], desc: `
+    Over the next \`t\` frames, changes [ref=anm:uVel] to the given value using interpolation mode \`mode\`.
+
+    [tiphide]
+    Remember that [ref=anm:uVel] is scroll *velocity,* not position.
+    [tiphide]
+  `},
+  'vVelTime': {sig: 'SSf', args: ['t', 'mode', 'vel'], desc: `
+    Over the next \`t\` frames, changes [ref=anm:vVel] to the given value using interpolation mode \`mode\`.
+
+    [tiphide]
+    Remember that [ref=anm:vVel] is scroll *velocity,* not position.
+    [tiphide]
+  `},
   'rotateTime2D': {
     sig: 'SSf', args: ['t', 'mode', 'rz'], desc: `
     A compact version of [ref=anm:rotateTime] that only interpolates the z rotation.
@@ -702,7 +713,8 @@ Object.assign(ANM_INS_DATA, {
     -->
     [wip]I am too lazy to document this right now.[/wip]  [See the chinese wiki](https://thwiki.cc/脚本对照表/ANM/第四世代).
   `},
-  'posTime2D': {sig: 'SSff', args: ['t', 'mode', 'x', 'y'], wip: 1, desc: `
+  'posTime2D': {
+    sig: 'SSff', args: ['t', 'mode', 'x', 'y'], wip: 1, desc: `
     Looks like a 2D version of [ref=anm:posTime]?  ([wip]Is that all? Seems pointless[/wip])
   `},
 });

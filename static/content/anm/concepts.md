@@ -44,22 +44,20 @@ Numerous instructions change the region of coordinates in the texture image file
 
 These instructions operate on uv coordinates.  These are fractional coordinates into the sprite's original image file.  `(u, v) = (0, 0)` lies at the very top left corner of the top left pixel.  `(u, v) = (1, 1)` lies at the very bottom right corner of the bottom right pixel.  In the image below, the little F item occupies the rectangle from `(3/4, 2/3)` to `(1, 1)` in uv-space.
 
-[c=red]TODO: IMAGE: zoomed in image (big pixels) annotating uv 0,0 and 1,1[/c]
+<img src="./content/anm/img/concept-uv-corners.png">
 
 Now let's say we start with this little F as our sprite, and then use [ref=anm:uVel] with a negative argument.  This will subtract something from u every frame, causing other images in the texture to be displayed.
 
 [code]
 [ref=anm:sprite](littleF);
-[ref=anm:uVel](-0.08333333333);  // 1/120
+[ref=anm:uVel](-0.008333333333);  // 1/120
 [/code]
 
-[c=red]TODO: IMAGE: scrolling in game[/c]
+<img src="./content/anm/img/concept-uv-scroll-x.gif">
 
-Observe how, at the left end of the image, it *wraps back* to the F.  This is because **the default behavior of scrolling is to assume that the image repeats infinitely.**  This has many uses, such as making color gradients move along Marisa's laser.  You can also pull from a large region in uv space using [ref=anm:uvScale]; similar behavior is provided by [ref=anm:textureCircle] which can pull from a large vertical region in uv space that includes many copies of the image (for e.g. those "Spell attack" text circles).
+Observe how, at the left end of the image, it *wraps back* to the F.  This is because **the default behavior of scrolling is to assume that the texture repeats infinitely.**  This has many uses, such as making color gradients move along Marisa's laser.  You can also pull from a large region in uv space using [ref=anm:uvScale]; similar behavior is provided by [ref=anm:textureCircle] which can pull from a large vertical region in uv space that includes many copies of the image. This is used for e.g. those circles of the "Spell attack" text.
 
-Notice how I said "default behavior."  Using [ref=anm:scrollMode], you can configure this.
-
-[c=red]TODO: SCROLL MODES[/c]
+Notice how I said "default behavior."  Using [ref=anm:scrollMode], you can configure this.  In particular, you can choose to have every other periodic copy be mirrored.
 
 ## Layers and `on_draw`
 

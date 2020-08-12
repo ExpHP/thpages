@@ -162,4 +162,8 @@ At this point, all remaining rendering occurs by drawing directly to the backbuf
 * How does screen shake work?
 * The pause blur in [game=14]DDC[/game] onwards is basically a screenshot of the game region overlayed over the original, but I'm not when this screenshot is taken, or when it is drawn.  (you'd think something this special would have a dedicated `on_draw` like all of the scripts mentioned above, but... it doesn't)
 
+### How'd you make those images, anyway?
+
+For the curious (and also because I kept screwing it up and had to redo it), I recorded the steps to obtain the relevant screenshots (along with the raw, unedited images) <a href="./content/anm/img/pipeline-raw-images.zip" download>here (ZIP archive)</a>.
+
 [/requireEclmap]
