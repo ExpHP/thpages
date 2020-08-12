@@ -63,6 +63,7 @@ export function getRefNameKey(id) {
  */
 export function getRefHtml({id, tip, url}) {
   let out = globalNames.getHtml(getRefNameKey(id));
+  let urlStr = null;
   if (url) {
     // FIXME: it seems weird that urls are implemented this way (with ref.js depending on
     //        anm code) while everything else is implemented the other way (with ref.js and
@@ -73,9 +74,15 @@ export function getRefHtml({id, tip, url}) {
     if (id.startsWith('anm:')) {
       const url = getAnmInsUrlByRef(id);
       if (url !== null) {
-        out = `<a href="${url}" class="isref">${out}</a>`;
+        urlStr = url;
       }
     }
+  }
+
+  if (urlStr) {
+    out = `<a href="${urlStr}" class="isref">${out}</a>`;
+  } else {
+    out = `<a class="isref">${out}</a>`;
   }
 
   if (tip) {
