@@ -143,7 +143,7 @@ export async function loadEclmapAndSetGame(file, name, game) {
 function generateOpcodeTable(game) {
   let base = `Current table: [game=${game}] version ${game}[/game][br]`;
 
-  let navigation = /* md */`### Navigation`;
+  let navigation = /* html */`<div class='toc'><h3>Navigation</h3><ul>`;
   let table = "";
 
   const currentQuery = parseQuery(window.location.hash);
@@ -157,11 +157,10 @@ function generateOpcodeTable(game) {
     const groupAnchor = `group-${group.min}`;
     const navQuery = Object.assign({}, currentQuery, {a: groupAnchor});
     const navDest = '#' + buildQuery(navQuery);
-    navigation += `\n- [${group.title} (${group.min}..)](${navDest})`;
+    navigation += /* html */`<li><a href="${navDest}">${group.title} (${group.min}..)</a></li>`;
 
     table += /* html */`\n<h2 id="${groupAnchor}">${group.min}-${group.max}: ${group.title}</h2>`;
     table += /* html */`<table class='ins-table'>`;
-    // table += /* html */`<div class='ins-table-header'><th class="col-id"></th><th class='col-name'></th><th class='col-desc'></th></th>`;
 
     for (let opcode=group.min; opcode<=group.max; ++opcode) {
       const refObj = anmInsRefByOpcode(game, opcode);
@@ -187,7 +186,7 @@ function generateOpcodeTable(game) {
 
     table += "</table>";
   }
-  navigation += "</div>";
+  navigation += "</ul></div>";
   base += `Documented instructions: ${documented}/${total} (${(documented/total*100).toFixed(2)}%)[br]`;
   base += "Instructions marked [wip=1]like this[/wip] are not fully understood.  Items [wip=2]like this[/wip] are complete mysteries.";
   return MD.makeHtml(base) + MD.makeHtml(navigation) + table;

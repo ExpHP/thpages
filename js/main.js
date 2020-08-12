@@ -104,7 +104,7 @@ function getNavEntryHref(item, path) {
     item.type == "href"
       ? item.url
       : item.type == "site"
-        ? "#s=" + path + item.url
+        ? '#' + buildQuery({s: path + item.url})
         : "#e=" + item.type // error
   );
   return `href='${url}'`;

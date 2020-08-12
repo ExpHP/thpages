@@ -1,5 +1,6 @@
 // handles format of URLs on the site
 
+// This is effectively an SPA so we put basically everything in the hash.
 // After the hash is a &-separated list of key=value pairs, much like the normal '?' querystring.
 //
 // The first pair is allowed to have no '=', in which case it is interpreted as the page path
