@@ -1,5 +1,6 @@
 import {registerTip, getTip} from './tips.js';
 import globalNames from './names.js';
+import {getAnmInsUrlByRef} from './ecl/main.js';
 
 // function getRefTip(id) {
 //   const [ns, rest] = splitNamespace(id);
@@ -55,21 +56,32 @@ export function getRefNameKey(id) {
  * Get HTML string to substitute in for a <code>[ref=...]</code>.
  *
  * @param {object} args
- * @param {string} args.id Reference id.
+ * @param {string} args.id Reference id.  FIXME should be named ref
  * @param {boolean} args.tip Include a tooltip.
  * @param {boolean} args.url Include a hyperlink.
  * @return {string}
  */
 export function getRefHtml({id, tip, url}) {
   let out = globalNames.getHtml(getRefNameKey(id));
+  if (url) {
+    // FIXME: it seems weird that urls are implemented this way (with ref.js depending on
+    //        anm code) while everything else is implemented the other way (with ref.js and
+    //        anm code sharing a common dependency), but anything else I could come up with
+    //        for now felt too overengineered for the current use case.
+    //
+    //        This will probably need to change when we add support for other game versions...
+    if (id.startsWith('anm:')) {
+      const url = getAnmInsUrlByRef(id);
+      if (url !== null) {
+        out = `<a href="${url}" class="isref">${out}</a>`;
+      }
+    }
+  }
+
   if (tip) {
     out = `<instr data-tip-id="${getRefTipKey(id)}">${out}</instr>`;
   } else {
     out = `<instr>${out}</instr>`;
-  }
-  if (url) {
-    // TODO
-    // out = `<a href="${parts.url}">${out}</a>`;
   }
   return out;
 }

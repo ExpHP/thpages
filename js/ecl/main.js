@@ -1,5 +1,5 @@
 import {getCurrentMap, loadEclmap} from './eclmap.js';
-import {GROUPS_V8, ANM_INS_DATA, ANM_BY_OPCODE, DUMMY_DATA} from './ins-table.js';
+import {GROUPS_V8, ANM_INS_DATA, ANM_BY_OPCODE, ANM_OPCODE_REVERSE, DUMMY_DATA} from './ins-table.js';
 import {ANM_VAR_DATA, ANM_VARS_BY_NUMBER} from './var-table.js';
 import {registerRefTip, getRefNameKey} from '../ref.js';
 import {MD} from '../main.js';
@@ -212,7 +212,7 @@ function generateOpcodeTableEntry(game, ins, opcode) {
   desc = postprocessAnmDesc(desc, false);
 
   return /* html */`
-  <tr class="ins-table-entry">
+  <tr class="ins-table-entry" id="ins-${opcode}">
     <td class="col-id">${opcode}</td>
     <td class="col-name">${generateAnmInsSiggy(ins, nameKey)}</td>
     <td class="col-desc">${desc}</td>
@@ -271,12 +271,16 @@ function anmInsRefByOpcode(game, opcode) {
   return out;
 }
 
+function stripRefPrefix(prefix, ref) {
+  if (!ref.startsWith(`${prefix}:`)) {
+    throw new Error(`expected ${prefix} ref, got "${ref}"`);
+  }
+  return ref.substring(prefix.length + 1);
+}
+
 // Get instruction data for an 'anm:' ref id.
 function anmInsDataByRef(ref) {
-  if (!ref.startsWith("anm:")) {
-    throw new Error(`expected anm ref, got "${ref}"`);
-  }
-  const id = ref.substring(4);
+  const id = stripRefPrefix('anm', ref);
 
   const out = ANM_INS_DATA[id];
   if (out == null) {
@@ -288,10 +292,7 @@ function anmInsDataByRef(ref) {
 
 // Get data for an 'anmvar:' ref id.
 function anmVarDataByRef(ref) {
-  if (!ref.startsWith("anmvar:")) {
-    throw new Error(`expected anmvar ref, got "${ref}"`);
-  }
-  const id = ref.substring(7);
+  const id = stripRefPrefix('anmvar', ref);
 
   const out = ANM_VAR_DATA[id];
   if (out == null) {
@@ -313,4 +314,11 @@ function generateAnmVarTip(avar, ref) {
   const contents = postprocessAnmDesc(desc, true);
   const heading = generateAnmVarHeader(avar, getRefNameKey(ref));
   return {heading, contents, omittedInfo};
+}
+
+export function getAnmInsUrlByRef(ref) {
+  const opcode = ANM_OPCODE_REVERSE[17][ref];
+  if (opcode === undefined) return null;
+
+  return '#' + buildQuery({s: 'anm/ins', a: `ins-${opcode}`});
 }

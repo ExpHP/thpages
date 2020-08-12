@@ -56,6 +56,12 @@ export const INDEX = [
     "path": null,
     "content": [
       {
+        "name": "My dumb blog",
+        "type": "href",
+        "newTab": true,
+        "url": "https://exphp.github.io/",
+      },
+      {
         "name": "My Github",
         "type": "href",
         "newTab": true,

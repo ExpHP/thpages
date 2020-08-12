@@ -187,31 +187,31 @@ export const ANM_BY_OPCODE = {
   "17": INS_17,
 };
 
-// // ==========================================================================
-// // ==========================================================================
-// // ==================    REVERSE LOOKUP TABLE     ===========================
+// ==========================================================================
+// ==========================================================================
+// ==================    REVERSE LOOKUP TABLE     ===========================
 
-// // This table gets an opcode from a ref, so that the name can be looked up in an eclmap.
+// This table gets an opcode from a ref, so that the name can be looked up in an eclmap.
 
-// export const ANM_OPCODE_REVERSE = {};
-// for (const [game, inner] of Object.entries(ANM_BY_OPCODE)) {
-//   ANM_OPCODE_REVERSE[game] = {};
-//   for (const [opcodeStr, {id}] of Object.entries(inner)) {
-//     if (id === null) continue; // no associated data entry yet
+export const ANM_OPCODE_REVERSE = {};
+for (const [game, inner] of Object.entries(ANM_BY_OPCODE)) {
+  ANM_OPCODE_REVERSE[game] = {};
+  for (const [opcodeStr, {id}] of Object.entries(inner)) {
+    if (id === null) continue; // no associated data entry yet
 
-//     if (!id.startsWith('anm:')) {
-//       window.console.error(`wrong prefix in anm lookup table: (game ${game}, opcode ${opcodeStr}): ${id}`);
-//       continue;
-//     }
+    if (!id.startsWith('anm:')) {
+      window.console.error(`wrong prefix in anm lookup table: (game ${game}, opcode ${opcodeStr}): ${id}`);
+      continue;
+    }
 
-//     const opcode = parseInt(opcodeStr, 10);
-//     if (Number.isNaN(opcode)) {
-//       window.console.error(`bad opcode: (game ${game}, opcode ${opcodeStr})`);
-//       continue;
-//     }
-//     ANM_OPCODE_REVERSE[id] = opcode;
-//   }
-// }
+    const opcode = parseInt(opcodeStr, 10);
+    if (Number.isNaN(opcode)) {
+      window.console.error(`bad opcode: (game ${game}, opcode ${opcodeStr})`);
+      continue;
+    }
+    ANM_OPCODE_REVERSE[game][id] = opcode;
+  }
+}
 
 // ==========================================================================
 // ==========================================================================
@@ -436,9 +436,9 @@ Object.assign(ANM_INS_DATA, {
     Sets the layer of the ANM.  [tiphide][wip]This may or may not affect z-ordering? It's weird...[/wip][/tiphide]
 
     [tiphide]
-    **Different layer numbers may behave differently!** Each game only has a finite number of layers, and certain groups of these layers
-    are drawn at different stages in the rendering pipeline.  Be especially careful when porting something from one game to another,
-    as the layer groupings may have changed.
+    **Different layer numbers may behave differently!** Each game only has a finite number of layers,
+    and certain groups of these layers are drawn at different stages [in the rendering pipeline](#anm/stages-of-rendering).
+    Be especially careful when porting something from one game to another, as the layer groupings may have changed.
     [/tiphide]
   `},
   'flipX': {sig: '', args: [], desc: "Toggles mirroring on the x axis.  [wip](sounds straightforward, but which things are affected?[/wip]"},

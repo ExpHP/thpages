@@ -57,9 +57,13 @@ export const ext = function() {
       ret = ret.replace(/&lt;instr&gt;(.*?)&lt;\/instr&gt;/g, (match, content) => {
         return `<span>${content}</span>`;
       });
-      ret = ret.replace(/&lt;a href=<span class="hljs-string">(.*?)<\/span>&gt;(.*?)&lt;\/a&gt;/g, (match, url, content) => {
-        return `<a href=${url.replace(/&quot;/g, '"').replace(/&amp;/g, "&")}>${content}</a>`;
+      // this is getting seriously out of hand
+      ret = ret.replace(/&lt;a href=<span class="hljs-string">(.*?)<\/span> class=<span class="hljs-string">(.*?)<\/span>&gt;(.*?)&lt;\/a&gt;/g, (match, url, classes, content) => {
+        return `<a href=${url.replace(/&quot;/g, '"').replace(/&amp;/g, "&")} class=${classes.replace(/&quot;/g, '"')}>${content}</a>`;
       });
+      // ret = ret.replace(/&lt;a href=<span class="hljs-string">(.*?)<\/span>&gt;(.*?)&lt;\/a&gt;/g, (match, url, content) => {
+      //   return `<a href=${url.replace(/&quot;/g, '"').replace(/&amp;/g, "&")}>${content}</a>`;
+      // });
       ret = ret.replace(/\\\\/g, "\\");
       return ret;
     },

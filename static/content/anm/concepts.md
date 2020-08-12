@@ -27,7 +27,7 @@ On this site you'll see lots of words used that sound like they have similar mea
 - **script** &mdash; a script is a sequence of instructions encoded in an ANM file that determines what sprites an animation should use, how it should move and etc. Much like ECL scripts for enemies, ANM scripts have an internal concept of "time" and pause when they encounter instructions that aren't supposed to run yet. Scripts are not tied down to a single sprite or even to a single texture; but they can only use sprites defined in the same ANM file. (`script` blocks in thanm syntax)
 - **virtual machine (VM)** &mdash; a VM is a specific instance of a script running in the game.  It contains all of the data necessary to describe the current state of the animation, as well as the current state of the script (including an instruction pointer, time value, and values of all registers).
 - **animation** &mdash; I use this to refer to *the output* of a VM (i.e. the graphical content it draws).  Or I try, at least. Out of habit I tend to use the terms "animation" and "VM" interchangeably.
-- **surface** &mdash; Much like how a texture is a thing you draw *from,* a surface is a thing you draw *to.* TH14-17 have three different surfaces, as will be explained in Stages of rendering below.  The destination surface of an animation is determined by its layer (the [ref=anm:layer] instruction).
+- **surface** &mdash; Much like how a texture is a thing you draw *from,* a surface is a thing you draw *to.* TH14-17 have three different surfaces, as will be explained in [stages of rendering](#anm/stages-of-rendering).  The destination surface of an animation is determined by its layer (the [ref=anm:layer] instruction).
 
 <h2 id="rng">RNGs</h2>
 
