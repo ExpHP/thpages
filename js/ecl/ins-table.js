@@ -241,27 +241,9 @@ Object.assign(ANM_INS_DATA, {
   'stop2': {sig: '', args: [], wip: 2, desc: "[wip=2]This is [ref=anm:stop] except that it additionally clears an unknown bitflag...[/wip]"},
   'case': {
     sig: 'S', args: ['n'], desc: `
-    A label used to externally control an ANM.
+    A label used to externally control an ANM.  You can read more about this on the [ANM concepts page](#anm/concepts&a=switch).
 
-    [tiphide]
-    [wip]TODO: show example code[/wip]
-
-    <!-- FIXME: use eclmap for anmSwitch or link to something -->
-    Enemies can invoke this using the \`anmSwitch\` ECL instruction.  The game also internally uses [ref=anm:case] labels for all sorts
-    of different purposes.  For instance, it is used to handle animations on the Pause menu and main menu, it is used to make player options
-    appear and disappear based on power, and it is even used to make the season gauge go transparent when the player gets near.
-
-    The game always searches for [ref=anm:case] labels starting from the *beginning* of the function. (not from the [ref=anm:stop])
-
-    [ref=anm:case](1) is almost universally used to mean "go away permanently." (i.e. it almost always ends in [ref=anm:delete])
-
-    Miscellaneous notes:
-    * If multiple switches occur on one frame, only the **last** takes effect.
-    * [ref=anm:case](0) doesn't work due to how pending switch numbers are stored.
-    * [wip=2][ref=anm:case](-1) appears to work differently from the others...
-      Could it be a \`default:\` label? According to 32th System it is ignored...[/wip]
-    * [wip]Can switching interrupt code that is not at a [ref=anm:stop]? Testing needed.[/wip]
-    [/tiphide]
+    [tiphide]Mind that this instruction only acts as a label. When executed, it does nothing. (it is a no-op)[/tiphide]
   `},
   'wait': {sig: 'S', args: ['t'], desc: `Wait \`t\` frames.`},
   'caseReturn': {sig: '', args: [], wip: 1, desc: `
@@ -340,10 +322,9 @@ for (const [mnemonic, operator] of Object.entries(OPERATOR_3_DATA)) {
   }
 }
 
-// TODO: Strip out parameter tooltips, they're easy to mess up anyways.
 Object.assign(ANM_INS_DATA, {
-  'rand': {sig: '$S', args: ['x', 'n'], desc: 'Draw a random integer `0 <= x < n`.'},
-  'randF': {sig: '%f', args: ['x', 'r'], desc: 'Draw a random float `0 <= x <= r`.'},
+  'rand': {sig: '$S', args: ['x', 'n'], desc: 'Draw a random integer `0 <= x < n` using the [animation RNG](#anm/concepts&a=rng).'},
+  'randF': {sig: '%f', args: ['x', 'r'], desc: 'Draw a random float `0 <= x <= r` using the [animation RNG](#anm/concepts&a=rng).'},
 
   'mathSin': {sig: '%f', args: ['dest', 'θ'], desc: 'Compute `sin(θ)` (`θ` in radians).'},
   'mathCos': {sig: '%f', args: ['dest', 'θ'], desc: 'Compute `cos(θ)` (`θ` in radians).'},
@@ -354,7 +335,8 @@ Object.assign(ANM_INS_DATA, {
   'mathCirclePos': {sig: '%%ff', args: ['x', 'y', 'θ', 'r'], desc: '`x = r*cos(θ);`<br>`y = r*sin(θ);`'},
   'mathCirclePosRand': {
     sig: '%%ff', args: ['x', 'y', 'rmin', 'rmax'], desc: `
-    Uniformly draws a random radius \`r\` in the interval given by \`rmin\` and \`rmax\`, and picks a random angle. (both using the anm RNG)
+    Uniformly draws a random radius \`r\` in the interval given by \`rmin\` and \`rmax\`, and picks a random angle
+    (both using the [animation RNG](#anm/concepts&a=rng)).
     Then basically computes [ref=anm:mathCirclePos] on those.
 
     This isn't the right way to uniformly draw points on a ring shape, but I don't think that's what it's used for anyways.
@@ -370,7 +352,7 @@ Object.assign(ANM_INS_DATA, {
     sig: 'S', args: ['id'], desc: `
     Sets the image used by this VM to one of the sprites defined in the ANM file.
     [tiphide]
-    A value of \`-1\` means to not use an image (this is frequently used with shape-drawing instructions).
+    A value of \`-1\` means to not use an image (this is frequently used with [special drawing instructions](#anm/ins&a=group-600)).
     thanm also lets you use the sprite's name instead of an index.
 
     [wip=2]Under some unknown conditions, these sprite indices are transformed by a "sprite-mapping"
@@ -378,10 +360,9 @@ Object.assign(ANM_INS_DATA, {
     for 16 different colors.  The precise mechanism of this is not yet fully understood.[/wip]
     [/tiphide]
   `},
-  // TODO: link to RNG concept page once it exists
   'spriteRand': {
     sig: 'SS', args: ['a', 'b'], desc: `
-    Selects a random sprite from \`a\` (inclusive) to \`a + b\` (exclusive) using the animation RNG.
+    Selects a random sprite from \`a\` (inclusive) to \`a + b\` (exclusive) using the [animation RNG](#anm/concepts&a=rng).
   `},
   'blendMode': {
     sig: 'S', args: ['mode'], desc: `
@@ -429,8 +410,6 @@ Object.assign(ANM_INS_DATA, {
       like [ref=anm:textureCircle] and [ref=anm:drawRect] (each one has its own mode).
     [/tiphide]
   `},
-  // TODO: link to layer concept.
-  // TODO: link to stages of drawing.
   'layer': {
     sig: 'S', args: ['n'], desc: `
     Sets the layer of the ANM.  [tiphide][wip]This may or may not affect z-ordering? It's weird...[/wip][/tiphide]
@@ -461,7 +440,7 @@ Object.assign(ANM_INS_DATA, {
   'scrollMode': {
     sig: 'SS', args: ['xmode', 'ymode'], desc: `
     Determines how a sprite pulls image data when an instruction like [ref=anm:uvScale], [ref=anm:uVel],
-    or [ref=anm:textureCircle] causes it to pull from [uv coords outside the \`(0,0)-(1,1)\` rectangle](#s=anm/concepts&a=uv-coords).
+    or [ref=anm:textureCircle] causes it to pull from [uv coords outside the \`(0,0)-(1,1)\` rectangle](#anm/concepts&a=uv-coords).
 
     [tiphide]
     | Mode | D3D constant | Meaning |
@@ -479,8 +458,8 @@ Object.assign(ANM_INS_DATA, {
     | Value | Origin | Appropriate for |
     | ---   | ---    | --- |
     | 0     | Top left of target surface. | Border around the game. |
-    | 1     | Location of ECL's (0, 0) in [rendering stages 1 to 3](#s=anm/stages-of-rendering&a=stage-1) | Game elements always drawn at 640x480. |
-    | 2     | Location of ECL's (0, 0) in [rendering stage 4](#s=anm/stages-of-rendering&a=stage-4) | Game elements drawn at full res (e.g. boss HP). |
+    | 1     | Location of ECL's (0, 0) in [rendering stages 1 to 3](#anm/stages-of-rendering&a=stage-1) | Game elements always drawn at 640x480. |
+    | 2     | Location of ECL's (0, 0) in [rendering stage 4](#anm/stages-of-rendering&a=stage-4) | Game elements drawn at full res (e.g. boss HP). |
 
     **If your sprite is correctly positioned at 640x480 resolution but not at larger resolutions,
     you may want to check this setting.** (as well as [ref=anm:resolutionMode])
@@ -528,7 +507,7 @@ Object.assign(ANM_INS_DATA, {
     sig: 'fff', args: ['rx', 'ry', 'rz'], desc: `
     Set the animation's rotation.  For 2D objects, only the z rotation matters.
     [tiphide]
-    In some rare cases, x rotation has a special meaning for special drawing instructions.
+    In some rare cases, x rotation has a special meaning for [special drawing instructions](#anm/ins&a=group-600).
     Animations rotate around their anchor point (see [ref=anm:anchor]).
 
     (if nothing seems to be happening when you call this, check your [ref=anm:renderMode] setting!)
@@ -547,7 +526,7 @@ Object.assign(ANM_INS_DATA, {
     sig: 'ff', args: ['sx', 'sy'], desc: `
     Scales the ANM independently along the x and y axis.
     Animations grow around their anchor point (see [ref=anm:anchor]).
-    Some special drawing instructions give the x and y scales special meaning.
+    Some [special drawing instructions](#anm/ins&a=group-600) give the x and y scales special meaning.
   `},
   'scale2': {
     sig: 'ff', args: ['sx', 'sy'], desc: `
@@ -555,7 +534,7 @@ Object.assign(ANM_INS_DATA, {
     to [ref=anm:scale].
 
     [tiphide]
-    All special drawing instructions ignore this (which is a shame, because it means you still can't
+    All [special drawing instructions](#anm/ins&a=group-600) ignore this (which is a shame, because it means you still can't
     draw ellipses...).
     [/tiphide]
   `},
@@ -570,14 +549,13 @@ Object.assign(ANM_INS_DATA, {
     sig: 'S', args: ['alpha'], desc: `
     Set alpha (opacity) to a value 0-255.
   `},
-  // TODO: link special drawing instructions
   'rgb2': {
     sig: 'SSS', args: ['r', 'g', 'b'], desc: `
-    Set a second color for gradients.  Gradients are used by certain special drawing instructions, and can be enabled
+    Set a second color for gradients.  Gradients are used by certain [special drawing instructions](#anm/ins&a=group-600), and can be enabled
     on regular sprites using [ref=anm:colorMode].
   `},
   'alpha2': {sig: 'S', args: ['alpha'], desc: `
-    Set a second alpha for gradients.  Gradients are used by certain special drawing instructions, and can be enabled
+    Set a second alpha for gradients.  Gradients are used by certain [special drawing instructions](#anm/ins&a=group-600), and can be enabled
     on regular sprites using [ref=anm:colorMode].
   `},
   'colorMode': {
@@ -592,7 +570,7 @@ Object.assign(ANM_INS_DATA, {
     |   2   | Horizontal gradient. |
     |   3   | Vertical gradient. |
 
-    This has no effect on special drawing instructions.
+    This has no effect on [special drawing instructions](#anm/ins&a=group-600).
 
     For some strange reason, [ref=anm:rgb2Time] and [ref=anm:alpha2Time] automatically do [ref-notip=anm:colorMode](1).
     Therefore, if you use those instructions, you must call this *afterwards,* not before.
@@ -604,17 +582,22 @@ Object.assign(ANM_INS_DATA, {
     Basically, [ref-notip=anm:scaleGrowth] is to [ref=anm:scale] as [ref=anm:angleVel] is to [ref=anm:rotate].
     (they even share implemenation details...)
   `},
-  // TODO: link to texture coordinates concept
   'uVel': {sig: 'f', args: ['vel'], desc: `
-    Add \`vel\` to the texture u coordinate every frame (in units of \`1 / total_image_width\`),
+    Add \`vel\` to the [texture u coordinate](#anm/concepts&a=uv-coords) every frame (in units of \`1 / total_image_width\`),
     causing the displayed sprite to scroll horizontally through the image file.
+
+    [tiphide]
+    This image shows [ref=anm:uVel] used with a negative argument:
+
+    <img src="content/anm/img/ins-u-vel.gif">
+    [/tiphide]
   `},
   'vVel': {sig: 'f', args: ['vel'], desc: `
-    Add \`vel\` to the texture v coordinate every frame (in units of \`1 / total_image_height\`),
+    Add \`vel\` to the [texture v coordinate](#anm/concepts&a=uv-coords) every frame (in units of \`1 / total_image_height\`),
     causing the displayed sprite to scroll vertically through the image file.
   `},
   'uvScale': {sig: 'ff', args: ['uscale', 'vscale'], desc: `
-    Scales [texture uv coordinates](#s=anm/concepts&a=uv-coords).  [tiphide]Values greater than 1 means that a larger
+    Scales [texture uv coordinates](#anm/concepts&a=uv-coords).  [tiphide]Values greater than 1 means that a larger
     region of the texture (spritesheet) is shown.  Typically used to make a texture repeat multiple times, but you
     can also use [ref=anm:scrollMode] to change what happens.
     [/tiphide]
@@ -642,9 +625,8 @@ Object.assign(ANM_INS_DATA, {
     Important for asymmetric bullet sprites because the anchor position is the center point for rotation and scaling.
 
     [tiphide]
-    A tip to getting a good anchor position is to set [ref=anm:anchor]\`(1, 1)\` to anchor the top left corner,
-    then nudge it to the desired offset within the sprite.  In the image below, both hearts
-    are rotating using [ref=anm:angleVel]\`(0f, 0f, rad(3))\`, but the pink heart additionally has:
+    In the image below, both hearts are rotating using [ref=anm:angleVel]\`(0f, 0f, rad(3))\`,
+    but the pink heart additionally has:
 
     [code]
       [ref=anm:anchor](1, 1);
@@ -904,29 +886,23 @@ Object.assign(ANM_INS_DATA, {
 // ==== CHILDREN ====
 // ==================
 Object.assign(ANM_INS_DATA, {
-  // TODO: Link world list and UI list
   'createChild': {
     sig: 'S', args: ['script'], desc: `
-    The standard way to create a child animation.  The new VM is inserted at the back of the world list.
-
-    [wip]TODO: Link to page on world list, UI list, and execution order trickiness[/wip]
+    The standard way to create a child animation.  The new VM is inserted at the back of the [world list](#anm/ontick-ondraw).
   `},
   'prependChild': {
     sig: 'S', args: ['script'], wip: 1, desc: `
-    Create a child animation, but insert it **at the front** of the world list.
-
-    [wip]The nuances of execution order are still not fully understood.[/wip]
+    Create a child animation, but insert it **at the front** of the [world list](#anm/ontick-ondraw).
   `},
   'createChildUi': {
     sig: 'S', args: ['script'], desc: `
-    Create a child animation, but insert it at the back **of the UI list** instead.
-    UI ANMs run even when the game is paused.
+    Create a child animation, but insert it at the back **of the [UI list](#anm/ontick-ondraw)** instead.
+
+    UI ANMs are ticked even while the game is paused.
   `},
   'prependChildUi': {
     sig: 'S', args: ['script'], wip: 1, desc: `
-    Create a child animation, but insert it **at the front of the UI list**.
-
-    [wip]The nuances of execution order are still not fully understood.[/wip]
+    Create a child animation, but insert it **at the front of the [UI list](#anm/ontick-ondraw)****.
   `},
   'attached': {
     sig: 'S', args: ['enable'], wip: 1, desc: `
@@ -945,12 +921,12 @@ Object.assign(ANM_INS_DATA, {
   `},
   'create-504': {
     sig: 'S', args: ['script'], wip: 2, desc: `
-    Creates a child and puts it in the back of the world list, but copies more state from the parent than normal.
+    Creates a child and puts it in the back of the world list (same as [ref=anm:createChild]), but copies more state from the parent than normal.
     [wip]What gets copied? Why?[/wip]
   `},
   'create-505': {
     sig: 'Sff', args: ['script', 'x', 'y'], wip: 2, desc: `
-    Creates a child and puts it in the back of the world list, and then... welllllll....
+    Creates a child and puts it in the back of the world list (same as [ref=anm:createChild]), and then... welllllll....
 
     [tiphide]
     [wip]You know that mysterious "alternate position" vector mentioned in the entry for [ref=anm:pos]?

@@ -20,6 +20,11 @@ export const INDEX = [
     "path": "anm/",
     "content": [
       {
+        "name": "Instruction reference",
+        "type": "site",
+        "url": "ins",
+      },
+      {
         "name": "Concepts",
         "type": "site",
         "url": "concepts",
@@ -30,9 +35,9 @@ export const INDEX = [
         "url": "stages-of-rendering",
       },
       {
-        "name": "Instruction reference",
+        "name": "on_tick and on_draw",
         "type": "site",
-        "url": "ins",
+        "url": "ontick-ondraw",
       },
     ],
 

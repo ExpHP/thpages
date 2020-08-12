@@ -188,7 +188,7 @@ function generateOpcodeTable(game) {
   }
   navigation += "</ul></div>";
   base += `Documented instructions: ${documented}/${total} (${(documented/total*100).toFixed(2)}%)[br]`;
-  base += "Instructions marked [wip=1]like this[/wip] are not fully understood.  Items [wip=2]like this[/wip] are complete mysteries.";
+  base += "[wip=1]Instructions marked like this are not fully understood.[/wip]<br>[wip=2]Items like this are complete mysteries.[/wip]";
   return MD.makeHtml(base) + MD.makeHtml(navigation) + table;
 }
 

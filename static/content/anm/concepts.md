@@ -1,7 +1,7 @@
 [title=Concepts in ANM]
 [requireEclmap=17]
 
-<h2 id="why-anm">What is ANM used for?</h2>
+<h1 id="why-anm">What is ANM used for?</h1>
 
 LITERALLY EVERYTHING
 
@@ -15,7 +15,7 @@ How Seija rotates the screen?  **Yes, that's ANM too!**
 
 ANM is how 99% of the game code is able to avoid having to worry about the ugliness of Direct3D APIs.  But it also means that, when you want to make mods for Touhou, you'll inevitably run into ANM at some point.  *It's kind of a big deal,* and that's why this site exists.
 
-<h2 id="jargon">Terminology</h2>
+<h1 id="jargon">Terminology</h1>
 
 On this site you'll see lots of words used that sound like they have similar meanings, but there are important nuances between them.  Here's an overview:
 
@@ -29,7 +29,7 @@ On this site you'll see lots of words used that sound like they have similar mea
 - **animation** &mdash; I use this to refer to *the output* of a VM (i.e. the graphical content it draws).  Or I try, at least. Out of habit I tend to use the terms "animation" and "VM" interchangeably.
 - **surface** &mdash; Much like how a texture is a thing you draw *from,* a surface is a thing you draw *to.* TH14-17 have three different surfaces, as will be explained in [stages of rendering](#anm/stages-of-rendering).  The destination surface of an animation is determined by its layer (the [ref=anm:layer] instruction).
 
-<h2 id="rng">RNGs</h2>
+<h1 id="rng">RNGs</h1>
 
 There are two random number generators available to ANM scripts.  The terms I will use for these are:
 
@@ -38,7 +38,62 @@ There are two random number generators available to ANM scripts.  The terms I wi
 
 In modern games the replay RNG is accessed via a separate, dedicated set of variables (e.g. you can use [ref=anmvar:randf-01-replay] instead of [ref=anmvar:randf-01]).  In earlier games, there is a bitflag you can toggle. [wip](how do you toggle it?)[/wip]
 
-<h2 id="uv-coords">Texture coordinates</h2>
+<h1 id="switch">Switching</h1>
+
+Oftentimes, animations have special, well, *animations* associated with certain events.  For instance, menu items may glow when selected, fly away when a different item is chosen, etc.  Or maybe the game just wants to get rid of a graphic for whatever reason, but wants to let it animate out gracefully.  The way these events are handled is called **switching** and is basically done as follows:
+
+* A field on the ANM VM is set to some number representing the event.
+* The next time the VM is [ticked](#anm/ontick-ondraw),
+  it will check this field, look for a matching [ref=anm:case] instruction, and start executing from there.
+
+For a detailed example, here's one of the scripts for the season gauge.  (this one draws the outer border)
+
+[code]
+script script114 {
+    // ... ignoring the boring stuff at the beginning ...
+    [ref=anm:drawRectBorder](102.0f, 10.0f);
+    [ref=anm:rgb](80, 80, 80);
+    [ref=anm:alpha](0);
++20: // 20
+    [ref=anm:alphaTime](20, 0, 255);
+    [ref=anm:stop]();
+    [ref=anm:case](4);  // <-------
+    [ref=anm:alphaTime](5, 0, 255);
+    [ref=anm:caseReturn]();
+    [ref=anm:case](5);  // <-------
+    [ref=anm:alphaTime](5, 0, 64);
+    [ref=anm:caseReturn]();
+    [ref=anm:case](1);  // <-------
+    [ref=anm:alphaTime](20, 0, 0);
++20: // 40
+    [ref=anm:delete]();
+}
+[/code]
+
+This script has four animations.  The first is that it fades in on creation.  The other three are labeled by [ref=anm:case] instructions:
+
+* Label 5 here is used to make it become transparent when the player gets too close.
+* Label 4 is used to make it become opaque when the player leaves.
+* Label 1 will make it fade away permanently.  I'm not sure if this is ever used for the season gauge in the finished game, but is extremely common for Label 1 to make something disappear permanently. (i.e. label 1 pretty much always ends in [ref=anm:delete])
+
+Notice that labels 4 and 5 end in [ref=anm:caseReturn], causing the script to go back to the [ref=anm:stop] and wait for another switch.
+
+Mind, you can't just put label 5 on any script and expect it to run when the player gets close.
+This one runs because there's a line somewhere in the GUI code that specifically watches for the player to
+enter the lower left corner and then invokes this label on the season gauge.  Most switching is hardcoded like this.
+
+ECL scripts can invoke [ref=anm:case] labels on their own sprites by using the `anmSwitch` ECL instruction.
+The games seldom use this but it is pretty hecking useful for modders!
+
+**Miscellaneous notes:**
+* The game always searches for [ref=anm:case] labels starting from the *beginning* of the function. (not from the [ref=anm:stop])
+* If multiple switches occur on one frame, only the **last** takes effect.
+* [ref=anm:case](0) doesn't work due to how pending switch numbers are stored.
+* [wip=2][ref=anm:case](-1) appears to work differently from the others?
+  According to 32th System it is ignored...[/wip]
+* [wip]Can switching interrupt code that is not at a [ref=anm:stop]? Testing needed.[/wip]
+
+<h1 id="uv-coords">Texture coordinates</h1>
 
 Numerous instructions change the region of coordinates in the texture image file that a sprite's image is pulled from.  These include [ref=anm:uVel], [ref=anm:uvScale], and [ref=anm:textureCircle]. To fully understand how these instructions work, you must have a basic understanding of texure addressing.
 
@@ -58,9 +113,5 @@ Now let's say we start with this little F as our sprite, and then use [ref=anm:u
 Observe how, at the left end of the image, it *wraps back* to the F.  This is because **the default behavior of scrolling is to assume that the texture repeats infinitely.**  This has many uses, such as making color gradients move along Marisa's laser.  You can also pull from a large region in uv space using [ref=anm:uvScale]; similar behavior is provided by [ref=anm:textureCircle] which can pull from a large vertical region in uv space that includes many copies of the image. This is used for e.g. those circles of the "Spell attack" text.
 
 Notice how I said "default behavior."  Using [ref=anm:scrollMode], you can configure this.  In particular, you can choose to have every other periodic copy be mirrored.
-
-## Layers and `on_draw`
-
-COMING SOON (TM)
 
 [/requireEclmap]
