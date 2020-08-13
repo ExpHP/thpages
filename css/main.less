@@ -301,7 +301,7 @@ table, th, td, tr {
     &::after {
       content: "See the table entry for more info.";
     }
-    opacity: 75%;
+    opacity: 0.75; // WARNING: Don't use percentages, they get bundled incorrectly
     font-size: 0.8em;
     font-style: italic;
     float: right;
