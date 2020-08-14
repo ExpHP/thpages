@@ -16,14 +16,19 @@ export const GROUPS_V8 = [
   {min: 600, max: 699, title: 'Drawing'},
 ];
 
+// ---- V7 ----
 const INS_12 = {
+  63: {ref: 'anm:stop'},
   67: {ref: 'anm:type'},
   68: {ref: 'anm:layer'},
+  69: {ref: 'anm:stop2'},
+  81: {ref: 'anm:caseReturn'},
   106: {ref: 'anm:scaleUV', wip: 1},
   102: {ref: 'anm:drawRect', wip: 1},
 };
 
-const INS_14 = {
+// ---- V8 ----
+const INS_13 = {
   0: {ref: 'anm:nop'},
   1: {ref: 'anm:delete'},
   2: {ref: 'anm:static'},
@@ -94,9 +99,6 @@ const INS_14 = {
   310: {ref: 'anm:v8-flag-310'},
   311: {ref: 'anm:resampleMode'},
   312: {ref: 'anm:scrollMode'},
-  313: {ref: 'anm:resolutionMode'},
-  314: {ref: 'anm:attached'},
-  315: {ref: 'anm:v8-flag-315'},
 
   400: {ref: 'anm:pos'},
   401: {ref: 'anm:rotate'},
@@ -147,7 +149,6 @@ const INS_14 = {
   506: {ref: 'anm:create-506'},
   507: {ref: 'anm:ignoreParent'},
   508: {ref: 'anm:createEffect'},
-  509: {ref: 'anm:copyParentVars'},
 
   600: {ref: 'anm:textureCircle'},
   601: {ref: 'anm:textureArcEven'},
@@ -158,9 +159,16 @@ const INS_14 = {
   606: {ref: 'anm:drawRectGrad'},
   607: {ref: 'anm:drawRectShadow'},
   608: {ref: 'anm:drawRectShadowGrad'},
+};
+
+const INS_14 = Object.assign({}, INS_13, {
+  313: {ref: 'anm:resolutionMode'},
+  314: {ref: 'anm:attached'},
+  315: {ref: 'anm:colorizeChildren'},
+  509: {ref: 'anm:copyParentVars'},
   609: {ref: 'anm:textureCylinder3D'},
   610: {ref: 'anm:textureRing3D'},
-};
+});
 
 const INS_15 = Object.assign({}, INS_14, {
   316: {ref: 'anm:v8-flag-316'},
@@ -553,7 +561,8 @@ Object.assign(ANM_INS_DATA, {
     Set a second color for gradients.  Gradients are used by certain [special drawing instructions](#anm/ins&a=group-600), and can be enabled
     on regular sprites using [ref=anm:colorMode].
   `},
-  'alpha2': {sig: 'S', args: ['alpha'], desc: `
+  'alpha2': {
+    sig: 'S', args: ['alpha'], desc: `
     Set a second alpha for gradients.  Gradients are used by certain [special drawing instructions](#anm/ins&a=group-600), and can be enabled
     on regular sprites using [ref=anm:colorMode].
   `},
@@ -564,8 +573,8 @@ Object.assign(ANM_INS_DATA, {
     [tiphide]
     | Value | Effect |
     |  ---  |   ---  |
-    |   0   | Only use color set by [ref=anm:rgb] and [ref=anm:alpha]. |
-    |   1   | Only use color set by [ref=anm:rgb2] and [ref=anm:alpha2]. |
+    |   0   | Only use the color set by [ref=anm:rgb] and [ref=anm:alpha]. |
+    |   1   | Only use the color set by [ref=anm:rgb2] and [ref=anm:alpha2]. |
     |   2   | Horizontal gradient. |
     |   3   | Vertical gradient. |
 
@@ -573,6 +582,25 @@ Object.assign(ANM_INS_DATA, {
 
     For some strange reason, [ref=anm:rgb2Time] and [ref=anm:alpha2Time] automatically do [ref-notip=anm:colorMode](1).
     Therefore, if you use those instructions, you must call this *afterwards,* not before.
+
+    **ECL modders beware:** The game may interfere with the use of [ref=anm:rgb2], [ref=anm:alpha2] and [ref=anm:colorMode]
+    on the VM in slot 0 of an enemy, because it uses them to make enemies blink when they take damage.
+    [/tiphide]
+  `},
+  'colorizeChildren': {
+    sig: 'b', args: ['enable'], desc: `
+    Sets a bitflag that causes colorization (see [ref=anm:rgb]) to affect children as well.
+
+    [tiphide]
+    The game uses this on yin-yang orb enemies to ensure that their satellites also flash on damage taken.
+    In the following image, the damage flash was significantly exaggerated to make the difference easy to see.
+
+    <img src="content/anm/img/ins-colorize-children.png">
+
+    Notes:
+    * Must be called *before* the children are created. (the bitflag is copied on child creation)
+    * Not supported by [special drawing instructions](#anm/ins&a=group-600).
+    * Both parent and child must not be using gradients (i.e. they must have [ref=anm:colorMode] 0 or 1).
     [/tiphide]
   `},
   'angleVel': {sig: 'fff', args: ['ωx', 'ωy', 'ωz'], desc: `Set a constant angular velocity, in radians per frame.`},
@@ -1015,7 +1043,6 @@ Object.assign(ANM_INS_DATA, {
   `},
   'v8-flag-307': {sig: 'b', args: ['enable'], wip: 2, desc: `[wip=2]Sets the state of an unknown bitflag.[/wip]`},
   'v8-flag-310': {sig: 'b', args: ['enable'], wip: 2, desc: `[wip=2]Sets the state of an unknown bitflag.[/wip]`},
-  'v8-flag-315': {sig: 'b', args: ['enable'], wip: 2, desc: `[wip=2]Sets the state of an unknown bitflag. Has something to do with color?[/wip]`},
   'v8-flag-316': {sig: '', args: [], wip: 2, desc: `[wip=2]Enables an unknown bitflag. Clear with [ref=anm:v8-flag-317].[/wip]`},
   'v8-flag-317': {sig: '', args: [], wip: 2, desc: `[wip=2]Clears the bitflag from [ref=anm:v8-flag-316].[/wip]`},
   'v8-flag-419': {sig: 'S', args: ['enable'], wip: 2, desc: `[wip=2]Sets the state of an unknown bitflag.[/wip]`},

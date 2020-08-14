@@ -263,10 +263,6 @@ function anmInsRefByOpcode(game, opcode) {
 
   const out = Object.assign({}, entry);
   out.wip = out.wip || 0;
-  out.problems = out.problems || [];
-  if (out.wip) {
-    out.problems = [...out.problems, 'match'];
-  }
   return out;
 }
 
