@@ -1,7 +1,7 @@
 import showdown from "showdown";
 import {ext} from "./showdown-ext.js";
 import {INDEX, ERROR} from "./index.js";
-import {initAnm} from "./ecl/main.js";
+import {initAnm} from "./anm/main.js";
 import {initTips} from "./tips.js";
 import {buildQuery, parseQuery} from "./url-format.js";
 

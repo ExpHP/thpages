@@ -107,11 +107,11 @@ function setNamesFromAnmmap(names, game, map) {
  * @param {Game} game
  */
 function linkRefNamesToGameOpcodes(names, game) {
-  for (const [opcodeStr, entry] of Object.entries(ANM_BY_OPCODE[game])) {
-    if (entry.id == null) continue;
+  for (const [opcodeStr, {ref}] of Object.entries(ANM_BY_OPCODE[game])) {
+    if (ref == null) continue;
     const opcode = parseInt(opcodeStr, 10);
     const opcodeKey = getOpcodeNameKey(game, opcode);
-    const refKey = getRefNameKey(entry.id);
+    const refKey = getRefNameKey(ref);
     names.setAlias(refKey, opcodeKey);
   }
 
@@ -167,15 +167,14 @@ function generateOpcodeTable(game) {
       if (refObj == null) continue; // instruction doesn't exist
 
       // instruction exists, but our docs may suck
-      let {id, wip, problems} = refObj;
-      let ins = id === null ? DUMMY_DATA : anmInsDataByRef(id); // id null for UNASSIGNED
+      let {ref, wip} = refObj;
+      let ins = ref === null ? DUMMY_DATA : anmInsDataByRef(ref); // ref null for UNASSIGNED
       if (!ins) {
         // instruction is assigned, but ref has no entry in table
-        window.console.error(`ref ${id} is assigned to anm opcode ${game}:${opcode} but has no data`);
+        window.console.error(`ref ${ref} is assigned to anm opcode ${game}:${opcode} but has no data`);
         ins = DUMMY_DATA;
       }
       wip = Math.max(wip, ins.wip || 0);
-      problems = [...problems, ...(ins.problems || [])];
 
       if (wip === 0) {
         documented += 1;

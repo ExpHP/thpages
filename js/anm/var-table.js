@@ -56,7 +56,7 @@ export const ANM_VARS_BY_NUMBER = {
 for (const [game, inner] of Object.entries(ANM_VARS_BY_NUMBER)) {
   for (const [num, entry] of Object.entries(inner)) {
     if (entry.ref == null) {
-      window.console.error(`TABLE CORRUPT: anm var (game ${game}, num ${num}) has no crossref!`);
+      window.console.error(`TABLE CORRUPT: anm var (game ${game}, num ${num}) has no crossref!`)
     }
   }
 }

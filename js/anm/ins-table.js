@@ -1,6 +1,6 @@
 import dedent from "../lib/dedent.js";
 
-export const UNASSIGNED = {id: null, wip: 2};
+export const UNASSIGNED = {ref: null, wip: 2};
 export const UNKNOWN_SIG = {};
 
 // ==========================================================================
@@ -17,161 +17,160 @@ export const GROUPS_V8 = [
 ];
 
 const INS_12 = {
-  // FIXME: rename id to ref to avoid confusion (we use 'id' to refer to the part after 'anm:')
-  67: {id: 'anm:type'},
-  68: {id: 'anm:layer'},
-  106: {id: 'anm:scaleUV', wip: 1},
-  102: {id: 'anm:drawRect', wip: 1},
+  67: {ref: 'anm:type'},
+  68: {ref: 'anm:layer'},
+  106: {ref: 'anm:scaleUV', wip: 1},
+  102: {ref: 'anm:drawRect', wip: 1},
 };
 
 const INS_14 = {
-  0: {id: 'anm:nop'},
-  1: {id: 'anm:delete'},
-  2: {id: 'anm:static'},
-  3: {id: 'anm:stop'},
-  4: {id: 'anm:stop2'},
-  5: {id: 'anm:case'},
-  6: {id: 'anm:wait'},
-  7: {id: 'anm:caseReturn'},
+  0: {ref: 'anm:nop'},
+  1: {ref: 'anm:delete'},
+  2: {ref: 'anm:static'},
+  3: {ref: 'anm:stop'},
+  4: {ref: 'anm:stop2'},
+  5: {ref: 'anm:case'},
+  6: {ref: 'anm:wait'},
+  7: {ref: 'anm:caseReturn'},
 
-  100: {id: 'anm:set'},
-  101: {id: 'anm:setF'},
-  102: {id: 'anm:add'},
-  103: {id: 'anm:addF'},
-  104: {id: 'anm:sub'},
-  105: {id: 'anm:subF'},
-  106: {id: 'anm:mul'},
-  107: {id: 'anm:mulF'},
-  108: {id: 'anm:div'},
-  109: {id: 'anm:divF'},
-  110: {id: 'anm:mod'},
-  111: {id: 'anm:modF'},
-  112: {id: 'anm:add3'},
-  113: {id: 'anm:addF3'},
-  114: {id: 'anm:sub3'},
-  115: {id: 'anm:subF3'},
-  116: {id: 'anm:mul3'},
-  117: {id: 'anm:mulF3'},
-  118: {id: 'anm:div3'},
-  119: {id: 'anm:divF3'},
-  120: {id: 'anm:mod3'},
-  121: {id: 'anm:modF3'},
-  122: {id: 'anm:rand'},
-  123: {id: 'anm:randF'},
-  124: {id: 'anm:mathSin'},
-  125: {id: 'anm:mathCos'},
-  126: {id: 'anm:mathTan'},
-  127: {id: 'anm:mathAcos'},
-  128: {id: 'anm:mathAtan'},
-  129: {id: 'anm:mathReduceAngle'},
-  130: {id: 'anm:mathCirclePos'},
-  131: {id: 'anm:mathCirclePosRand'},
+  100: {ref: 'anm:set'},
+  101: {ref: 'anm:setF'},
+  102: {ref: 'anm:add'},
+  103: {ref: 'anm:addF'},
+  104: {ref: 'anm:sub'},
+  105: {ref: 'anm:subF'},
+  106: {ref: 'anm:mul'},
+  107: {ref: 'anm:mulF'},
+  108: {ref: 'anm:div'},
+  109: {ref: 'anm:divF'},
+  110: {ref: 'anm:mod'},
+  111: {ref: 'anm:modF'},
+  112: {ref: 'anm:add3'},
+  113: {ref: 'anm:addF3'},
+  114: {ref: 'anm:sub3'},
+  115: {ref: 'anm:subF3'},
+  116: {ref: 'anm:mul3'},
+  117: {ref: 'anm:mulF3'},
+  118: {ref: 'anm:div3'},
+  119: {ref: 'anm:divF3'},
+  120: {ref: 'anm:mod3'},
+  121: {ref: 'anm:modF3'},
+  122: {ref: 'anm:rand'},
+  123: {ref: 'anm:randF'},
+  124: {ref: 'anm:mathSin'},
+  125: {ref: 'anm:mathCos'},
+  126: {ref: 'anm:mathTan'},
+  127: {ref: 'anm:mathAcos'},
+  128: {ref: 'anm:mathAtan'},
+  129: {ref: 'anm:mathReduceAngle'},
+  130: {ref: 'anm:mathCirclePos'},
+  131: {ref: 'anm:mathCirclePosRand'},
 
-  200: {id: 'anm:jmp'},
-  201: {id: 'anm:jmpDec'},
-  202: {id: 'anm:jmpEq'},
-  203: {id: 'anm:jmpEqF'},
-  204: {id: 'anm:jmpNe'},
-  205: {id: 'anm:jmpNeF'},
-  206: {id: 'anm:jmpLt'},
-  207: {id: 'anm:jmpLtF'},
-  208: {id: 'anm:jmpLe'},
-  209: {id: 'anm:jmpLeF'},
-  210: {id: 'anm:jmpGt'},
-  211: {id: 'anm:jmpGtF'},
-  212: {id: 'anm:jmpGe'},
-  213: {id: 'anm:jmpGeF'},
+  200: {ref: 'anm:jmp'},
+  201: {ref: 'anm:jmpDec'},
+  202: {ref: 'anm:jmpEq'},
+  203: {ref: 'anm:jmpEqF'},
+  204: {ref: 'anm:jmpNe'},
+  205: {ref: 'anm:jmpNeF'},
+  206: {ref: 'anm:jmpLt'},
+  207: {ref: 'anm:jmpLtF'},
+  208: {ref: 'anm:jmpLe'},
+  209: {ref: 'anm:jmpLeF'},
+  210: {ref: 'anm:jmpGt'},
+  211: {ref: 'anm:jmpGtF'},
+  212: {ref: 'anm:jmpGe'},
+  213: {ref: 'anm:jmpGeF'},
 
-  300: {id: 'anm:sprite'},
-  301: {id: 'anm:spriteRand'},
-  302: {id: 'anm:renderMode'},
-  303: {id: 'anm:blendMode'},
-  304: {id: 'anm:layer'},
-  305: {id: 'anm:noZBuffer'},
-  306: {id: 'anm:v8-306'},
-  307: {id: 'anm:v8-flag-307'},
-  308: {id: 'anm:flipX'},
-  309: {id: 'anm:flipY'},
-  310: {id: 'anm:v8-flag-310'},
-  311: {id: 'anm:resampleMode'},
-  312: {id: 'anm:scrollMode'},
-  313: {id: 'anm:resolutionMode'},
-  314: {id: 'anm:attached'},
-  315: {id: 'anm:v8-flag-315'},
+  300: {ref: 'anm:sprite'},
+  301: {ref: 'anm:spriteRand'},
+  302: {ref: 'anm:renderMode'},
+  303: {ref: 'anm:blendMode'},
+  304: {ref: 'anm:layer'},
+  305: {ref: 'anm:noZBuffer'},
+  306: {ref: 'anm:v8-306'},
+  307: {ref: 'anm:v8-flag-307'},
+  308: {ref: 'anm:flipX'},
+  309: {ref: 'anm:flipY'},
+  310: {ref: 'anm:v8-flag-310'},
+  311: {ref: 'anm:resampleMode'},
+  312: {ref: 'anm:scrollMode'},
+  313: {ref: 'anm:resolutionMode'},
+  314: {ref: 'anm:attached'},
+  315: {ref: 'anm:v8-flag-315'},
 
-  400: {id: 'anm:pos'},
-  401: {id: 'anm:rotate'},
-  402: {id: 'anm:scale'},
-  403: {id: 'anm:alpha'},
-  404: {id: 'anm:rgb'},
-  405: {id: 'anm:alpha2'},
-  406: {id: 'anm:rgb2'},
-  407: {id: 'anm:posTime'},
-  408: {id: 'anm:rgbTime'},
-  409: {id: 'anm:alphaTime'},
-  410: {id: 'anm:rotateTime'},
-  411: {id: 'anm:rotateTime2D'},
-  412: {id: 'anm:scaleTime'},
-  413: {id: 'anm:rgb2Time'},
-  414: {id: 'anm:alpha2Time'},
-  415: {id: 'anm:angleVel'},
-  416: {id: 'anm:scaleGrowth'},
-  417: {id: 'anm:alphaTime2'},
-  418: {id: 'anm:v8-418'},
-  419: {id: 'anm:v8-flag-419'},
-  420: {id: 'anm:posBezier'},
-  421: {id: 'anm:anchor'},
-  422: {id: 'anm:posAdopt'},
-  423: {id: 'anm:colorMode'},
-  424: {id: 'anm:rotateAuto'},
-  425: {id: 'anm:uVel'},
-  426: {id: 'anm:vVel'},
-  427: {id: 'anm:uVelTime'},
-  428: {id: 'anm:vVelTime'},
-  429: {id: 'anm:uvScale'},
-  430: {id: 'anm:uvScaleTime'},
-  431: {id: 'anm:v8-flag-431'},
-  432: {id: 'anm:v8-flag-432'},
-  433: {id: 'anm:posTime2D'},
-  434: {id: 'anm:scale2'},
-  435: {id: 'anm:scale2Time'},
-  436: {id: 'anm:anchorOffset'},
-  437: {id: 'anm:rotationSystem'},
-  438: {id: 'anm:originMode'},
+  400: {ref: 'anm:pos'},
+  401: {ref: 'anm:rotate'},
+  402: {ref: 'anm:scale'},
+  403: {ref: 'anm:alpha'},
+  404: {ref: 'anm:rgb'},
+  405: {ref: 'anm:alpha2'},
+  406: {ref: 'anm:rgb2'},
+  407: {ref: 'anm:posTime'},
+  408: {ref: 'anm:rgbTime'},
+  409: {ref: 'anm:alphaTime'},
+  410: {ref: 'anm:rotateTime'},
+  411: {ref: 'anm:rotateTime2D'},
+  412: {ref: 'anm:scaleTime'},
+  413: {ref: 'anm:rgb2Time'},
+  414: {ref: 'anm:alpha2Time'},
+  415: {ref: 'anm:angleVel'},
+  416: {ref: 'anm:scaleGrowth'},
+  417: {ref: 'anm:alphaTime2'},
+  418: {ref: 'anm:v8-418'},
+  419: {ref: 'anm:v8-flag-419'},
+  420: {ref: 'anm:posBezier'},
+  421: {ref: 'anm:anchor'},
+  422: {ref: 'anm:posAdopt'},
+  423: {ref: 'anm:colorMode'},
+  424: {ref: 'anm:rotateAuto'},
+  425: {ref: 'anm:uVel'},
+  426: {ref: 'anm:vVel'},
+  427: {ref: 'anm:uVelTime'},
+  428: {ref: 'anm:vVelTime'},
+  429: {ref: 'anm:uvScale'},
+  430: {ref: 'anm:uvScaleTime'},
+  431: {ref: 'anm:v8-flag-431'},
+  432: {ref: 'anm:v8-flag-432'},
+  433: {ref: 'anm:posTime2D'},
+  434: {ref: 'anm:scale2'},
+  435: {ref: 'anm:scale2Time'},
+  436: {ref: 'anm:anchorOffset'},
+  437: {ref: 'anm:rotationSystem'},
+  438: {ref: 'anm:originMode'},
 
-  500: {id: 'anm:createChild'},
-  501: {id: 'anm:prependChild'},
-  502: {id: 'anm:createChildUi'},
-  503: {id: 'anm:prependChildUi'},
-  504: {id: 'anm:create-504'},
-  505: {id: 'anm:create-505'},
-  506: {id: 'anm:create-506'},
-  507: {id: 'anm:ignoreParent'},
-  508: {id: 'anm:createEffect'},
-  509: {id: 'anm:copyParentVars'},
+  500: {ref: 'anm:createChild'},
+  501: {ref: 'anm:prependChild'},
+  502: {ref: 'anm:createChildUi'},
+  503: {ref: 'anm:prependChildUi'},
+  504: {ref: 'anm:create-504'},
+  505: {ref: 'anm:create-505'},
+  506: {ref: 'anm:create-506'},
+  507: {ref: 'anm:ignoreParent'},
+  508: {ref: 'anm:createEffect'},
+  509: {ref: 'anm:copyParentVars'},
 
-  600: {id: 'anm:textureCircle'},
-  601: {id: 'anm:textureArcEven'},
-  602: {id: 'anm:textureArc'},
-  603: {id: 'anm:drawRect'},
-  604: {id: 'anm:drawPoly'},
-  605: {id: 'anm:drawPolyBorder'},
-  606: {id: 'anm:drawRectGrad'},
-  607: {id: 'anm:drawRectShadow'},
-  608: {id: 'anm:drawRectShadowGrad'},
-  609: {id: 'anm:textureCylinder3D'},
-  610: {id: 'anm:textureRing3D'},
+  600: {ref: 'anm:textureCircle'},
+  601: {ref: 'anm:textureArcEven'},
+  602: {ref: 'anm:textureArc'},
+  603: {ref: 'anm:drawRect'},
+  604: {ref: 'anm:drawPoly'},
+  605: {ref: 'anm:drawPolyBorder'},
+  606: {ref: 'anm:drawRectGrad'},
+  607: {ref: 'anm:drawRectShadow'},
+  608: {ref: 'anm:drawRectShadowGrad'},
+  609: {ref: 'anm:textureCylinder3D'},
+  610: {ref: 'anm:textureRing3D'},
 };
 
 const INS_15 = Object.assign({}, INS_14, {
-  316: {id: 'anm:v8-flag-316'},
-  317: {id: 'anm:v8-flag-317'},
-  611: {id: 'anm:drawRing'},
+  316: {ref: 'anm:v8-flag-316'},
+  317: {ref: 'anm:v8-flag-317'},
+  611: {ref: 'anm:drawRing'},
 });
 
 const INS_16 = Object.assign({}, INS_15, {
-  612: {id: 'anm:drawRectBorder'},
-  613: {id: 'anm:drawLine'},
+  612: {ref: 'anm:drawRectBorder'},
+  613: {ref: 'anm:drawLine'},
 });
 
 const INS_17 = Object.assign({}, INS_16, {
@@ -196,11 +195,11 @@ export const ANM_BY_OPCODE = {
 export const ANM_OPCODE_REVERSE = {};
 for (const [game, inner] of Object.entries(ANM_BY_OPCODE)) {
   ANM_OPCODE_REVERSE[game] = {};
-  for (const [opcodeStr, {id}] of Object.entries(inner)) {
-    if (id === null) continue; // no associated data entry yet
+  for (const [opcodeStr, {ref}] of Object.entries(inner)) {
+    if (ref === null) continue; // no associated data entry yet
 
-    if (!id.startsWith('anm:')) {
-      window.console.error(`wrong prefix in anm lookup table: (game ${game}, opcode ${opcodeStr}): ${id}`);
+    if (!ref.startsWith('anm:')) {
+      window.console.error(`wrong prefix in anm lookup table: (game ${game}, opcode ${opcodeStr}): ${ref}`);
       continue;
     }
 
@@ -209,7 +208,7 @@ for (const [game, inner] of Object.entries(ANM_BY_OPCODE)) {
       window.console.error(`bad opcode: (game ${game}, opcode ${opcodeStr})`);
       continue;
     }
-    ANM_OPCODE_REVERSE[game][id] = opcode;
+    ANM_OPCODE_REVERSE[game][ref] = opcode;
   }
 }
 
@@ -1027,7 +1026,6 @@ Object.assign(ANM_INS_DATA, {
 // Validate
 for (const [key, value] of Object.entries(ANM_INS_DATA)) {
   value.wip = value.wip || 0;
-  value.problems = value.problems || [];
   if (value.desc === undefined) window.console.error(`TABLE CORRUPT: anm ref ${key} has no 'desc'`);
   if (value.sig === undefined) window.console.error(`TABLE CORRUPT: anm ref ${key} has no 'sig'`);
   if (value.sig != null && value.args === undefined) window.console.error(`TABLE CORRUPT: anm ref ${key} has no 'args'`);
@@ -1040,6 +1038,4 @@ for (const [key, value] of Object.entries(ANM_INS_DATA)) {
   value.desc = value.desc.replace(re, `[tip=YOU ARE HERE][ref-notip=anm:${key}][/tip]`);
 
   value.desc = dedent(value.desc);
-
-  if (value.wip) value.problems.push('docs');
 }

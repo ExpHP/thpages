@@ -197,33 +197,6 @@ blockquote {
   overflow-x: auto;
 }
 
-/* some jank to make youtube videos resize */
-.fit-wrapper {
-  width: 100%;
-  max-width: 660px;
-  position: relative;
-}
-.fit-wrapper2 {
-  position: relative;
-  top: 0px;
-  left: 0px;
-  width: 100%;
-  padding-top: 100%;
-}
-.fit-wrapper2.yt {
-  padding-top: 56.25%;
-}
-.fit-wrapper2.yt > iframe {
-  border: none;
-}
-.fit-wrapper2 > * {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  top: 0px;
-  left: 0px;
-}
-
 .hljs {
   font-family: @monospace;
   border: 2px solid #12121280;
@@ -334,23 +307,6 @@ table, th, td, tr {
     .type.float { color: #32e875; }
     .type.int { color: #53ceff; }
   }
-}
-
-.video-load {
-  text-align: center;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(40, 40, 40, 0.55);
-  cursor: pointer;
-  padding: 20px;
-  box-sizing: border-box;
-}
-
-.flexbox {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
 }
 
 [data-wip="1"] {

@@ -1,6 +1,6 @@
 import {registerTip, getTip} from './tips.js';
 import globalNames from './names.js';
-import {getAnmInsUrlByRef} from './ecl/main.js';
+import {getAnmInsUrlByRef} from './anm/main.js';
 
 // function getRefTip(id) {
 //   const [ns, rest] = splitNamespace(id);
@@ -15,54 +15,54 @@ import {getAnmInsUrlByRef} from './ecl/main.js';
 /**
  * Set tooltip inner HTML for a reference.
  *
- * @param {string} id Ref id.
+ * @param {string} ref Ref id.
  * @param {object} tip Tip object.
  */
-export function registerRefTip(id, tip) {
-  registerTip(getRefTipKey(id), tip);
+export function registerRefTip(ref, tip) {
+  registerTip(getRefTipKey(ref), tip);
 }
 
 /**
  * Get tooltip inner HTML for a reference, if it has any.
  *
- * @param {string} id Ref id.
+ * @param {string} ref Ref id.
  * @return {?object}
  */
-export function getRefTip(id) {
-  return getTip(getRefTipKey(id));
+export function getRefTip(ref) {
+  return getTip(getRefTipKey(ref));
 }
 
 /**
  * Get tooltip key of a reference.
  *
- * @param {string} id Ref id.
+ * @param {string} ref Ref id.
  * @return {string} Tooltip id.
  */
-export function getRefTipKey(id) {
-  return 'ref:' + id;
+export function getRefTipKey(ref) {
+  return 'ref:' + ref;
 }
 
 /**
  * Get name key of a reference.
  *
- * @param {string} id Ref id.
+ * @param {string} ref Ref id.
  * @return {string} Name id.
  */
-export function getRefNameKey(id) {
-  return 'ref:' + id;
+export function getRefNameKey(ref) {
+  return 'ref:' + ref;
 }
 
 /**
  * Get HTML string to substitute in for a <code>[ref=...]</code>.
  *
  * @param {object} args
- * @param {string} args.id Reference id.  FIXME should be named ref
+ * @param {string} args.ref Reference id.
  * @param {boolean} args.tip Include a tooltip.
  * @param {boolean} args.url Include a hyperlink.
  * @return {string}
  */
-export function getRefHtml({id, tip, url}) {
-  let out = globalNames.getHtml(getRefNameKey(id));
+export function getRefHtml({ref, tip, url}) {
+  let out = globalNames.getHtml(getRefNameKey(ref));
   let urlStr = null;
   if (url) {
     // FIXME: it seems weird that urls are implemented this way (with ref.js depending on
@@ -71,8 +71,8 @@ export function getRefHtml({id, tip, url}) {
     //        for now felt too overengineered for the current use case.
     //
     //        This will probably need to change when we add support for other game versions...
-    if (id.startsWith('anm:')) {
-      const url = getAnmInsUrlByRef(id);
+    if (ref.startsWith('anm:')) {
+      const url = getAnmInsUrlByRef(ref);
       if (url !== null) {
         urlStr = url;
       }
@@ -86,7 +86,7 @@ export function getRefHtml({id, tip, url}) {
   }
 
   if (tip) {
-    out = `<instr data-tip-id="${getRefTipKey(id)}">${out}</instr>`;
+    out = `<instr data-tip-id="${getRefTipKey(ref)}">${out}</instr>`;
   } else {
     out = `<instr>${out}</instr>`;
   }

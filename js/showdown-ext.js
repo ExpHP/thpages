@@ -1,4 +1,4 @@
-import {loadEclmapAndSetGame} from "./ecl/main.js";
+import {loadEclmapAndSetGame} from "./anm/main.js";
 import {MD, highlightCode, $scriptContent} from "./main.js";
 import {getRefHtml} from "./ref.js";
 import globalNames from './names.js';
@@ -98,22 +98,22 @@ export const ext = function() {
   const ref = {
     type: "lang",
     regex: /\[ref=(.*?)\]/g,
-    replace: function(match, id) {
-      const ref = getRefHtml({id: id, tip: true, url: true});
-      if (ref == null) return `\`${match}\``;
+    replace: function(match, ref) {
+      const html = getRefHtml({ref, tip: true, url: true});
+      if (html == null) return `\`${match}\``;
 
-      return ref;
+      return html;
     },
   };
 
   const refNotip = {
     type: "lang",
     regex: /\[ref-notip=(.*?)\]/g,
-    replace: function(match, id) {
-      const ref = getRefHtml({id: id, tip: false, url: true});
-      if (ref == null) return `\`${match}\``;
+    replace: function(match, ref) {
+      const html = getRefHtml({ref, tip: false, url: true});
+      if (html == null) return `\`${match}\``;
 
-      return ref;
+      return html;
     },
   };
 
