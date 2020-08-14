@@ -311,8 +311,9 @@ function initOrScrollToContent() {
   }
 }
 
-export function highlightCode(content) {
-  return hljs.fixMarkup(hljs.highlight("cpp", content, true, false).value).replace(/_/g, "\\_").replace(/\*/g, "\\*");
+export function highlightCode(content, lang) {
+  lang = lang || "cpp";
+  return hljs.fixMarkup(hljs.highlight(lang, content, true, false).value);
 }
 
 function resize() {

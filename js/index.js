@@ -30,6 +30,11 @@ export const INDEX = [
         "url": "concepts",
       },
       {
+        "name": "Interpolation modes (easing)",
+        "type": "site",
+        "url": "interpolation",
+      },
+      {
         "name": "Stages of rendering",
         "type": "site",
         "url": "stages-of-rendering",

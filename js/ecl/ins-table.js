@@ -640,36 +640,36 @@ Object.assign(ANM_INS_DATA, {
 
 // more timely basics
 Object.assign(ANM_INS_DATA, {
-  'posTime': {sig: 'SSfff', args: ['t', 'mode', 'x', 'y', 'z'], desc: `Over the next \`t\` frames, changes [ref=anm:pos] to the given values using interpolation mode \`mode\`.`},
-  'rotateTime': {sig: 'SSfff', args: ['t', 'mode', 'rx', 'ry', 'rz'], desc: `Over the next \`t\` frames, changes [ref=anm:rotate] to the given values using interpolation mode \`mode\`.`},
-  'scaleTime': {sig: 'SSff', args: ['t', 'mode', 'sx', 'sy'], desc: `Over the next \`t\` frames, changes [ref=anm:scale] to the given values using interpolation mode \`mode\`.`},
-  'scale2Time': {sig: 'SSff', args: ['t', 'mode', 'sx', 'sy'], desc: `Over the next \`t\` frames, changes [ref=anm:scale2] to the given values using interpolation mode \`mode\`.`},
-  'uvScaleTime': {sig: 'SSff', args: ['t', 'mode', 'uscale', 'vscale'], desc: `Over the next \`t\` frames, changes [ref=anm:uvScale] to the given values using interpolation mode \`mode\`.`},
-  'alphaTime': {sig: 'SSS', args: ['t', 'mode', 'alpha'], desc: `Over the next \`t\` frames, changes [ref=anm:alpha] to the given values using interpolation mode \`mode\`.`},
+  'posTime': {sig: 'SSfff', args: ['t', 'mode', 'x', 'y', 'z'], desc: `Over the next \`t\` frames, changes [ref=anm:pos] to the given values using [interpolation mode](#anm/interpolation) \`mode\`.`},
+  'rotateTime': {sig: 'SSfff', args: ['t', 'mode', 'rx', 'ry', 'rz'], desc: `Over the next \`t\` frames, changes [ref=anm:rotate] to the given values using [interpolation mode](#anm/interpolation) \`mode\`.`},
+  'scaleTime': {sig: 'SSff', args: ['t', 'mode', 'sx', 'sy'], desc: `Over the next \`t\` frames, changes [ref=anm:scale] to the given values using [interpolation mode](#anm/interpolation) \`mode\`.`},
+  'scale2Time': {sig: 'SSff', args: ['t', 'mode', 'sx', 'sy'], desc: `Over the next \`t\` frames, changes [ref=anm:scale2] to the given values using [interpolation mode](#anm/interpolation) \`mode\`.`},
+  'uvScaleTime': {sig: 'SSff', args: ['t', 'mode', 'uscale', 'vscale'], desc: `Over the next \`t\` frames, changes [ref=anm:uvScale] to the given values using [interpolation mode](#anm/interpolation) \`mode\`.`},
+  'alphaTime': {sig: 'SSS', args: ['t', 'mode', 'alpha'], desc: `Over the next \`t\` frames, changes [ref=anm:alpha] to the given values using [interpolation mode](#anm/interpolation) \`mode\`.`},
   'alpha2Time': {sig: 'SSS', args: ['t', 'mode', 'alpha'], desc: `
-    Over the next \`t\` frames, changes [ref=anm:alpha2] to the given value using interpolation mode \`mode\`.
+    Over the next \`t\` frames, changes [ref=anm:alpha2] to the given value using [interpolation mode](#anm/interpolation) \`mode\`.
 
     [tiphide]For some reason, this also does [ref=anm:colorMode](1), which can be a mild inconvenience.[/tiphide]
   `},
-  'rgbTime': {sig: 'SSSSS', args: ['t', 'mode', 'r', 'g', 'b'], desc: `Over the next \`t\` frames, changes [ref=anm:rgb] to the given value using interpolation mode \`mode\`.`},
+  'rgbTime': {sig: 'SSSSS', args: ['t', 'mode', 'r', 'g', 'b'], desc: `Over the next \`t\` frames, changes [ref=anm:rgb] to the given value using [interpolation mode](#anm/interpolation) \`mode\`.`},
   'rgb2Time': {sig: 'SSSSS', args: ['t', 'mode', 'r', 'g', 'b'], desc: `
-    Over the next \`t\` frames, changes [ref=anm:rgb2] to the given value using interpolation mode \`mode\`.
+    Over the next \`t\` frames, changes [ref=anm:rgb2] to the given value using [interpolation mode](#anm/interpolation) \`mode\`.
 
     [tiphide]For some reason, this also does [ref=anm:colorMode](1), which can be a mild inconvenience.[/tiphide]
   `},
   'uVelTime': {sig: 'SSf', args: ['t', 'mode', 'vel'], desc: `
-    Over the next \`t\` frames, changes [ref=anm:uVel] to the given value using interpolation mode \`mode\`.
+    Over the next \`t\` frames, changes [ref=anm:uVel] to the given value using [interpolation mode](#anm/interpolation) \`mode\`.
 
     [tiphide]
     Remember that [ref=anm:uVel] is scroll *velocity,* not position.
-    [tiphide]
+    [/tiphide]
   `},
   'vVelTime': {sig: 'SSf', args: ['t', 'mode', 'vel'], desc: `
-    Over the next \`t\` frames, changes [ref=anm:vVel] to the given value using interpolation mode \`mode\`.
+    Over the next \`t\` frames, changes [ref=anm:vVel] to the given value using [interpolation mode](#anm/interpolation) \`mode\`.
 
     [tiphide]
     Remember that [ref=anm:vVel] is scroll *velocity,* not position.
-    [tiphide]
+    [/tiphide]
   `},
   'rotateTime2D': {
     sig: 'SSf', args: ['t', 'mode', 'rz'], desc: `
@@ -689,11 +689,12 @@ Object.assign(ANM_INS_DATA, {
     desc: `
     In \`t\` frames, moves to \`(x2, y2, z2)\` using Bezier interpolation.
 
-    <!--
-    according to images by @rue#1846 on the zuncode discord it looks like the last two numbers for floatTime mode 8
-    are proportional to initial/final velocities; these may correspond to xyz1 and xyz3 but I'm too lazy to verify right now.
-    -->
-    [wip]I am too lazy to document this right now.[/wip]  [See the chinese wiki](https://thwiki.cc/脚本对照表/ANM/第四世代).
+    [tiphide]
+    * The graphic starts at its current position.
+    * \`(x1/t, y1/t, z1/t)\` is the **initial velocity.**
+    * \`(x2, y2, z2)\` is the **final position.**
+    * \`(x3/t, y3/t, z3/t)\` is the **final velocity.**
+    [/tiphide]
   `},
   'posTime2D': {
     sig: 'SSff', args: ['t', 'mode', 'x', 'y'], wip: 1, desc: `

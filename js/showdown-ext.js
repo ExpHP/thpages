@@ -40,9 +40,13 @@ export const ext = function() {
   jank.classList.add("clipboard-jank");
   const code = {
     type: "lang",
-    regex: /\[code\]([^]+?)\[\/code\]/g,
-    replace: function(match, content) {
-      let ret = "<hljs>"+dedent(highlightCode(content))+"</hljs>";
+    regex: /\[code(=.*?)?\]([^]+?)\[\/code\]/g,
+    replace: function(match, lang, content) {
+      if (lang) {
+        lang = lang.substring(1); // skip '='
+      }
+
+      let ret = `<div class="hljs">${dedent(highlightCode(content, lang | "cpp"))}</div>`;
       // This is some quality jank right here, caused by the fact that I could not find a way to make hljs not escape this html
       // <span data-name="ref:anm:set">
       ret = ret.replace(/&lt;span data-name=<span class="hljs-string">(.*?)<\/span>&gt;(.*?)&lt;\/span&gt;/g, (match, name, content) => {
