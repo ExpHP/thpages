@@ -1,7 +1,7 @@
 [*]
 end_of_line = lf
 insert_final_newline = true
-trim_trailing_whitespace = true  # even in markdown, just use [br]...
+trim_trailing_whitespace = true  # even in markdown, just use <br>...
 charset = utf-8
 
 [*.{css,js}]

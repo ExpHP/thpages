@@ -23,7 +23,6 @@ export function init() {
   initOrScrollToContent();
   initResize();
   initTips();
-  initEmbeds();
 }
 
 export const MD = new showdown.Converter({
@@ -330,37 +329,4 @@ function resize() {
 function initResize() {
   window.onresize = resize;
   resize();
-}
-
-function getAncestorElementData($elem, key) {
-  do {
-    if (typeof $elem.dataset[key] != "undefined") {
-      return [$elem.dataset[key], $elem];
-    }
-  } while ($elem = $elem.parentElement);
-  return ["", null];
-}
-
-function initEmbeds() {
-  document.addEventListener("click", (e) => {
-    let [url, $elem] = getAncestorElementData(e.target, "video");
-    if ($elem != null) {
-      $elem = $elem.firstChild; // the wrapper consists of 2 elements
-      $elem.removeChild($elem.firstChild);
-      const $video = document.createElement("video");
-      $video.setAttribute("controls", "");
-      const $source = document.createElement("source");
-      $source.setAttribute("src", url);
-      $video.appendChild($source);
-      $elem.appendChild($video);
-    }
-    [url, $elem] = getAncestorElementData(e.target, "yt");
-    if ($elem != null) {
-      $elem = $elem.firstChild;
-      $elem.removeChild($elem.firstChild);
-      const $iframe = document.createElement("iframe");
-      $iframe.src = "https://www.youtube.com/embed/"+url;
-      $elem.appendChild($iframe);
-    }
-  });
 }

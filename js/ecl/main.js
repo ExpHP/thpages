@@ -141,7 +141,7 @@ export async function loadEclmapAndSetGame(file, name, game) {
 }
 
 function generateOpcodeTable(game) {
-  let base = `Current table: [game=${game}] version ${game}[/game][br]`;
+  let base = `Current table: [game=${game}] version ${game}[/game]<br>`;
 
   let navigation = /* html */`<div class='toc'><h3>Navigation</h3><ul>`;
   let table = "";
@@ -187,7 +187,7 @@ function generateOpcodeTable(game) {
     table += "</table>";
   }
   navigation += "</ul></div>";
-  base += `Documented instructions: ${documented}/${total} (${(documented/total*100).toFixed(2)}%)[br]`;
+  base += `Documented instructions: ${documented}/${total} (${(documented/total*100).toFixed(2)}%)<br>`;
   base += "[wip=1]Instructions marked like this are not fully understood.[/wip]<br>[wip=2]Items like this are complete mysteries.[/wip]";
   return MD.makeHtml(base) + MD.makeHtml(navigation) + table;
 }

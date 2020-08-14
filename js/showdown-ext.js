@@ -5,39 +5,6 @@ import globalNames from './names.js';
 import dedent from "./lib/dedent.js";
 
 export const ext = function() {
-  const yt = {
-    type: "lang",
-    regex: /\[yt\](.*?)\[\/yt\]/g,
-    replace: '<div class="fit-wrapper" data-yt="$1"><div class="fit-wrapper2 yt"><div class="video-load"><div>Automatic video loading is <b>disabled</b>, in order to reduce network usage and loading times.<br>Click this to load the video.</div></div></div></div>',
-  };
-  const hr = {
-    type: "lang",
-    regex: /\[hr\]/g,
-    replace: "<hr>",
-  };
-  const br = {
-    type: "lang",
-    regex: /\[br\]/g,
-    replace: "<br>",
-  };
-  const ts = {
-    type: "lang",
-    regex: /\[timestamp=(.*?)\]/g,
-    replace: "<div style='float: right'>$1</div>",
-  };
-  const img = {
-    type: "lang",
-    regex: /\[img=(.*?), hratio=(.*?)\]/g,
-    replace: '<div class="fit-wrapper"><div class="fit-wrapper2" style="padding-top: $2%"><img title="$1" style="cursor:pointer;" onclick="window.open(\'$1\')" src="$1"></div></div>',
-  };
-  const imgSmall = {
-    type: "lang",
-    regex: /\[img=(.*?)]/g,
-    replace: '<img title="$1" style="cursor:pointer; margin: 5px;" onclick="window.open(\'$1\')" src="$1">',
-  };
-
-  const jank = document.createElement("textarea");
-  jank.classList.add("clipboard-jank");
   const code = {
     type: "lang",
     regex: /\[code(=.*?)?\]([^]+?)\[\/code\]/g,
@@ -117,14 +84,6 @@ export const ext = function() {
     },
   };
 
-  const rawGame = {
-    type: "lang",
-    regex: /%GAMECOLOR-([0-9]*?)%/g,
-    replace: function(match, game) {
-      return colors[game];
-    },
-  };
-
   const script = {
     type: "lang",
     regex: /\[script\]([^]*?)\[\/script\]/g,
@@ -187,31 +146,6 @@ export const ext = function() {
     },
   };
 
-  // let eclTooltips = {
-  //   type: "lang",
-  //   filter: function(text) {
-  //     return addTooltips(text);
-  //   },
-  // };
-
-  const video = {
-    type: "lang",
-    regex: /\[video=(.*?), hratio=(.*?)\]/g,
-    replace: '<div class="fit-wrapper" data-video="$1"><div class="fit-wrapper2" style="padding-top: $2%"><div class="video-load"><div>Automatic video loading is <b>disabled</b>, in order to reduce network usage and loading times.<br>Click this to load the video.</div></div></div></div>',
-  };
-
-  const flex = {
-    type: "lang",
-    regex: /\[flex\]([^]*?)\[\/flex\]/g,
-    replace: '<div class="flexbox">$1</div>',
-  };
-
-  const flex2 = {
-    type: "lang",
-    regex: /\[flex=(.*?)\]([^]*?)\[\/flex\]/g,
-    replace: '<div class="flexbox" style="align-items: $1">$2</div>',
-  };
-
   const headlessTable = {
     type: "lang",
     regex: /\[headless-table\]([^]*?)\[\/headless-table\]/g,
@@ -234,7 +168,7 @@ export const ext = function() {
   };
 
   return [
-    eclmap, yt, hr, br, ts, img, imgSmall, ref, refNotip, headlessTable,
-    code, title, c, game, rawGame, script, tip, video, flex, flex2, wip,
+    eclmap, ref, refNotip, headlessTable,
+    code, title, c, game, script, tip, wip,
   ];
 };
