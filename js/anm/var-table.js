@@ -4,7 +4,11 @@ import dedent from "../lib/dedent.js";
 // ==========================================================================
 // ===================    LOOKUP TABLE BY OPCODE    =========================
 
-const VARS_14 = {
+export const ANM_VARS_BY_NUMBER = {};
+
+// ------------
+// ---- V7 ----
+ANM_VARS_BY_NUMBER['12'] = {
   10000: {ref: 'anmvar:i0'},
   10001: {ref: 'anmvar:i1'},
   10002: {ref: 'anmvar:i2'},
@@ -15,19 +19,19 @@ const VARS_14 = {
   10007: {ref: 'anmvar:f3'},
   10008: {ref: 'anmvar:i4'},
   10009: {ref: 'anmvar:i5'},
-  10010: {ref: 'anmvar:randrad'},
-  10011: {ref: 'anmvar:randf-01'},
-  10012: {ref: 'anmvar:randf-11'},
+  10010: {ref: 'anmvar:v7-randrad'},
+  10011: {ref: 'anmvar:v7-randf-01'},
+  10012: {ref: 'anmvar:v7-randf-11'},
   10013: {ref: 'anmvar:pos-x'},
   10014: {ref: 'anmvar:pos-y'},
   10015: {ref: 'anmvar:pos-z'},
-  10016: {ref: 'anmvar:camera-x'},
-  10017: {ref: 'anmvar:camera-y'},
-  10018: {ref: 'anmvar:camera-z'},
-  10019: {ref: 'anmvar:lookat-x'},
-  10020: {ref: 'anmvar:lookat-y'},
-  10021: {ref: 'anmvar:lookat-z'},
-  10022: {ref: 'anmvar:rand'},
+  10016: {ref: 'anmvar:v7-camera-x'},
+  10017: {ref: 'anmvar:v7-camera-y'},
+  10018: {ref: 'anmvar:v7-camera-z'},
+  10019: {ref: 'anmvar:v7-lookat-x'},
+  10020: {ref: 'anmvar:v7-lookat-y'},
+  10021: {ref: 'anmvar:v7-lookat-z'},
+  10022: {ref: 'anmvar:v7-rand'},
   10023: {ref: 'anmvar:rot-x'},
   10024: {ref: 'anmvar:rot-y'},
   10025: {ref: 'anmvar:rot-z'},
@@ -38,19 +42,49 @@ const VARS_14 = {
   10030: {ref: 'anmvar:randrad-replay'},
   10031: {ref: 'anmvar:randf-01-replay'},
   10032: {ref: 'anmvar:randf-11-replay'},
+};
+
+ANM_VARS_BY_NUMBER['125'] = Object.assign({}, ANM_VARS_BY_NUMBER['12']);
+
+// ------------
+// ---- V8 ----
+ANM_VARS_BY_NUMBER['13'] = Object.assign({}, ANM_VARS_BY_NUMBER['12'], {
+  // changed descriptions
+  10010: {ref: 'anmvar:randrad'},
+  10011: {ref: 'anmvar:randf-01'},
+  10012: {ref: 'anmvar:randf-11'},
+  10022: {ref: 'anmvar:rand'},
+
+  // uncertain if changed (haven't reversed STD/camera in UFO)
+  10016: {ref: 'anmvar:camera-x'},
+  10017: {ref: 'anmvar:camera-y'},
+  10018: {ref: 'anmvar:camera-z'},
+  10019: {ref: 'anmvar:lookat-x'},
+  10020: {ref: 'anmvar:lookat-y'},
+  10021: {ref: 'anmvar:lookat-z'},
+
+  // new
+  10023: {ref: 'anmvar:rot-x'},
+  10024: {ref: 'anmvar:rot-y'},
+  10025: {ref: 'anmvar:rot-z'},
+  10026: {ref: 'anmvar:rot-z-effective'},
+  10027: {ref: 'anmvar:rand-param-one'},
+  10028: {ref: 'anmvar:rand-param-pi'},
+  10029: {ref: 'anmvar:rand-param-int'},
+  10030: {ref: 'anmvar:randrad-replay'},
+  10031: {ref: 'anmvar:randf-01-replay'},
+  10032: {ref: 'anmvar:randf-11-replay'},
+});
+
+ANM_VARS_BY_NUMBER['14'] = Object.assign({}, ANM_VARS_BY_NUMBER['13'], {
   10033: {ref: 'anmvar:mystery-angle-x'},
   10034: {ref: 'anmvar:mystery-angle-y'},
   10035: {ref: 'anmvar:mystery-angle-z'},
-};
+});
 
-export const ANM_VARS_BY_NUMBER = {
-  // TODO: point games as e.g. "125"
-  "14": VARS_14,
-  // basically nothing has been added since then...
-  "15": VARS_14,
-  "16": VARS_14,
-  "17": VARS_14,
-};
+ANM_VARS_BY_NUMBER['15'] = Object.assign({}, ANM_VARS_BY_NUMBER['14']);
+ANM_VARS_BY_NUMBER['16'] = Object.assign({}, ANM_VARS_BY_NUMBER['15']);
+ANM_VARS_BY_NUMBER['17'] = Object.assign({}, ANM_VARS_BY_NUMBER['16']);
 
 // Var table cannot have entries without refs because we need the type to generate the default name...
 for (const [game, inner] of Object.entries(ANM_VARS_BY_NUMBER)) {
@@ -80,12 +114,26 @@ Object.assign(ANM_VAR_DATA, {
   'i4': {type: '$', mut: true, wip: 1, desc: `[wip]Another general-purpose int? (#4)[/wip]`},
   'i5': {type: '$', mut: true, wip: 1, desc: `[wip]Another general-purpose int? (#5)[/wip]`},
 
-  'randrad': {type: '%', mut: false, desc: `Draws a random value from \`-PI\` to \`PI\` using the animation RNG.  You can modify this range by editing [ref=anmvar:rand-param-pi].`},
-  'randf-01': {type: '%', mut: false, desc: `Draws a random value from \`0.0\` to \`1.0\` using the animation RNG.  You can modify this range by editing [ref=anmvar:rand-param-one].`},
-  'randf-11': {type: '%', mut: false, desc: `Draws a random value from \`-1.0\` to \`1.0\` using the animation RNG.  You can modify this range by editing [ref=anmvar:rand-param-one].`},
+  // v7 random numbers
+  'v7-randrad': {type: '%', mut: false, desc: `Draws a random value from \`-PI\` to \`PI\` using the selected RNG (see [ref=anm:randMode]).`},
+  'v7-randf-01': {type: '%', mut: false, desc: `Draws a random value from \`0.0\` to \`1.0\` using the selected RNG (see [ref=anm:randMode]).`},
+  'v7-randf-11': {type: '%', mut: false, desc: `Draws a random value from \`-1.0\` to \`1.0\` using the selected RNG (see [ref=anm:randMode]).`},
+  'v7-rand': {
+    type: '$', mut: false, desc: `
+    Draws a random integer using the selected RNG (see [ref=anm:randMode]).
+
+    [wip]What's the range?[/wip]
+    [wip=2]My best guess based on the code is that, when read as integer, this generates a uniformly-distributed signed 32-bit integer
+    (\`-2**31 to 2**31-1\`), but when read as a float it generates a uniformly-distributed **unsigned** 32-bit integer cast to float.[/wip]
+  `},
+
+  // v8 random numbers
+  'randrad': {type: '%', mut: false, desc: `Draws a random value from \`-PI\` to \`PI\` using the [animation RNG](#anm/concepts&a=rng).  You can modify this range by editing [ref=anmvar:rand-param-pi].`},
+  'randf-01': {type: '%', mut: false, desc: `Draws a random value from \`0.0\` to \`1.0\` using the [animation RNG](#anm/concepts&a=rng).  You can modify this range by editing [ref=anmvar:rand-param-one].`},
+  'randf-11': {type: '%', mut: false, desc: `Draws a random value from \`-1.0\` to \`1.0\` using the [animation RNG](#anm/concepts&a=rng).  You can modify this range by editing [ref=anmvar:rand-param-int].`},
   'rand': {
     type: '$', mut: false, desc: `
-    Draws a random integer from 0 (inclusive) to 65536 (exclusive) using the animation RNG.
+    Draws a random integer from 0 (inclusive) to 65536 (exclusive) using the [animation RNG](#anm/concepts&a=rng).
     You can modify this range by editing [ref=anmvar:rand-param-int].
   `},
   'rand-param-one': {type: '%', mut: true, desc: `Scale factor for [ref=anmvar:randf-01] and [ref=anmvar:randf-11]. Defaults to \`1.0\`.`},
@@ -112,6 +160,13 @@ Object.assign(ANM_VAR_DATA, {
   'lookat-x': {type: '%', mut: false, wip: 1, desc: `x of normalized direction vector that the stage BG camera is facing. [wip](what is it used for?)[/wip]`},
   'lookat-y': {type: '%', mut: false, wip: 1, desc: `y of normalized direction vector that the stage BG camera is facing. [wip](what is it used for?)[/wip]`},
   'lookat-z': {type: '%', mut: false, wip: 1, desc: `z of normalized direction vector that the stage BG camera is facing. [wip](what is it used for?)[/wip]`},
+
+  'v7-camera-x': {type: '%', mut: false, wip: 1, desc: `[wip=2]Probably stage BG camera's y position like in V8. (but no rocking vector is added in V7)[/wip]`},
+  'v7-camera-y': {type: '%', mut: false, wip: 1, desc: `[wip=2]Probably stage BG camera's y position like in V8. (but no rocking vector is added in V7)[/wip]`},
+  'v7-camera-z': {type: '%', mut: false, wip: 1, desc: `[wip=2]Probably stage BG camera's z position like in V8. (but no rocking vector is added in V7)[/wip]`},
+  'v7-lookat-x': {type: '%', mut: false, wip: 1, desc: `[wip=2]Probably x of normalized direction vector that the stage BG camera is facing, like in V8.[/wip]`},
+  'v7-lookat-y': {type: '%', mut: false, wip: 1, desc: `[wip=2]Probably y of normalized direction vector that the stage BG camera is facing, like in V8.[/wip]`},
+  'v7-lookat-z': {type: '%', mut: false, wip: 1, desc: `[wip=2]Probably z of normalized direction vector that the stage BG camera is facing, like in V8.[/wip]`},
 });
 
 // Validate

@@ -29,6 +29,10 @@ On this site you'll see lots of words used that sound like they have similar mea
 - **animation** &mdash; I use this to refer to *the output* of a VM (i.e. the graphical content it draws).  Or I try, at least. Out of habit I tend to use the terms "animation" and "VM" interchangeably.
 - **surface** &mdash; Much like how a texture is a thing you draw *from,* a surface is a thing you draw *to.* TH14-17 have three different surfaces, as will be explained in [stages of rendering](#anm/stages-of-rendering).  The destination surface of an animation is determined by its layer (the [ref=anm:layer] instruction).
 
+<h1 id="time-labels">Time labels</h1>
+
+COMING SOON (TM)
+
 <h1 id="rng">RNGs</h1>
 
 There are two random number generators available to ANM scripts.  The terms I will use for these are:

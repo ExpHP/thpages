@@ -7,28 +7,148 @@ export const UNKNOWN_SIG = {};
 // ==========================================================================
 // ===================    LOOKUP TABLE BY OPCODE    =========================
 
+export const ANM_BY_OPCODE = {};
 export const GROUPS_V8 = [
   {min: 0, max: 99, title: 'System'},
   {min: 100, max: 199, title: 'Math'},
   {min: 200, max: 299, title: 'Jumps'},
-  {min: 300, max: 499, title: 'General'},
+  {min: 300, max: 399, title: 'Settings'},
+  {min: 400, max: 499, title: 'General'},
   {min: 500, max: 599, title: 'Child management'},
   {min: 600, max: 699, title: 'Drawing'},
 ];
 
 // ---- V7 ----
-const INS_12 = {
+ANM_BY_OPCODE['12'] = {
+  0: {ref: 'anm:nop'},
+  1: {ref: 'anm:delete'},
+  2: {ref: 'anm:static', wip: 1},
+  3: {ref: 'anm:sprite'},
+  4: {ref: 'anm:jmp'},
+  5: {ref: 'anm:jmpDec'},
+
+  6: {ref: 'anm:set'},
+  7: {ref: 'anm:setF'},
+  8: {ref: 'anm:add'},
+  9: {ref: 'anm:addF'},
+  10: {ref: 'anm:sub'},
+  11: {ref: 'anm:subF'},
+  12: {ref: 'anm:mul'},
+  13: {ref: 'anm:mulF'},
+  14: {ref: 'anm:div'},
+  15: {ref: 'anm:divF'},
+  16: {ref: 'anm:mod'},
+  17: {ref: 'anm:modF'},
+  18: {ref: 'anm:add3'},
+  19: {ref: 'anm:addF3'},
+  20: {ref: 'anm:sub3'},
+  21: {ref: 'anm:subF3'},
+  22: {ref: 'anm:mul3'},
+  23: {ref: 'anm:mulF3'},
+  24: {ref: 'anm:div3'},
+  25: {ref: 'anm:divF3'},
+  26: {ref: 'anm:mod3'},
+  27: {ref: 'anm:modF3'},
+
+  28: {ref: 'anm:jmpEq'},
+  29: {ref: 'anm:jmpEqF'},
+  30: {ref: 'anm:jmpNe'},
+  31: {ref: 'anm:jmpNeF'},
+  32: {ref: 'anm:jmpLt'},
+  33: {ref: 'anm:jmpLtF'},
+  34: {ref: 'anm:jmpLe'},
+  35: {ref: 'anm:jmpLeF'},
+  36: {ref: 'anm:jmpGt'},
+  37: {ref: 'anm:jmpGtF'},
+  38: {ref: 'anm:jmpGe'},
+  39: {ref: 'anm:jmpGeF'},
+
+  40: {ref: 'anm:v7-rand', wip: 1},
+  41: {ref: 'anm:v7-randF', wip: 1},
+  42: {ref: 'anm:mathSin', wip: 1},
+  43: {ref: 'anm:mathCos', wip: 1},
+  44: {ref: 'anm:mathTan', wip: 1},
+  45: {ref: 'anm:mathAcos', wip: 1},
+  46: {ref: 'anm:mathAtan', wip: 1},
+  47: {ref: 'anm:mathReduceAngle'},
+
+  48: {ref: 'anm:pos'},
+  49: {ref: 'anm:rotate'},
+  50: {ref: 'anm:scale'},
+  51: {ref: 'anm:alpha'},
+  52: {ref: 'anm:rgb'},
+  53: {ref: 'anm:angleVel'},
+  54: {ref: 'anm:scaleGrowth'},
+  55: {ref: 'anm:alphaTimeLinear'},
+  56: {ref: 'anm:posTime'},
+  57: {ref: 'anm:rgbTime'},
+  58: {ref: 'anm:alphaTime'},
+  59: {ref: 'anm:rotateTime'},
+
+  60: {ref: 'anm:scaleTime'},
+  61: {ref: 'anm:flipX'},
+  62: {ref: 'anm:flipY'},
   63: {ref: 'anm:stop'},
-  67: {ref: 'anm:type'},
+  64: {ref: 'anm:case'},
+  65: {ref: 'anm:anchor'},
+  66: {ref: 'anm:blendMode'}, // TODO: UFO has fewer modes!
+  67: {ref: 'anm:renderMode'},
   68: {ref: 'anm:layer'},
   69: {ref: 'anm:stop2'},
+
+  70: {ref: 'anm:uVel'},
+  71: {ref: 'anm:vVel'},
+  72: {ref: 'anm:v8-flag-310', wip: 1},
+  73: {ref: 'anm:noZBuffer', wip: 1}, // flag 12
+  74: {ref: 'anm:v8-306', wip: 1},
+  75: {ref: 'anm:wait', wip: 1},
+  76: {ref: 'anm:rgb2'},
+  77: {ref: 'anm:alpha2'},
+  78: {ref: 'anm:rgb2Time'},
+  79: {ref: 'anm:alpha2Time'},
+
+  80: {ref: 'anm:colorMode'}, // flag lo:16 (DS: lo:16-17)
   81: {ref: 'anm:caseReturn'},
-  106: {ref: 'anm:scaleUV', wip: 1},
+  82: {ref: 'anm:rotateAuto', wip: 1}, // flag lo:29
+  83: {ref: 'anm:posAdopt'},
+  84: {ref: 'anm:textureCircle'},
+  85: UNASSIGNED, // flag lo:30 (DS: lo:31)
+  86: UNASSIGNED, // flag lo:31 (DS: hi:0)
+  87: {ref: 'anm:randMode'},
+  88: {ref: 'anm:createChild', wip: 1},
+  89: {ref: 'anm:resampleMode', wip: 1}, // flag hi:1 (DS: hi:2)
+
+  90: {ref: 'anm:prependChild', wip: 1},
+  91: {ref: 'anm:createChildUi', wip: 1},
+  92: {ref: 'anm:prependChildUi', wip: 1},
+  93: {ref: 'anm:uVelTime'},
+  94: {ref: 'anm:vVelTime'},
+  95: UNASSIGNED, // child creation x
+  96: UNASSIGNED, // child creation with pos, but unlike TD+ it writes to a different vector from alternate_pos!!!
+  97: UNASSIGNED, // child creation with pos, but unlike TD+ it writes to a different vector from alternate_pos!!!
+  98: {ref: 'anm:v8-418'},
+  99: {ref: 'anm:v8-flag-419', wip: 1},
+
+  100: {ref: 'anm:posBezier'},
+  101: UNASSIGNED, // unknown member of texCircle family (type 13)
   102: {ref: 'anm:drawRect', wip: 1},
+  103: UNASSIGNED, // unknown member of drawRect family
+  104: {ref: 'anm:drawPoly'},
+  105: {ref: 'anm:drawPolyBorder'},
+  106: {ref: 'anm:uvScale'},
+  107: {ref: 'anm:uvScaleTime'},
+  108: UNASSIGNED, // unknown member of drawRect family
+  109: UNASSIGNED, // unknown member of drawRect family
+  110: UNASSIGNED, // unknown member of drawRect family
 };
 
+ANM_BY_OPCODE['125'] = Object.assign({}, ANM_BY_OPCODE['12'], {
+  111: UNASSIGNED, // (DS: hi:6-8)
+  112: {ref: 'anm:ignoreParent'}, // (DS: hi:8)
+});
+
 // ---- V8 ----
-const INS_13 = {
+ANM_BY_OPCODE['13'] = {
   0: {ref: 'anm:nop'},
   1: {ref: 'anm:delete'},
   2: {ref: 'anm:static'},
@@ -117,7 +237,7 @@ const INS_13 = {
   414: {ref: 'anm:alpha2Time'},
   415: {ref: 'anm:angleVel'},
   416: {ref: 'anm:scaleGrowth'},
-  417: {ref: 'anm:alphaTime2'},
+  417: {ref: 'anm:alphaTimeLinear'},
   418: {ref: 'anm:v8-418'},
   419: {ref: 'anm:v8-flag-419'},
   420: {ref: 'anm:posBezier'},
@@ -161,7 +281,7 @@ const INS_13 = {
   608: {ref: 'anm:drawRectShadowGrad'},
 };
 
-const INS_14 = Object.assign({}, INS_13, {
+ANM_BY_OPCODE['14'] = Object.assign({}, ANM_BY_OPCODE['13'], {
   313: {ref: 'anm:resolutionMode'},
   314: {ref: 'anm:attached'},
   315: {ref: 'anm:colorizeChildren'},
@@ -170,29 +290,20 @@ const INS_14 = Object.assign({}, INS_13, {
   610: {ref: 'anm:textureRing3D'},
 });
 
-const INS_15 = Object.assign({}, INS_14, {
+ANM_BY_OPCODE['15'] = Object.assign({}, ANM_BY_OPCODE['14'], {
   316: {ref: 'anm:v8-flag-316'},
   317: {ref: 'anm:v8-flag-317'},
   611: {ref: 'anm:drawRing'},
 });
 
-const INS_16 = Object.assign({}, INS_15, {
+ANM_BY_OPCODE['16'] = Object.assign({}, ANM_BY_OPCODE['15'], {
   612: {ref: 'anm:drawRectBorder'},
   613: {ref: 'anm:drawLine'},
 });
 
-const INS_17 = Object.assign({}, INS_16, {
+ANM_BY_OPCODE['17'] = Object.assign({}, ANM_BY_OPCODE['16'], {
   // nothing was added
 });
-
-export const ANM_BY_OPCODE = {
-  // TODO: point games as e.g. "125"
-  "12": INS_12,
-  "14": INS_14,
-  "15": INS_15,
-  "16": INS_16,
-  "17": INS_17,
-};
 
 // ==========================================================================
 // ==========================================================================
@@ -252,7 +363,17 @@ Object.assign(ANM_INS_DATA, {
 
     [tiphide]Mind that this instruction only acts as a label. When executed, it does nothing. (it is a no-op)[/tiphide]
   `},
-  'wait': {sig: 'S', args: ['t'], desc: `Wait \`t\` frames.`},
+  'wait': {
+    sig: 'S', args: ['t'], desc: `
+    Wait \`t\` frames.
+
+    [tiphide]
+    The way this works is by actually subtracting \`t\` from the current time before executing
+    the next instruction.  This means that if the current time were to somehow be greater
+    than the [time label](#anm/concepts&a=time-labels) on this instruction (perhaps thanks to a [ref=anm:jmp]),
+    it may wait fewer than \`t\` frames (or even 0 frames!).
+    [/tiphide]
+  `},
   'caseReturn': {sig: '', args: [], wip: 1, desc: `
     Used at the end of a [ref=anm:case] to return back to the moment just before it
     last executed the [ref=anm:stop] instruction.
@@ -330,6 +451,25 @@ for (const [mnemonic, operator] of Object.entries(OPERATOR_3_DATA)) {
 }
 
 Object.assign(ANM_INS_DATA, {
+  // TODO: link instruction that sets RNG flag once we find it >_>
+  'v7-rand': {sig: '$S', args: ['x', 'n'], succ: 'rand', desc: 'Draw a random integer `0 <= x < n` using the selected RNG (see TODO: REF).'},
+  'v7-randF': {sig: '$S', args: ['x', 'n'], succ: 'randF', desc: 'Draw a random integer `0 <= x < n` using the selected RNG (see TODO: REF).'},
+
+  'randMode': {
+    sig: 'S', args: ['mode'], desc: `
+    Selects the RNG used by this VM.
+
+    [tiphide]
+    | Mode | Effect |
+    | :---: | --- |
+    | 0 | Uses the [replay RNG](#anm/concepts&a=rng) |
+    | 1 | Uses the [animation RNG](#anm/concepts&a=rng) |
+
+    It seems that 0, the replay RNG, is the default. This is in stark contrast to [game=14]TD[/game] onwards.
+    ([wip]this seems surprising... can somebody conclusively verify this?[/wip])
+    [/tiphide]
+  `},
+
   'rand': {sig: '$S', args: ['x', 'n'], desc: 'Draw a random integer `0 <= x < n` using the [animation RNG](#anm/concepts&a=rng).'},
   'randF': {sig: '%f', args: ['x', 'r'], desc: 'Draw a random float `0 <= x <= r` using the [animation RNG](#anm/concepts&a=rng).'},
 
@@ -580,7 +720,8 @@ Object.assign(ANM_INS_DATA, {
 
     This has no effect on [special drawing instructions](#anm/ins&a=group-600).
 
-    For some strange reason, [ref=anm:rgb2Time] and [ref=anm:alpha2Time] automatically do [ref-notip=anm:colorMode](1).
+    For some strange reason, from [game=14]DDC[/game] onwards,
+    [ref=anm:rgb2Time] and [ref=anm:alpha2Time] automatically do [ref-notip=anm:colorMode](1).
     Therefore, if you use those instructions, you must call this *afterwards,* not before.
 
     **ECL modders beware:** The game may interfere with the use of [ref=anm:rgb2], [ref=anm:alpha2] and [ref=anm:colorMode]
@@ -676,13 +817,13 @@ Object.assign(ANM_INS_DATA, {
   'alpha2Time': {sig: 'SSS', args: ['t', 'mode', 'alpha'], desc: `
     Over the next \`t\` frames, changes [ref=anm:alpha2] to the given value using [interpolation mode](#anm/interpolation) \`mode\`.
 
-    [tiphide]For some reason, this also does [ref=anm:colorMode](1), which can be a mild inconvenience.[/tiphide]
+    [tiphide]For some reason, in [game=14]DDC[/game] onwards, this also sets [ref=anm:colorMode] to 1, which can be a mild inconvenience.[/tiphide]
   `},
   'rgbTime': {sig: 'SSSSS', args: ['t', 'mode', 'r', 'g', 'b'], desc: `Over the next \`t\` frames, changes [ref=anm:rgb] to the given value using [interpolation mode](#anm/interpolation) \`mode\`.`},
   'rgb2Time': {sig: 'SSSSS', args: ['t', 'mode', 'r', 'g', 'b'], desc: `
     Over the next \`t\` frames, changes [ref=anm:rgb2] to the given value using [interpolation mode](#anm/interpolation) \`mode\`.
 
-    [tiphide]For some reason, this also does [ref=anm:colorMode](1), which can be a mild inconvenience.[/tiphide]
+    [tiphide]For some reason, in [game=14]DDC[/game] onwards, this also sets [ref=anm:colorMode] to 1, which can be a mild inconvenience.[/tiphide]
   `},
   'uVelTime': {sig: 'SSf', args: ['t', 'mode', 'vel'], desc: `
     Over the next \`t\` frames, changes [ref=anm:uVel] to the given value using [interpolation mode](#anm/interpolation) \`mode\`.
@@ -707,9 +848,12 @@ Object.assign(ANM_INS_DATA, {
     to be used together and their effects do not stack properly. [wip]somebody test plz[/wip])
     [/tiphide]
   `},
-  'alphaTime2': {
-    sig: 'SS', args: ['alpha', 'time'], wip: 1, desc: `
-    [wip]This is, uh, similar to but different from [ref=anm:alphaTime] somehow.[/wip]
+  'alphaTimeLinear': {
+    sig: 'SS', args: ['alpha', 't'], desc: `
+    **Obsolete.** Use [ref=anm:alphaTime] instead.
+
+    Linearly changes alpha to \`alpha\` over the next \`t\` frames.
+    Identical to calling [ref=anm:alphaTime]\`(t, 0, alpha)\`.
   `},
   'posBezier': {
     sig: 'Sfffffffff', args: ['t', 'x1', 'y1', 'z1', 'x2', 'y2', 'z2', 'x3', 'y3', 'z3'],
@@ -959,6 +1103,8 @@ Object.assign(ANM_INS_DATA, {
     [tiphide]
     [wip]You know that mysterious "alternate position" vector mentioned in the entry for [ref=anm:pos]?
     That's where the \`x\` and \`y\` args get written.  WHAT IS THAT THING[/wip]
+
+    [wip=2]Unless you're playing [game=12]UFO[/game] or earlier in which case it gets written to YET ANOTHER FUCKING DIFFERENT UNKNOWN VECTOR[/wip]
     [/tiphide]
   `},
   'create-506': {
@@ -1014,6 +1160,8 @@ Object.assign(ANM_INS_DATA, {
     * Use those as fractional uv coordinates for a region to pull sprite data from.
 
     Presumably this lets you do weird things like use a rotated region of a .png file as a sprite.
+
+    [wip=2]Sadly, Double Spoiler does not use this. So much for that one theory...[/wip]
     [/tiphide]
   `},
   'noZBuffer': {
@@ -1051,6 +1199,16 @@ Object.assign(ANM_INS_DATA, {
 });
 
 // Validate
+for (const [game, table] of Object.entries(ANM_BY_OPCODE)) {
+  for (const [opcodeStr, {ref}] of Object.entries(table)) {
+    if (ref === null) continue;
+    const id = ref.substring('anm:'.length);
+    if (ANM_INS_DATA[id] === undefined) {
+      window.console.error(`invalid ref in opcode table (game ${game}, opcode ${opcodeStr}): ${ref}`);
+    }
+  }
+}
+
 for (const [key, value] of Object.entries(ANM_INS_DATA)) {
   value.wip = value.wip || 0;
   if (value.desc === undefined) window.console.error(`TABLE CORRUPT: anm ref ${key} has no 'desc'`);
