@@ -1,15 +1,26 @@
-import {getCurrentMap, loadEclmap} from './eclmap.js';
-import {GROUPS_V8, ANM_INS_DATA, ANM_BY_OPCODE, ANM_OPCODE_REVERSE, DUMMY_DATA} from './ins-table.js';
+import {getCurrentMap, loadAnmmap} from './eclmap.js';
+import {GROUPS_V8, GROUPS_PRE_V8, ANM_INS_DATA, ANM_BY_OPCODE, ANM_OPCODE_REVERSE, DUMMY_DATA} from './ins-table.js';
 import {ANM_VAR_DATA, ANM_VARS_BY_NUMBER} from './var-table.js';
 import {registerRefTip, getRefNameKey} from '../ref.js';
 import {MD} from '../main.js';
 import globalNames from '../names.js';
 import {parseQuery, buildQuery} from '../url-format.js';
 
+const INS_TABLE_PAGE = 'anm/ins';
+const DEFAULT_GAME = '17';
+
 /**
- * A game number as a string with no period, e.g. "14" or "125".
+ * A game number as a string with no period, with a leading 0 for numbers below 10, e.g. "14", "125", "095".
+ *
+ * This representation is chosen to enable simple lexical comparisons using the built-in &lt; and &gt; operators.
  * @typedef {string} Game
  */
+const VALID_GAMES = {
+  "07": true, "08": true, "09": true, "095": true,
+  "10": true, "11": true, "12": true, "125": true, "128": true,
+  "13": true, "14": true, "143": true, "15": true,
+  "16": true, "165": true, "17": true,
+};
 
 const ARGTYPES_HTML = {
   "S": /* html */`<span class="type int">int</span>`,
@@ -23,9 +34,15 @@ const ARGTYPES_HTML = {
 export function initAnm() {
   // FIXME HACK to make available to ins.md
   window.generateOpcodeTable = generateOpcodeTable;
-  window.loadEclmapAndSetGame = loadEclmapAndSetGame;
+  window.loadAnmmapAndSetGame = loadAnmmapAndSetGame;
 
+  // Call everything `ins_11` etc.
   initDefaultNames(globalNames);
+
+  // Make crossrefs default to using  everything `ins_11` etc.
+  for (const game of Object.keys(ANM_BY_OPCODE)) {
+    linkRefNamesToGameOpcodes(globalNames, game);
+  }
 
   for (const [id, ins] of Object.entries(ANM_INS_DATA)) {
     const ref = 'anm:' + id;
@@ -38,8 +55,18 @@ export function initAnm() {
   }
 }
 
+function validateGameString(game) {
+  if (typeof game !== 'string') {
+    throw new TypeError(`bad game; expected string, got ${game}`);
+  }
+  if (!VALID_GAMES[game]) {
+    throw new Error(`bad game: '${game}'`);
+  }
+}
+
 function getGroups(game) {
-  return GROUPS_V8;
+  validateGameString(game);
+  return game >= '13' ? GROUPS_V8 : GROUPS_PRE_V8;
 }
 
 function getOpcodeNameKey(game, opcode) {
@@ -128,11 +155,11 @@ function linkRefNamesToGameOpcodes(names, game) {
  *
  * (does not fix names in existing HTML however.  Do that yourself by calling names.transformHtml...)
  * @param {?string} file
- * @param {string} name Used for cacheing I think?
+ * @param {string} cacheKey Used for cacheing I think?
  * @param {Game} game Selects default file when file arg is null.
  */
-export async function loadEclmapAndSetGame(file, name, game) {
-  await loadEclmap(file, name, game);
+export async function loadAnmmapAndSetGame(file, cacheKey, game) {
+  await loadAnmmap(file, cacheKey, game);
   const map = getCurrentMap();
   if (map !== null) {
     setNamesFromAnmmap(globalNames, game, map);
@@ -141,7 +168,7 @@ export async function loadEclmapAndSetGame(file, name, game) {
 }
 
 function generateOpcodeTable(game) {
-  let base = `Current table: [game=${game}] version ${game}[/game]<br>`;
+  let base = `Current table: [gc=${game}] version ${game}[/gc]<br>`;
 
   let navigation = /* html */`<div class='toc'><h3>Navigation</h3><ul>`;
   let table = "";
@@ -312,8 +339,27 @@ function generateAnmVarTip(avar, ref) {
 }
 
 export function getAnmInsUrlByRef(ref) {
-  const opcode = ANM_OPCODE_REVERSE[17][ref];
-  if (opcode === undefined) return null;
+  const samePageUrl = getSamePageAnmInsUrlByRef(ref);
+  if (samePageUrl != null) return samePageUrl;
 
-  return '#' + buildQuery({s: 'anm/ins', a: `ins-${opcode}`});
+  const ins = anmInsDataByRef(ref);
+  if (!ins) return null;
+  const game = ins.maxGame;
+  const opcode = ANM_OPCODE_REVERSE[game][ref];
+  return '#' + buildQuery({s: INS_TABLE_PAGE, g: game, a: `ins-${opcode}`});
+}
+
+// Try to identify links to things available on the current page,
+// so that we can build a URL that avoids regenerating the table.
+function getSamePageAnmInsUrlByRef(ref) {
+  const query = parseQuery(window.location.hash);
+  if (query.s !== INS_TABLE_PAGE) return null; // not on right page
+
+  const curGame = query.g || DEFAULT_GAME;
+  const opcode = ANM_OPCODE_REVERSE[curGame][ref];
+  if (opcode == null) return null; // this instr is not in the current game
+
+  // change the anchor on the existing query to guarantee no reload
+  query.a = `ins-${opcode}`;
+  return '#' + buildQuery(query);
 }

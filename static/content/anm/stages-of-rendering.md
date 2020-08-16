@@ -3,7 +3,7 @@
 
 # The stages of rendering
 
-The following describes the rendering stages as they exist in [game=14]DDC[/game]. Future games (at least up to [game=17]WBaWC[/game]) have the same set of surfaces and rendering stages, though **[wip]layer and script numbers may differ!![/wip]**
+The following describes the rendering stages as they exist in [game=14]. Future games (at least up to [game=17]) have the same set of surfaces and rendering stages, though **[wip]layer and script numbers may differ!![/wip]**
 
 ## tl;dr
 
@@ -53,7 +53,7 @@ entry entry3 {
 
 <h3 id='stage-1'>Stage 1: 3D Background</h3>
 
-First, surface 0 is cleared to white, and then **the 3D stage background is rendered to a 408x472 region in the center of surface 0.**  During this time, animations with **layers 0-5 and 30-31** (again, these numbers are for [game=14]DDC[/game] only!) are also drawn.  At the end of this stage, the surface looks like the following (click for actual size):
+First, surface 0 is cleared to white, and then **the 3D stage background is rendered to a 408x472 region in the center of surface 0.**  During this time, animations with **layers 0-5 and 30-31** (again, these numbers are for [game=14] only!) are also drawn.  At the end of this stage, the surface looks like the following (click for actual size):
 
 <a target="_blank" href="./content/anm/img/pipeline/s1-end.png"><img src="./content/anm/img/pipeline/s1-end.png" height="500px"></a>
 
@@ -160,7 +160,7 @@ At this point, all remaining rendering occurs by drawing directly to the backbuf
 ### Remaining mysteries
 
 * How does screen shake work?
-* The pause blur in [game=14]DDC[/game] onwards is basically a screenshot of the game region overlayed over the original, but I'm not when this screenshot is taken, or when it is drawn.  (you'd think something this special would have a dedicated `on_draw` like all of the scripts mentioned above, but... it doesn't)
+* The pause blur in [game=14] onwards is basically a screenshot of the game region overlayed over the original, but I'm not when this screenshot is taken, or when it is drawn.  (you'd think something this special would have a dedicated `on_draw` like all of the scripts mentioned above, but... it doesn't)
 
 ### How'd you make those images, anyway?
 

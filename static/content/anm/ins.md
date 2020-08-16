@@ -1,6 +1,6 @@
 ## ANM instruction reference
 
-Currently **all documentation here is for ANM version 8.**  That is [game=14]DDC[/game] to [game=17]WBaWC[/game].
+Currently **all documentation here is for ANM version 8.**  That is [game=13] to [game=17].
 
 Support for other game versions and custom anmmaps is Coming Soon (TM), after I sort out other problems with the site.
 
@@ -42,11 +42,11 @@ onContentLoad(async function() {
 //                if (radios[i].checked)
 //                    val = radios[i].value;
 //            if (val == "1") {
-//                await loadEclmap(null, "?"+game, game);
+//                await loadAnmmap(null, "?"+game, game);
 //            } else {
 //                if (input.files.length != 0) {
 //                    const file = input.files[0];
-//                    await loadEclmap(file, file.name, game);
+//                    await loadAnmmap(file, file.name, game);
 //                } else return alert("Please upload an eclmap first.");
 //            }
 //            target.innerHTML = generateOpcodeTable(game);
@@ -58,12 +58,12 @@ onContentLoad(async function() {
 //    const query = parseQuery(window.location.hash);
 //    if (typeof query.table != "undefined" && !isNaN(query.table)) {
 //        const game = parseFloat(query.table);
-//        await loadEclmap(null, "?"+query.table, game);
+//        await loadAnmmap(null, "?"+query.table, game);
 //        target.innerHTML = generateOpcodeTable(game);
 //        initTableNavigation();
 //    } else {
-        await loadEclmapAndSetGame(null, "?17", 17);
-        target.innerHTML = generateOpcodeTable(17);
+        await loadAnmmapAndSetGame(null, "?17", 17);
+        target.innerHTML = generateOpcodeTable('17');
 //    }
 });
 [/script]

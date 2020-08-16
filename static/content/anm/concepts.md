@@ -33,6 +33,14 @@ On this site you'll see lots of words used that sound like they have similar mea
 
 COMING SOON (TM)
 
+<h1 id="position">Position vectors</h1>
+
+The position of a graphic is ironically one of the least understood aspects of how ANM works.
+
+Each VM has an **origin.**  For child scripts, the origin is the location of the parent, so that they move with the parent.  For scripts with no parent, the origin is determined by [ref=anm:originMode], which should be chosen appropriately for its [stage of rendering](#anm/stages-of-rendering).  *That's the easy part.*
+
+So how about the position relative to that origin?  Well, as you might imagine, each VM holds a position vector which can be modified using [ref=anm:pos]... but there are also two other vectors!!  The true position of the graphic relative to its origin *is the sum of all three of these vectors.*  These other two vectors are used in all sorts of different, weird places for weird things, and nobody has been able to make any real sense of them yet, so for now I'll just call them `pos_2` and `pos_3` until their purpose is better understood.
+
 <h1 id="rng">RNGs</h1>
 
 There are two random number generators available to ANM scripts.  The terms I will use for these are:

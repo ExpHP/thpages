@@ -4,6 +4,13 @@ import dedent from "../lib/dedent.js";
 // ==========================================================================
 // ===================    LOOKUP TABLE BY OPCODE    =========================
 
+/**
+ * Table indexed first by game number string, then by var number,
+ * producing the crossref associated with that opcode.
+ *
+ * Iterating the first table should produce games in ascending order.
+ * There are NO GUARANTEES about iteration order of variables within a game.
+ */
 export const ANM_VARS_BY_NUMBER = {};
 
 // ------------

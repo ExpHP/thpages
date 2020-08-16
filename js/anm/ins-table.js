@@ -7,7 +7,17 @@ export const UNKNOWN_SIG = {};
 // ==========================================================================
 // ===================    LOOKUP TABLE BY OPCODE    =========================
 
+/**
+ * Table indexed first by game number string, then by opcode number,
+ * producing the crossref associated with that opcode.
+ *
+ * Iterating the first table should produce games in ascending order.
+ * There are NO GUARANTEES about iteration order of opcodes within a game.
+ */
 export const ANM_BY_OPCODE = {};
+export const GROUPS_PRE_V8 = [
+  {min: 0, max: 999, title: 'All'},
+];
 export const GROUPS_V8 = [
   {min: 0, max: 99, title: 'System'},
   {min: 100, max: 199, title: 'Math'},
@@ -114,7 +124,7 @@ ANM_BY_OPCODE['12'] = {
   84: {ref: 'anm:textureCircle'},
   85: UNASSIGNED, // flag lo:30 (DS: lo:31)
   86: UNASSIGNED, // flag lo:31 (DS: hi:0)
-  87: {ref: 'anm:randMode'},
+  87: {ref: 'anm:v7-randMode'},
   88: {ref: 'anm:createChild', wip: 1},
   89: {ref: 'anm:resampleMode', wip: 1}, // flag hi:1 (DS: hi:2)
 
@@ -123,9 +133,9 @@ ANM_BY_OPCODE['12'] = {
   92: {ref: 'anm:prependChildUi', wip: 1},
   93: {ref: 'anm:uVelTime'},
   94: {ref: 'anm:vVelTime'},
-  95: UNASSIGNED, // child creation x
-  96: UNASSIGNED, // child creation with pos, but unlike TD+ it writes to a different vector from alternate_pos!!!
-  97: UNASSIGNED, // child creation with pos, but unlike TD+ it writes to a different vector from alternate_pos!!!
+  95: {ref: 'anm:createRoot'},
+  96: {ref: 'anm:createChildPos'},
+  97: {ref: 'anm:createRootPos'},
   98: {ref: 'anm:v8-418'},
   99: {ref: 'anm:v8-flag-419', wip: 1},
 
@@ -213,7 +223,7 @@ ANM_BY_OPCODE['13'] = {
   304: {ref: 'anm:layer'},
   305: {ref: 'anm:noZBuffer'},
   306: {ref: 'anm:v8-306'},
-  307: {ref: 'anm:v8-flag-307'},
+  307: {ref: 'anm:v8-randMode'},
   308: {ref: 'anm:flipX'},
   309: {ref: 'anm:flipY'},
   310: {ref: 'anm:v8-flag-310'},
@@ -264,9 +274,9 @@ ANM_BY_OPCODE['13'] = {
   501: {ref: 'anm:prependChild'},
   502: {ref: 'anm:createChildUi'},
   503: {ref: 'anm:prependChildUi'},
-  504: {ref: 'anm:create-504'},
-  505: {ref: 'anm:create-505'},
-  506: {ref: 'anm:create-506'},
+  504: {ref: 'anm:createRoot'},
+  505: {ref: 'anm:createChildPos'},
+  506: {ref: 'anm:createRootPos'},
   507: {ref: 'anm:ignoreParent'},
   508: {ref: 'anm:createEffect'},
 
@@ -455,8 +465,8 @@ Object.assign(ANM_INS_DATA, {
   'v7-rand': {sig: '$S', args: ['x', 'n'], succ: 'rand', desc: 'Draw a random integer `0 <= x < n` using the selected RNG (see TODO: REF).'},
   'v7-randF': {sig: '$S', args: ['x', 'n'], succ: 'randF', desc: 'Draw a random integer `0 <= x < n` using the selected RNG (see TODO: REF).'},
 
-  'randMode': {
-    sig: 'S', args: ['mode'], desc: `
+  'v7-randMode': {
+    sig: 'S', args: ['mode'], succ: 'v8-randMode', desc: `
     Selects the RNG used by this VM.
 
     [tiphide]
@@ -465,8 +475,23 @@ Object.assign(ANM_INS_DATA, {
     | 0 | Uses the [replay RNG](#anm/concepts&a=rng) |
     | 1 | Uses the [animation RNG](#anm/concepts&a=rng) |
 
-    It seems that 0, the replay RNG, is the default. This is in stark contrast to [game=14]TD[/game] onwards.
+    It seems that 0, the replay RNG, is the default. This is in stark contrast to [game=13] onwards.
     ([wip]this seems surprising... can somebody conclusively verify this?[/wip])
+
+    This flag will be enabled on any scripts created using any of the ANM instructions that create new VMs.
+    [/tiphide]
+  `},
+
+  'v8-randMode': {
+    // FIXME: v7-randMode link is broken until support for other games is added
+    sig: 'S', args: ['mode'], wip: 1, desc: `
+    A ([wip=1]completely ineffectual?[/wip]) leftover of [ref=anm:v7-randMode].
+
+    [tiphide]
+    Scripts in modern games still use this exactly as they did back in ANM V7, and
+    [tip="though some of it is plain bugged in later games due to a memcpy added in TD after the flag is set in some
+    instructions"]all of the code that manipulates this bitflag on child creation is still present[/tip],
+    **but all of the code that _uses_ the bitflag appears to be gone.**
     [/tiphide]
   `},
 
@@ -516,7 +541,7 @@ Object.assign(ANM_INS_DATA, {
     Set color blending mode.
 
     [tiphide]
-    Modes for [game=14]DDC[/game]: (other games may be different)
+    Modes for [game=14]: (other games may be different)
 
     | Mode | \`SRCBLEND\` | \`DESTBLEND\` | \`BLENDOP\` | Meaning |
     | ---         | ---           | --- | --- | --- |
@@ -579,7 +604,7 @@ Object.assign(ANM_INS_DATA, {
     | 0    | \`D3DTEXF_LINE\` | linear interpolation | blurry |
     | 1    | \`D3DTEXF_POINT\` | nearest-point sampling | big pixels |
 
-    As an example, Reimu's sprite in [game=14]DDC[/game] uses [ref-notip=anm:resampleMode]\`(1)\`, while her hitbox animation does not.
+    As an example, Reimu's sprite in [game=14] uses [ref-notip=anm:resampleMode]\`(1)\`, while her hitbox animation does not.
     Here you can see the effect of enabling it on the hitbox during Shinmyoumaru's survival spell.<br>
     <img src="./content/anm/img/ins-v8-311.png" height="200px">
     [/tiphide]
@@ -587,7 +612,7 @@ Object.assign(ANM_INS_DATA, {
   'scrollMode': {
     sig: 'SS', args: ['xmode', 'ymode'], desc: `
     Determines how a sprite pulls image data when an instruction like [ref=anm:uvScale], [ref=anm:uVel],
-    or [ref=anm:textureCircle] causes it to pull from [uv coords outside the \`(0,0)-(1,1)\` rectangle](#anm/concepts&a=uv-coords).
+    or [ref=anm:textureCircle] causes it to pull from [uv coords](#anm/concepts&a=uv-coords) outside the \`(0,0)-(1,1)\` rectangle.
 
     [tiphide]
     | Mode | D3D constant | Meaning |
@@ -644,9 +669,8 @@ Object.assign(ANM_INS_DATA, {
     Sets the position of the animation.
 
     [tiphide]
-    Believe it or not, even this instruction still has some mysteries!
-    There is a bit flag that, when activated, causes [ref=anm:pos] to write to a *different* vector.
-    These two vectors are typically added together at the end, like ECL's absolute and relative positions.
+    There is a bitflag that, when activated, causes [ref=anm:pos] and all other position-modifying code
+    to overwrite [\`pos_2\`](#anm/concepts&a=position) instead.
     [wip]The method of setting this bitflag, and its purpose, is unknown.[/wip]
     [/tiphide]
   `},
@@ -712,15 +736,15 @@ Object.assign(ANM_INS_DATA, {
 
     [tiphide]
     | Value | Effect |
-    |  ---  |   ---  |
+    | :---: |   ---  |
     |   0   | Only use the color set by [ref=anm:rgb] and [ref=anm:alpha]. |
     |   1   | Only use the color set by [ref=anm:rgb2] and [ref=anm:alpha2]. |
-    |   2   | Horizontal gradient. |
-    |   3   | Vertical gradient. |
+    |   2   | Horizontal gradient. ([game=125] or later) |
+    |   3   | Vertical gradient. ([game=125] or later) |
 
     This has no effect on [special drawing instructions](#anm/ins&a=group-600).
 
-    For some strange reason, from [game=14]DDC[/game] onwards,
+    For some strange reason, from [game=14] onwards,
     [ref=anm:rgb2Time] and [ref=anm:alpha2Time] automatically do [ref-notip=anm:colorMode](1).
     Therefore, if you use those instructions, you must call this *afterwards,* not before.
 
@@ -817,13 +841,13 @@ Object.assign(ANM_INS_DATA, {
   'alpha2Time': {sig: 'SSS', args: ['t', 'mode', 'alpha'], desc: `
     Over the next \`t\` frames, changes [ref=anm:alpha2] to the given value using [interpolation mode](#anm/interpolation) \`mode\`.
 
-    [tiphide]For some reason, in [game=14]DDC[/game] onwards, this also sets [ref=anm:colorMode] to 1, which can be a mild inconvenience.[/tiphide]
+    [tiphide]For some reason, in [game=14] onwards, this also sets [ref=anm:colorMode] to 1, which can be a mild inconvenience.[/tiphide]
   `},
   'rgbTime': {sig: 'SSSSS', args: ['t', 'mode', 'r', 'g', 'b'], desc: `Over the next \`t\` frames, changes [ref=anm:rgb] to the given value using [interpolation mode](#anm/interpolation) \`mode\`.`},
   'rgb2Time': {sig: 'SSSSS', args: ['t', 'mode', 'r', 'g', 'b'], desc: `
     Over the next \`t\` frames, changes [ref=anm:rgb2] to the given value using [interpolation mode](#anm/interpolation) \`mode\`.
 
-    [tiphide]For some reason, in [game=14]DDC[/game] onwards, this also sets [ref=anm:colorMode] to 1, which can be a mild inconvenience.[/tiphide]
+    [tiphide]For some reason, in [game=14] onwards, this also sets [ref=anm:colorMode] to 1, which can be a mild inconvenience.[/tiphide]
   `},
   'uVelTime': {sig: 'SSf', args: ['t', 'mode', 'vel'], desc: `
     Over the next \`t\` frames, changes [ref=anm:uVel] to the given value using [interpolation mode](#anm/interpolation) \`mode\`.
@@ -1060,11 +1084,11 @@ Object.assign(ANM_INS_DATA, {
 Object.assign(ANM_INS_DATA, {
   'createChild': {
     sig: 'S', args: ['script'], desc: `
-    The standard way to create a child animation.  The new VM is inserted at the back of the [world list](#anm/ontick-ondraw).
+    The standard way to create a child animation.
   `},
   'prependChild': {
     sig: 'S', args: ['script'], wip: 1, desc: `
-    Create a child animation, but insert it **at the front** of the [world list](#anm/ontick-ondraw).
+    Create a child animation, but insert it **at the front** of the [world list](#anm/ontick-ondraw) instead of the back.
   `},
   'createChildUi': {
     sig: 'S', args: ['script'], desc: `
@@ -1074,7 +1098,7 @@ Object.assign(ANM_INS_DATA, {
   `},
   'prependChildUi': {
     sig: 'S', args: ['script'], wip: 1, desc: `
-    Create a child animation, but insert it **at the front of the [UI list](#anm/ontick-ondraw)****.
+    Create a child animation, but insert it **at the front of the [UI list](#anm/ontick-ondraw)**.
   `},
   'attached': {
     sig: 'S', args: ['enable'], wip: 1, desc: `
@@ -1091,25 +1115,53 @@ Object.assign(ANM_INS_DATA, {
     [wip]Haven't gotten to playing around with this or reverse engineering any of those hardcoded behaviors yet.[/wip]
     [/tiphide]
   `},
-  'create-504': {
-    sig: 'S', args: ['script'], wip: 2, desc: `
-    Creates a child and puts it in the back of the world list (same as [ref=anm:createChild]), but copies more state from the parent than normal.
-    [wip]What gets copied? Why?[/wip]
-  `},
-  'create-505': {
-    sig: 'Sff', args: ['script', 'x', 'y'], wip: 2, desc: `
-    Creates a child and puts it in the back of the world list (same as [ref=anm:createChild]), and then... welllllll....
+  'createRoot': {
+    sig: 'S', args: ['script'], wip: 1, desc: `
+    Creates a new root VM. (i.e. the new VM will have no parent)
 
     [tiphide]
-    [wip]You know that mysterious "alternate position" vector mentioned in the entry for [ref=anm:pos]?
-    That's where the \`x\` and \`y\` args get written.  WHAT IS THAT THING[/wip]
-
-    [wip=2]Unless you're playing [game=12]UFO[/game] or earlier in which case it gets written to YET ANOTHER FUCKING DIFFERENT UNKNOWN VECTOR[/wip]
+    Pseudocode:
+    [code]
+    new_vm.rotation = this.rotation;
+    new_vm.pos = {0f, 0f, 0f};
+    new_vm.pos_2 = this.pos;
+    new_vm.pos_3 = this.pos_3;
+    [/code]
+    \`pos_2\` and \`pos_3\` refer to the mysterious [extra position vectors](#anm/concepts&a=position).
+    Assuming that \`pos_2\` on the parent is initially 0, one could perhaps say that [ref=anm:pos]\`(0f, 0f)\`
+    for the new VM corresponds to the original location of the parent when it called this instruction.
     [/tiphide]
   `},
-  'create-506': {
-    sig: 'Sff', args: ['script', 'x', 'y'], wip: 2, desc: `
-    Combines the effects of [ref=anm:create-504] and [ref=anm:create-505].
+  'createChildPos': {
+    sig: 'Sff', args: ['script', 'x', 'y'], wip: 1, desc: `
+    Creates a child at an offset from this graphic.
+
+    [tiphide]
+    The child's [three position variables](#anm/concepts&a=position) will be:
+    [code]
+    child.pos = {0f, 0f, 0f};
+    child.pos_2 = {x, y, 0f};
+    child.pos_3 = {0f, 0f, 0f};
+    [/code]
+    [tiphide]
+  `},
+  'createRootPos': {
+    sig: 'Sff', args: ['script', 'x', 'y'], wip: 1, desc: `
+    Combines the effects of [ref=anm:createRoot] and [ref=anm:createChildPos].
+
+    [tiphide]
+    The net effect on the [three position variables](#anm/concepts&a=position) is:
+    [code]
+    new_vm.rotation = this.rotation;
+    new_script.pos = {0f, 0f, 0f};
+    new_script.pos_2 = {x, y, 0f};  // <-- arguments
+    new_script.pos_3 = this.pos_3;
+    [/code]
+    One can almost define [ref=anm:createRoot] in terms of this: (just missing the z coordinate)
+    [code]
+    [ref=anm:createRootPos](script, [ref=anmvar:pos-x], [ref=anmvar:pos-y]);
+    [/code]
+    [/tiphide]
   `},
   'ignoreParent': {
     sig: 'S', args: ['ignore'], wip: 2, desc: `
@@ -1186,8 +1238,7 @@ Object.assign(ANM_INS_DATA, {
   `},
   'posAdopt': {
     sig: '', args: [], wip: 2, desc: `
-    [wip=2]Takes one of the three vectors related to position <!-- the one I used to name true_final_pos... -->,
-    copies it into the vector that's normally controlled by [ref=anm:pos], and then zeros out the original vector.[/wip]
+    [wip=2]Copies [\`pos_3\`](#anm/concepts&a=position) into \`pos\`, and zeros out \`pos_3\`...[/wip]
   `},
   'v8-flag-307': {sig: 'b', args: ['enable'], wip: 2, desc: `[wip=2]Sets the state of an unknown bitflag.[/wip]`},
   'v8-flag-310': {sig: 'b', args: ['enable'], wip: 2, desc: `[wip=2]Sets the state of an unknown bitflag.[/wip]`},
@@ -1198,14 +1249,22 @@ Object.assign(ANM_INS_DATA, {
   'v8-flag-432': {sig: 'S', args: ['enable'], wip: 2, desc: `[wip=2]Sets the state of an unknown bitflag.[/wip]`},
 });
 
-// Validate
+// Add `minGame` and `maxGame` keys to each crossref.
 for (const [game, table] of Object.entries(ANM_BY_OPCODE)) {
   for (const [opcodeStr, {ref}] of Object.entries(table)) {
     if (ref === null) continue;
     const id = ref.substring('anm:'.length);
-    if (ANM_INS_DATA[id] === undefined) {
+    const entry = ANM_INS_DATA[id];
+
+    if (!entry) {
       window.console.error(`invalid ref in opcode table (game ${game}, opcode ${opcodeStr}): ${ref}`);
+      continue;
     }
+
+    if (entry.minGame === undefined) {
+      entry.minGame = game;
+    }
+    entry.maxGame = game;
   }
 }
 
@@ -1220,7 +1279,7 @@ for (const [key, value] of Object.entries(ANM_INS_DATA)) {
 
   // automatically remove tips from self-references
   const re = new RegExp(`\\[ref=anm:${key}\\]`, 'g');
-  value.desc = value.desc.replace(re, `[tip=YOU ARE HERE][ref-notip=anm:${key}][/tip]`);
+  value.desc = value.desc.replace(re, `[tip-nodeco=YOU ARE HERE][ref-notip=anm:${key}][/tip-nodeco]`);
 
   value.desc = dedent(value.desc);
 }

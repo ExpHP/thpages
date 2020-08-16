@@ -5,21 +5,21 @@ export function getCurrentMap() {
   return currentMap;
 }
 
-export async function loadEclmap(file, name, game) {
-  if (cachedMaps[name]) {
-    currentMap = cachedMaps[name];
+export async function loadAnmmap(file, cacheKey, game) {
+  if (cachedMaps[cacheKey]) {
+    currentMap = cachedMaps[cacheKey];
     return;
   }
 
   let txt;
-  if (file == null) txt = await autoEclmap(game);
-  else txt = await fileEclmap(file);
+  if (file == null) txt = await autoAnmmap(game);
+  else txt = await readUploadedFileText(file);
 
-  const map = parseEclmap(txt);
-  if (!cachedMaps[name]) cachedMaps[name] = map;
+  // FIXME: I am confused, why doesn't this set currentMap while the other branch does?
+  cachedMaps[cacheKey] = parseAnmmap(txt);
 }
 
-async function fileEclmap(file) {
+async function readUploadedFileText(file) {
   const fr = new window.FileReader();
   fr.readAsText(file);
   const txt = await new Promise((resolve, reject) => {
@@ -28,16 +28,21 @@ async function fileEclmap(file) {
   return txt;
 }
 
-function parseEclmap(txt, name) {
+function parseAnmmap(txt, name) {
   const map = new Eclmap(txt);
   currentMap = map;
   return map;
 }
 
-async function autoEclmap(game) {
-  game; // eventually we should be matching on this to pick the right file...
+function defaultAnmmapUrl(game) {
+  if (game < '13') { // lexical compare
+    return 'eclmap/anmmap/v7.anmm';
+  }
+  return 'eclmap/anmmap/v8.anmm';
+}
 
-  const res = await window.fetch(`eclmap/anmmap/v8.anmm`);
+async function autoAnmmap(game) {
+  const res = await window.fetch(defaultAnmmapUrl(game));
   if (res.ok) {
     const txt = await res.text();
     return txt;
