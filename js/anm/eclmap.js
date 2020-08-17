@@ -1,22 +1,20 @@
-let currentMap = null;
 const cachedMaps = {};
+const currentMaps = {};
 
-export function getCurrentMap() {
-  return currentMap;
+export function getCurrentMap(version) {
+  return currentMaps[version] || null;
 }
 
-export async function loadAnmmap(file, cacheKey, game) {
-  if (cachedMaps[cacheKey]) {
-    currentMap = cachedMaps[cacheKey];
-    return;
+export async function loadAnmmap(file, cacheKey, version) {
+  if (!cachedMaps[cacheKey]) {
+    let txt;
+    if (file == null) txt = await autoAnmmap(version);
+    else txt = await readUploadedFileText(file);
+
+    cachedMaps[cacheKey] = new Eclmap(txt);
   }
 
-  let txt;
-  if (file == null) txt = await autoAnmmap(game);
-  else txt = await readUploadedFileText(file);
-
-  // FIXME: I am confused, why doesn't this set currentMap while the other branch does?
-  cachedMaps[cacheKey] = parseAnmmap(txt);
+  currentMaps[version] = cachedMaps[cacheKey];
 }
 
 async function readUploadedFileText(file) {
@@ -28,21 +26,14 @@ async function readUploadedFileText(file) {
   return txt;
 }
 
-function parseAnmmap(txt, name) {
-  const map = new Eclmap(txt);
-  currentMap = map;
-  return map;
+function defaultAnmmapUrl(version) {
+  if (version === 'v7') return 'eclmap/anmmap/v7.anmm';
+  if (version === 'v8') return 'eclmap/anmmap/v8.anmm';
+  return null;
 }
 
-function defaultAnmmapUrl(game) {
-  if (game < '13') { // lexical compare
-    return 'eclmap/anmmap/v7.anmm';
-  }
-  return 'eclmap/anmmap/v8.anmm';
-}
-
-async function autoAnmmap(game) {
-  const res = await window.fetch(defaultAnmmapUrl(game));
+async function autoAnmmap(version) {
+  const res = await window.fetch(defaultAnmmapUrl(version));
   if (res.ok) {
     const txt = await res.text();
     return txt;
@@ -50,7 +41,6 @@ async function autoAnmmap(game) {
 }
 
 class Eclmap {
-  // FIXME: What the fuck is the public API of this thing, there's so many public methods that should not be...
   constructor(txt) {
     this.kind = null;
 

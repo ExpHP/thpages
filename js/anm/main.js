@@ -1,13 +1,24 @@
-import {getCurrentMap, loadAnmmap} from './eclmap.js';
+import {loadAnmmap, getCurrentMap} from './eclmap.js';
 import {GROUPS_V8, GROUPS_PRE_V8, ANM_INS_DATA, ANM_BY_OPCODE, ANM_OPCODE_REVERSE, DUMMY_DATA} from './ins-table.js';
-import {ANM_VAR_DATA, ANM_VARS_BY_NUMBER} from './var-table.js';
-import {registerRefTip, getRefNameKey} from '../ref.js';
+import {ANM_VAR_DATA, ANM_VARS_BY_NUMBER, ANM_VAR_NUMBER_REVERSE} from './var-table.js';
+import {globalRefNames, globalRefTips, globalRefLinks, getRefNameKey} from '../ref.js';
 import {MD} from '../main.js';
-import globalNames from '../names.js';
-import {parseQuery, buildQuery} from '../url-format.js';
+import {globalNames, PrefixResolver} from '../resolver.ts';
+import {parseQuery, buildQuery} from '../url-format.ts';
 
 const INS_TABLE_PAGE = 'anm/ins';
 const DEFAULT_GAME = '17';
+
+/**
+ * Resolves names from the suffix of 'anm:' namekeys,
+ * which look like 'anm:v8:502'.
+ */
+const ANM_INS_NAMES = new PrefixResolver();
+/**
+ * Resolves names from the suffix of 'anmvar:' namekeys,
+ * which look like 'anmvar:v8:10021'.
+ */
+const ANM_VAR_NAMES = new PrefixResolver();
 
 /**
  * A game number as a string with no period, with a leading 0 for numbers below 10, e.g. "14", "125", "095".
@@ -15,11 +26,23 @@ const DEFAULT_GAME = '17';
  * This representation is chosen to enable simple lexical comparisons using the built-in &lt; and &gt; operators.
  * @typedef {string} Game
  */
-const VALID_GAMES = {
-  "07": true, "08": true, "09": true, "095": true,
-  "10": true, "11": true, "12": true, "125": true, "128": true,
-  "13": true, "14": true, "143": true, "15": true,
-  "16": true, "165": true, "17": true,
+const GAME_VERSIONS = {
+  // FIXME
+  "07": 'v7', "08": 'v7', "09": 'v7', "095": 'v7',
+  "10": 'v7', "11": 'v7',
+  // END FIXME
+  "12": 'v7', "125": 'v7', "128": 'v7',
+  "13": 'v8', "14": 'v8', "143": 'v8', "15": 'v8',
+  "16": 'v8', "165": 'v8', "17": 'v8',
+};
+
+const VERSIONS = ["v7", "v8"];
+
+// game to use when looking up a variable to get its type,
+// or looking up a ref to get its opcode.
+const VERSION_DEFAULT_GAMES_FOR_INTERNAL_LOOKUP = {
+  'v7': '125',
+  'v8': '17',
 };
 
 const ARGTYPES_HTML = {
@@ -34,32 +57,28 @@ const ARGTYPES_HTML = {
 export function initAnm() {
   // FIXME HACK to make available to ins.md
   window.generateOpcodeTable = generateOpcodeTable;
-  window.loadAnmmapAndSetGame = loadAnmmapAndSetGame;
+  window.loadAnmmap = loadAnmmap;
 
-  // Call everything `ins_11` etc.
-  initDefaultNames(globalNames);
+  initNames();
 
-  // Make crossrefs default to using  everything `ins_11` etc.
-  for (const game of Object.keys(ANM_BY_OPCODE)) {
-    linkRefNamesToGameOpcodes(globalNames, game);
-  }
-
-  for (const [id, ins] of Object.entries(ANM_INS_DATA)) {
+  globalRefTips.registerPrefix('anm', (id, ctx) => {
+    const ins = ANM_INS_DATA[id];
     const ref = 'anm:' + id;
-    registerRefTip(ref, generateAnmInsTip(ins, ref));
-  }
+    return generateAnmInsTip(ins, ref);
+  });
 
-  for (const [id, avar] of Object.entries(ANM_VAR_DATA)) {
+  globalRefTips.registerPrefix('anmvar', (id, ctx) => {
+    const avar = ANM_VAR_DATA[id];
     const ref = 'anmvar:' + id;
-    registerRefTip(ref, generateAnmVarTip(avar, ref));
-  }
+    return generateAnmVarTip(avar, ref);
+  });
 }
 
 function validateGameString(game) {
   if (typeof game !== 'string') {
     throw new TypeError(`bad game; expected string, got ${game}`);
   }
-  if (!VALID_GAMES[game]) {
+  if (!GAME_VERSIONS[game]) {
     throw new Error(`bad game: '${game}'`);
   }
 }
@@ -77,77 +96,124 @@ function getVarNameKey(game, num) {
   return `anmvar:${game}-${num}`;
 }
 
-// Names everything like `ins_301` and `[10034.0]`.
-function initDefaultNames(names) {
-  for (const game of Object.keys(ANM_BY_OPCODE)) {
-    for (const opcodeStr of Object.keys(ANM_BY_OPCODE[game])) {
-      const opcode = parseInt(opcodeStr, 10);
-      const key = getOpcodeNameKey(game, opcode);
-      names.set(key, `ins_${opcode}`);
+function initNames() {
+  // Adds e.g. a 'v7:' prefix to a name if the version doesn't match the current page.
+  function possiblyAddVersionPrefix(s, version, ctx) {
+    if (ctx.g && version !== GAME_VERSIONS[ctx.g]) {
+      return `${version}:${s}`;
     }
+    return s;
   }
 
-  for (const game of Object.keys(ANM_VARS_BY_NUMBER)) {
-    for (const [numStr, {ref}] of Object.entries(ANM_VARS_BY_NUMBER[game])) {
-      const num = parseInt(numStr, 10);
-      const key = getVarNameKey(game, num);
-      const avar = anmVarDataByRef(ref);
-      const numSuffix = avar.type === '%' ? '.0' : '';
-      const name = `[${num}${numSuffix}]`;
-      names.set(key, name);
+  // Instructions
+  for (const version of VERSIONS) {
+    const getDefaultName = (opcode) => `ins_${opcode}`;
+
+    const getMappedName = (opcode) => {
+      const map = getCurrentMap(version);
+      if (map === null) return getDefaultName(opcode);
+
+      const name = map.getMnemonic(opcode);
+      if (name === null) return getDefaultName(opcode);
+      return name;
+    };
+
+    // 'anm:' names
+    ANM_INS_NAMES.registerPrefix(version, (suffix, ctx) => {
+      const opcode = parseInt(suffix, 10);
+      if (Number.isNaN(opcode)) return null;
+
+      const name = getMappedName(opcode);
+      return possiblyAddVersionPrefix(name, version, ctx);
+    });
+  }
+  globalNames.registerPrefix('anm', (s, ctx) => ANM_INS_NAMES.getNow(s, ctx));
+
+  // 'ref:anm:' names
+  globalRefNames.registerPrefix('anm', (id, ctx) => {
+    const ref = 'anm:' + id;
+    function preferredVersion() {
+      // prefer anmmap for current game if it has this instruction
+      const table = ANM_OPCODE_REVERSE[ctx.g];
+      if (table && table[ref]) { // opcode in current game?
+        return GAME_VERSIONS[ctx.g];
+      }
+
+      // else find the latest game that has it and use that anmmap
+      const entry = anmInsDataByRef(ref);
+      if (!entry) return null;
+      return GAME_VERSIONS[entry.maxGame];
     }
-  }
-}
 
-/**
- * Loads names from an anmmap.
- * @param {module} names Object to be updated.
- * @param {Game} game
- * @param {Eclmap} map
- */
-function setNamesFromAnmmap(names, game, map) {
-  // assign names to anm: keys
-  for (const opcodeStr of Object.keys(ANM_BY_OPCODE[game])) {
-    const opcode = parseInt(opcodeStr, 10);
-    const key = getOpcodeNameKey(game, opcode);
-    const name = map.getMnemonic(opcode);
-    if (name) {
-      names.set(key, name);
+    const version = preferredVersion();
+    if (!version) return null;
+
+    const versionGame = VERSION_DEFAULT_GAMES_FOR_INTERNAL_LOOKUP[version];
+    const opcode = ANM_OPCODE_REVERSE[versionGame][ref];
+    if (opcode == null) return null;
+    return globalNames.getNow(`anm:${version}:${opcode}`);
+  });
+
+  // Variables
+  for (const version of VERSIONS) {
+    const getDefaultName = (opcode, type) => `[${opcode}${type === '%' ? '.0' : ''}]`;
+
+    const getMappedName = (opcode, type) => {
+      const map = getCurrentMap(version);
+      if (map === null) return getDefaultName(opcode);
+
+      const name = map.getGlobal(opcode);
+      if (name === null) return getDefaultName(opcode);
+      return type + name;
+    };
+
+    ANM_INS_NAMES.registerPrefix(version, (suffix, ctx) => {
+      const opcode = parseInt(suffix, 10);
+      if (Number.isNaN(opcode)) return null;
+
+      // try to find the type, else assume integer
+      let type = '$';
+      const game = VERSION_DEFAULT_GAMES_FOR_INTERNAL_LOOKUP[version];
+      if (game && ANM_VARS_BY_NUMBER[game]) {
+        const {ref} = ANM_VARS_BY_NUMBER[game][opcode];
+        const avar = anmVarDataByRef(ref);
+        if (avar) {
+          type = avar.type;
+        }
+      }
+
+      const name = getMappedName(opcode, type);
+      return possiblyAddVersionPrefix(name, version, ctx);
+    });
+  }
+  globalNames.registerPrefix('anmvar', (s, ctx) => ANM_VAR_NAMES.getNow(s, ctx));
+
+  // FIXME copypasta
+  globalRefNames.registerPrefix('anmvar', (id, ctx) => {
+    const ref = 'anmvar:' + id;
+    function preferredVersion() {
+      // prefer anmmap for current game if it has this instruction
+      const table = ANM_VAR_NUMBER_REVERSE[ctx.g];
+      if (table && table[ref]) { // opcode in current game?
+        return GAME_VERSIONS[ctx.g];
+      }
+
+      // else find the latest game that has it and use that anmmap
+      const entry = anmVarDataByRef(ref);
+      if (!entry) return null;
+      return GAME_VERSIONS[entry.maxGame];
     }
-  }
 
-  // assign names to anmvar: keys
-  for (const [numStr, {ref}] of Object.entries(ANM_VARS_BY_NUMBER[game])) {
-    const num = parseInt(numStr, 10);
-    const key = getVarNameKey(game, num);
-    const {type} = anmVarDataByRef(ref);
-    const name = map.getGlobal(num);
-    if (name) {
-      names.set(key, type + name);
-    }
-  }
-}
+    const version = preferredVersion();
+    if (!version) return null;
 
-/**
- * Make <code>anm:</code> refs derive their names from a given game's opcodes where available.
- * @param {module} names Object to be updated.
- * @param {Game} game
- */
-function linkRefNamesToGameOpcodes(names, game) {
-  for (const [opcodeStr, {ref}] of Object.entries(ANM_BY_OPCODE[game])) {
-    if (ref == null) continue;
-    const opcode = parseInt(opcodeStr, 10);
-    const opcodeKey = getOpcodeNameKey(game, opcode);
-    const refKey = getRefNameKey(ref);
-    names.setAlias(refKey, opcodeKey);
-  }
+    const versionGame = VERSION_DEFAULT_GAMES_FOR_INTERNAL_LOOKUP[version];
+    const opcode = ANM_VAR_NUMBER_REVERSE[versionGame][ref];
+    if (opcode == null) return null;
+    return globalNames.getNow(`anmvar:${version}:${opcode}`);
+  });
 
-  for (const [numStr, entry] of Object.entries(ANM_VARS_BY_NUMBER[game])) {
-    const num = parseInt(numStr, 10);
-    const numKey = getVarNameKey(game, num);
-    const refKey = getRefNameKey(entry.ref);
-    names.setAlias(refKey, numKey);
-  }
+  globalRefLinks.registerPrefix('anm', (id, ctx) => getAnmInsUrlByRef('ref:' + id, ctx));
 }
 
 /**
@@ -155,16 +221,11 @@ function linkRefNamesToGameOpcodes(names, game) {
  *
  * (does not fix names in existing HTML however.  Do that yourself by calling names.transformHtml...)
  * @param {?string} file
- * @param {string} cacheKey Used for cacheing I think?
- * @param {Game} game Selects default file when file arg is null.
+ * @param {string} cacheKey Key identifying the specific file for caching.
+ * @param {Game} version Determines what version.
  */
-export async function loadAnmmapAndSetGame(file, cacheKey, game) {
-  await loadAnmmap(file, cacheKey, game);
-  const map = getCurrentMap();
-  if (map !== null) {
-    setNamesFromAnmmap(globalNames, game, map);
-    linkRefNamesToGameOpcodes(globalNames, game);
-  }
+export async function loadAnmmapAnd(file, cacheKey, version) {
+  await loadAnmmap(file, cacheKey, version);
 }
 
 function generateOpcodeTable(game) {
@@ -338,7 +399,7 @@ function generateAnmVarTip(avar, ref) {
   return {heading, contents, omittedInfo};
 }
 
-export function getAnmInsUrlByRef(ref) {
+function getAnmInsUrlByRef(ref, context) {
   const samePageUrl = getSamePageAnmInsUrlByRef(ref);
   if (samePageUrl != null) return samePageUrl;
 
@@ -351,15 +412,14 @@ export function getAnmInsUrlByRef(ref) {
 
 // Try to identify links to things available on the current page,
 // so that we can build a URL that avoids regenerating the table.
-function getSamePageAnmInsUrlByRef(ref) {
-  const query = parseQuery(window.location.hash);
-  if (query.s !== INS_TABLE_PAGE) return null; // not on right page
+function getSamePageAnmInsUrlByRef(ref, context) {
+  if (context.s !== INS_TABLE_PAGE) return null; // not on right page
 
-  const curGame = query.g || DEFAULT_GAME;
+  const curGame = context.g || DEFAULT_GAME;
   const opcode = ANM_OPCODE_REVERSE[curGame][ref];
   if (opcode == null) return null; // this instr is not in the current game
 
   // change the anchor on the existing query to guarantee no reload
-  query.a = `ins-${opcode}`;
-  return '#' + buildQuery(query);
+  context.a = `ins-${opcode}`;
+  return '#' + buildQuery(context);
 }

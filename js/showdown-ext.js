@@ -1,7 +1,7 @@
 import {loadAnmmapAndSetGame} from "./anm/main.js";
 import {MD, highlightCode, $scriptContent} from "./main.js";
 import {getRefHtml} from "./ref.js";
-import globalNames from './names.js';
+import {globalNames, globalLinks} from './resolver.ts';
 import dedent from "./lib/dedent.js";
 
 export const ext = function() {
@@ -160,6 +160,7 @@ export const ext = function() {
     if ($replace != null) {
       $replace.innerHTML = MD.makeHtml(content);
       globalNames.transformHtml($replace);
+      globalLinks.transformHtml($replace);
     }
   }
 

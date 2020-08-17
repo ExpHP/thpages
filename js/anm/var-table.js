@@ -103,6 +103,28 @@ for (const [game, inner] of Object.entries(ANM_VARS_BY_NUMBER)) {
 }
 
 // ==========================================================================
+
+export const ANM_VAR_NUMBER_REVERSE = {};
+for (const [game, inner] of Object.entries(ANM_VARS_BY_NUMBER)) {
+  ANM_VAR_NUMBER_REVERSE[game] = {};
+  for (const [opcodeStr, {ref}] of Object.entries(inner)) {
+    if (ref === null) continue; // no associated data entry yet
+
+    if (!ref.startsWith('anmvar:')) {
+      window.console.error(`wrong prefix in anmvar lookup table: (game ${game}, number ${opcodeStr}): ${ref}`);
+      continue;
+    }
+
+    const opcode = parseInt(opcodeStr, 10);
+    if (Number.isNaN(opcode)) {
+      window.console.error(`bad var number: (game ${game}, number ${opcodeStr})`);
+      continue;
+    }
+    ANM_VAR_NUMBER_REVERSE[game][ref] = opcode;
+  }
+}
+
+// ==========================================================================
 // ==========================================================================
 // =====================    INSTRUCTION DATA    =============================
 
@@ -175,6 +197,25 @@ Object.assign(ANM_VAR_DATA, {
   'v7-lookat-y': {type: '%', mut: false, wip: 1, desc: `[wip=2]Probably y of normalized direction vector that the stage BG camera is facing, like in V8.[/wip]`},
   'v7-lookat-z': {type: '%', mut: false, wip: 1, desc: `[wip=2]Probably z of normalized direction vector that the stage BG camera is facing, like in V8.[/wip]`},
 });
+
+// Add `minGame` and `maxGame` keys to each crossref.
+for (const [game, table] of Object.entries(ANM_VARS_BY_NUMBER)) {
+  for (const [opcodeStr, {ref}] of Object.entries(table)) {
+    if (ref === null) continue;
+    const id = ref.substring('anmvar:'.length);
+    const entry = ANM_VAR_DATA[id];
+
+    if (!entry) {
+      window.console.error(`invalid ref in anm var table (game ${game}, var ${opcodeStr}): ${ref}`);
+      continue;
+    }
+
+    if (entry.minGame === undefined) {
+      entry.minGame = game;
+    }
+    entry.maxGame = game;
+  }
+}
 
 // Validate
 for (const [id, value] of Object.entries(ANM_VAR_DATA)) {

@@ -62,7 +62,8 @@ onContentLoad(async function() {
 //        target.innerHTML = generateOpcodeTable(game);
 //        initTableNavigation();
 //    } else {
-        await loadAnmmapAndSetGame(null, "?17", 17);
+        await loadAnmmap(null, "?v7", 'v7');
+        await loadAnmmap(null, "?v8", 'v8');
         target.innerHTML = generateOpcodeTable('17');
 //    }
 });

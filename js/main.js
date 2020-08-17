@@ -2,8 +2,8 @@ import showdown from "showdown";
 import {ext} from "./showdown-ext.js";
 import {INDEX, ERROR} from "./index.js";
 import {initAnm} from "./anm/main.js";
-import {initTips} from "./tips.js";
-import {buildQuery, parseQuery} from "./url-format.js";
+import {initTips} from "./tips.ts";
+import {buildQuery, parseQuery} from "./url-format.ts";
 
 import hljs from "highlight.js/lib/core";
 import hljsCLike from "highlight.js/lib/languages/c-like";

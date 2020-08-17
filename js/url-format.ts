@@ -13,15 +13,21 @@
 //
 // Any other keys else are page-specific.
 
-function encodeComponent(s) {
+export type Query = {
+  s: string, //  page
+  g?: string, //  game number
+  a?: string, //  anchor
+} & Record<string, string>;
+
+function encodeComponent(s: string): string {
   return encodeURIComponent(s).replace('%2C', ',').replace('%2F', '/');
 }
-function decodeComponent(s) {
+function decodeComponent(s: string): string {
   return decodeURIComponent(s);
 }
 
-export function parseQuery(s) {
-  const ret = {s: null};
+export function parseQuery(s: string): Query {
+  const ret: any = {s: null};
   if (s.startsWith('#')) {
     s = s.substring(1);
   }
@@ -46,16 +52,14 @@ export function parseQuery(s) {
 
   // don't distinguish between an empty page versus none being provided
   if (ret.s === null) ret.s = '';
-  return ret;
+  return ret as Query;
 }
 
-export function buildQuery(query) {
+export function buildQuery(query: Query) {
   let str = encodeComponent(query.s || '');
-  for (const key in query) {
-    if (Object.prototype.hasOwnProperty.call(query, key)) {
-      if (key !== 's' && key !== 'a') {
-        str += `&${encodeComponent(key)}=${encodeComponent(query[key])}`;
-      }
+  for (const [key, value] of Object.entries(query)) {
+    if (key !== 's' && key !== 'a') {
+      str += `&${encodeComponent(key)}=${encodeComponent(value)}`;
     }
   }
   if (query.a !== undefined) {
@@ -65,7 +69,7 @@ export function buildQuery(query) {
 }
 
 // Query values are all strings so this simple test is fine.
-export function queryEquals(a, b) {
+export function queryEquals(a: Query, b: Query) {
   const aProps = Object.getOwnPropertyNames(a);
   const bProps = Object.getOwnPropertyNames(b);
 
@@ -78,10 +82,10 @@ export function queryEquals(a, b) {
 // Testing framework?  What's that?
 
 // test types
-const TWO_WAY = {};
-const ENCODE = {};
-const DECODE = {};
-const TESTS = [
+const TWO_WAY = '2way';
+const ENCODE = 'encode';
+const DECODE = 'decode';
+const TESTS: ['2way' | 'encode' | 'decode', Query, string][] = [
   // order of non-special props is preserved
   [TWO_WAY, {s: 'a/b', x: 'lol', b: 'true', a: 'dummy'}, 'a/b&x=lol&b=true&a=dummy'],
   [TWO_WAY, {s: 'a/b', b: 'true', x: 'lol', a: 'dummy'}, 'a/b&b=true&x=lol&a=dummy'],
@@ -91,9 +95,9 @@ const TESTS = [
   // missing a
   [TWO_WAY, {x: 'lol', s: 'a/b', b: 'true'}, 'a/b&x=lol&b=true'],
   [TWO_WAY, {s: 'a/b'}, 'a/b'],
-  // missing s
-  [ENCODE, {x: 'lol', a: 'dummy', b: 'true'}, '&x=lol&b=true&a=dummy'],
-  [ENCODE, {a: 'dummy'}, '&a=dummy'],
+  // missing s (could happen in non-typescript code, and we want to still be robust to it)
+  [ENCODE, {x: 'lol', a: 'dummy', b: 'true'} as unknown as Query, '&x=lol&b=true&a=dummy'],
+  [ENCODE, {a: 'dummy'} as Query, '&a=dummy'],
   [DECODE, {s: '', x: 'lol', a: 'dummy', b: 'true'}, '&x=lol&b=true&a=dummy'],
   [DECODE, {s: '', a: 'dummy'}, '&a=dummy'],
   [DECODE, {s: '', x: 'lol', a: 'dummy', b: 'true'}, 'x=lol&b=true&a=dummy'],
@@ -110,7 +114,7 @@ const METACHARS_ENCODED = '%26%3D%25%23';
 TESTS.push([TWO_WAY, {s: METACHARS, b: METACHARS, a: METACHARS}, `${METACHARS_ENCODED}&b=${METACHARS_ENCODED}&a=${METACHARS_ENCODED}`]);
 
 // percent-encoded key. Though I certainly hope we'll never need this...
-const testObj = {s: 'a'};
+const testObj: Query = {s: 'a'};
 testObj[METACHARS] = 'b';
 TESTS.push([TWO_WAY, testObj, `a&${METACHARS_ENCODED}=b`]);
 
