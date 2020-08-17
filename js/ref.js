@@ -46,6 +46,7 @@ export function getRefLinkKey(ref) {
  * @param {string} args.ref Reference id.
  * @param {boolean} args.tip Include a tooltip.
  * @param {boolean} args.url Include a hyperlink.
+ * @param {Context} context Information about current page.
  * @return {string}
  */
 export function getRefHtml({ref, tip, url}) {

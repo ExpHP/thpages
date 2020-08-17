@@ -1,7 +1,8 @@
-import {loadAnmmapAndSetGame} from "./anm/main.js";
+import {loadAnmmap} from "./anm/main.js";
 import {MD, highlightCode, $scriptContent} from "./main.js";
 import {getRefHtml} from "./ref.js";
 import {globalNames, globalLinks} from './resolver.ts';
+import {parseQuery} from "./url-format.ts";
 import dedent from "./lib/dedent.js";
 
 export const ext = function() {
@@ -11,31 +12,48 @@ export const ext = function() {
     replace: function(match, lang, content) {
       if (lang) {
         lang = lang.substring(1); // skip '='
+      } else {
+        lang = 'anm';
       }
 
-      let ret = `<div class="hljs">${dedent(highlightCode(content, lang | "cpp"))}</div>`;
-      // This is some quality jank right here, caused by the fact that I could not find a way to make hljs not escape this html
-      // <span data-name="ref:anm:set">
-      ret = ret.replace(/&lt;span data-name=<span class="hljs-string">(.*?)<\/span>&gt;(.*?)&lt;\/span&gt;/g, (match, name, content) => {
-        return `<span data-name=${name.replace(/&quot;/g, '"')}>${content}</span>`;
-      });
-      ret = ret.replace(/&lt;instr data-tip-id=<span class="hljs-string">(.*?)<\/span>&gt;(.*?)&lt;\/instr&gt;/g, (match, tip, content) => {
-        return `<span data-tip-id=${tip.replace(/&quot;/g, '"')}>${content}</span>`;
-      });
-      ret = ret.replace(/&lt;instr data-tip=<span class="hljs-string">(.*?)<\/span>&gt;(.*?)&lt;\/instr&gt;/g, (match, tip, content) => {
-        return `<span data-tip=${tip.replace(/&quot;/g, '"').replace(/&amp;/g, "&")}>${content}</span>`;
-      });
-      ret = ret.replace(/&lt;instr&gt;(.*?)&lt;\/instr&gt;/g, (match, content) => {
-        return `<span>${content}</span>`;
-      });
-      // this is getting seriously out of hand
-      ret = ret.replace(/&lt;a (href=<span class="hljs-string">(.*?)<\/span> )?class=<span class="hljs-string">(.*?)<\/span>&gt;(.*?)&lt;\/a&gt;/g, (match, _, url, classes, content) => {
-        if (url) {
-          return `<a href=${url.replace(/&quot;/g, '"').replace(/&amp;/g, "&")} class=${classes.replace(/&quot;/g, '"')}>${content}</a>`;
-        } else {
-          return `<a class=${classes.replace(/&quot;/g, '"')}>${content}</a>`;
-        }
-      });
+      const hljsLang = lang === 'anm' ? 'cpp' : lang;
+
+      let ret = `<div class="hljs">${dedent(highlightCode(content, hljsLang))}</div>`;
+
+      // // This is some quality jank right here, caused by the fact that I could not find a way to make hljs not escape this html
+      // // <span data-name="ref:anm:set">
+      //
+      // ret = ret.replace(/&lt;span data-name=<span class="hljs-string">(.*?)<\/span>&gt;(.*?)&lt;\/span&gt;/g, (match, name, content) => {
+      //   return `<span data-name=${name.replace(/&quot;/g, '"')}>${content}</span>`;
+      // });
+      // ret = ret.replace(/&lt;instr data-tip-id=<span class="hljs-string">(.*?)<\/span>&gt;(.*?)&lt;\/instr&gt;/g, (match, tip, content) => {
+      //   return `<span data-tip-id=${tip.replace(/&quot;/g, '"')}>${content}</span>`;
+      // });
+      // ret = ret.replace(/&lt;instr data-tip=<span class="hljs-string">(.*?)<\/span>&gt;(.*?)&lt;\/instr&gt;/g, (match, tip, content) => {
+      //   return `<span data-tip=${tip.replace(/&quot;/g, '"').replace(/&amp;/g, "&")}>${content}</span>`;
+      // });
+      // ret = ret.replace(/&lt;instr&gt;(.*?)&lt;\/instr&gt;/g, (match, content) => {
+      //   return `<span>${content}</span>`;
+      // });
+      // // this is getting seriously out of hand
+      // ret = ret.replace(/&lt;a (data-link=<span class="hjls-string">(.*?)<\/span> )?(href=<span class="hljs-string">(.*?)<\/span> )?class=<span class="hljs-string">(.*?)<\/span>&gt;(.*?)&lt;\/a&gt;/g, (match, _1, link, _2, url, classes, content) => {
+      //   let attrs = '';
+      //   if (link) attrs += `data-link=${link.replace(/&quot;/g, '"')} `;
+      //   if (url) attrs += `href=${url.replace(/&quot;/g, '"').replace(/&amp;/g, "&")} `;
+      //   attrs += `class=${classes.replace(/&quot;/g, '"')}`;
+      //   return `<a ${attrs}>${content}</a>`;
+      // });
+
+      if (lang === 'anm') {
+        // anm has no <, >, &, and *almost* no strings, so let's go to town
+        ret = ret.replace(/<span class="hljs-string">(.*?)<\/span>/g, (match, content) => content);
+        ret = ret.replace(/&quot;/g, '"');
+        ret = ret.replace(/&lt;/g, '<');
+        ret = ret.replace(/&gt;/g, '>');
+        // avoid formatting inline-code inside block-code
+        ret = ret.replace(/<(\/)?instr\b/g, '<$1span');
+      }
+
       ret = ret.replace(/\\\\/g, "\\");
       return ret;
     },
@@ -151,27 +169,27 @@ export const ext = function() {
     replace: `<span data-tip='$1'>$2</span>`,
   };
 
-  async function requireEclmap(game, content, id) {
+  async function requireAnmmap(version, content, id) {
     // this must always wait at least some time, to make sure that the function this was called from finished running...
     await new Promise((resolve) => setTimeout(resolve, 1));
-    game = parseFloat(game);
-    await loadAnmmapAndSetGame(null, "?"+game, game);
-    const $replace = document.querySelector(`#require-eclmap-${id}`);
+    await loadAnmmap(null, "?"+version, version);
+    const $replace = document.querySelector(`#require-anmmap-${id}`);
     if ($replace != null) {
+      const context = parseQuery(window.location.hash);
       $replace.innerHTML = MD.makeHtml(content);
-      globalNames.transformHtml($replace);
-      globalLinks.transformHtml($replace);
+      globalNames.transformHtml($replace, context);
+      globalLinks.transformHtml($replace, context);
     }
   }
 
   let eclmapId = 0;
-  const eclmap = {
+  const anmmap = {
     type: "lang",
-    regex: /\[requireEclmap=([0-9]+?)\]([^]*?)\[\/requireEclmap\]/g,
+    regex: /\[require-anmmap=(v[0-9]+)\]([^]*?)\[\/require-anmmap\]/g,
     replace: function(match, num, content) {
       const id = eclmapId++;
-      requireEclmap(num, content, id);
-      return "<div id='require-eclmap-"+id+"'>Loading eclmap...</div>";
+      requireAnmmap(num, content, id);
+      return "<div id='require-anmmap-"+id+"'>Loading eclmap...</div>";
     },
   };
 
@@ -197,7 +215,7 @@ export const ext = function() {
   };
 
   return [
-    eclmap, ref, refNotip, headlessTable,
+    anmmap, ref, refNotip, headlessTable,
     code, title, c, game, gameThLong, gameLong, script, tip, tipNodeco, wip,
     gc, // must be after things that use it (e.g. game)
   ];

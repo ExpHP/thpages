@@ -1,5 +1,5 @@
 [title=Interpolation modes in Touhou]
-[requireEclmap=17]
+[require-anmmap=v8]
 
 # Interpolation modes
 
@@ -220,4 +220,5 @@ easeOutBackE = addMode(flip(easeInBackE));
 // or you can call them by name
 [/code]
 
-[/requireEclmap]
+[/require-anmmap]
+

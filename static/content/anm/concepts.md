@@ -1,5 +1,5 @@
 [title=Concepts in ANM]
-[requireEclmap=17]
+[require-anmmap=v8]
 
 <h1 id="why-anm">What is ANM used for?</h1>
 
@@ -126,4 +126,4 @@ Observe how, at the left end of the image, it *wraps back* to the F.  This is be
 
 Notice how I said "default behavior."  Using [ref=anm:scrollMode], you can configure this.  In particular, you can choose to have every other periodic copy be mirrored.
 
-[/requireEclmap]
+[/require-anmmap]

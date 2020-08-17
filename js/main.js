@@ -8,8 +8,11 @@ import {buildQuery, parseQuery} from "./url-format.ts";
 import hljs from "highlight.js/lib/core";
 import hljsCLike from "highlight.js/lib/languages/c-like";
 import hljsCpp from "highlight.js/lib/languages/cpp";
+import hljsJs from "highlight.js/lib/languages/javascript";
+
 hljs.registerLanguage('c-like', hljsCLike);
 hljs.registerLanguage('cpp', hljsCpp);
+hljs.registerLanguage('js', hljsJs);
 
 /**
  * Do early initialization before page-specific scripts run.

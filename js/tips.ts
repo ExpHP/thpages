@@ -16,6 +16,7 @@ let $activeTipTarget: HTMLElement | null = null;
 export function initTips() {
   document.body.addEventListener("mouseover", tipIn);
   document.body.addEventListener("mouseout", tipOut);
+  window.addEventListener("hashchange", tipOut);
 }
 
 function tipIn(e: MouseEvent) {
@@ -29,7 +30,7 @@ function tipIn(e: MouseEvent) {
 }
 
 function showTip(tip: Tip, $targ: HTMLElement, $realTarg: HTMLElement, context: Context) {
-  const $tip = document.getElementById('#tip');
+  const $tip = document.getElementById('tip');
   if (!$tip) throw new Error('could not find tip element');
 
   $activeTipTarget = $realTarg;
@@ -59,9 +60,9 @@ function showTip(tip: Tip, $targ: HTMLElement, $realTarg: HTMLElement, context: 
   $tip.style.left = left + "px";
 }
 
-function tipOut(e: MouseEvent) {
-  if (e.target === $activeTipTarget) {
-    const $tip = document.getElementById('#tip');
+function tipOut(e: Event) {
+  if (e.target === $activeTipTarget || e.type === 'hashchange') {
+    const $tip = document.getElementById('tip');
     if (!$tip) throw new Error('could not find tip element');
 
     $tip.style.display = "none";

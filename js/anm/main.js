@@ -1,10 +1,12 @@
 import {loadAnmmap, getCurrentMap} from './eclmap.js';
 import {GROUPS_V8, GROUPS_PRE_V8, ANM_INS_DATA, ANM_BY_OPCODE, ANM_OPCODE_REVERSE, DUMMY_DATA} from './ins-table.js';
 import {ANM_VAR_DATA, ANM_VARS_BY_NUMBER, ANM_VAR_NUMBER_REVERSE} from './var-table.js';
-import {globalRefNames, globalRefTips, globalRefLinks, getRefNameKey} from '../ref.js';
+import {globalRefNames, globalRefTips, globalRefLinks, getRefNameKey, getRefLinkKey} from '../ref.js';
 import {MD} from '../main.js';
-import {globalNames, PrefixResolver} from '../resolver.ts';
+import {globalNames, globalLinks, PrefixResolver} from '../resolver.ts';
 import {parseQuery, buildQuery} from '../url-format.ts';
+
+export {loadAnmmap} from './eclmap.js';
 
 const INS_TABLE_PAGE = 'anm/ins';
 const DEFAULT_GAME = '17';
@@ -64,13 +66,13 @@ export function initAnm() {
   globalRefTips.registerPrefix('anm', (id, ctx) => {
     const ins = ANM_INS_DATA[id];
     const ref = 'anm:' + id;
-    return generateAnmInsTip(ins, ref);
+    return generateAnmInsTip(ins, ref, ctx);
   });
 
   globalRefTips.registerPrefix('anmvar', (id, ctx) => {
     const avar = ANM_VAR_DATA[id];
     const ref = 'anmvar:' + id;
-    return generateAnmVarTip(avar, ref);
+    return generateAnmVarTip(avar, ref, ctx);
   });
 }
 
@@ -89,11 +91,13 @@ function getGroups(game) {
 }
 
 function getOpcodeNameKey(game, opcode) {
-  return `anm:${game}-${opcode}`;
+  const version = GAME_VERSIONS[game];
+  return `anm:${version}:${opcode}`;
 }
 
 function getVarNameKey(game, num) {
-  return `anmvar:${game}-${num}`;
+  const version = GAME_VERSIONS[game];
+  return `anmvar:${version}:${num}`;
 }
 
 function initNames() {
@@ -151,7 +155,7 @@ function initNames() {
     const versionGame = VERSION_DEFAULT_GAMES_FOR_INTERNAL_LOOKUP[version];
     const opcode = ANM_OPCODE_REVERSE[versionGame][ref];
     if (opcode == null) return null;
-    return globalNames.getNow(`anm:${version}:${opcode}`);
+    return globalNames.getNow(`anm:${version}:${opcode}`, ctx);
   });
 
   // Variables
@@ -167,7 +171,7 @@ function initNames() {
       return type + name;
     };
 
-    ANM_INS_NAMES.registerPrefix(version, (suffix, ctx) => {
+    ANM_VAR_NAMES.registerPrefix(version, (suffix, ctx) => {
       const opcode = parseInt(suffix, 10);
       if (Number.isNaN(opcode)) return null;
 
@@ -210,22 +214,10 @@ function initNames() {
     const versionGame = VERSION_DEFAULT_GAMES_FOR_INTERNAL_LOOKUP[version];
     const opcode = ANM_VAR_NUMBER_REVERSE[versionGame][ref];
     if (opcode == null) return null;
-    return globalNames.getNow(`anmvar:${version}:${opcode}`);
+    return globalNames.getNow(`anmvar:${version}:${opcode}`, ctx);
   });
 
-  globalRefLinks.registerPrefix('anm', (id, ctx) => getAnmInsUrlByRef('ref:' + id, ctx));
-}
-
-/**
- * Load an anmmap and set things up to resolve names from it whenever possible.
- *
- * (does not fix names in existing HTML however.  Do that yourself by calling names.transformHtml...)
- * @param {?string} file
- * @param {string} cacheKey Key identifying the specific file for caching.
- * @param {Game} version Determines what version.
- */
-export async function loadAnmmapAnd(file, cacheKey, version) {
-  await loadAnmmap(file, cacheKey, version);
+  globalRefLinks.registerPrefix('anm', (id, ctx) => getAnmInsUrlByRef('anm:' + id, ctx));
 }
 
 function generateOpcodeTable(game) {
@@ -268,7 +260,7 @@ function generateOpcodeTable(game) {
         documented += 1;
       }
       total += 1;
-      table += generateOpcodeTableEntry(game, ins, opcode);
+      table += generateOpcodeTableEntry(game, ins, opcode, currentQuery);
     }
 
     table += "</table>";
@@ -276,7 +268,17 @@ function generateOpcodeTable(game) {
   navigation += "</ul></div>";
   base += `Documented instructions: ${documented}/${total} (${(documented/total*100).toFixed(2)}%)<br>`;
   base += "[wip=1]Instructions marked like this are not fully understood.[/wip]<br>[wip=2]Items like this are complete mysteries.[/wip]";
-  return MD.makeHtml(base) + MD.makeHtml(navigation) + table;
+
+  const $out = parseHtml('<div>' + MD.makeHtml(base) + MD.makeHtml(navigation) + table + '</div>');
+  globalNames.transformHtml($out, currentQuery);
+  globalLinks.transformHtml($out, currentQuery);
+  return $out;
+}
+
+function parseHtml(html) {
+  const $tmp = document.createElement('div');
+  $tmp.innerHTML = html;
+  return $tmp.firstChild;
 }
 
 function generateAnmInsSiggy(ins, nameKey) {
@@ -400,7 +402,7 @@ function generateAnmVarTip(avar, ref) {
 }
 
 function getAnmInsUrlByRef(ref, context) {
-  const samePageUrl = getSamePageAnmInsUrlByRef(ref);
+  const samePageUrl = getSamePageAnmInsUrlByRef(ref, context);
   if (samePageUrl != null) return samePageUrl;
 
   const ins = anmInsDataByRef(ref);

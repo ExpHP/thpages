@@ -64,7 +64,8 @@ onContentLoad(async function() {
 //    } else {
         await loadAnmmap(null, "?v7", 'v7');
         await loadAnmmap(null, "?v8", 'v8');
-        target.innerHTML = generateOpcodeTable('17');
+        target.innerHTML = '';
+        target.appendChild(generateOpcodeTable('17'));
 //    }
 });
 [/script]

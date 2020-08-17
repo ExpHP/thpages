@@ -29,7 +29,7 @@ export class PrefixResolver<Out> implements Resolver<Out> {
   }
 
   getNow(key: string, context: Context) {
-    const [pre, suff] = key.split(':', 2)[0];
+    const [pre, suff] = key.split(/:(.*)/);
     if (suff === undefined) return null;
 
     const func = this.map[pre];
@@ -56,37 +56,6 @@ export class PrefixResolver<Out> implements Resolver<Out> {
 }
 
 /**
- * Resolver that decides what to do based on the whole key.
- *
- * ...it's basically just an object whose values are functions.
- */
-export class AtomResolver<Out> implements Resolver<Out> {
-  private map: Record<string, (c: Context) => Out | null>;
-
-  constructor() {
-    this.map = {};
-  }
-
-  getNow(key: string, context: Context) {
-    const f = this.map[key];
-    return f === undefined ? null : f(context);
-  }
-
-  /** Assign a function to a key. */
-  registerAtom(
-      atom: string,
-      func: (ctx: Context) => Out | null,
-  ): void {
-    this.map[atom] = func;
-  }
-
-  /** Assign a constant value to a key. */
-  setAtom(atom: string, value: Out): void {
-    this.map[atom] = () => value;
-  }
-}
-
-/**
  * Type that handles updating of names of things like ANM instructions.
  *
  * This type exists to allow the names in any DOM subtree to be updated in
@@ -95,12 +64,11 @@ export class AtomResolver<Out> implements Resolver<Out> {
  */
 class NameResolver extends PrefixResolver<string> {
   /**
-   * Creates an HTML element holding the current name, which can be updated at
-   * any time using transformHtml.
+   * Creates an HTML placeholder span which can be updated to contain the
+   * current name at any time using transformHtml.
    */
-  getHtml(key: string, context: Context): string {
-    const initialText = this.getInnerText(key, context);
-    return /* html */`<span data-name="${key}">${initialText}</span>`;
+  getHtml(key: string): string {
+    return /* html */`<span data-name="${key}">${key}</span>`;
   }
 
   /**
