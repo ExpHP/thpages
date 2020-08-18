@@ -2,7 +2,7 @@
 
 Currently **all documentation here is for ANM version 8.**  That is [game=13] to [game=17].
 
-Support for other game versions and custom anmmaps is Coming Soon (TM), after I sort out other problems with the site.
+Support for other game versions and custom anmmaps is currently being worked on.
 
 <!--
 Select game version:

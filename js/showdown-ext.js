@@ -159,7 +159,7 @@ export const ext = function() {
 
   const tip = {
     type: "lang",
-    regex: /\[tip=(.*?)\]([^]*?)\[\/tip\]/g,
+    regex: /\[tip=([^]*?)\]([^]*?)\[\/tip\]/g,
     replace: `<span data-tip='$1' class='tip-deco'>$2</span>`,
   };
 

@@ -489,8 +489,8 @@ Object.assign(ANM_INS_DATA, {
 
     [tiphide]
     Scripts in modern games still use this exactly as they did back in ANM V7, and
-    [tip="though some of it is plain bugged in later games due to a memcpy added in TD after the flag is set in some
-    instructions"]all of the code that manipulates this bitflag on child creation is still present[/tip],
+    [tip=though some of it is plain bugged in later games due to a memcpy added in TD after the flag is set in some
+    instructions]all of the code that manipulates this bitflag on child creation is still present[/tip],
     **but all of the code that _uses_ the bitflag appears to be gone.**
     [/tiphide]
   `},
