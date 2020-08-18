@@ -1,5 +1,5 @@
 [title=The stages of rendering in ANM]
-[require-anmmap=v7]
+[require-anmmap=v8]
 
 # The stages of rendering
 
