@@ -27,7 +27,7 @@ function decodeComponent(s: string): string {
 }
 
 export function parseQuery(s: string): Query {
-  const ret: any = {s: null};
+  const ret: Record<string, string | null> = {s: null};
   if (s.startsWith('#')) {
     s = s.substring(1);
   }

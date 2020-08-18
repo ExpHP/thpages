@@ -11,11 +11,11 @@ import dedent from "../lib/dedent.js";
  * Iterating the first table should produce games in ascending order.
  * There are NO GUARANTEES about iteration order of variables within a game.
  */
-export const ANM_VARS_BY_NUMBER = {};
+export const ANM_VARS_BY_NUMBER = new Map(); // has to be a map because 'integer' keys defy insertion order
 
 // ------------
 // ---- V7 ----
-ANM_VARS_BY_NUMBER['12'] = {
+ANM_VARS_BY_NUMBER.set('12', {
   10000: {ref: 'anmvar:i0'},
   10001: {ref: 'anmvar:i1'},
   10002: {ref: 'anmvar:i2'},
@@ -49,13 +49,13 @@ ANM_VARS_BY_NUMBER['12'] = {
   10030: {ref: 'anmvar:randrad-replay'},
   10031: {ref: 'anmvar:randf-01-replay'},
   10032: {ref: 'anmvar:randf-11-replay'},
-};
+});
 
-ANM_VARS_BY_NUMBER['125'] = Object.assign({}, ANM_VARS_BY_NUMBER['12']);
+ANM_VARS_BY_NUMBER.set('125', Object.assign({}, ANM_VARS_BY_NUMBER.get('12')));
 
 // ------------
 // ---- V8 ----
-ANM_VARS_BY_NUMBER['13'] = Object.assign({}, ANM_VARS_BY_NUMBER['12'], {
+ANM_VARS_BY_NUMBER.set('13', Object.assign({}, ANM_VARS_BY_NUMBER.get('12'), {
   // changed descriptions
   10010: {ref: 'anmvar:randrad'},
   10011: {ref: 'anmvar:randf-01'},
@@ -81,20 +81,20 @@ ANM_VARS_BY_NUMBER['13'] = Object.assign({}, ANM_VARS_BY_NUMBER['12'], {
   10030: {ref: 'anmvar:randrad-replay'},
   10031: {ref: 'anmvar:randf-01-replay'},
   10032: {ref: 'anmvar:randf-11-replay'},
-});
+}));
 
-ANM_VARS_BY_NUMBER['14'] = Object.assign({}, ANM_VARS_BY_NUMBER['13'], {
+ANM_VARS_BY_NUMBER.set('14', Object.assign({}, ANM_VARS_BY_NUMBER.get('13'), {
   10033: {ref: 'anmvar:mystery-angle-x'},
   10034: {ref: 'anmvar:mystery-angle-y'},
   10035: {ref: 'anmvar:mystery-angle-z'},
-});
+}));
 
-ANM_VARS_BY_NUMBER['15'] = Object.assign({}, ANM_VARS_BY_NUMBER['14']);
-ANM_VARS_BY_NUMBER['16'] = Object.assign({}, ANM_VARS_BY_NUMBER['15']);
-ANM_VARS_BY_NUMBER['17'] = Object.assign({}, ANM_VARS_BY_NUMBER['16']);
+ANM_VARS_BY_NUMBER.set('15', Object.assign({}, ANM_VARS_BY_NUMBER.get('14')));
+ANM_VARS_BY_NUMBER.set('16', Object.assign({}, ANM_VARS_BY_NUMBER.get('15')));
+ANM_VARS_BY_NUMBER.set('17', Object.assign({}, ANM_VARS_BY_NUMBER.get('16')));
 
 // Var table cannot have entries without refs because we need the type to generate the default name...
-for (const [game, inner] of Object.entries(ANM_VARS_BY_NUMBER)) {
+for (const [game, inner] of ANM_VARS_BY_NUMBER.entries()) {
   for (const [num, entry] of Object.entries(inner)) {
     if (entry.ref == null) {
       window.console.error(`TABLE CORRUPT: anm var (game ${game}, num ${num}) has no crossref!`);
@@ -105,7 +105,7 @@ for (const [game, inner] of Object.entries(ANM_VARS_BY_NUMBER)) {
 // ==========================================================================
 
 export const ANM_VAR_NUMBER_REVERSE = {};
-for (const [game, inner] of Object.entries(ANM_VARS_BY_NUMBER)) {
+for (const [game, inner] of ANM_VARS_BY_NUMBER.entries()) {
   ANM_VAR_NUMBER_REVERSE[game] = {};
   for (const [opcodeStr, {ref}] of Object.entries(inner)) {
     if (ref === null) continue; // no associated data entry yet
@@ -199,7 +199,7 @@ Object.assign(ANM_VAR_DATA, {
 });
 
 // Add `minGame` and `maxGame` keys to each crossref.
-for (const [game, table] of Object.entries(ANM_VARS_BY_NUMBER)) {
+for (const [game, table] of ANM_VARS_BY_NUMBER.entries()) {
   for (const [opcodeStr, {ref}] of Object.entries(table)) {
     if (ref === null) continue;
     const id = ref.substring('anmvar:'.length);

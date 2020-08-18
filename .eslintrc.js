@@ -59,9 +59,8 @@ module.exports = {
         "no-dupe-class-members": "off",
         "require-atomic-updates": "off",
 
-        // I thought the goal of TS was to "strike a balance between correctness and productivity".
-        // If I wanted safety I'd be using flow!
-        "@typescript-eslint/no-explicit-any": "off",
+        // 'unknown' is the new 'any'
+        "@typescript-eslint/no-explicit-any": "on",
 
         // TS requires us to not put '.ts' when a ts file imports another ts file
         // (even though parcel can probably handle it just fine...), which confuses this lint

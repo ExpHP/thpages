@@ -14,7 +14,7 @@ export const UNKNOWN_SIG = {};
  * Iterating the first table should produce games in ascending order.
  * There are NO GUARANTEES about iteration order of opcodes within a game.
  */
-export const ANM_BY_OPCODE = {};
+export const ANM_BY_OPCODE = new Map(); // has to be a map because 'integer' keys defy insertion order
 export const GROUPS_PRE_V8 = [
   {min: 0, max: 999, title: 'All'},
 ];
@@ -29,7 +29,7 @@ export const GROUPS_V8 = [
 ];
 
 // ---- V7 ----
-ANM_BY_OPCODE['12'] = {
+ANM_BY_OPCODE.set('12', {
   0: {ref: 'anm:nop'},
   1: {ref: 'anm:delete'},
   2: {ref: 'anm:static', wip: 1},
@@ -150,15 +150,15 @@ ANM_BY_OPCODE['12'] = {
   108: UNASSIGNED, // unknown member of drawRect family
   109: UNASSIGNED, // unknown member of drawRect family
   110: UNASSIGNED, // unknown member of drawRect family
-};
-
-ANM_BY_OPCODE['125'] = Object.assign({}, ANM_BY_OPCODE['12'], {
-  111: UNASSIGNED, // (DS: hi:6-8)
-  112: {ref: 'anm:ignoreParent'}, // (DS: hi:8)
 });
 
+ANM_BY_OPCODE.set('125', Object.assign({}, ANM_BY_OPCODE.get('12'), {
+  111: UNASSIGNED, // (DS: hi:6-8)
+  112: {ref: 'anm:ignoreParent'}, // (DS: hi:8)
+}));
+
 // ---- V8 ----
-ANM_BY_OPCODE['13'] = {
+ANM_BY_OPCODE.set('13', {
   0: {ref: 'anm:nop'},
   1: {ref: 'anm:delete'},
   2: {ref: 'anm:static'},
@@ -289,31 +289,31 @@ ANM_BY_OPCODE['13'] = {
   606: {ref: 'anm:drawRectGrad'},
   607: {ref: 'anm:drawRectShadow'},
   608: {ref: 'anm:drawRectShadowGrad'},
-};
+});
 
-ANM_BY_OPCODE['14'] = Object.assign({}, ANM_BY_OPCODE['13'], {
+ANM_BY_OPCODE.set('14', Object.assign({}, ANM_BY_OPCODE.get('13'), {
   313: {ref: 'anm:resolutionMode'},
   314: {ref: 'anm:attached'},
   315: {ref: 'anm:colorizeChildren'},
   509: {ref: 'anm:copyParentVars'},
   609: {ref: 'anm:textureCylinder3D'},
   610: {ref: 'anm:textureRing3D'},
-});
+}));
 
-ANM_BY_OPCODE['15'] = Object.assign({}, ANM_BY_OPCODE['14'], {
+ANM_BY_OPCODE.set('15', Object.assign({}, ANM_BY_OPCODE.get('14'), {
   316: {ref: 'anm:v8-flag-316'},
   317: {ref: 'anm:v8-flag-317'},
   611: {ref: 'anm:drawRing'},
-});
+}));
 
-ANM_BY_OPCODE['16'] = Object.assign({}, ANM_BY_OPCODE['15'], {
+ANM_BY_OPCODE.set('16', Object.assign({}, ANM_BY_OPCODE.get('15'), {
   612: {ref: 'anm:drawRectBorder'},
   613: {ref: 'anm:drawLine'},
-});
+}));
 
-ANM_BY_OPCODE['17'] = Object.assign({}, ANM_BY_OPCODE['16'], {
+ANM_BY_OPCODE.set('17', Object.assign({}, ANM_BY_OPCODE.get('16'), {
   // nothing was added
-});
+}));
 
 // ==========================================================================
 // ==========================================================================
@@ -322,7 +322,7 @@ ANM_BY_OPCODE['17'] = Object.assign({}, ANM_BY_OPCODE['16'], {
 // This table gets an opcode from a ref, so that the name can be looked up in an eclmap.
 
 export const ANM_OPCODE_REVERSE = {};
-for (const [game, inner] of Object.entries(ANM_BY_OPCODE)) {
+for (const [game, inner] of ANM_BY_OPCODE.entries()) {
   ANM_OPCODE_REVERSE[game] = {};
   for (const [opcodeStr, {ref}] of Object.entries(inner)) {
     if (ref === null) continue; // no associated data entry yet
@@ -1250,7 +1250,7 @@ Object.assign(ANM_INS_DATA, {
 });
 
 // Add `minGame` and `maxGame` keys to each crossref.
-for (const [game, table] of Object.entries(ANM_BY_OPCODE)) {
+for (const [game, table] of ANM_BY_OPCODE.entries()) {
   for (const [opcodeStr, {ref}] of Object.entries(table)) {
     if (ref === null) continue;
     const id = ref.substring('anm:'.length);

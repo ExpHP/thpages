@@ -178,8 +178,8 @@ function initNames() {
       // try to find the type, else assume integer
       let type = '$';
       const game = VERSION_DEFAULT_GAMES_FOR_INTERNAL_LOOKUP[version];
-      if (game && ANM_VARS_BY_NUMBER[game]) {
-        const {ref} = ANM_VARS_BY_NUMBER[game][opcode];
+      if (game && ANM_VARS_BY_NUMBER.get(game)) {
+        const {ref} = ANM_VARS_BY_NUMBER.get(game)[opcode];
         const avar = anmVarDataByRef(ref);
         if (avar) {
           type = avar.type;
@@ -348,7 +348,7 @@ function disableTooltips(desc) {
 }
 
 function anmInsRefByOpcode(game, opcode) {
-  const entry = ANM_BY_OPCODE[game][opcode];
+  const entry = ANM_BY_OPCODE.get(game)[opcode];
   if (entry === undefined) return null;
 
   const out = Object.assign({}, entry);
