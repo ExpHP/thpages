@@ -293,6 +293,8 @@ function initOrScrollToContent() {
 
   // don't reload same page (also works for index, where query.s === undefined)
   if (!(lastQuery && queryEqualsUptoAnchor(lastQuery, query))) {
+    if (!query.s) query.s = '/index'; // empty string == index
+
     const spl = query.s.split("/");
     const file = spl.pop();
     const path = spl.join("/") + "/";

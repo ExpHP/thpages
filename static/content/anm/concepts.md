@@ -47,7 +47,7 @@ There are two random number generators available to ANM scripts.  The terms I wi
 * The **animation RNG**, which most scripts use.
 * The **replay RNG**, which gets saved to replays.
 
-In modern games the replay RNG is accessed via a separate, dedicated set of variables (e.g. you can use [ref=anmvar:randf-01-replay] instead of [ref=anmvar:randf-01]).  In earlier games, there is a bitflag you can toggle. [wip](how do you toggle it?)[/wip]
+In modern games the replay RNG is accessed via a separate, dedicated set of variables (e.g. you can use [ref=anmvar:randf-01-replay] instead of [ref=anmvar:randf-01]).  In earlier games, there is instead a bitflag you can toggle using [ref=anm:v7-randMode] that decides which RNG is used.  This bitflag and instruction still exist in modern games, but they appear to no longer have any legitimate effect...
 
 <h1 id="switch">Switching</h1>
 

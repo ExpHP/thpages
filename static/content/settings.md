@@ -4,9 +4,10 @@
 
 ### anmmap
 
-Here you can upload anmmaps to change the names displayed across the site.
+Here you can upload anmmaps to change the names displayed across the site.  **Customizing the v8 anmmap is most important** as this is the one that most pages will use. (the other version anmmaps will be used only when looking at tables for older games)
 
-On pages like the instruction table, names from the currently selected game are used.  On game-agnostic pages, names from the latest version will be used.
+* **raw** &mdash; use names like `ins_301` and `[10023.0]`.
+* **default** &mdash; use a pre-packaged copy of [Priw8's anmmaps](https://github.com/Priw8/eclmap).
 
 <div class="map-files" id="upload-anmmaps">
   <div class="rows">
