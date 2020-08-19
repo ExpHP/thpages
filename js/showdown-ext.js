@@ -144,9 +144,16 @@ export const ext = function() {
     },
   };
 
+  // used to de-emphasize so that I don't abuse [wip=2] for this
+  const weak = {
+    type: "lang",
+    regex: /\[weak\]([^]*?)\[\/weak\]/g,
+    replace: '<span class="weak">$1</span>',
+  };
+
   return [
     ref, refNotip, headlessTable, code, title, c,
-    game, gameThLong, gameLong, script, tip, tipNodeco, wip,
+    game, gameThLong, gameLong, script, tip, tipNodeco, wip, weak,
     gc, // must be after things that use it (e.g. game)
   ];
 };

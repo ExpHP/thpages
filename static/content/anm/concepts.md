@@ -23,12 +23,12 @@ On this site you'll see lots of words used that sound like they have similar mea
 - **ANM file** &mdash; inside the game's `thXX.dat` file are a number of files with a `.anm` extension, which you can extract using `thdat -x` from thtk.
 - **texture** &mdash; each ANM file contains many textures, which can be thought of as "source image files" or "spritesheets."  (`entry` blocks in thanm syntax).
 - **sprite** &mdash; a sprite is a small region of a texture intended to be displayed as some frame of an animation. (`sprite` blocks in thanm syntax).
-- **script** &mdash; a script is a sequence of instructions encoded in an ANM file that determines what sprites an animation should use, how it should move and etc. Much like ECL scripts for enemies, ANM scripts have an internal concept of "time" and pause when they encounter instructions that aren't supposed to run yet. Scripts are not tied down to a single sprite or even to a single texture; but they can only use sprites defined in the same ANM file. (`script` blocks in thanm syntax)
+- **script** &mdash; a script is a sequence of instructions encoded in an ANM file that determines what sprites a graphic should use, how it should move and etc. Much like ECL scripts for enemies, ANM scripts have an internal concept of "time" and pause when they encounter instructions that aren't supposed to run yet. Scripts are not tied down to a single sprite or even to a single texture; but they can only use sprites defined in the same ANM file. (`script` blocks in thanm syntax)
 - **virtual machine (VM)** &mdash; a VM is a specific instance of a script running in the game.  It contains all of the data necessary to describe the current state of the animation, as well as the current state of the script (including an instruction pointer, time value, and values of all registers).
-- **animation** &mdash; I use this to refer to *the output* of a VM (i.e. the graphical content it draws).  Or I try, at least. Out of habit I tend to use the terms "animation" and "VM" interchangeably.
-- **surface** &mdash; Much like how a texture is a thing you draw *from,* a surface is a thing you draw *to.* TH14-17 have three different surfaces, as will be explained in [stages of rendering](#anm/stages-of-rendering).  The destination surface of an animation is determined by its layer (the [ref=anm:layer] instruction).
+- **graphic** &mdash; I use this to refer to *the output* of a single VM (i.e. the graphical content it draws).  Or I try, at least. Out of habit I tend to use the terms "graphic" and "VM" interchangeably.
+- **surface** &mdash; Much like how a texture is a thing you draw *from,* a surface is a thing you draw *to.* TH14-17 have three different surfaces, as will be explained in [stages of rendering](#anm/stages-of-rendering).  The destination surface of a graphic is determined by its layer (the [ref=anm:layer] instruction).
 
-<h1 id="time-labels">Time labels</h1>
+<h1 id="time">Time labels</h1>
 
 COMING SOON (TM)
 
@@ -49,60 +49,92 @@ There are two random number generators available to ANM scripts.  The terms I wi
 
 In modern games the replay RNG is accessed via a separate, dedicated set of variables (e.g. you can use [ref=anmvar:randf-01-replay] instead of [ref=anmvar:randf-01]).  In earlier games, there is instead a bitflag you can toggle using [ref=anm:v7-randMode] that decides which RNG is used.  This bitflag and instruction still exist in modern games, but they appear to no longer have any legitimate effect...
 
+---
+
 <h1 id="switch">Switching</h1>
 
-Oftentimes, animations have special, well, *animations* associated with certain events.  For instance, menu items may glow when selected, fly away when a different item is chosen, etc.  Or maybe the game just wants to get rid of a graphic for whatever reason, but wants to let it animate out gracefully.  The way these events are handled is called **switching** and is basically done as follows:
+Oftentimes, graphics have special animations associated with certain events.  For instance, menu items may glow when selected, fly away when a different item is chosen, etc.  Or maybe the game just wants to get rid of a graphic for whatever reason, but wants to let it animate out gracefully.  The way these events are handled is called **switching** and is basically done as follows:
 
 * A field on the ANM VM is set to some number representing the event.
 * The next time the VM is [ticked](#anm/ontick-ondraw),
   it will check this field, look for a matching [ref=anm:case] instruction, and start executing from there.
+* When a switch successfully occurs, the time and instruction pointer of the VM just before the switch are
+  saved so that they can be potentially restored with [ref=anm:caseReturn].
 
-For a detailed example, here's one of the scripts for the season gauge.  (this one draws the outer border)
+### An example
+
+For a detailed example, here's one of the scripts for the season gauge.  (this one draws the "Releasable" icon)
 
 [code]
 script script114 {
     // ... ignoring the boring stuff at the beginning ...
-    [ref=anm:drawRectBorder](102.0f, 10.0f);
-    [ref=anm:rgb](80, 80, 80);
+    [ref=anm:pos](-344.0f, 884.0f, 0.0f);
+
+    [ref=anm:case](3);
     [ref=anm:alpha](0);
-+20: // 20
-    [ref=anm:alphaTime](20, 0, 255);
     [ref=anm:stop]();
-    [ref=anm:case](4);  // <-------
+
+    [ref=anm:case](2);
+    [ref=anm:alphaTime](4, 0, 255);
+offset144:
+    [ref=anm:rgb](255, 255, 255);
++20: // 20
+    [ref=anm:rgb](255, 224, 224);
++20: // 40
+    [ref=anm:jmp](offset144, 0);
+    [ref=anm:stop]();
+
+    [ref=anm:case](4);
     [ref=anm:alphaTime](5, 0, 255);
     [ref=anm:caseReturn]();
-    [ref=anm:case](5);  // <-------
+
+    [ref=anm:case](5);
     [ref=anm:alphaTime](5, 0, 64);
     [ref=anm:caseReturn]();
-    [ref=anm:case](1);  // <-------
-    [ref=anm:alphaTime](20, 0, 0);
-+20: // 40
-    [ref=anm:delete]();
 }
 [/code]
 
-This script has four animations.  The first is that it fades in on creation.  The other three are labeled by [ref=anm:case] instructions:
+This script has four case labels.  The code that manages the GUI watches for the following conditions and triggers switches to these labels:
 
-* Label 5 here is used to make it become transparent when the player gets too close.
-* Label 4 is used to make it become opaque when the player leaves.
-* Label 1 will make it fade away permanently.  I'm not sure if this is ever used for the season gauge in the finished game, but is extremely common for Label 1 to make something disappear permanently. (i.e. label 1 pretty much always ends in [ref=anm:delete])
+* Label 2 (which also runs immediately) is invoked whenever a release drops season level to 0, making it disappear.
+* Label 3 is invoked when season level changes from 0 to 1.  First, it appears, and then it blinks in a loop.
+* Label 5 makes it transparent when the player gets too close to the season gauge.
+* Label 4 makes it opaque when the player moves away from the gauge.
 
-Notice that labels 4 and 5 end in [ref=anm:caseReturn], causing the script to go back to the [ref=anm:stop] and wait for another switch.
+> An aside: this actually has a silly bug in that, if the player moves near the season gauge at 0 season power,
+> "Releasable" suddenly appears.  This shows just how difficult it can be to write good switches!
 
-Mind, you can't just put label 5 on any script and expect it to run when the player gets close.
-This one runs because there's a line somewhere in the GUI code that specifically watches for the player to
-enter the lower left corner and then invokes this label on the season gauge.  Most switching is hardcoded like this.
+The meaning of these labels are obviously specific to the season gauge,
+and other parts of the gauge also have labels with the same meaning.  (e.g. the "filled" part of the bar uses labels 2 and 3 to toggle between blue at level 0 and yellow-white at levels 1+).
+That said, there is one label that has a nearly universal meaning:
+Label `1` pretty much always means "disappear forever". I.e. label 1, if it exists, will always be some kind of exit animation like fade-out,
+shrinking, or flyout, and will end in [ref=anm:delete].
 
-ECL scripts can invoke [ref=anm:case] labels on their own sprites by using the `anmSwitch` ECL instruction.
+The vast majority of switching is hardcoded in the game, but notably, ECL scripts can invoke [ref=anm:case] labels
+on their own sprites by using the `anmSwitch` ECL instruction.
 The games seldom use this but it is pretty hecking useful for modders!
 
-**Miscellaneous notes:**
-* The game always searches for [ref=anm:case] labels starting from the *beginning* of the function. (not from the [ref=anm:stop])
+### [ref=anm:caseReturn] versus [ref=anm:stop]
+
+Notice that labels 4 and 5 end in [ref=anm:caseReturn] while labels 2 and 3 do not.  The reason for this is because **switching can occur at any point where the VM is waiting.**  Oftentimes, this is at a [ref=anm:stop] (since that basically means "wait forever"), but it can also occur at any [ref=anm:wait] instruction, or whenever the time label increases.
+
+Think about it this way: The code for label 2 is a loop to make it blink:
+
+<img src="content/anm/img/releasable-blonk.gif" alt="*blonk*">
+
+Even as the player moves around and triggers switches 4 and 5, we want it to continue blinking as long as the player has season power.  Therefore, switches 4 and 5 use [ref=anm:caseReturn] so that the VM can seemlessly return back to the blinking loop.  However, we do *not* want it to continue blinking when the player has season level 0.  Therefore, label 2 ends in a [ref=anm:stop]. [weak](okay, technically it doesn't matter if it keeps blinking since alpha would be 0, but finding examples is hard okay?)[/weak]
+
+There is an important caveat to [ref=anm:caseReturn], which is that only a single return address is stored&mdash;not a stack!  Therefore, **whenever you use [ref=anm:caseReturn], you should avoid any waiting inside that [ref=anm:case] block,** because if the VM gets interrupted by another switch during this time, the script may unexpectedly end up in an infinite loop where [ref=anm:caseReturn] keeps sending it back to the point where it got interrupted.
+
+### Other miscellaneous notes on switching
+
+* The game always searches for [ref=anm:case] labels starting from the *beginning* of the function. (not from the current instruction)
 * If multiple switches occur on one frame, only the **last** takes effect.
 * [ref=anm:case](0) doesn't work due to how pending switch numbers are stored.
 * [wip=2][ref=anm:case](-1) appears to work differently from the others?
   According to 32th System it is ignored...[/wip]
-* [wip]Can switching interrupt code that is not at a [ref=anm:stop]? Testing needed.[/wip]
+
+---
 
 <h1 id="uv-coords">Texture coordinates</h1>
 

@@ -75,11 +75,11 @@ ANM_BY_OPCODE.set('12', {
 
   40: {ref: 'anm:v7-rand', wip: 1},
   41: {ref: 'anm:v7-randF', wip: 1},
-  42: {ref: 'anm:mathSin', wip: 1},
-  43: {ref: 'anm:mathCos', wip: 1},
-  44: {ref: 'anm:mathTan', wip: 1},
-  45: {ref: 'anm:mathAcos', wip: 1},
-  46: {ref: 'anm:mathAtan', wip: 1},
+  42: {ref: 'anm:v7-mathSin', wip: 1},
+  43: {ref: 'anm:v7-mathCos', wip: 1},
+  44: {ref: 'anm:v7-mathTan', wip: 1},
+  45: {ref: 'anm:v7-mathAcos', wip: 1},
+  46: {ref: 'anm:v7-mathAtan', wip: 1},
   47: {ref: 'anm:mathReduceAngle'},
 
   48: {ref: 'anm:pos'},
@@ -140,21 +140,26 @@ ANM_BY_OPCODE.set('12', {
   99: {ref: 'anm:v8-flag-419', wip: 1},
 
   100: {ref: 'anm:posBezier'},
-  101: UNASSIGNED, // unknown member of texCircle family (type 13)
+  101: {ref: 'anm:v7-texCircle2'}, // unknown member of texCircle family (type 13)
   102: {ref: 'anm:drawRect', wip: 1},
-  103: UNASSIGNED, // unknown member of drawRect family
+  103: {ref: 'anm:v7-drawRect1'}, // unknown member of drawRect family
   104: {ref: 'anm:drawPoly'},
   105: {ref: 'anm:drawPolyBorder'},
   106: {ref: 'anm:uvScale'},
   107: {ref: 'anm:uvScaleTime'},
-  108: UNASSIGNED, // unknown member of drawRect family
-  109: UNASSIGNED, // unknown member of drawRect family
-  110: UNASSIGNED, // unknown member of drawRect family
+  108: {ref: 'anm:v7-drawRect2'}, // unknown member of drawRect family
+  109: {ref: 'anm:v7-drawRect3'}, // unknown member of drawRect family
+  110: {ref: 'anm:v7-drawRect4'}, // unknown member of drawRect family
 });
 
 ANM_BY_OPCODE.set('125', Object.assign({}, ANM_BY_OPCODE.get('12'), {
   111: UNASSIGNED, // (DS: hi:6-8)
   112: {ref: 'anm:ignoreParent'}, // (DS: hi:8)
+}));
+
+ANM_BY_OPCODE.set('128', Object.assign({}, ANM_BY_OPCODE.get('125'), {
+  113: {ref: 'anm:rotateTime2D'},
+  114: UNASSIGNED, // unknown blargle
 }));
 
 // ---- V8 ----
@@ -355,23 +360,32 @@ export const ANM_INS_DATA = {};
 // ==============
 Object.assign(ANM_INS_DATA, {
   'nop': {sig: '', args: [], desc: "Does nothing."},
-  'delete': {sig: '', args: [], desc: "Destroys the animation."},
+  'delete': {sig: '', args: [], desc: "Destroys the graphic."},
   'static': {
     sig: '', args: [], desc: `
-    Freezes the animation until it is destroyed externally.
+    Freezes the graphic until it is destroyed externally.
 
     [tiphide]
     Any interpolation instructions like [ref=anm:posTime] will no longer advance.
     No [ref=anm:case] labels will run.
     [/tiphide]
   `},
-  'stop': {sig: '', args: [], desc: "Stops executing the script and waits for a switch to occur. (see [ref=anm:case])"},
+  'stop': {sig: '', args: [], desc: `
+    Stops executing the script (at least for now), but keeps the graphic alive.
+
+    [tiphide]
+    This essentially behaves like an infinitely long [ref=anm:wait].
+
+    Interpolation instructions like [ref=anm:posTime] will continue to advance,
+    and the VM can be [switched](#anm/concepts&a=switch) at any time.
+    [/tiphide]
+  `},
   'stop2': {sig: '', args: [], wip: 2, desc: "[wip=2]This is [ref=anm:stop] except that it additionally clears an unknown bitflag...[/wip]"},
   'case': {
     sig: 'S', args: ['n'], desc: `
-    A label used to externally control an ANM.  You can read more about this on the [ANM concepts page](#anm/concepts&a=switch).
+    A label used to externally control an ANM via a process called [switching](#anm/concepts&a=switch).
 
-    [tiphide]Mind that this instruction only acts as a label. When executed, it does nothing. (it is a no-op)[/tiphide]
+    [tiphide]Mind that this instruction only acts as a label. When executed, it is a no-op.[/tiphide]
   `},
   'wait': {
     sig: 'S', args: ['t'], desc: `
@@ -379,20 +393,37 @@ Object.assign(ANM_INS_DATA, {
 
     [tiphide]
     The way this works is by actually subtracting \`t\` from the current time before executing
-    the next instruction.  This means that if the current time were to somehow be greater
-    than the [time label](#anm/concepts&a=time-labels) on this instruction (perhaps thanks to a [ref=anm:jmp]),
-    it may wait fewer than \`t\` frames (or even 0 frames!).
+    the next instruction.
+
+    An extremely similar effect can be achieved using [time labels](#anm/concepts&a=time):
+    [code]
+    // Option 1: incresing the time label between instructions (+n: syntax)
+      [ref=anm:posTime](6, 0, 1f, 0f, 0f);
+    +6:
+      [ref=anm:alpha](0);
+
+    // Option 2: using wait
+      [ref=anm:posTime](6, 0, 1f, 0f, 0f);
+      [ref=anm:wait](6);
+      [ref=anm:alpha](0);
+    [/code]
+    The difference between these two snippets is extremely subtle and does not matter most of the time.
+    (though generally [ref=anm:wait] is nicer if you need to perform jumps at some point, as it helps
+    keep time labels simple)
     [/tiphide]
   `},
   'caseReturn': {sig: '', args: [], wip: 1, desc: `
-    Used at the end of a [ref=anm:case] to return back to the moment just before it
-    last executed the [ref=anm:stop] instruction.
+    Can be used at the end of a [ref=anm:case] to return back to the moment just before the VM was switched.
 
     [tiphide]
-    The difference between this and simply executing [ref=anm:stop] again is that it
-    restores the original time as well.
+    Oftentimes the game uses another [ref=anm:stop] instruction instead at the end of a [ref=anm:case] block.
+    You can read a more detailed discussion in the section on [switching](#anm/concepts&a=switch),
+    but for now the broad recommendation is:
 
-    [wip=1]Example use case?[/wip]
+    * [ref=anm:caseReturn] if required if you want to allow your VM to return to a longer running part of
+      the script after being interrupted.
+    * If [ref=anm:caseReturn] can be *dangerous* if there is any waiting in the middle of your
+      [ref=anm:case] block where another switch could interrupt it.
     [/tiphide]
   `},
 });
@@ -544,7 +575,7 @@ Object.assign(ANM_INS_DATA, {
     Modes for [game=14]: (other games may be different)
 
     | Mode | \`SRCBLEND\` | \`DESTBLEND\` | \`BLENDOP\` | Meaning |
-    | ---         | ---           | --- | --- | --- |
+    | :---: | ---           | --- | --- | --- |
     | 0 | \`SRCALPHA\` | \`INVSRCALPHA\` | \`ADD\` | Normal |
     | 1 | \`SRCALPHA\` | \`ONE\` | \`ADD\` | Add |
     | 2 | \`SRCALPHA\` | \`ONE\` | \`REVSUBTRACT\` | Subtract (but weird?)† |
@@ -600,7 +631,7 @@ Object.assign(ANM_INS_DATA, {
 
     [tiphide]
     | Mode | D3D constant | Meaning | Layman's terms |
-    | ---  | --- | --- | --- |
+    | :---: | --- | --- | --- |
     | 0    | \`D3DTEXF_LINE\` | linear interpolation | blurry |
     | 1    | \`D3DTEXF_POINT\` | nearest-point sampling | big pixels |
 
@@ -641,7 +672,7 @@ Object.assign(ANM_INS_DATA, {
     [wip]Clear guidelines are not yet known for when you are required to override that default.[/wip]
 
     [tiphide]
-    This only has an effect on root animations. (for child animations, the origin is always the parent's position)
+    This only has an effect on root graphics. (for child graphics, the origin is always the parent's position)
     [/tiphide]
   `},
   'resolutionMode': {
@@ -666,7 +697,7 @@ Object.assign(ANM_INS_DATA, {
 Object.assign(ANM_INS_DATA, {
   'pos': {
     sig: 'fff', args: ['x', 'y', 'z'], desc: `
-    Sets the position of the animation.
+    Sets the position of the graphic.
 
     [tiphide]
     There is a bitflag that, when activated, causes [ref=anm:pos] and all other position-modifying code
@@ -676,17 +707,22 @@ Object.assign(ANM_INS_DATA, {
   `},
   'rotate': {
     sig: 'fff', args: ['rx', 'ry', 'rz'], desc: `
-    Set the animation's rotation.  For 2D objects, only the z rotation matters.
+    Set the graphic's rotation.  For 2D objects, only the z rotation matters.
     [tiphide]
     In some rare cases, x rotation has a special meaning for [special drawing instructions](#anm/ins&a=group-600).
-    Animations rotate around their anchor point (see [ref=anm:anchor]).
+    Graphics rotate around their anchor point (see [ref=anm:anchor]).
 
     (if nothing seems to be happening when you call this, check your [ref=anm:renderMode] setting!)
     [/tiphide]
   `},
   'rotateAuto': {
     sig: 'b', args: ['mode'], desc: `
-    Sets the auto-rotate flag, which causes sprites to rotate to face their direction of motion.
+    Sets the auto-rotate flag, which causes a graphic to rotate to face its direction of motion.
+
+    [wip]
+    You can't just put this in any arbitrary script and expect it to work; the script must be used somewhere
+    specifically designed to support it, such as an enemy bullet, a player bullet, or an enemy's slot 0 anm.
+    [/wip]
   `},
   'rotationSystem': {
     sig: 'S', args: ['mode'], desc: `
@@ -696,7 +732,7 @@ Object.assign(ANM_INS_DATA, {
   'scale': {
     sig: 'ff', args: ['sx', 'sy'], desc: `
     Scales the ANM independently along the x and y axis.
-    Animations grow around their anchor point (see [ref=anm:anchor]).
+    Graphics grow around their anchor point (see [ref=anm:anchor]).
     Some [special drawing instructions](#anm/ins&a=group-600) give the x and y scales special meaning.
   `},
   'scale2': {
@@ -807,7 +843,7 @@ Object.assign(ANM_INS_DATA, {
 
     [tiphide]
     | Args  |  0     |  1   | 2      |
-    | ---   | ---    | ---  | ---    |
+    | :---:  | ---    | ---  | ---    |
     | \`h\` | Center | Left | Right  |
     | \`v\` | Center | Top  | Bottom |
     [/tiphide]
@@ -817,6 +853,11 @@ Object.assign(ANM_INS_DATA, {
     Important for asymmetric bullet sprites because the anchor position is the center point for rotation and scaling.
 
     [tiphide]
+    [wip=1]
+    Surprisingly, UFO did not have this.
+    At this time, it is unclear how rotated bullets were correctly positioned in those earlier games.
+    [/wip]
+
     In the image below, both hearts are rotating using [ref=anm:angleVel]\`(0f, 0f, rad(3))\`,
     but the pink heart additionally has:
 
@@ -826,6 +867,7 @@ Object.assign(ANM_INS_DATA, {
     [/code]
 
     ![anchorOffset demo](./content/anm/img/ins-v8-436.gif)
+
     [/tiphide]
   `},
 });
@@ -1084,32 +1126,32 @@ Object.assign(ANM_INS_DATA, {
 Object.assign(ANM_INS_DATA, {
   'createChild': {
     sig: 'S', args: ['script'], desc: `
-    The standard way to create a child animation.
+    The standard way to create a child graphic.
   `},
   'prependChild': {
     sig: 'S', args: ['script'], wip: 1, desc: `
-    Create a child animation, but insert it **at the front** of the [world list](#anm/ontick-ondraw) instead of the back.
+    Create a child graphic, but insert it **at the front** of the [world list](#anm/ontick-ondraw) instead of the back.
   `},
   'createChildUi': {
     sig: 'S', args: ['script'], desc: `
-    Create a child animation, but insert it at the back **of the [UI list](#anm/ontick-ondraw)** instead.
+    Create a child graphic, but insert it at the back **of the [UI list](#anm/ontick-ondraw)** instead.
 
     UI ANMs are ticked even while the game is paused.
   `},
   'prependChildUi': {
     sig: 'S', args: ['script'], wip: 1, desc: `
-    Create a child animation, but insert it **at the front of the [UI list](#anm/ontick-ondraw)**.
+    Create a child graphic, but insert it **at the front of the [UI list](#anm/ontick-ondraw)**.
   `},
   'attached': {
     sig: 'S', args: ['enable'], wip: 1, desc: `
-    Sets a bitflag.  When the bitflag is enabled, the animation will move as its parent rotates.
+    Sets a bitflag.  When the bitflag is enabled, the graphic will move as its parent rotates.
     (picture a person holding a shield; as the person rotates, the shield moves around them)
 
     [wip]Where is it used? Are there other effects?[/wip]
   `},
   'createEffect': {
     sig: 'S', args: ['kind'], wip: 1, desc: `
-    Creates a special child animation that may have additional hardcoded behavior.
+    Creates a special child graphic that may have additional hardcoded behavior.
 
     [tiphide]
     [wip]Haven't gotten to playing around with this or reverse engineering any of those hardcoded behaviors yet.[/wip]
@@ -1176,7 +1218,7 @@ Object.assign(ANM_INS_DATA, {
   `},
   'copyParentVars': {
     sig: '', args: [], desc: `
-    When called on a child animation, copies over a number of variables from its parent.
+    When called on a child graphic, copies over a number of variables from its parent.
 
     [tiphide]
     They are:
@@ -1247,6 +1289,16 @@ Object.assign(ANM_INS_DATA, {
   'v8-flag-419': {sig: 'S', args: ['enable'], wip: 2, desc: `[wip=2]Sets the state of an unknown bitflag.[/wip]`},
   'v8-flag-431': {sig: 'S', args: ['enable'], wip: 2, desc: `[wip=2]Sets the state of an unknown bitflag.[/wip]`},
   'v8-flag-432': {sig: 'S', args: ['enable'], wip: 2, desc: `[wip=2]Sets the state of an unknown bitflag.[/wip]`},
+  'v7-texCircle2': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified member of texCircle family, likely [ref=anm:texCircle][/wip]'},
+  'v7-drawRect1': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified member of drawRect family[/wip]'},
+  'v7-drawRect2': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified member of drawRect family[/wip]'},
+  'v7-drawRect3': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified member of drawRect family[/wip]'},
+  'v7-drawRect4': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified member of drawRect family[/wip]'},
+  'v7-mathSin': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified trig function. Probably `sin` like in v8, but tough to be sure without testing.[/wip]'},
+  'v7-mathCos': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified trig function. Probably `cos` like in v8, but tough to be sure without testing.[/wip]'},
+  'v7-mathTan': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified trig function. Probably `tan` like in v8, but tough to be sure without testing.[/wip]'},
+  'v7-mathAcos': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified trig function. Probably `acos` like in v8, but tough to be sure without testing.[/wip]'},
+  'v7-mathAtan': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified trig function. Probably `atan` like in v8, but tough to be sure without testing.[/wip]'},
 });
 
 // Add `minGame` and `maxGame` keys to each crossref.

@@ -52,7 +52,7 @@ entry entry3 {
 
 <h3 id='stage-1'>Stage 1: 3D Background</h3>
 
-First, surface 0 is cleared to white, and then **the 3D stage background is rendered to a 408x472 region in the center of surface 0.**  During this time, animations with **layers 0-5 and 30-31** (again, these numbers are for [game=14] only!) are also drawn.  At the end of this stage, the surface looks like the following (click for actual size):
+First, surface 0 is cleared to white, and then **the 3D stage background is rendered to a 408x472 region in the center of surface 0.**  During this time, graphics with **layers 0-5 and 30-31** (again, these numbers are for [game=14] only!) are also drawn.  At the end of this stage, the surface looks like the following (click for actual size):
 
 <a target="_blank" href="./content/anm/img/pipeline/s1-end.png"><img src="./content/anm/img/pipeline/s1-end.png" height="500px"></a>
 

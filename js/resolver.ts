@@ -5,9 +5,14 @@ export type Context = {
 };
 
 /**
- * Resolver that decides what to do based on the part before the first colon.
+ * A thing that lazily looks up information about game objects, with possibly different
+ * results based on user settings or the current page URL.
  *
- * E.g. the resolver for names calls one function for 'anm:' keys and another for 'ref:' keys.
+ * E.g. the site uses Resolvers to resolve names of instructions, links to various game entities,
+ * and tooltips for crossrefs.  E.g. when the site wants to know what name to display for a crossref,
+ * it asks the name resolver to resolve e.g. `ref:anm:posTime`.  First it will find that there is a
+ * function associated with `ref:` for crossref names, and that function will find that a function
+ * was registered for `anm:`.
  */
 interface Resolver<Out> {
   /**
