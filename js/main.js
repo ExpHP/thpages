@@ -292,9 +292,7 @@ function initOrScrollToContent() {
   const query = parseQuery(window.location.hash);
 
   // don't reload same page (also works for index, where query.s === undefined)
-  console.error(lastQuery, query);
   if (!(lastQuery && queryEqualsUptoAnchor(lastQuery, query))) {
-    console.error('different');
     const spl = query.s.split("/");
     const file = spl.pop();
     const path = spl.join("/") + "/";

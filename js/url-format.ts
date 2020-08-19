@@ -19,6 +19,9 @@ export type Query = {
   a?: string, //  anchor
 } & Record<string, string>;
 
+/** Default value of 'g' on pages that require one where it might not be set. */
+export const DEFAULT_GAME = '17';
+
 function encodeComponent(s: string): string {
   return encodeURIComponent(s).replace('%2C', ',').replace('%2F', '/');
 }

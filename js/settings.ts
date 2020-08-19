@@ -264,7 +264,6 @@ function parseStoredMapJson(x: unknown): MapSetting {
       vars: parseNumberMapJson(vars || {}),
     };
   }
-  console.error(x);
   throw new Error('invalid stored map');
 }
 

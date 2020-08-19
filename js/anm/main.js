@@ -3,12 +3,12 @@ import {ANM_VAR_DATA, ANM_VARS_BY_NUMBER, ANM_VAR_NUMBER_REVERSE} from './var-ta
 import {globalRefNames, globalRefTips, globalRefLinks, getRefNameKey, getRefLinkKey} from '../ref.js';
 import {MD} from '../main.js';
 import {globalNames, globalLinks, PrefixResolver} from '../resolver.ts';
-import {parseQuery, buildQuery} from '../url-format.ts';
+import {parseQuery, buildQuery, DEFAULT_GAME} from '../url-format.ts';
+import {gameData} from '../game-names.ts';
 
 import {getCurrentAnmmaps} from '../settings.ts';
 
 const INS_TABLE_PAGE = 'anm/ins';
-const DEFAULT_GAME = '17';
 
 /**
  * Resolves names from the suffix of 'anm:' namekeys,
@@ -21,12 +21,7 @@ const ANM_INS_NAMES = new PrefixResolver();
  */
 const ANM_VAR_NAMES = new PrefixResolver();
 
-/**
- * A game number as a string with no period, with a leading 0 for numbers below 10, e.g. "14", "125", "095".
- *
- * This representation is chosen to enable simple lexical comparisons using the built-in &lt; and &gt; operators.
- * @typedef {string} Game
- */
+
 const GAME_VERSIONS = {
   // FIXME
   "07": 'v7', "08": 'v7', "09": 'v7', "095": 'v7',
@@ -58,6 +53,7 @@ const ARGTYPES_HTML = {
 export function initAnm() {
   // FIXME HACK to make available to ins.md
   window.generateOpcodeTable = generateOpcodeTable;
+  window.setupGameSelector = setupGameSelector;
 
   initNames();
 
@@ -71,6 +67,26 @@ export function initAnm() {
     const avar = ANM_VAR_DATA[id];
     const ref = 'anmvar:' + id;
     return generateAnmVarTip(avar, ref, ctx);
+  });
+}
+
+function setupGameSelector($select) {
+  const supportedGames = ANM_BY_OPCODE.keys();
+  const currentQuery = parseQuery(window.location.hash);
+  const currentGame = currentQuery.g || DEFAULT_GAME;
+  for (const game of supportedGames) {
+    const $option = document.createElement('option');
+    $option.value = game;
+    $option.text = `${gameData(game).thname} ~ ${gameData(game).long}`;
+    if (game == currentGame) {
+      $option.selected = true;
+    }
+    $select.appendChild($option);
+  }
+
+  $select.addEventListener('change', (ev) => {
+    const query = Object.assign({}, currentQuery, {g: ev.target.value});
+    window.location.href = '#' + buildQuery(query);
   });
 }
 
@@ -216,8 +232,7 @@ function generateOpcodeTable() {
   const currentQuery = parseQuery(window.location.hash);
   const game = currentQuery.g || DEFAULT_GAME;
 
-  let base = `Current table: [gc=${game}] version ${game}[/gc]<br>`;
-
+  let base = "";
   let navigation = /* html */`<div class='toc'><h3>Navigation</h3><ul>`;
   let table = "";
 
