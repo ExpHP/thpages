@@ -212,13 +212,14 @@ function initNames() {
   globalRefLinks.registerPrefix('anm', (id, ctx) => getAnmInsUrlByRef('anm:' + id, ctx));
 }
 
-function generateOpcodeTable(game) {
+function generateOpcodeTable() {
+  const currentQuery = parseQuery(window.location.hash);
+  const game = currentQuery.g || DEFAULT_GAME;
+
   let base = `Current table: [gc=${game}] version ${game}[/gc]<br>`;
 
   let navigation = /* html */`<div class='toc'><h3>Navigation</h3><ul>`;
   let table = "";
-
-  const currentQuery = parseQuery(window.location.hash);
 
   let total = 0;
   let documented = 0;

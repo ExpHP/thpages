@@ -5,7 +5,7 @@ import {initAnm} from "./anm/main.js";
 import {initTips} from "./tips.ts";
 import {initSettings, clearSettingsCache} from "./settings.ts";
 import {globalNames, globalLinks} from "./resolver.ts";
-import {buildQuery, parseQuery} from "./url-format.ts";
+import {buildQuery, parseQuery, queryEqualsUptoAnchor} from "./url-format.ts";
 
 import hljs from "highlight.js/lib/core";
 import hljsCLike from "highlight.js/lib/languages/c-like";
@@ -41,7 +41,6 @@ const $content = document.querySelector(".content-wrapper");
 let lastQuery = null;
 export const $scriptContent = document.querySelector(".script-wrapper");
 const cache = {};
-let active = "";
 export const NAMES = {};
 
 const contentLoadListeners = [];
@@ -177,17 +176,14 @@ function getContent(path, file, clb, err, forceDelay) {
 function loadContent(path, file, writeQuery=true) {
   clearSettingsCache();
 
-  if (active && active == file) return;
   const group = getGroupByPath(path);
   if (group != null && group.type == "redirect") {
     return loadContent(group.url, file);
   }
-  active = file;
   getContent(path, file, function(txt) {
     loadMd(txt, path, file);
   }, function() {
     loadMd(getErrorString(path, file), path, file);
-    active = "";
   });
   if (writeQuery) {
     const query = buildQuery({
@@ -296,13 +292,13 @@ function initOrScrollToContent() {
   const query = parseQuery(window.location.hash);
 
   // don't reload same page (also works for index, where query.s === undefined)
-  if (!(lastQuery && lastQuery.s === query.s)) {
-    if (query.s) { // site
-      const spl = query.s.split("/");
-      const file = spl.pop();
-      const path = spl.join("/") + "/";
-      loadContent(path, file, false);
-    } else loadContent("/", "index");
+  console.error(lastQuery, query);
+  if (!(lastQuery && queryEqualsUptoAnchor(lastQuery, query))) {
+    console.error('different');
+    const spl = query.s.split("/");
+    const file = spl.pop();
+    const path = spl.join("/") + "/";
+    loadContent(path, file, false);
   }
 
   lastQuery = query;

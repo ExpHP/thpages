@@ -77,6 +77,14 @@ export function queryEquals(a: Query, b: Query) {
   return aProps.every((propName) => a[propName] === b[propName]);
 }
 
+export function queryEqualsUptoAnchor(q1: Query, q2: Query) {
+  const {a: a1, ...rest1} = q1;
+  const {a: a2, ...rest2} = q2;
+  a1; a2; // pretend to use
+
+  return queryEquals(rest1, rest2);
+}
+
 // =============================================================
 
 // Testing framework?  What's that?
