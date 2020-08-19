@@ -8,13 +8,6 @@ export const INDEX = [
     "url": "index",
   },
 
-  // // soon
-  // {
-  //   "noItem": true,
-  //   "path": "ecl/",
-  //   "type": "redirect",
-  //   "url": "modding/",
-  // },
   {
     "groupName": "ANM",
     "path": "anm/",
@@ -91,6 +84,16 @@ export const INDEX = [
       },
     ],
   },
+
+  {
+    "groupName": "&nbsp;",
+    "name": "Settings",
+    "single": true,
+    "path": "/",
+    "type": "site",
+    "url": "settings",
+    "isSettings": true,
+  },
 ];
 
 export const DEFAULT = "default";
@@ -99,9 +102,4 @@ export const ERROR = `
 # An error has occured when loading the page.
 Try reloading using **CTRL+F5**, or **clearing browser cache** of this site.
 If the problem persists, contact me on Discord: **ExpHP#4754**.
-`;
-
-export const EMBED_LOAD_ERROR = `
-Failed to load embedded content.
-HTTP status code: %code%
 `;

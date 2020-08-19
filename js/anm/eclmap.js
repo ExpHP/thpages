@@ -1,55 +1,13 @@
-const cachedMaps = {};
-const currentMaps = {};
-
-export function getCurrentMap(version) {
-  return currentMaps[version] || null;
-}
-
-export async function loadAnmmap(file, cacheKey, version) {
-  if (!cachedMaps[cacheKey]) {
-    let txt;
-    if (file == null) txt = await autoAnmmap(version);
-    else txt = await readUploadedFileText(file);
-
-    cachedMaps[cacheKey] = new Eclmap(txt);
-  }
-
-  currentMaps[version] = cachedMaps[cacheKey];
-}
-
-async function readUploadedFileText(file) {
-  const fr = new window.FileReader();
-  fr.readAsText(file);
-  const txt = await new Promise((resolve, reject) => {
-    fr.onload = () => resolve(fr.result);
-  });
-  return txt;
-}
-
-function defaultAnmmapUrl(version) {
-  if (version === 'v7') return 'eclmap/anmmap/v7.anmm';
-  if (version === 'v8') return 'eclmap/anmmap/v8.anmm';
-  return null;
-}
-
-async function autoAnmmap(version) {
-  const res = await window.fetch(defaultAnmmapUrl(version));
-  if (res.ok) {
-    const txt = await res.text();
-    return txt;
-  } else return null;
-}
-
-class Eclmap {
+export class Eclmap {
   constructor(txt) {
     this.kind = null;
 
-    this.ins = [];
-    this.timeline_ins = [];
-    this.var = [];
-    this.ins_sig = [];
-    this.timeline_ins_sig = [];
-    this.var_types = [];
+    this.ins = new Map();
+    this.timeline_ins = new Map();
+    this.var = new Map();
+    this.ins_sig = new Map();
+    this.timeline_ins_sig = new Map();
+    this.var_types = new Map();
 
     this.currentSeqmap = null;
     this.ident = 0;
@@ -62,14 +20,21 @@ class Eclmap {
   }
   getMnemonic(num) {
     const ent = this.seqmapGet(this.ins, num);
-    return ent != null ? ent.name : null;
+    return ent !== null ? ent : null;
   }
   getGlobal(num) {
     const ent = this.seqmapGet(this.var, num);
-    return ent != null ? ent.name : null;
+    return ent !== null ? ent : null;
   }
+  opcodes() {
+    return this.ins.keys();
+  }
+  globalNums() {
+    return this.var.keys();
+  }
+
   err(txt) {
-    window.alert(`eclmap parse error at line ${this.line}: ${txt}`);
+    throw new Error(`eclmap parse error at line ${this.line}: ${txt}`);
   }
   fgets() {
     ++this.line;
@@ -98,7 +63,7 @@ class Eclmap {
       this.kind = "anm";
       this.parseNewAnm(magic);
     } else {
-      this.err("map file has bad magic: ${magic}");
+      this.err(`map file has bad magic: ${magic}`);
       this.kind = null;
     }
   }
@@ -137,7 +102,7 @@ class Eclmap {
   }
 
   isKeyword(str) {
-    if (this.kind == "ecl") {
+    if (this.kind === "ecl") {
       return [
         "anim", "ecli", "sub", "timeline",
         "var", "int", "float", "void",
@@ -157,7 +122,7 @@ class Eclmap {
       this.err(`'${str}' isn't a valid identifier`);
       return 1;
     }
-    if (str.substring(0, 4) == "ins_") {
+    if (str.substring(0, 4) === "ins_") {
       this.err("mnemonic can't start with ins_");
       return 1;
     }
@@ -169,7 +134,7 @@ class Eclmap {
   }
 
   validateType(str) {
-    if (str != "$" && str != "%") {
+    if (str !== "$" && str !== "%") {
       this.err(`unknown type '${str}'`);
       return 1;
     }
@@ -214,7 +179,7 @@ class Eclmap {
       let token = this.strtok(line, " \t\n");
       if (!token) continue; // 0 tokens = empty line
 
-      if (token[0] == "!") {
+      if (token[0] === "!") {
         control(token);
         continue;
       }
@@ -231,33 +196,24 @@ class Eclmap {
         return;
       }
 
-      if (token == "_") token = ""; // specify empty strings with _
+      if (token === "_") token = ""; // specify empty strings with _
 
       set(num, token);
     }
   }
 
   seqmapSet(seqmap, num, name) {
-    seqmap.push({
-      num: num,
-      name: name,
-    });
+    seqmap.set(num, name);
   }
 
   seqmapGet(seqmap, num) {
-    for (let i=seqmap.length-1; i>=0; --i) {
-      if (seqmap[i].num == num) {
-        return seqmap[i];
-      }
-    }
-    return null;
+    const out = seqmap.get(num) || null;
+    return out === undefined ? null : out;
   }
 
   seqmapFind(seqmap, name) {
-    for (let i=seqmap.length-1; i>=0; --i) {
-      if (seqmap[i].name == name) {
-        return seqmap[i];
-      }
+    for (const [key, value] of seqmap.entries()) {
+      if (value === name) return [key, value];
     }
     return null;
   }

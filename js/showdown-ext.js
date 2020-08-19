@@ -1,8 +1,5 @@
-import {loadAnmmap} from "./anm/main.js";
 import {MD, highlightCode, $scriptContent} from "./main.js";
 import {getRefHtml} from "./ref.js";
-import {globalNames, globalLinks} from './resolver.ts';
-import {parseQuery} from "./url-format.ts";
 import dedent from "./lib/dedent.js";
 
 export const ext = function() {
@@ -169,30 +166,6 @@ export const ext = function() {
     replace: `<span data-tip='$1'>$2</span>`,
   };
 
-  async function requireAnmmap(version, content, id) {
-    // this must always wait at least some time, to make sure that the function this was called from finished running...
-    await new Promise((resolve) => setTimeout(resolve, 1));
-    await loadAnmmap(null, "?"+version, version);
-    const $replace = document.querySelector(`#require-anmmap-${id}`);
-    if ($replace != null) {
-      const context = parseQuery(window.location.hash);
-      $replace.innerHTML = MD.makeHtml(content);
-      globalNames.transformHtml($replace, context);
-      globalLinks.transformHtml($replace, context);
-    }
-  }
-
-  let eclmapId = 0;
-  const anmmap = {
-    type: "lang",
-    regex: /\[require-anmmap=(v[0-9]+)\]([^]*?)\[\/require-anmmap\]/g,
-    replace: function(match, num, content) {
-      const id = eclmapId++;
-      requireAnmmap(num, content, id);
-      return "<div id='require-anmmap-"+id+"'>Loading eclmap...</div>";
-    },
-  };
-
   const headlessTable = {
     type: "lang",
     regex: /\[headless-table\]([^]*?)\[\/headless-table\]/g,
@@ -215,8 +188,8 @@ export const ext = function() {
   };
 
   return [
-    anmmap, ref, refNotip, headlessTable,
-    code, title, c, game, gameThLong, gameLong, script, tip, tipNodeco, wip,
+    ref, refNotip, headlessTable, code, title, c,
+    game, gameThLong, gameLong, script, tip, tipNodeco, wip,
     gc, // must be after things that use it (e.g. game)
   ];
 };

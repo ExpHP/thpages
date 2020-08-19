@@ -59,8 +59,8 @@ module.exports = {
         "no-dupe-class-members": "off",
         "require-atomic-updates": "off",
 
-        // 'unknown' is the new 'any'
-        "@typescript-eslint/no-explicit-any": "on",
+        // prefer 'unknown', but sometimes even that escape hatch isn't enough
+        "@typescript-eslint/no-explicit-any": "off",
 
         // TS requires us to not put '.ts' when a ts file imports another ts file
         // (even though parcel can probably handle it just fine...), which confuses this lint

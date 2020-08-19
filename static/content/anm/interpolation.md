@@ -1,5 +1,4 @@
 [title=Interpolation modes in Touhou]
-[require-anmmap=v8]
 
 # Interpolation modes
 
@@ -219,6 +218,3 @@ easeOutBackE = addMode(flip(easeInBackE));
 // at this point, `modes` is an array containing 32 functions;
 // or you can call them by name
 [/code]
-
-[/require-anmmap]
-

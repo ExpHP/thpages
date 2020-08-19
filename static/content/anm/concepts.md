@@ -1,5 +1,4 @@
 [title=Concepts in ANM]
-[require-anmmap=v8]
 
 <h1 id="why-anm">What is ANM used for?</h1>
 
@@ -125,5 +124,3 @@ Now let's say we start with this little F as our sprite, and then use [ref=anm:u
 Observe how, at the left end of the image, it *wraps back* to the F.  This is because **the default behavior of scrolling is to assume that the texture repeats infinitely.**  This has many uses, such as making color gradients move along Marisa's laser.  You can also pull from a large region in uv space using [ref=anm:uvScale]; similar behavior is provided by [ref=anm:textureCircle] which can pull from a large vertical region in uv space that includes many copies of the image. This is used for e.g. those circles of the "Spell attack" text.
 
 Notice how I said "default behavior."  Using [ref=anm:scrollMode], you can configure this.  In particular, you can choose to have every other periodic copy be mirrored.
-
-[/require-anmmap]

@@ -6,7 +6,7 @@ Support for other game versions and custom anmmaps is currently being worked on.
 
 <!--
 Select game version:
-<select class='ecl-table-game-select'>
+<select class='anm-table-game-select'>
     <option value="08">08 (Imperishable Night)</option>
     <option value="13">13 (Ten Desires)</option>
     <option value="14">14 (Double Dealing Character)</option>
@@ -30,42 +30,10 @@ Eclmap for instruction names:<br><br>
 
 [script]
 onContentLoad(async function() {
-//    const select = document.querySelector(".ecl-table-game-select");
-    const target = document.querySelector(".ecl-table-wrapper");
-//    const input = document.querySelector("#eclmap-file");
-//    document.querySelector(".ecl-table-btt")
-//        .addEventListener("click", async () => {
-//            let game = parseFloat(select.value);
-//            let radios = document.getElementsByName("eclmap-radio");
-//            let val;
-//            for (let i=0; i<radios.length; i++)
-//                if (radios[i].checked)
-//                    val = radios[i].value;
-//            if (val == "1") {
-//                await loadAnmmap(null, "?"+game, game);
-//            } else {
-//                if (input.files.length != 0) {
-//                    const file = input.files[0];
-//                    await loadAnmmap(file, file.name, game);
-//                } else return alert("Please upload an eclmap first.");
-//            }
-//            target.innerHTML = generateOpcodeTable(game);
-//            initTableNavigation();
-//            const query = parseQuery(window.location.hash);
-//            query.table = game;
-//            location.hash = buildQuery(query);
-//        });
-//    const query = parseQuery(window.location.hash);
-//    if (typeof query.table != "undefined" && !isNaN(query.table)) {
-//        const game = parseFloat(query.table);
-//        await loadAnmmap(null, "?"+query.table, game);
-//        target.innerHTML = generateOpcodeTable(game);
-//        initTableNavigation();
-//    } else {
-        await loadAnmmap(null, "?v7", 'v7');
-        await loadAnmmap(null, "?v8", 'v8');
+    window.setTimeout(function() {
+        const target = document.querySelector(".ecl-table-wrapper");
         target.innerHTML = '';
         target.appendChild(generateOpcodeTable('17'));
-//    }
+    }, 1)
 });
 [/script]

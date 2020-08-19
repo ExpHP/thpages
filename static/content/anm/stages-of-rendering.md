@@ -1,5 +1,4 @@
 [title=The stages of rendering in ANM]
-[require-anmmap=v8]
 
 # The stages of rendering
 
@@ -165,6 +164,3 @@ At this point, all remaining rendering occurs by drawing directly to the backbuf
 ### How'd you make those images, anyway?
 
 For the curious (and also because I kept screwing it up and had to redo it), I recorded the steps to obtain the relevant screenshots (along with the raw, unedited images) <a href="./content/anm/img/pipeline-raw-images.zip" download>here (ZIP archive)</a>.
-
-[/require-anmmap]
-

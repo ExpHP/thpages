@@ -3,6 +3,8 @@ import {ext} from "./showdown-ext.js";
 import {INDEX, ERROR} from "./index.js";
 import {initAnm} from "./anm/main.js";
 import {initTips} from "./tips.ts";
+import {initSettings, clearSettingsCache} from "./settings.ts";
+import {globalNames, globalLinks} from "./resolver.ts";
 import {buildQuery, parseQuery} from "./url-format.ts";
 
 import hljs from "highlight.js/lib/core";
@@ -21,6 +23,7 @@ export function init() {
   window.onContentLoad = function(clb) {
     contentLoadListeners.push(clb);
   };
+  initSettings();
   initAnm();
   initNavigation();
   initOrScrollToContent();
@@ -68,14 +71,23 @@ function getNavigation(data) {
 
 function getNavigationEntry(data) {
   let html;
-  html = "<div class='navigation-entry' data-path='"+data.path+"'>";
-  if (!data.single) {
+
+  html = `<div class='navigation-entry${data.isSettings ? " settings" : ""}' data-path='${data.path}'>`;
+  if (data.single) {
+    let classes, inner;
+    if (data.isSettings) {
+      classes = 'navigation-entry-name settings';
+      inner = '<div class="gear"></div>';
+    } else {
+      classes = 'navigation-entry-name';
+      inner = data.groupName;
+    }
+    html += /* html */`<a ${getNavEntryHref(data, data.path)}><div class='${classes}' ${getNavEntryDatasetString(data, data.path)}>${inner}</div></a>`;
+  } else {
     html += "<div class='navigation-entry-name'>"+data.groupName+"</div>";
     html += "<div class='navigation-entry-list'>";
     html += getNavigationEntryList(data);
     html += "</div>";
-  } else {
-    html += "<a " + getNavEntryHref(data, data.path) + " ><div class='navigation-entry-name' "+getNavEntryDatasetString(data, data.path)+">"+data.groupName+"</div></a>";
   }
   html += "</div>";
   return html;
@@ -163,6 +175,8 @@ function getContent(path, file, clb, err, forceDelay) {
 }
 
 function loadContent(path, file, writeQuery=true) {
+  clearSettingsCache();
+
   if (active && active == file) return;
   const group = getGroupByPath(path);
   if (group != null && group.type == "redirect") {
@@ -227,9 +241,13 @@ function loadMd(txt, path, file) {
   setWindowTitle(path, file);
   $scriptContent.innerHTML = "";
   const html = MD.makeHtml(txt);
-  $content.innerHTML = "<div class='content'>"+ html + "</div>";
+  $content.innerHTML = "<div class='content'>" + html + "</div>";
   setActiveNavigation(path, file);
   resetScroll();
+
+  const context = parseQuery(window.location.hash);
+  globalNames.transformHtml($content, context);
+  globalLinks.transformHtml($content, context);
   contentLoaded();
 }
 
@@ -258,20 +276,19 @@ function setWindowTitleGroup(file, group) {
 }
 
 function setActiveNavigation(path, file) {
-  let $active;
-
-  $active = document.querySelector(".navigation-entry.active");
+  const $active = document.querySelector(".navigation-entry.active");
   if ($active != null) {
     $active.classList.remove("active");
     const $activeItem = $active.querySelector(".active");
     if ($activeItem != null) $activeItem.classList.remove("active");
   }
 
-  $active = document.querySelector(".navigation-entry[data-path='"+path+"']");
-  if ($active != null) {
-    $active.classList.add("active");
-    const $activeItem = $active.querySelector("[data-url='"+file+"']");
-    if ($activeItem != null) $activeItem.classList.add("active");
+  for (const $head of document.querySelectorAll(".navigation-entry[data-path='"+path+"']")) {
+    const $activeItem = $head.querySelector("[data-url='"+file+"']");
+    if ($activeItem != null) {
+      $head.classList.add("active");
+      $activeItem.classList.add("active");
+    }
   }
 }
 

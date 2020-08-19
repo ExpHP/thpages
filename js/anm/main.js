@@ -1,4 +1,3 @@
-import {loadAnmmap, getCurrentMap} from './eclmap.js';
 import {GROUPS_V8, GROUPS_PRE_V8, ANM_INS_DATA, ANM_BY_OPCODE, ANM_OPCODE_REVERSE, DUMMY_DATA} from './ins-table.js';
 import {ANM_VAR_DATA, ANM_VARS_BY_NUMBER, ANM_VAR_NUMBER_REVERSE} from './var-table.js';
 import {globalRefNames, globalRefTips, globalRefLinks, getRefNameKey, getRefLinkKey} from '../ref.js';
@@ -6,7 +5,7 @@ import {MD} from '../main.js';
 import {globalNames, globalLinks, PrefixResolver} from '../resolver.ts';
 import {parseQuery, buildQuery} from '../url-format.ts';
 
-export {loadAnmmap} from './eclmap.js';
+import {getCurrentAnmmaps} from '../settings.ts';
 
 const INS_TABLE_PAGE = 'anm/ins';
 const DEFAULT_GAME = '17';
@@ -59,7 +58,6 @@ const ARGTYPES_HTML = {
 export function initAnm() {
   // FIXME HACK to make available to ins.md
   window.generateOpcodeTable = generateOpcodeTable;
-  window.loadAnmmap = loadAnmmap;
 
   initNames();
 
@@ -114,11 +112,8 @@ function initNames() {
     const getDefaultName = (opcode) => `ins_${opcode}`;
 
     const getMappedName = (opcode) => {
-      const map = getCurrentMap(version);
-      if (map === null) return getDefaultName(opcode);
-
-      const name = map.getMnemonic(opcode);
-      if (name === null) return getDefaultName(opcode);
+      const name = getCurrentAnmmaps()[version].ins[opcode];
+      if (name == null) return getDefaultName(opcode);
       return name;
     };
 
@@ -163,11 +158,8 @@ function initNames() {
     const getDefaultName = (opcode, type) => `[${opcode}${type === '%' ? '.0' : ''}]`;
 
     const getMappedName = (opcode, type) => {
-      const map = getCurrentMap(version);
-      if (map === null) return getDefaultName(opcode);
-
-      const name = map.getGlobal(opcode);
-      if (name === null) return getDefaultName(opcode);
+      const name = getCurrentAnmmaps()[version].vars[opcode];
+      if (name == null) return getDefaultName(opcode);
       return type + name;
     };
 
