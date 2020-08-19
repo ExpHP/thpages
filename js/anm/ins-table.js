@@ -366,8 +366,8 @@ Object.assign(ANM_INS_DATA, {
     Freezes the graphic until it is destroyed externally.
 
     [tiphide]
-    Any interpolation instructions like [ref=anm:posTime] will no longer advance.
-    No [ref=anm:case] labels will run.
+    Any interpolation instructions like [ref=anm:posTime] will no longer advance,
+    and [switching](#anm/concepts&a=switch) is disabled.
     [/tiphide]
   `},
   'stop': {sig: '', args: [], desc: `
@@ -375,7 +375,6 @@ Object.assign(ANM_INS_DATA, {
 
     [tiphide]
     This essentially behaves like an infinitely long [ref=anm:wait].
-
     Interpolation instructions like [ref=anm:posTime] will continue to advance,
     and the VM can be [switched](#anm/concepts&a=switch) at any time.
     [/tiphide]
@@ -412,18 +411,18 @@ Object.assign(ANM_INS_DATA, {
     keep time labels simple)
     [/tiphide]
   `},
-  'caseReturn': {sig: '', args: [], wip: 1, desc: `
-    Can be used at the end of a [ref=anm:case] to return back to the moment just before the VM was switched.
+  'caseReturn': {sig: '', args: [], desc: `
+    Can be used at the end of a [ref=anm:case] block to return back
+    to the moment just before the VM was [switched](#anm/concepts&a=switch).
 
     [tiphide]
-    Oftentimes the game uses another [ref=anm:stop] instruction instead at the end of a [ref=anm:case] block.
-    You can read a more detailed discussion in the section on [switching](#anm/concepts&a=switch),
-    but for now the broad recommendation is:
+    This is not the only way to end a [ref=anm:case] block; oftentimes the game may use a [ref=anm:stop] instead.
+    You can read a more detailed discussion in the link above on switching, but the broad recommendation is:
 
-    * [ref=anm:caseReturn] if required if you want to allow your VM to return to a longer running part of
+    * [ref=anm:caseReturn] is required if you want to allow your VM to return to a longer running part of
       the script after being interrupted.
-    * If [ref=anm:caseReturn] can be *dangerous* if there is any waiting in the middle of your
-      [ref=anm:case] block where another switch could interrupt it.
+    * If [ref=anm:caseReturn] is used, you should avoid any form of waiting inside that particular
+      [ref=anm:case] block. (else risk creating an infinite loop...)
     [/tiphide]
   `},
 });
