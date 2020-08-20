@@ -5,7 +5,7 @@ import {initAnm} from "./anm/main.js";
 import {initTips} from "./tips.ts";
 import {initSettings, clearSettingsCache} from "./settings.ts";
 import {globalNames, globalLinks} from "./resolver.ts";
-import {buildQuery, parseQuery, queryEqualsUptoAnchor} from "./url-format.ts";
+import {queryUrl, parseQuery, queryEqualsUptoAnchor} from "./url-format.ts";
 
 import hljs from "highlight.js/lib/core";
 import hljsCLike from "highlight.js/lib/languages/c-like";
@@ -117,8 +117,8 @@ function getNavEntryHref(item, path) {
     item.type == "href"
       ? item.url
       : item.type == "site"
-        ? '#' + buildQuery({s: path + item.url})
-        : "#e=" + item.type // error
+        ? queryUrl({s: path + item.url})
+        : "e=" + item.type // error
   );
   return `href='${url}'`;
 }
@@ -186,7 +186,7 @@ function loadContent(path, file, writeQuery=true) {
     loadMd(getErrorString(path, file), path, file);
   });
   if (writeQuery) {
-    const query = buildQuery({
+    const query = queryUrl({
       "s": path+file,
     });
     window.location.hash = query;
@@ -216,7 +216,7 @@ function getErrorStringFromList(group, list) {
       str += getErrorStringFromList(group, entry.children);
     } else if (entry.type == "site") {
       const path = (entry.url[0] != "/" ? group.path : "") + entry.url;
-      const url = "#"+buildQuery({s: path});
+      const url = queryUrl({s: path});
       str += "- `" + path + ".md` - ["+entry.name+"]("+url+")  \n";
     } else {
       const url = entry.url;
@@ -293,7 +293,7 @@ function initOrScrollToContent() {
 
   // don't reload same page (also works for index, where query.s === '')
   if (!(lastQuery && queryEqualsUptoAnchor(lastQuery, query))) {
-    if (!query.s) query.s = '/index';
+    if (query.s === '') query.s = 'index';
 
     const spl = query.s.split("/");
     const file = spl.pop();

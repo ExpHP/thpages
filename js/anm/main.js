@@ -3,7 +3,7 @@ import {ANM_VAR_DATA, ANM_VARS_BY_NUMBER, ANM_VAR_NUMBER_REVERSE} from './var-ta
 import {globalRefNames, globalRefTips, globalRefLinks, getRefNameKey, getRefLinkKey} from '../ref.js';
 import {MD} from '../main.js';
 import {globalNames, globalLinks, PrefixResolver} from '../resolver.ts';
-import {parseQuery, buildQuery, DEFAULT_GAME} from '../url-format.ts';
+import {parseQuery, queryUrl, DEFAULT_GAME} from '../url-format.ts';
 import {gameData} from '../game-names.ts';
 
 import {getCurrentAnmmaps} from '../settings.ts';
@@ -86,7 +86,7 @@ function setupGameSelector($select) {
 
   $select.addEventListener('change', (ev) => {
     const query = Object.assign({}, currentQuery, {g: ev.target.value});
-    window.location.href = '#' + buildQuery(query);
+    window.location.href = queryUrl(query);
   });
 }
 
@@ -244,7 +244,7 @@ function generateOpcodeTable() {
 
     const groupAnchor = `group-${group.min}`;
     const navQuery = Object.assign({}, currentQuery, {a: groupAnchor});
-    const navDest = '#' + buildQuery(navQuery);
+    const navDest = queryUrl(navQuery);
     navigation += /* html */`<li><a href="${navDest}">${group.title} (${group.min}..)</a></li>`;
 
     table += /* html */`\n<h2 id="${groupAnchor}">${group.min}-${group.max}: ${group.title}</h2>`;
@@ -417,7 +417,7 @@ function getAnmInsUrlByRef(ref, context) {
   if (!ins) return null;
   const game = ins.maxGame;
   const opcode = ANM_OPCODE_REVERSE[game][ref];
-  return '#' + buildQuery({s: INS_TABLE_PAGE, g: game, a: `ins-${opcode}`});
+  return queryUrl({s: INS_TABLE_PAGE, g: game, a: `ins-${opcode}`});
 }
 
 // Try to identify links to things available on the current page,
@@ -431,5 +431,5 @@ function getSamePageAnmInsUrlByRef(ref, context) {
 
   // change the anchor on the existing query to guarantee no reload
   context.a = `ins-${opcode}`;
-  return '#' + buildQuery(context);
+  return queryUrl(context);
 }

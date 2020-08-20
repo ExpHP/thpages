@@ -31,6 +31,8 @@ function decodeComponent(s: string): string {
 
 export function parseQuery(s: string): Query {
   const ret: Record<string, string | null> = {s: null};
+
+  // window.location.hash can be '' so allow hash to be optional
   if (s.startsWith('#')) {
     s = s.substring(1);
   }
@@ -58,7 +60,7 @@ export function parseQuery(s: string): Query {
   return ret as Query;
 }
 
-export function buildQuery(query: Query) {
+export function queryUrl(query: Query) {
   let str = encodeComponent(query.s || '');
   for (const [key, value] of Object.entries(query)) {
     if (key !== 's' && key !== 'a') {
@@ -68,7 +70,7 @@ export function buildQuery(query: Query) {
   if (query.a !== undefined) {
     str += `&a=${encodeComponent(query.a)}`;
   }
-  return str;
+  return '#' + str;
 }
 
 // Query values are all strings so this simple test is fine.
@@ -98,43 +100,43 @@ const ENCODE = 'encode';
 const DECODE = 'decode';
 const TESTS: ['2way' | 'encode' | 'decode', Query, string][] = [
   // order of non-special props is preserved
-  [TWO_WAY, {s: 'a/b', x: 'lol', b: 'true', a: 'dummy'}, 'a/b&x=lol&b=true&a=dummy'],
-  [TWO_WAY, {s: 'a/b', b: 'true', x: 'lol', a: 'dummy'}, 'a/b&b=true&x=lol&a=dummy'],
+  [TWO_WAY, {s: 'a/b', x: 'lol', b: 'true', a: 'dummy'}, '#a/b&x=lol&b=true&a=dummy'],
+  [TWO_WAY, {s: 'a/b', b: 'true', x: 'lol', a: 'dummy'}, '#a/b&b=true&x=lol&a=dummy'],
   // s is always first, a is always last
-  [TWO_WAY, {x: 'lol', a: 'dummy', s: 'a/b', b: 'true'}, 'a/b&x=lol&b=true&a=dummy'],
-  [TWO_WAY, {a: 'dummy', s: 'a/b'}, 'a/b&a=dummy'],
+  [TWO_WAY, {x: 'lol', a: 'dummy', s: 'a/b', b: 'true'}, '#a/b&x=lol&b=true&a=dummy'],
+  [TWO_WAY, {a: 'dummy', s: 'a/b'}, '#a/b&a=dummy'],
   // missing a
-  [TWO_WAY, {x: 'lol', s: 'a/b', b: 'true'}, 'a/b&x=lol&b=true'],
-  [TWO_WAY, {s: 'a/b'}, 'a/b'],
+  [TWO_WAY, {x: 'lol', s: 'a/b', b: 'true'}, '#a/b&x=lol&b=true'],
+  [TWO_WAY, {s: 'a/b'}, '#a/b'],
   // missing s (could happen in non-typescript code, and we want to still be robust to it)
-  [ENCODE, {x: 'lol', a: 'dummy', b: 'true'} as unknown as Query, '&x=lol&b=true&a=dummy'],
-  [ENCODE, {a: 'dummy'} as Query, '&a=dummy'],
-  [DECODE, {s: '', x: 'lol', a: 'dummy', b: 'true'}, '&x=lol&b=true&a=dummy'],
-  [DECODE, {s: '', a: 'dummy'}, '&a=dummy'],
-  [DECODE, {s: '', x: 'lol', a: 'dummy', b: 'true'}, 'x=lol&b=true&a=dummy'],
-  [DECODE, {s: '', a: 'dummy'}, 'a=dummy'],
+  [ENCODE, {x: 'lol', a: 'dummy', b: 'true'} as unknown as Query, '#&x=lol&b=true&a=dummy'],
+  [ENCODE, {a: 'dummy'} as Query, '#&a=dummy'],
+  [DECODE, {s: '', x: 'lol', a: 'dummy', b: 'true'}, '#&x=lol&b=true&a=dummy'],
+  [DECODE, {s: '', a: 'dummy'}, '#&a=dummy'],
+  [DECODE, {s: '', x: 'lol', a: 'dummy', b: 'true'}, '#x=lol&b=true&a=dummy'],
+  [DECODE, {s: '', a: 'dummy'}, '#a=dummy'],
   // optional s=
-  [DECODE, {s: 'anm/ins', a: 'dummy'}, 'a=dummy&s=anm/ins'],
-  [DECODE, {s: 'anm/ins'}, 's=anm/ins'],
+  [DECODE, {s: 'anm/ins', a: 'dummy'}, '#a=dummy&s=anm/ins'],
+  [DECODE, {s: 'anm/ins'}, '#s=anm/ins'],
   // comma legal
-  [TWO_WAY, {s: ',', b: ',', a: ','}, ',&b=,&a=,'],
+  [TWO_WAY, {s: ',', b: ',', a: ','}, '#,&b=,&a=,'],
 ];
 // percent encoding
 const METACHARS = '&=%#';
 const METACHARS_ENCODED = '%26%3D%25%23';
-TESTS.push([TWO_WAY, {s: METACHARS, b: METACHARS, a: METACHARS}, `${METACHARS_ENCODED}&b=${METACHARS_ENCODED}&a=${METACHARS_ENCODED}`]);
+TESTS.push([TWO_WAY, {s: METACHARS, b: METACHARS, a: METACHARS}, `#${METACHARS_ENCODED}&b=${METACHARS_ENCODED}&a=${METACHARS_ENCODED}`]);
 
 // percent-encoded key. Though I certainly hope we'll never need this...
 const testObj: Query = {s: 'a'};
 testObj[METACHARS] = 'b';
-TESTS.push([TWO_WAY, testObj, `a&${METACHARS_ENCODED}=b`]);
+TESTS.push([TWO_WAY, testObj, `#a&${METACHARS_ENCODED}=b`]);
 
 let fail = false;
 for (const [testKind, query, str] of TESTS) {
   if (testKind === TWO_WAY || testKind === ENCODE) {
-    if (buildQuery(query) !== str) {
+    if (queryUrl(query) !== str) {
       fail = true;
-      window.console.error("Encoding test failed", query, buildQuery(query), str);
+      window.console.error("Encoding test failed", query, queryUrl(query), str);
     }
   }
   if (testKind === TWO_WAY || testKind === DECODE) {
