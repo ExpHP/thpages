@@ -24,9 +24,9 @@ const ANM_VAR_NAMES = new PrefixResolver();
 
 const GAME_VERSIONS = {
   // FIXME
-  "07": 'v7', "08": 'v7', "09": 'v7', "095": 'v7',
-  "10": 'v7', "11": 'v7',
+  "07": 'v7', "08": 'v7', "09": 'v7',
   // END FIXME
+  "095": 'v7', "10": 'v7', "11": 'v7',
   "12": 'v7', "125": 'v7', "128": 'v7',
   "13": 'v8', "14": 'v8', "143": 'v8', "15": 'v8',
   "16": 'v8', "165": 'v8', "17": 'v8',
@@ -37,7 +37,7 @@ const VERSIONS = ["v7", "v8"];
 // game to use when looking up a variable to get its type,
 // or looking up a ref to get its opcode.
 const VERSION_DEFAULT_GAMES_FOR_INTERNAL_LOOKUP = {
-  'v7': '125',
+  'v7': '128',
   'v8': '17',
 };
 

@@ -29,7 +29,7 @@ export const GROUPS_V8 = [
 ];
 
 // ---- V7 ----
-ANM_BY_OPCODE.set('12', {
+ANM_BY_OPCODE.set('11', {
   0: {ref: 'anm:nop'},
   1: {ref: 'anm:delete'},
   2: {ref: 'anm:static', wip: 1},
@@ -140,17 +140,20 @@ ANM_BY_OPCODE.set('12', {
   99: {ref: 'anm:v8-flag-419', wip: 1},
 
   100: {ref: 'anm:posBezier'},
-  101: {ref: 'anm:v7-texCircle2'}, // unknown member of texCircle family (type 13)
-  102: {ref: 'anm:drawRect', wip: 1},
-  103: {ref: 'anm:v7-drawRect1'}, // unknown member of drawRect family
+  101: {ref: 'anm:v7-texCircle2'}, // type 13 in GFW
+  102: {ref: 'anm:spriteRand'},
+  103: {ref: 'anm:v7-drawRect1'}, // type 15 in GFW
+});
+
+ANM_BY_OPCODE.set('12', Object.assign({}, ANM_BY_OPCODE.get('11'), {
   104: {ref: 'anm:drawPoly'},
   105: {ref: 'anm:drawPolyBorder'},
   106: {ref: 'anm:uvScale'},
   107: {ref: 'anm:uvScaleTime'},
-  108: {ref: 'anm:v7-drawRect2'}, // unknown member of drawRect family
-  109: {ref: 'anm:v7-drawRect3'}, // unknown member of drawRect family
-  110: {ref: 'anm:v7-drawRect4'}, // unknown member of drawRect family
-});
+  108: {ref: 'anm:v7-drawRect2'}, // type 19 in GFW
+  109: {ref: 'anm:v7-drawRect3'}, // type 20 in GFW
+  110: {ref: 'anm:v7-drawRect4'}, // type 21 in GFW
+}));
 
 ANM_BY_OPCODE.set('125', Object.assign({}, ANM_BY_OPCODE.get('12'), {
   111: UNASSIGNED, // (DS: hi:6-8)
@@ -159,7 +162,7 @@ ANM_BY_OPCODE.set('125', Object.assign({}, ANM_BY_OPCODE.get('12'), {
 
 ANM_BY_OPCODE.set('128', Object.assign({}, ANM_BY_OPCODE.get('125'), {
   113: {ref: 'anm:rotateTime2D'},
-  114: UNASSIGNED, // unknown blargle
+  114: {ref: 'anm:v7-texCircle3'}, // type 14 in GFW
 }));
 
 // ---- V8 ----
@@ -316,6 +319,11 @@ ANM_BY_OPCODE.set('16', Object.assign({}, ANM_BY_OPCODE.get('15'), {
   613: {ref: 'anm:drawLine'},
 }));
 
+ANM_BY_OPCODE.set('165', Object.assign({}, ANM_BY_OPCODE.get('16'), {
+  // TODO: ACTUALLY LOOK AT VD (this was just noticed in thanm.c)
+  439: UNASSIGNED,
+}));
+
 ANM_BY_OPCODE.set('17', Object.assign({}, ANM_BY_OPCODE.get('16'), {
   // nothing was added
 }));
@@ -396,7 +404,7 @@ Object.assign(ANM_INS_DATA, {
 
     An extremely similar effect can be achieved using [time labels](#anm/concepts&a=time):
     [code]
-    // Option 1: incresing the time label between instructions (+n: syntax)
+    // Option 1: increasing the time label between instructions (+n: syntax)
       [ref=anm:posTime](6, 0, 1f, 0f, 0f);
     +6:
       [ref=anm:alpha](0);
@@ -492,8 +500,8 @@ for (const [mnemonic, operator] of Object.entries(OPERATOR_3_DATA)) {
 
 Object.assign(ANM_INS_DATA, {
   // TODO: link instruction that sets RNG flag once we find it >_>
-  'v7-rand': {sig: '$S', args: ['x', 'n'], succ: 'rand', desc: 'Draw a random integer `0 <= x < n` using the selected RNG (see TODO: REF).'},
-  'v7-randF': {sig: '$S', args: ['x', 'n'], succ: 'randF', desc: 'Draw a random integer `0 <= x < n` using the selected RNG (see TODO: REF).'},
+  'v7-rand': {sig: '$S', args: ['x', 'n'], succ: 'rand', desc: 'Draw a random integer `0 <= x < n` using the selected RNG (see [ref=anm:v7-randMode]).'},
+  'v7-randF': {sig: '%f', args: ['x', 'r'], succ: 'randF', desc: 'Draw a random float `0 <= x <= r` using the selected RNG (see [ref=anm:v7-randMode]).'},
 
   'v7-randMode': {
     sig: 'S', args: ['mode'], succ: 'v8-randMode', desc: `
@@ -564,7 +572,10 @@ Object.assign(ANM_INS_DATA, {
   `},
   'spriteRand': {
     sig: 'SS', args: ['a', 'b'], desc: `
-    Selects a random sprite from \`a\` (inclusive) to \`a + b\` (exclusive) using the [animation RNG](#anm/concepts&a=rng).
+    Selects a random sprite from \`a\` (inclusive) to \`a + b\` (exclusive).
+
+    * (&ndash;[game=128]): uses the [replay RNG](#anm/concepts&a=rng), regardless of [ref=anm:v7-randMode].
+    * ([game=13]&ndash;): uses the [animation RNG](#anm/concepts&a=rng).
   `},
   'blendMode': {
     sig: 'S', args: ['mode'], desc: `
@@ -847,7 +858,7 @@ Object.assign(ANM_INS_DATA, {
     | \`v\` | Center | Top  | Bottom |
     [/tiphide]
   `},
-  'anchorOffset': {sig: 'SS', args: ['dx', 'dy'], desc: `
+  'anchorOffset': {sig: 'ff', args: ['dx', 'dy'], desc: `
     Nudge the anchor point of the sprite right by \`dx\` pixels and down by \`dy\` pixels in the source image.
     Important for asymmetric bullet sprites because the anchor position is the center point for rotation and scaling.
 
@@ -1153,7 +1164,7 @@ Object.assign(ANM_INS_DATA, {
     Creates a special child graphic that may have additional hardcoded behavior.
 
     [tiphide]
-    [wip]Haven't gotten to playing around with this or reverse engineering any of those hardcoded behaviors yet.[/wip]
+    Different games have different effects!  Someday we'll have a table of them.
     [/tiphide]
   `},
   'createRoot': {
@@ -1288,11 +1299,12 @@ Object.assign(ANM_INS_DATA, {
   'v8-flag-419': {sig: 'S', args: ['enable'], wip: 2, desc: `[wip=2]Sets the state of an unknown bitflag.[/wip]`},
   'v8-flag-431': {sig: 'S', args: ['enable'], wip: 2, desc: `[wip=2]Sets the state of an unknown bitflag.[/wip]`},
   'v8-flag-432': {sig: 'S', args: ['enable'], wip: 2, desc: `[wip=2]Sets the state of an unknown bitflag.[/wip]`},
-  'v7-texCircle2': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified member of texCircle family, likely [ref=anm:texCircle][/wip]'},
-  'v7-drawRect1': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified member of drawRect family[/wip]'},
-  'v7-drawRect2': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified member of drawRect family[/wip]'},
-  'v7-drawRect3': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified member of drawRect family[/wip]'},
-  'v7-drawRect4': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified member of drawRect family[/wip]'},
+  'v7-texCircle2': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified member of texCircle family, likely [ref=anm:textureArcEven][/wip]'},
+  'v7-texCircle3': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified member of texCircle family, likely [ref=anm:textureArc][/wip]'},
+  'v7-drawRect1': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified member of drawRect family, likely [ref=anm:drawRect][/wip]'},
+  'v7-drawRect2': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified member of drawRect family, likely [ref=anm:drawRectGrad][/wip]'},
+  'v7-drawRect3': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified member of drawRect family, likely [ref=anm:drawRectShadow][/wip]'},
+  'v7-drawRect4': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified member of drawRect family, likely [ref=anm:drawRectShadowGrad][/wip]'},
   'v7-mathSin': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified trig function. Probably `sin` like in v8, but tough to be sure without testing.[/wip]'},
   'v7-mathCos': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified trig function. Probably `cos` like in v8, but tough to be sure without testing.[/wip]'},
   'v7-mathTan': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified trig function. Probably `tan` like in v8, but tough to be sure without testing.[/wip]'},

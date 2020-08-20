@@ -291,9 +291,9 @@ function setActiveNavigation(path, file) {
 function initOrScrollToContent() {
   const query = parseQuery(window.location.hash);
 
-  // don't reload same page (also works for index, where query.s === undefined)
+  // don't reload same page (also works for index, where query.s === '')
   if (!(lastQuery && queryEqualsUptoAnchor(lastQuery, query))) {
-    if (!query.s) query.s = '/index'; // empty string == index
+    if (!query.s) query.s = '/index';
 
     const spl = query.s.split("/");
     const file = spl.pop();
