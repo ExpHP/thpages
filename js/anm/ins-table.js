@@ -15,9 +15,6 @@ export const UNKNOWN_SIG = {};
  * There are NO GUARANTEES about iteration order of opcodes within a game.
  */
 export const ANM_BY_OPCODE = new Map(); // has to be a map because 'integer' keys defy insertion order
-export const GROUPS_PRE_V8 = [
-  {min: 0, max: 999, title: 'All'},
-];
 export const GROUPS_V8 = [
   {min: 0, max: 99, title: 'System'},
   {min: 100, max: 199, title: 'Math'},

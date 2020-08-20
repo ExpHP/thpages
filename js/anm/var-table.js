@@ -144,12 +144,12 @@ Object.assign(ANM_VAR_DATA, {
   'i5': {type: '$', mut: true, wip: 1, desc: `[wip]Another general-purpose int? (#5)[/wip]`},
 
   // v7 random numbers
-  'v7-randrad': {type: '%', mut: false, desc: `Draws a random value from \`-PI\` to \`PI\` using the selected RNG (see [ref=anm:randMode]).`},
-  'v7-randf-01': {type: '%', mut: false, desc: `Draws a random value from \`0.0\` to \`1.0\` using the selected RNG (see [ref=anm:randMode]).`},
-  'v7-randf-11': {type: '%', mut: false, desc: `Draws a random value from \`-1.0\` to \`1.0\` using the selected RNG (see [ref=anm:randMode]).`},
+  'v7-randrad': {type: '%', mut: false, desc: `Draws a random value from \`-PI\` to \`PI\` using the selected RNG (see [ref=anm:v7-randMode]).`},
+  'v7-randf-01': {type: '%', mut: false, desc: `Draws a random value from \`0.0\` to \`1.0\` using the selected RNG (see [ref=anm:v7-randMode]).`},
+  'v7-randf-11': {type: '%', mut: false, desc: `Draws a random value from \`-1.0\` to \`1.0\` using the selected RNG (see [ref=anm:v7-randMode]).`},
   'v7-rand': {
     type: '$', mut: false, desc: `
-    Draws a random integer using the selected RNG (see [ref=anm:randMode]).
+    Draws a random integer using the selected RNG (see [ref=anm:v7-randMode]).
 
     [wip]What's the range?[/wip]
     [wip=2]My best guess based on the code is that, when read as integer, this generates a uniformly-distributed signed 32-bit integer

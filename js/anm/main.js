@@ -1,14 +1,11 @@
-import {GROUPS_V8, GROUPS_PRE_V8, ANM_INS_DATA, ANM_BY_OPCODE, ANM_OPCODE_REVERSE, DUMMY_DATA} from './ins-table.js';
+import {GROUPS_V8, ANM_INS_DATA, ANM_BY_OPCODE, ANM_OPCODE_REVERSE, DUMMY_DATA} from './ins-table.js';
 import {ANM_VAR_DATA, ANM_VARS_BY_NUMBER, ANM_VAR_NUMBER_REVERSE} from './var-table.js';
 import {globalRefNames, globalRefTips, globalRefLinks, getRefNameKey, getRefLinkKey} from '../ref.js';
 import {MD} from '../main.js';
 import {globalNames, globalLinks, PrefixResolver} from '../resolver.ts';
 import {parseQuery, queryUrl, queryGame} from '../url-format.ts';
 import {gameData} from '../game-names.ts';
-
 import {getCurrentAnmmaps} from '../settings.ts';
-
-const INS_TABLE_PAGE = 'anm/ins';
 
 /**
  * Resolves names from the suffix of 'anm:' namekeys,
@@ -52,8 +49,9 @@ const ARGTYPES_HTML = {
 
 export function initAnm() {
   // FIXME HACK to make available to ins.md
-  window.generateOpcodeTable = generateOpcodeTable;
   window.setupGameSelector = setupGameSelector;
+  window.generateAnmInsTableHtml = () => generateTablePageHtml(INS_HANDLERS);
+  window.generateAnmVarTableHtml = () => generateTablePageHtml(VAR_HANDLERS);
 
   initNames();
 
@@ -61,6 +59,8 @@ export function initAnm() {
   registerRefTipsForTable(VAR_HANDLERS); // "ref:anmvar:" tips
   registerRefNamesForTable(INS_HANDLERS); // "ref:anm:" names
   registerRefNamesForTable(VAR_HANDLERS); // "ref:anmvar:" names
+  globalRefLinks.registerPrefix('anm', (id, ctx) => getUrlByRef('anm:' + id, ctx, INS_HANDLERS));
+  globalRefLinks.registerPrefix('anmvar', (id, ctx) => getUrlByRef('anmvar:' + id, ctx, VAR_HANDLERS));
 }
 
 function setupGameSelector($select) {
@@ -90,11 +90,6 @@ function validateGameString(game) {
   if (!GAME_VERSIONS[game]) {
     throw new Error(`bad game: '${game}'`);
   }
-}
-
-function getGroups(game) {
-  validateGameString(game);
-  return game >= '13' ? GROUPS_V8 : GROUPS_PRE_V8;
 }
 
 function getOpcodeNameKey(game, opcode) {
@@ -163,27 +158,36 @@ function initNames() {
     });
   }
   globalNames.registerPrefix('anmvar', (s, ctx) => ANM_VAR_NAMES.getNow(s, ctx));
-
-  globalRefLinks.registerPrefix('anm', (id, ctx) => getAnmInsUrlByRef('anm:' + id, ctx));
 }
 
 // The implementation of instructions and variables share lots of commonalities,
 // which are factored out using this very ad-hoc "table handlers" type.
 const INS_HANDLERS = {
+  tablePage: 'anm/ins',
+  formatAnchor: (opcode) => `ins-${opcode}`,
   dataTable: ANM_INS_DATA,
   reverseTable: ANM_OPCODE_REVERSE,
   tableByOpcode: ANM_BY_OPCODE,
+  dummyDataWhenNoRef: DUMMY_DATA,
   mainPrefix: 'anm', // prefix used in crossrefs ("anm:pos") and name keys ("anm:v8:pos")
+  maxNumberRange: {min: 0, max: 1300}, // range that doesn't take long to iterate but is guaranteed to hold all opcodes
   descFromData: (data) => data.desc,
   generateTipHeader: generateAnmInsSiggy,
+  getGroups: (game) => GAME_VERSIONS[game] == 'v8' ? GROUPS_V8 : [{min: 0, max: 1300, title: null}],
+  generateTableRowHtml: generateInsTableRowHtml,
 };
 const VAR_HANDLERS = {
+  tablePage: 'anm/var',
+  formatAnchor: (num) => `var-${num}`,
   dataTable: ANM_VAR_DATA,
   reverseTable: ANM_VAR_NUMBER_REVERSE,
   tableByOpcode: ANM_VARS_BY_NUMBER,
+  dummyDataWhenNoRef: null, // vars always have a ref
   mainPrefix: 'anmvar', // prefix used in crossrefs ("anmvar:pos") and name keys ("anmvar:v8:pos")
   descFromData: (data) => data.desc,
   generateTipHeader: generateAnmVarHeader,
+  getGroups: (game) => [{min: 10000, max: 11000, title: null}],
+  generateTableRowHtml: generateVarTableRowHtml,
 };
 
 function registerRefTipsForTable(tableHandlers) {
@@ -224,54 +228,60 @@ function registerRefNamesForTable(tableHandlers) {
   });
 }
 
-function generateOpcodeTable() {
+function generateTablePageHtml(tableHandlers) {
+  const {getGroups, dummyDataWhenNoRef, mainPrefix, generateTableRowHtml} = tableHandlers;
+
   const currentQuery = parseQuery(window.location.hash);
   const game = queryGame(currentQuery);
-
-  let base = "";
-  let navigation = /* html */`<div class='toc'><h3>Navigation</h3><ul>`;
-  let table = "";
 
   let total = 0;
   let documented = 0;
   const groups = getGroups(game);
-  for (let i=0; i<groups.length; ++i) {
-    const group = groups[i];
 
-    const groupAnchor = `group-${group.min}`;
-    const navQuery = Object.assign({}, currentQuery, {a: groupAnchor});
-    const navDest = queryUrl(navQuery);
-    navigation += /* html */`<li><a href="${navDest}">${group.title} (${group.min}..)</a></li>`;
+  const shouldHaveNav = groups.length > 1;
+  let base = "";
+  let navigation = "";
+  let table = "";
+  if (shouldHaveNav) {
+    navigation += /* html */`<div class='toc'><h3>Navigation</h3><ul>`;
+  }
 
-    table += /* html */`\n<h2 id="${groupAnchor}">${group.min}-${group.max}: ${group.title}</h2>`;
+  for (const group of groups) {
+    if (shouldHaveNav) {
+      const groupAnchor = `group-${group.min}`;
+      const navQuery = Object.assign({}, currentQuery, {a: groupAnchor});
+      const navDest = queryUrl(navQuery);
+      navigation += /* html */`<li><a href="${navDest}">${group.title} (${group.min}..)</a></li>`;
+      table += /* html */`\n<h2 id="${groupAnchor}">${group.min}-${group.max}: ${group.title}</h2>`;
+    }
+
     table += /* html */`<table class='ins-table'>`;
-
     for (let opcode=group.min; opcode<=group.max; ++opcode) {
-      const refObj = anmInsRefByOpcode(game, opcode);
+      const refObj = getRefByOpcode(game, opcode, tableHandlers);
       if (refObj == null) continue; // instruction doesn't exist
 
       // instruction exists, but our docs may suck
       let {ref, wip} = refObj;
-      let ins = ref === null ? DUMMY_DATA : getDataByRef(ref, INS_HANDLERS); // ref null for UNASSIGNED
-      if (!ins) {
+      let data = ref === null ? dummyDataWhenNoRef : getDataByRef(ref, tableHandlers); // ref null for UNASSIGNED
+      if (!data) {
         // instruction is assigned, but ref has no entry in table
-        window.console.error(`ref ${ref} is assigned to anm opcode ${game}:${opcode} but has no data`);
-        ins = DUMMY_DATA;
+        window.console.error(`ref ${ref} is assigned to ${mainPrefix} number ${game}:${opcode} but has no data`);
+        data = dummyDataWhenNoRef;
       }
-      wip = Math.max(wip, ins.wip || 0);
+      wip = Math.max(wip, data.wip || 0);
 
       if (wip === 0) {
         documented += 1;
       }
       total += 1;
-      table += generateOpcodeTableEntry(game, ins, opcode, currentQuery);
+      table += generateTableRowHtml(game, data, opcode, currentQuery);
     }
 
     table += "</table>";
   }
-  navigation += "</ul></div>";
-  base += `Documented instructions: ${documented}/${total} (${(documented/total*100).toFixed(2)}%)<br>`;
-  base += "[wip=1]Instructions marked like this are not fully understood.[/wip]<br>[wip=2]Items like this are complete mysteries.[/wip]";
+  if (shouldHaveNav) navigation += "</ul></div>";
+  base += `Documented rate: ${documented}/${total} (${(documented/total*100).toFixed(2)}%)<br>`;
+  base += "[wip=1]Items marked like this are not fully understood.[/wip]<br>[wip=2]Items like this are complete mysteries.[/wip]";
 
   const $out = parseHtml('<div>' + MD.makeHtml(base) + MD.makeHtml(navigation) + table + '</div>');
   globalNames.transformHtml($out, currentQuery);
@@ -299,7 +309,7 @@ function generateAnmVarHeader(avar, nameKey) {
   return /* html */`<span class="var-header" data-wip="${avar.wip}">${name}</span>`;
 }
 
-function generateOpcodeTableEntry(game, ins, opcode) {
+function generateInsTableRowHtml(game, ins, opcode) {
   const nameKey = getOpcodeNameKey(game, opcode);
   let [desc] = handleTipHide(ins.desc, false);
   desc = postprocessAnmDesc(desc, false);
@@ -308,6 +318,21 @@ function generateOpcodeTableEntry(game, ins, opcode) {
   <tr class="ins-table-entry" id="ins-${opcode}">
     <td class="col-id">${opcode}</td>
     <td class="col-name">${generateAnmInsSiggy(ins, nameKey)}</td>
+    <td class="col-desc">${desc}</td>
+  </tr>
+  `;
+}
+
+function generateVarTableRowHtml(game, ins, opcode) {
+  const nameKey = getVarNameKey(game, opcode);
+  let [desc] = handleTipHide(ins.desc, false);
+  desc = postprocessAnmDesc(desc, false);
+
+  // FIXME: add a mutability column.
+  return /* html */`
+  <tr class="ins-table-entry" id="var-${opcode}">
+    <td class="col-id">${opcode}</td>
+    <td class="col-name">${generateAnmVarHeader(ins, nameKey)}</td>
     <td class="col-desc">${desc}</td>
   </tr>
   `;
@@ -351,9 +376,11 @@ function disableTooltips(desc) {
   return desc.replace(/\[ref=/g, "[ref-notip=");
 }
 
-function anmInsRefByOpcode(game, opcode) {
-  const entry = ANM_BY_OPCODE.get(game)[opcode];
-  if (entry === undefined) return null;
+function getRefByOpcode(game, opcode, tableHandlers) {
+  const {tableByOpcode} = tableHandlers;
+
+  const entry = tableByOpcode.get(game)[opcode];
+  if (entry === undefined) return null; // opcode doesn't exist in game
 
   const out = Object.assign({}, entry);
   out.wip = out.wip || 0;
@@ -387,27 +414,31 @@ function generateTip(ins, ref, context, tableHandlers) {
   return {heading, contents, omittedInfo};
 }
 
-function getAnmInsUrlByRef(ref, context) {
-  const samePageUrl = getSamePageAnmInsUrlByRef(ref, context);
+function getUrlByRef(ref, context, tableHandlers) {
+  const samePageUrl = getSamePageUrlByRef(ref, context, tableHandlers);
   if (samePageUrl != null) return samePageUrl;
 
-  const ins = getDataByRef(ref, INS_HANDLERS);
-  if (!ins) return null;
-  const game = ins.maxGame;
-  const opcode = ANM_OPCODE_REVERSE[game][ref];
-  return queryUrl({s: INS_TABLE_PAGE, g: game, a: `ins-${opcode}`});
+  const {reverseTable, tablePage, formatAnchor} = tableHandlers;
+
+  const data = getDataByRef(ref, tableHandlers);
+  if (!data) return null;
+  const game = data.maxGame;
+  const opcode = reverseTable[game][ref];
+  return queryUrl({s: tablePage, g: game, a: formatAnchor(opcode)});
 }
 
 // Try to identify links to things available on the current page,
 // so that we can build a URL that avoids regenerating the table.
-function getSamePageAnmInsUrlByRef(ref, context) {
-  if (context.s !== INS_TABLE_PAGE) return null; // not on right page
+function getSamePageUrlByRef(ref, context, tableHandlers) {
+  const {reverseTable, tablePage, formatAnchor} = tableHandlers;
+
+  if (context.s !== tablePage) return null; // not on right page
 
   const curGame = queryGame(context);
-  const opcode = ANM_OPCODE_REVERSE[curGame][ref];
+  const opcode = reverseTable[curGame][ref];
   if (opcode == null) return null; // this instr is not in the current game
 
   // change the anchor on the existing query to guarantee no reload
-  context.a = `ins-${opcode}`;
+  context.a = formatAnchor(opcode);
   return queryUrl(context);
 }

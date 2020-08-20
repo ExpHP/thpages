@@ -11,7 +11,7 @@ onContentLoad(async function() {
     window.setTimeout(function() {
         const target = document.querySelector(".ecl-table-wrapper");
         target.innerHTML = '';
-        target.appendChild(generateAnmInsTableHtml());
+        target.appendChild(generateAnmVarTableHtml());
     }, 1)
 });
 [/script]
