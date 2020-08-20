@@ -3,7 +3,7 @@ import {ANM_VAR_DATA, ANM_VARS_BY_NUMBER, ANM_VAR_NUMBER_REVERSE} from './var-ta
 import {globalRefNames, globalRefTips, globalRefLinks, getRefNameKey, getRefLinkKey} from '../ref.js';
 import {MD} from '../main.js';
 import {globalNames, globalLinks, PrefixResolver} from '../resolver.ts';
-import {parseQuery, queryUrl, DEFAULT_GAME} from '../url-format.ts';
+import {parseQuery, queryUrl, queryGame} from '../url-format.ts';
 import {gameData} from '../game-names.ts';
 
 import {getCurrentAnmmaps} from '../settings.ts';
@@ -57,23 +57,16 @@ export function initAnm() {
 
   initNames();
 
-  globalRefTips.registerPrefix('anm', (id, ctx) => {
-    const ins = ANM_INS_DATA[id];
-    const ref = 'anm:' + id;
-    return generateAnmInsTip(ins, ref, ctx);
-  });
-
-  globalRefTips.registerPrefix('anmvar', (id, ctx) => {
-    const avar = ANM_VAR_DATA[id];
-    const ref = 'anmvar:' + id;
-    return generateAnmVarTip(avar, ref, ctx);
-  });
+  registerRefTipsForTable(INS_HANDLERS); // "ref:anm:" tips
+  registerRefTipsForTable(VAR_HANDLERS); // "ref:anmvar:" tips
+  registerRefNamesForTable(INS_HANDLERS); // "ref:anm:" names
+  registerRefNamesForTable(VAR_HANDLERS); // "ref:anmvar:" names
 }
 
 function setupGameSelector($select) {
   const supportedGames = ANM_BY_OPCODE.keys();
   const currentQuery = parseQuery(window.location.hash);
-  const currentGame = currentQuery.g || DEFAULT_GAME;
+  const currentGame = queryGame(currentQuery);
   for (const game of supportedGames) {
     const $option = document.createElement('option');
     $option.value = game;
@@ -117,7 +110,7 @@ function getVarNameKey(game, num) {
 function initNames() {
   // Adds e.g. a 'v7:' prefix to a name if the version doesn't match the current page.
   function possiblyAddVersionPrefix(s, version, ctx) {
-    if (ctx.g && version !== GAME_VERSIONS[ctx.g]) {
+    if (version !== GAME_VERSIONS[queryGame(ctx)]) {
       return `${version}:${s}`;
     }
     return s;
@@ -127,9 +120,9 @@ function initNames() {
   for (const version of VERSIONS) {
     const getDefaultName = (opcode) => `ins_${opcode}`;
 
-    const getMappedName = (opcode) => {
+    const getMappedName = (opcode, data) => {
       const name = getCurrentAnmmaps()[version].ins[opcode];
-      if (name == null) return getDefaultName(opcode);
+      if (name == null) return getDefaultName(opcode, data);
       return name;
     };
 
@@ -144,38 +137,14 @@ function initNames() {
   }
   globalNames.registerPrefix('anm', (s, ctx) => ANM_INS_NAMES.getNow(s, ctx));
 
-  // 'ref:anm:' names
-  globalRefNames.registerPrefix('anm', (id, ctx) => {
-    const ref = 'anm:' + id;
-    function preferredVersion() {
-      // prefer anmmap for current game if it has this instruction
-      const table = ANM_OPCODE_REVERSE[ctx.g];
-      if (table && table[ref]) { // opcode in current game?
-        return GAME_VERSIONS[ctx.g];
-      }
-
-      // else find the latest game that has it and use that anmmap
-      const entry = anmInsDataByRef(ref);
-      if (!entry) return null;
-      return GAME_VERSIONS[entry.maxGame];
-    }
-
-    const version = preferredVersion();
-    if (!version) return null;
-
-    const versionGame = VERSION_DEFAULT_GAMES_FOR_INTERNAL_LOOKUP[version];
-    const opcode = ANM_OPCODE_REVERSE[versionGame][ref];
-    if (opcode == null) return null;
-    return globalNames.getNow(`anm:${version}:${opcode}`, ctx);
-  });
-
   // Variables
+  // (this is sufficiently different from instructions that we'll just put up with the copypasta)
   for (const version of VERSIONS) {
-    const getDefaultName = (opcode, type) => `[${opcode}${type === '%' ? '.0' : ''}]`;
+    const getDefaultName = (opcode, type) => `[${opcode}${type === '%' ? '.0f' : ''}]`;
 
     const getMappedName = (opcode, type) => {
       const name = getCurrentAnmmaps()[version].vars[opcode];
-      if (name == null) return getDefaultName(opcode);
+      if (name == null) return getDefaultName(opcode, type);
       return type + name;
     };
 
@@ -183,54 +152,81 @@ function initNames() {
       const opcode = parseInt(suffix, 10);
       if (Number.isNaN(opcode)) return null;
 
-      // try to find the type, else assume integer
-      let type = '$';
+      // Variables are always required to have crossrefs associated with them so that we can get the type
       const game = VERSION_DEFAULT_GAMES_FOR_INTERNAL_LOOKUP[version];
-      if (game && ANM_VARS_BY_NUMBER.get(game)) {
-        const {ref} = ANM_VARS_BY_NUMBER.get(game)[opcode];
-        const avar = anmVarDataByRef(ref);
-        if (avar) {
-          type = avar.type;
-        }
-      }
+      const entry = ANM_VARS_BY_NUMBER.get(game)[opcode];
+      if (entry == null) return null;
+      const data = getDataByRef(entry.ref, VAR_HANDLERS);
 
-      const name = getMappedName(opcode, type);
+      const name = getMappedName(opcode, data.type);
       return possiblyAddVersionPrefix(name, version, ctx);
     });
   }
   globalNames.registerPrefix('anmvar', (s, ctx) => ANM_VAR_NAMES.getNow(s, ctx));
 
-  // FIXME copypasta
-  globalRefNames.registerPrefix('anmvar', (id, ctx) => {
-    const ref = 'anmvar:' + id;
+  globalRefLinks.registerPrefix('anm', (id, ctx) => getAnmInsUrlByRef('anm:' + id, ctx));
+}
+
+// The implementation of instructions and variables share lots of commonalities,
+// which are factored out using this very ad-hoc "table handlers" type.
+const INS_HANDLERS = {
+  dataTable: ANM_INS_DATA,
+  reverseTable: ANM_OPCODE_REVERSE,
+  tableByOpcode: ANM_BY_OPCODE,
+  mainPrefix: 'anm', // prefix used in crossrefs ("anm:pos") and name keys ("anm:v8:pos")
+  descFromData: (data) => data.desc,
+  generateTipHeader: generateAnmInsSiggy,
+};
+const VAR_HANDLERS = {
+  dataTable: ANM_VAR_DATA,
+  reverseTable: ANM_VAR_NUMBER_REVERSE,
+  tableByOpcode: ANM_VARS_BY_NUMBER,
+  mainPrefix: 'anmvar', // prefix used in crossrefs ("anmvar:pos") and name keys ("anmvar:v8:pos")
+  descFromData: (data) => data.desc,
+  generateTipHeader: generateAnmVarHeader,
+};
+
+function registerRefTipsForTable(tableHandlers) {
+  const {mainPrefix, dataTable} = tableHandlers;
+  globalRefTips.registerPrefix(mainPrefix, (id, ctx) => {
+    const ins = dataTable[id];
+    const ref = `${mainPrefix}:${id}`;
+    return generateTip(ins, ref, ctx, tableHandlers);
+  });
+}
+
+function registerRefNamesForTable(tableHandlers) {
+  const {mainPrefix, reverseTable} = tableHandlers;
+  globalRefNames.registerPrefix(mainPrefix, (id, ctx) => {
+    const ref = `${mainPrefix}:${id}`;
+
     function preferredVersion() {
       // prefer anmmap for current game if it has this instruction
-      const table = ANM_VAR_NUMBER_REVERSE[ctx.g];
+      const currentGame = queryGame(ctx);
+      const table = reverseTable[currentGame];
       if (table && table[ref]) { // opcode in current game?
-        return GAME_VERSIONS[ctx.g];
+        return GAME_VERSIONS[currentGame];
       }
 
       // else find the latest game that has it and use that anmmap
-      const entry = anmVarDataByRef(ref);
-      if (!entry) return null;
-      return GAME_VERSIONS[entry.maxGame];
+      const data = getDataByRef(ref, tableHandlers);
+      if (!data) return null;
+      return GAME_VERSIONS[data.maxGame];
     }
 
     const version = preferredVersion();
     if (!version) return null;
 
     const versionGame = VERSION_DEFAULT_GAMES_FOR_INTERNAL_LOOKUP[version];
-    const opcode = ANM_VAR_NUMBER_REVERSE[versionGame][ref];
+    const opcode = reverseTable[versionGame][ref];
     if (opcode == null) return null;
-    return globalNames.getNow(`anmvar:${version}:${opcode}`, ctx);
+    return globalNames.getNow(`${mainPrefix}:${version}:${opcode}`, ctx);
   });
-
-  globalRefLinks.registerPrefix('anm', (id, ctx) => getAnmInsUrlByRef('anm:' + id, ctx));
 }
 
 function generateOpcodeTable() {
   const currentQuery = parseQuery(window.location.hash);
-  const game = currentQuery.g || DEFAULT_GAME;
+  const game = queryGame(currentQuery);
 
   let base = "";
   let navigation = /* html */`<div class='toc'><h3>Navigation</h3><ul>`;
@@ -256,7 +252,7 @@ function generateOpcodeTable() {
 
       // instruction exists, but our docs may suck
       let {ref, wip} = refObj;
-      let ins = ref === null ? DUMMY_DATA : anmInsDataByRef(ref); // ref null for UNASSIGNED
+      let ins = ref === null ? DUMMY_DATA : getDataByRef(ref, INS_HANDLERS); // ref null for UNASSIGNED
       if (!ins) {
         // instruction is assigned, but ref has no entry in table
         window.console.error(`ref ${ref} is assigned to anm opcode ${game}:${opcode} but has no data`);
@@ -300,7 +296,7 @@ function generateAnmInsSiggy(ins, nameKey) {
 
 function generateAnmVarHeader(avar, nameKey) {
   const name = globalNames.getHtml(nameKey);
-  return /* html */`<span class="var-name" data-wip="${avar.wip}">${name}</span>`;
+  return /* html */`<span class="var-header" data-wip="${avar.wip}">${name}</span>`;
 }
 
 function generateOpcodeTableEntry(game, ins, opcode) {
@@ -371,41 +367,23 @@ function stripRefPrefix(prefix, ref) {
   return ref.substring(prefix.length + 1);
 }
 
-// Get instruction data for an 'anm:' ref id.
-function anmInsDataByRef(ref) {
-  const id = stripRefPrefix('anm', ref);
+// Get instruction data for an 'anm:' or 'anmvar:' ref id.
+function getDataByRef(ref, {mainPrefix, dataTable}) {
+  const id = stripRefPrefix(mainPrefix, ref);
 
-  const out = ANM_INS_DATA[id];
+  const out = dataTable[id];
   if (out == null) {
-    window.console.warn(`bad anm crossref: ${id}`);
+    window.console.warn(`bad ${mainPrefix} crossref: ${id}`);
     return null;
   }
   return out;
 }
 
-// Get data for an 'anmvar:' ref id.
-function anmVarDataByRef(ref) {
-  const id = stripRefPrefix('anmvar', ref);
-
-  const out = ANM_VAR_DATA[id];
-  if (out == null) {
-    window.console.warn(`bad anmvar crossref: ${id}`);
-    return null;
-  }
-  return out;
-}
-
-function generateAnmInsTip(ins, ref) {
-  const [desc, omittedInfo] = handleTipHide(ins.desc, true);
+function generateTip(ins, ref, context, tableHandlers) {
+  const {descFromData, generateTipHeader} = tableHandlers;
+  const [desc, omittedInfo] = handleTipHide(descFromData(ins), true);
   const contents = postprocessAnmDesc(desc, true);
-  const heading = generateAnmInsSiggy(ins, getRefNameKey(ref));
-  return {heading, contents, omittedInfo};
-}
-
-function generateAnmVarTip(avar, ref) {
-  const [desc, omittedInfo] = handleTipHide(avar.desc, true);
-  const contents = postprocessAnmDesc(desc, true);
-  const heading = generateAnmVarHeader(avar, getRefNameKey(ref));
+  const heading = generateTipHeader(ins, getRefNameKey(ref));
   return {heading, contents, omittedInfo};
 }
 
@@ -413,7 +391,7 @@ function getAnmInsUrlByRef(ref, context) {
   const samePageUrl = getSamePageAnmInsUrlByRef(ref, context);
   if (samePageUrl != null) return samePageUrl;
 
-  const ins = anmInsDataByRef(ref);
+  const ins = getDataByRef(ref, INS_HANDLERS);
   if (!ins) return null;
   const game = ins.maxGame;
   const opcode = ANM_OPCODE_REVERSE[game][ref];
@@ -425,7 +403,7 @@ function getAnmInsUrlByRef(ref, context) {
 function getSamePageAnmInsUrlByRef(ref, context) {
   if (context.s !== INS_TABLE_PAGE) return null; // not on right page
 
-  const curGame = context.g || DEFAULT_GAME;
+  const curGame = queryGame(context);
   const opcode = ANM_OPCODE_REVERSE[curGame][ref];
   if (opcode == null) return null; // this instr is not in the current game
 

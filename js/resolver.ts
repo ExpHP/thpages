@@ -1,8 +1,7 @@
+import {Query} from './url-format';
+
 /** Information describing what page we are currently on, which may impact resolution. */
-export type Context = {
-  s: string, // page
-  g?: string, // game
-};
+export type Context = Query;
 
 /**
  * A thing that lazily looks up information about game objects, with possibly different

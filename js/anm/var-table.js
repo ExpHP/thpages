@@ -15,7 +15,7 @@ export const ANM_VARS_BY_NUMBER = new Map(); // has to be a map because 'integer
 
 // ------------
 // ---- V7 ----
-ANM_VARS_BY_NUMBER.set('12', {
+ANM_VARS_BY_NUMBER.set('11', {
   10000: {ref: 'anmvar:i0'},
   10001: {ref: 'anmvar:i1'},
   10002: {ref: 'anmvar:i2'},
@@ -39,19 +39,16 @@ ANM_VARS_BY_NUMBER.set('12', {
   10020: {ref: 'anmvar:v7-lookat-y'},
   10021: {ref: 'anmvar:v7-lookat-z'},
   10022: {ref: 'anmvar:v7-rand'},
+});
+
+ANM_VARS_BY_NUMBER.set('12', Object.assign({}, ANM_VARS_BY_NUMBER.get('11'), {
   10023: {ref: 'anmvar:rot-x'},
   10024: {ref: 'anmvar:rot-y'},
   10025: {ref: 'anmvar:rot-z'},
-  10026: {ref: 'anmvar:rot-z-effective'},
-  10027: {ref: 'anmvar:rand-param-one'},
-  10028: {ref: 'anmvar:rand-param-pi'},
-  10029: {ref: 'anmvar:rand-param-int'},
-  10030: {ref: 'anmvar:randrad-replay'},
-  10031: {ref: 'anmvar:randf-01-replay'},
-  10032: {ref: 'anmvar:randf-11-replay'},
-});
+}));
 
 ANM_VARS_BY_NUMBER.set('125', Object.assign({}, ANM_VARS_BY_NUMBER.get('12')));
+ANM_VARS_BY_NUMBER.set('128', Object.assign({}, ANM_VARS_BY_NUMBER.get('12')));
 
 // ------------
 // ---- V8 ----
@@ -91,6 +88,9 @@ ANM_VARS_BY_NUMBER.set('14', Object.assign({}, ANM_VARS_BY_NUMBER.get('13'), {
 
 ANM_VARS_BY_NUMBER.set('15', Object.assign({}, ANM_VARS_BY_NUMBER.get('14')));
 ANM_VARS_BY_NUMBER.set('16', Object.assign({}, ANM_VARS_BY_NUMBER.get('15')));
+ANM_VARS_BY_NUMBER.set('165', Object.assign({}, ANM_VARS_BY_NUMBER.get('15'), {
+  // FIXME: make absolutely sure, given the mishap with ins 439...
+}));
 ANM_VARS_BY_NUMBER.set('17', Object.assign({}, ANM_VARS_BY_NUMBER.get('16')));
 
 // Var table cannot have entries without refs because we need the type to generate the default name...

@@ -38,6 +38,10 @@ export function allGames() {
   return GAMES.keys();
 }
 
+export function parseGame(s: string): Game | null {
+  return GAMES.has(s) ? s as Game : null;
+}
+
 export function gameData(key: Game) {
   return GAMES.get(key)!;
 }
