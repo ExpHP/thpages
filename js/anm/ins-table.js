@@ -317,11 +317,10 @@ ANM_BY_OPCODE.set('16', Object.assign({}, ANM_BY_OPCODE.get('15'), {
 }));
 
 ANM_BY_OPCODE.set('165', Object.assign({}, ANM_BY_OPCODE.get('16'), {
-  // TODO: ACTUALLY LOOK AT VD (this was just noticed in thanm.c)
-  439: UNASSIGNED,
+  439: {ref: 'anm:vd-imaginary-439'},
 }));
 
-ANM_BY_OPCODE.set('17', Object.assign({}, ANM_BY_OPCODE.get('16'), {
+ANM_BY_OPCODE.set('17', Object.assign({}, ANM_BY_OPCODE.get('165'), {
   // nothing was added
 }));
 
@@ -1307,6 +1306,11 @@ Object.assign(ANM_INS_DATA, {
   'v7-mathTan': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified trig function. Probably `tan` like in v8, but tough to be sure without testing.[/wip]'},
   'v7-mathAcos': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified trig function. Probably `acos` like in v8, but tough to be sure without testing.[/wip]'},
   'v7-mathAtan': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified trig function. Probably `atan` like in v8, but tough to be sure without testing.[/wip]'},
+  'vd-imaginary-439': {sig: 'S', args: ['_'], desc: `
+    ANM \`ins_439\` does not exi[s](http://www.scpwiki.com/scp-3930)t.
+    It is used by [game=165] in \`photo.anm\`, where it does nothing because, again, *it does not exist.*
+    We thank you for your understanding.
+  `},
 });
 
 // Add `minGame` and `maxGame` keys to each crossref.

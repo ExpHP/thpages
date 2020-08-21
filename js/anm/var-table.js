@@ -88,10 +88,8 @@ ANM_VARS_BY_NUMBER.set('14', Object.assign({}, ANM_VARS_BY_NUMBER.get('13'), {
 
 ANM_VARS_BY_NUMBER.set('15', Object.assign({}, ANM_VARS_BY_NUMBER.get('14')));
 ANM_VARS_BY_NUMBER.set('16', Object.assign({}, ANM_VARS_BY_NUMBER.get('15')));
-ANM_VARS_BY_NUMBER.set('165', Object.assign({}, ANM_VARS_BY_NUMBER.get('15'), {
-  // FIXME: make absolutely sure, given the mishap with ins 439...
-}));
-ANM_VARS_BY_NUMBER.set('17', Object.assign({}, ANM_VARS_BY_NUMBER.get('16')));
+ANM_VARS_BY_NUMBER.set('165', Object.assign({}, ANM_VARS_BY_NUMBER.get('16')));
+ANM_VARS_BY_NUMBER.set('17', Object.assign({}, ANM_VARS_BY_NUMBER.get('165')));
 
 // Var table cannot have entries without refs because we need the type to generate the default name...
 for (const [game, inner] of ANM_VARS_BY_NUMBER.entries()) {
