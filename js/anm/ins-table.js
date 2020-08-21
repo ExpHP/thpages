@@ -26,7 +26,7 @@ export const GROUPS_V8 = [
 ];
 
 // ---- V7 ----
-ANM_BY_OPCODE.set('11', {
+ANM_BY_OPCODE.set('10', {
   0: {ref: 'anm:nop'},
   1: {ref: 'anm:delete'},
   2: {ref: 'anm:static', wip: 1},
@@ -128,6 +128,9 @@ ANM_BY_OPCODE.set('11', {
   90: {ref: 'anm:prependChild', wip: 1},
   91: {ref: 'anm:createChildUi', wip: 1},
   92: {ref: 'anm:prependChildUi', wip: 1},
+});
+
+ANM_BY_OPCODE.set('11', Object.assign({}, ANM_BY_OPCODE.get('10'), {
   93: {ref: 'anm:uVelTime'},
   94: {ref: 'anm:vVelTime'},
   95: {ref: 'anm:createRoot'},
@@ -140,7 +143,7 @@ ANM_BY_OPCODE.set('11', {
   101: {ref: 'anm:v7-texCircle2'}, // type 13 in GFW
   102: {ref: 'anm:spriteRand'},
   103: {ref: 'anm:v7-drawRect1'}, // type 15 in GFW
-});
+}));
 
 ANM_BY_OPCODE.set('12', Object.assign({}, ANM_BY_OPCODE.get('11'), {
   104: {ref: 'anm:drawPoly'},
@@ -781,8 +784,8 @@ Object.assign(ANM_INS_DATA, {
     | :---: |   ---  |
     |   0   | Only use the color set by [ref=anm:rgb] and [ref=anm:alpha]. |
     |   1   | Only use the color set by [ref=anm:rgb2] and [ref=anm:alpha2]. |
-    |   2   | Horizontal gradient. ([game=125] or later) |
-    |   3   | Vertical gradient. ([game=125] or later) |
+    |   2   | ([game=125]&ndash;) Horizontal gradient. |
+    |   3   | ([game=125]&ndash;) Vertical gradient. |
 
     This has no effect on [special drawing instructions](#anm/ins&a=group-600).
 

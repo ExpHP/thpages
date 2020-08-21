@@ -15,7 +15,7 @@ export const ANM_VARS_BY_NUMBER = new Map(); // has to be a map because 'integer
 
 // ------------
 // ---- V7 ----
-ANM_VARS_BY_NUMBER.set('11', {
+ANM_VARS_BY_NUMBER.set('10', {
   10000: {ref: 'anmvar:i0'},
   10001: {ref: 'anmvar:i1'},
   10002: {ref: 'anmvar:i2'},
@@ -38,8 +38,11 @@ ANM_VARS_BY_NUMBER.set('11', {
   10019: {ref: 'anmvar:v7-lookat-x'},
   10020: {ref: 'anmvar:v7-lookat-y'},
   10021: {ref: 'anmvar:v7-lookat-z'},
-  10022: {ref: 'anmvar:v7-rand'},
 });
+
+ANM_VARS_BY_NUMBER.set('11', Object.assign({}, ANM_VARS_BY_NUMBER.get('10'), {
+  10022: {ref: 'anmvar:v7-rand'},
+}));
 
 ANM_VARS_BY_NUMBER.set('12', Object.assign({}, ANM_VARS_BY_NUMBER.get('11'), {
   10023: {ref: 'anmvar:rot-x'},

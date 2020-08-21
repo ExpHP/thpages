@@ -36,10 +36,10 @@ The following are fairly simple easing functions.
 | 15    | `delayed(x) =  0  if x < 1`<br>`delayed(x) =  1  if x == 1` | suddenly change after a delay |
 | 16    | `instant(x) = flip(delayed)`               | changes immediately (x is never 0).  (why interpolate then?) |
 | 17    | Discussed below                            | constant acceleration |
-| 18    | `easeOutSin(x) = sin(x * pi/2)`            | ease out (sine) |
-| 19    | `easeInSin(x) = flip(easeOutSin)`          | ease in (sine) |
-| 20    | `easeOutInSin(x) = split(easeOutSin, easeInSin)` | ease out then ease in (sine) |
-| 21    | `easeInOutSin(x) = split(easeInSin, easeOutSin)` | ease in then ease out (sine) |
+| 18 ([game=13]&ndash;) | `easeOutSin(x) = sin(x * pi/2)`            | ease out (sine) |
+| 19 ([game=13]&ndash;) | `easeInSin(x) = flip(easeOutSin)`          | ease in (sine) |
+| 20 ([game=13]&ndash;) | `easeOutInSin(x) = split(easeOutSin, easeInSin)` | ease out then ease in (sine) |
+| 21 ([game=13]&ndash;) | `easeInOutSin(x) = split(easeInSin, easeOutSin)` | ease in then ease out (sine) |
 
 The table above has used two helper functions:
 
@@ -76,16 +76,16 @@ ZUN chose to constrain the extremal time (i.e. what fraction of the total time i
 
 | Mode | Function  | Extremum |
 | ---  | ---       | --- |
-| 22   | `easeInBackA(x) = ((pow(x - 0.25, 2) / 0.5625) - 0.111111) / 0.888889` | `f(0.25) = -0.125` |
-| 23   | `easeInBackB(x) = ((pow(x - 0.3, 2) / 0.49) - 0.183673) / 0.816326`    | `f(0.30) = -0.225` |
-| 24   | `easeInBackC(x) = ((pow(x - 0.35, 2) / 0.4225) - 0.289941) / 0.710059` | `f(0.35) = -0.40833333` |
-| 25   | `easeInBackD(x) = ((pow(x - 0.38, 2) / 0.3844) - 0.37565) / 0.62435`   | `f(0.38) = -0.60166667` |
-| 26   | `easeInBackE(x) = ((pow(x - 0.4, 2) / 0.36) - 0.444444) / 0.555556`    | `f(0.40) = -0.8` |
-| 27   | `easeOutBackA = flip(easeInBackA)` | `f(0.75) = 1.125` |
-| 28   | `easeOutBackB = flip(easeInBackB)` | `f(0.70) = 1.225` |
-| 29   | `easeOutBackC = flip(easeInBackC)` | `f(0.65) = 1.40833333` |
-| 30   | `easeOutBackD = flip(easeInBackD)` | `f(0.62) = 1.60166667` |
-| 31   | `easeOutBackE = flip(easeInBackE)` | `f(0.60) = 1.8` |
+| 22 ([game=13]&ndash;) | `easeInBackA(x) = ((pow(x - 0.25, 2) / 0.5625) - 0.111111) / 0.888889` | `f(0.25) = -0.125` |
+| 23 ([game=13]&ndash;) | `easeInBackB(x) = ((pow(x - 0.3, 2) / 0.49) - 0.183673) / 0.816326`    | `f(0.30) = -0.225` |
+| 24 ([game=13]&ndash;) | `easeInBackC(x) = ((pow(x - 0.35, 2) / 0.4225) - 0.289941) / 0.710059` | `f(0.35) = -0.40833333` |
+| 25 ([game=13]&ndash;) | `easeInBackD(x) = ((pow(x - 0.38, 2) / 0.3844) - 0.37565) / 0.62435`   | `f(0.38) = -0.60166667` |
+| 26 ([game=13]&ndash;) | `easeInBackE(x) = ((pow(x - 0.4, 2) / 0.36) - 0.444444) / 0.555556`    | `f(0.40) = -0.8` |
+| 27 ([game=13]&ndash;) | `easeOutBackA = flip(easeInBackA)` | `f(0.75) = 1.125` |
+| 28 ([game=13]&ndash;) | `easeOutBackB = flip(easeInBackB)` | `f(0.70) = 1.225` |
+| 29 ([game=13]&ndash;) | `easeOutBackC = flip(easeInBackC)` | `f(0.65) = 1.40833333` |
+| 30 ([game=13]&ndash;) | `easeOutBackD = flip(easeInBackD)` | `f(0.62) = 1.60166667` |
+| 31 ([game=13]&ndash;) | `easeOutBackE = flip(easeInBackE)` | `f(0.60) = 1.8` |
 
 ## The **true** mode 8
 
