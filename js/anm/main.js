@@ -21,20 +21,23 @@ const ANM_VAR_NAMES = new PrefixResolver();
 
 const GAME_VERSIONS = {
   // FIXME
-  "07": 'v7', "08": 'v7', "09": 'v7',
+  // "06": 'v0', "07": 'v2',
+  // "08": 'v3', "09": 'v3',
+  "06": 'v4', "07": 'v4',
+  "08": 'v4', "09": 'v4',
   // END FIXME
-  "095": 'v7', "10": 'v7', "11": 'v7',
-  "12": 'v7', "125": 'v7', "128": 'v7',
+  "095": 'v4', "10": 'v4', "11": 'v4',
+  "12": 'v4', "125": 'v4', "128": 'v4',
   "13": 'v8', "14": 'v8', "143": 'v8', "15": 'v8',
   "16": 'v8', "165": 'v8', "17": 'v8',
 };
 
-const VERSIONS = ["v7", "v8"];
+const VERSIONS = ["v4", "v8"];
 
 // game to use when looking up a variable to get its type,
 // or looking up a ref to get its opcode.
 const VERSION_DEFAULT_GAMES_FOR_INTERNAL_LOOKUP = {
-  'v7': '128',
+  'v4': '128',
   'v8': '17',
 };
 
@@ -106,7 +109,7 @@ function getVarNameKey(game, num) {
 }
 
 function initNames() {
-  // Adds e.g. a 'v7:' prefix to a name if the version doesn't match the current page.
+  // Adds e.g. a 'v4:' prefix to a name if the version doesn't match the current page.
   function possiblyAddVersionPrefix(s, version, ctx) {
     if (version !== GAME_VERSIONS[queryGame(ctx)]) {
       return `${version}:${s}`;

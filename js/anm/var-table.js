@@ -14,7 +14,7 @@ import dedent from "../lib/dedent.js";
 export const ANM_VARS_BY_NUMBER = new Map(); // has to be a map because 'integer' keys defy insertion order
 
 // ------------
-// ---- V7 ----
+// ---- V4 ----
 ANM_VARS_BY_NUMBER.set('095', {
   10000: {ref: 'anmvar:i0'},
   10001: {ref: 'anmvar:i1'},
@@ -26,25 +26,25 @@ ANM_VARS_BY_NUMBER.set('095', {
   10007: {ref: 'anmvar:f3'},
   10008: {ref: 'anmvar:i4'},
   10009: {ref: 'anmvar:i5'},
-  10010: {ref: 'anmvar:v7-randrad'},
-  10011: {ref: 'anmvar:v7-randf-01'},
-  10012: {ref: 'anmvar:v7-randf-11'},
+  10010: {ref: 'anmvar:v4-randrad'},
+  10011: {ref: 'anmvar:v4-randf-01'},
+  10012: {ref: 'anmvar:v4-randf-11'},
   10013: {ref: 'anmvar:pos-x'},
   10014: {ref: 'anmvar:pos-y'},
   10015: {ref: 'anmvar:pos-z'},
 });
 
 ANM_VARS_BY_NUMBER.set('10', Object.assign({}, ANM_VARS_BY_NUMBER.get('095'), {
-  10016: {ref: 'anmvar:v7-camera-x'},
-  10017: {ref: 'anmvar:v7-camera-y'},
-  10018: {ref: 'anmvar:v7-camera-z'},
-  10019: {ref: 'anmvar:v7-lookat-x'},
-  10020: {ref: 'anmvar:v7-lookat-y'},
-  10021: {ref: 'anmvar:v7-lookat-z'},
+  10016: {ref: 'anmvar:v4-camera-x'},
+  10017: {ref: 'anmvar:v4-camera-y'},
+  10018: {ref: 'anmvar:v4-camera-z'},
+  10019: {ref: 'anmvar:v4-lookat-x'},
+  10020: {ref: 'anmvar:v4-lookat-y'},
+  10021: {ref: 'anmvar:v4-lookat-z'},
 }));
 
 ANM_VARS_BY_NUMBER.set('11', Object.assign({}, ANM_VARS_BY_NUMBER.get('10'), {
-  10022: {ref: 'anmvar:v7-rand'},
+  10022: {ref: 'anmvar:v4-rand'},
 }));
 
 ANM_VARS_BY_NUMBER.set('12', Object.assign({}, ANM_VARS_BY_NUMBER.get('11'), {
@@ -147,13 +147,13 @@ Object.assign(ANM_VAR_DATA, {
   'i4': {type: '$', mut: true, wip: 1, desc: `[wip]Another general-purpose int? (#4)[/wip]`},
   'i5': {type: '$', mut: true, wip: 1, desc: `[wip]Another general-purpose int? (#5)[/wip]`},
 
-  // v7 random numbers
-  'v7-randrad': {type: '%', mut: false, desc: `Draws a random value from \`-PI\` to \`PI\` using the selected RNG (see [ref=anm:v7-randMode]).`},
-  'v7-randf-01': {type: '%', mut: false, desc: `Draws a random value from \`0.0\` to \`1.0\` using the selected RNG (see [ref=anm:v7-randMode]).`},
-  'v7-randf-11': {type: '%', mut: false, desc: `Draws a random value from \`-1.0\` to \`1.0\` using the selected RNG (see [ref=anm:v7-randMode]).`},
-  'v7-rand': {
+  // v4 random numbers
+  'v4-randrad': {type: '%', mut: false, desc: `Draws a random value from \`-PI\` to \`PI\` using the selected RNG (see [ref=anm:v4-randMode]).`},
+  'v4-randf-01': {type: '%', mut: false, desc: `Draws a random value from \`0.0\` to \`1.0\` using the selected RNG (see [ref=anm:v4-randMode]).`},
+  'v4-randf-11': {type: '%', mut: false, desc: `Draws a random value from \`-1.0\` to \`1.0\` using the selected RNG (see [ref=anm:v4-randMode]).`},
+  'v4-rand': {
     type: '$', mut: false, desc: `
-    Draws a random integer using the selected RNG (see [ref=anm:v7-randMode]).
+    Draws a random integer using the selected RNG (see [ref=anm:v4-randMode]).
 
     [wip]What's the range?[/wip]
     [wip=2]My best guess based on the code is that, when read as integer, this generates a uniformly-distributed signed 32-bit integer
@@ -194,12 +194,12 @@ Object.assign(ANM_VAR_DATA, {
   'lookat-y': {type: '%', mut: false, wip: 1, desc: `y of normalized direction vector that the stage BG camera is facing. [wip](what is it used for?)[/wip]`},
   'lookat-z': {type: '%', mut: false, wip: 1, desc: `z of normalized direction vector that the stage BG camera is facing. [wip](what is it used for?)[/wip]`},
 
-  'v7-camera-x': {type: '%', mut: false, wip: 1, desc: `[wip=2]Probably stage BG camera's y position like in V8. (but no rocking vector is added in V7)[/wip]`},
-  'v7-camera-y': {type: '%', mut: false, wip: 1, desc: `[wip=2]Probably stage BG camera's y position like in V8. (but no rocking vector is added in V7)[/wip]`},
-  'v7-camera-z': {type: '%', mut: false, wip: 1, desc: `[wip=2]Probably stage BG camera's z position like in V8. (but no rocking vector is added in V7)[/wip]`},
-  'v7-lookat-x': {type: '%', mut: false, wip: 1, desc: `[wip=2]Probably x of normalized direction vector that the stage BG camera is facing, like in V8.[/wip]`},
-  'v7-lookat-y': {type: '%', mut: false, wip: 1, desc: `[wip=2]Probably y of normalized direction vector that the stage BG camera is facing, like in V8.[/wip]`},
-  'v7-lookat-z': {type: '%', mut: false, wip: 1, desc: `[wip=2]Probably z of normalized direction vector that the stage BG camera is facing, like in V8.[/wip]`},
+  'v4-camera-x': {type: '%', mut: false, wip: 1, desc: `[wip=2]Probably stage BG camera's y position like in V8. (but no rocking vector is added in V4)[/wip]`},
+  'v4-camera-y': {type: '%', mut: false, wip: 1, desc: `[wip=2]Probably stage BG camera's y position like in V8. (but no rocking vector is added in V4)[/wip]`},
+  'v4-camera-z': {type: '%', mut: false, wip: 1, desc: `[wip=2]Probably stage BG camera's z position like in V8. (but no rocking vector is added in V4)[/wip]`},
+  'v4-lookat-x': {type: '%', mut: false, wip: 1, desc: `[wip=2]Probably x of normalized direction vector that the stage BG camera is facing, like in V8.[/wip]`},
+  'v4-lookat-y': {type: '%', mut: false, wip: 1, desc: `[wip=2]Probably y of normalized direction vector that the stage BG camera is facing, like in V8.[/wip]`},
+  'v4-lookat-z': {type: '%', mut: false, wip: 1, desc: `[wip=2]Probably z of normalized direction vector that the stage BG camera is facing, like in V8.[/wip]`},
 });
 
 // Add `minGame` and `maxGame` keys to each crossref.

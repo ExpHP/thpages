@@ -28,6 +28,19 @@ On this site you'll see lots of words used that sound like they have similar mea
 - **graphic** &mdash; I use this to refer to *the output* of a single VM (i.e. the graphical content it draws).  Or I try, at least. Out of habit I tend to use the terms "graphic" and "VM" interchangeably.
 - **surface** &mdash; Much like how a texture is a thing you draw *from,* a surface is a thing you draw *to.* TH14-17 have three different surfaces, as will be explained in [stages of rendering](#anm/stages-of-rendering).  The destination surface of a graphic is determined by its layer (the [ref=anm:layer] instruction).
 
+<h1 id="versions">Versions</h1>
+
+Anm files include version numbers that indicate when breaking changes are made to the format or instruction set.  For the most part `thanm` takes care of this, but you need to be aware of it when using anmmaps.
+
+| Version | Used by | Other notes |
+| :---: | ---     | --- |
+| v0 | [game=06] | |
+| v2 | [game=07] | |
+| v3 | [game=08], [game=09] | |
+| v4 | [game=095], [game=10] | |
+| v7 | [game=11], [game=12], [game=125], [game=128] | Anmmap-compatible with v4. |
+| v8 | [game=13] onwards | |
+
 <h1 id="time">Time labels</h1>
 
 COMING SOON (TM)
@@ -47,7 +60,7 @@ There are two random number generators available to ANM scripts.  The terms I wi
 * The **animation RNG**, which most scripts use.
 * The **replay RNG**, which gets saved to replays.
 
-In modern games the replay RNG is accessed via a separate, dedicated set of variables (e.g. you can use [ref=anmvar:randf-01-replay] instead of [ref=anmvar:randf-01]).  In earlier games, there is instead a bitflag you can toggle using [ref=anm:v7-randMode] that decides which RNG is used.  This bitflag and instruction still exist in modern games, but they appear to no longer have any legitimate effect...
+In modern games the replay RNG is accessed via a separate, dedicated set of variables (e.g. you can use [ref=anmvar:randf-01-replay] instead of [ref=anmvar:randf-01]).  In earlier games, there is instead a bitflag you can toggle using [ref=anm:v4-randMode] that decides which RNG is used.  This bitflag and instruction still exist in modern games, but they appear to no longer have any legitimate effect...
 
 <h1 id="children">Parent-child relationships</h1>
 

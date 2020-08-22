@@ -181,10 +181,10 @@ function setMapsSaveStatus($maps: Element, status: null | 'success' | 'error' | 
 // --------------------------------------------------------------
 // Settings implementation.
 
-type AnmVersion = 'v7' | 'v8';
-const ALL_ANM_VERSIONS: AnmVersion[] = ['v7', 'v8'];
+type AnmVersion = 'v4' | 'v8';
+const ALL_ANM_VERSIONS: AnmVersion[] = ['v4', 'v8'];
 export const DEFAULT_ANMM_TEXT = {
-  'v7': readFileSync(__dirname + '/../static/eclmap/anmmap/v7.anmm', 'utf8'),
+  'v4': readFileSync(__dirname + '/../static/eclmap/anmmap/v4.anmm', 'utf8'),
   'v8': readFileSync(__dirname + '/../static/eclmap/anmmap/v8.anmm', 'utf8'),
 };
 
@@ -221,7 +221,7 @@ function storageReadAnmmapsOrDefault(): AnmMapSettings {
     return parseSettingAnmmapJson(json);
   } catch (e) {
     console.error(`ignoring saved anmmaps due to an error`, e);
-    return {'v7': 'auto', 'v8': 'auto'};
+    return {'v4': 'auto', 'v8': 'auto'};
   }
 }
 

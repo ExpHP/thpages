@@ -25,7 +25,7 @@ export const GROUPS_V8 = [
   {min: 600, max: 699, title: 'Drawing'},
 ];
 
-// ---- V7 ----
+// ---- V4 ----
 ANM_BY_OPCODE.set('095', {
   0: {ref: 'anm:nop'},
   1: {ref: 'anm:delete'},
@@ -70,13 +70,13 @@ ANM_BY_OPCODE.set('095', {
   38: {ref: 'anm:jmpGe'},
   39: {ref: 'anm:jmpGeF'},
 
-  40: {ref: 'anm:v7-rand', wip: 1},
-  41: {ref: 'anm:v7-randF', wip: 1},
-  42: {ref: 'anm:v7-mathSin', wip: 1},
-  43: {ref: 'anm:v7-mathCos', wip: 1},
-  44: {ref: 'anm:v7-mathTan', wip: 1},
-  45: {ref: 'anm:v7-mathAcos', wip: 1},
-  46: {ref: 'anm:v7-mathAtan', wip: 1},
+  40: {ref: 'anm:v4-rand', wip: 1},
+  41: {ref: 'anm:v4-randF', wip: 1},
+  42: {ref: 'anm:v4-mathSin', wip: 1},
+  43: {ref: 'anm:v4-mathCos', wip: 1},
+  44: {ref: 'anm:v4-mathTan', wip: 1},
+  45: {ref: 'anm:v4-mathAcos', wip: 1},
+  46: {ref: 'anm:v4-mathAtan', wip: 1},
   47: {ref: 'anm:mathReduceAngle'},
 
   48: {ref: 'anm:pos'},
@@ -121,7 +121,7 @@ ANM_BY_OPCODE.set('095', {
   84: {ref: 'anm:textureCircle'},
   85: UNASSIGNED, // flag lo:30 (DS: lo:31)
   86: UNASSIGNED, // flag lo:31 (DS: hi:0)
-  87: {ref: 'anm:v7-randMode'},
+  87: {ref: 'anm:v4-randMode'},
 });
 
 ANM_BY_OPCODE.set('10', Object.assign({}, ANM_BY_OPCODE.get('095'), {
@@ -143,9 +143,9 @@ ANM_BY_OPCODE.set('11', Object.assign({}, ANM_BY_OPCODE.get('10'), {
   99: {ref: 'anm:v8-flag-419', wip: 1},
 
   100: {ref: 'anm:posBezier'},
-  101: {ref: 'anm:v7-texCircle2'}, // type 13 in GFW
+  101: {ref: 'anm:v4-texCircle2'}, // type 13 in GFW
   102: {ref: 'anm:spriteRand'},
-  103: {ref: 'anm:v7-drawRect1'}, // type 15 in GFW
+  103: {ref: 'anm:v4-drawRect1'}, // type 15 in GFW
 }));
 
 ANM_BY_OPCODE.set('12', Object.assign({}, ANM_BY_OPCODE.get('11'), {
@@ -153,9 +153,9 @@ ANM_BY_OPCODE.set('12', Object.assign({}, ANM_BY_OPCODE.get('11'), {
   105: {ref: 'anm:drawPolyBorder'},
   106: {ref: 'anm:uvScale'},
   107: {ref: 'anm:uvScaleTime'},
-  108: {ref: 'anm:v7-drawRect2'}, // type 19 in GFW
-  109: {ref: 'anm:v7-drawRect3'}, // type 20 in GFW
-  110: {ref: 'anm:v7-drawRect4'}, // type 21 in GFW
+  108: {ref: 'anm:v4-drawRect2'}, // type 19 in GFW
+  109: {ref: 'anm:v4-drawRect3'}, // type 20 in GFW
+  110: {ref: 'anm:v4-drawRect4'}, // type 21 in GFW
 }));
 
 ANM_BY_OPCODE.set('125', Object.assign({}, ANM_BY_OPCODE.get('12'), {
@@ -165,7 +165,7 @@ ANM_BY_OPCODE.set('125', Object.assign({}, ANM_BY_OPCODE.get('12'), {
 
 ANM_BY_OPCODE.set('128', Object.assign({}, ANM_BY_OPCODE.get('125'), {
   113: {ref: 'anm:rotateTime2D'},
-  114: {ref: 'anm:v7-texCircle3'}, // type 14 in GFW
+  114: {ref: 'anm:v4-texCircle3'}, // type 14 in GFW
 }));
 
 // ---- V8 ----
@@ -502,10 +502,10 @@ for (const [mnemonic, operator] of Object.entries(OPERATOR_3_DATA)) {
 
 Object.assign(ANM_INS_DATA, {
   // TODO: link instruction that sets RNG flag once we find it >_>
-  'v7-rand': {sig: '$S', args: ['x', 'n'], succ: 'rand', desc: 'Draw a random integer `0 <= x < n` using the selected RNG (see [ref=anm:v7-randMode]).'},
-  'v7-randF': {sig: '%f', args: ['x', 'r'], succ: 'randF', desc: 'Draw a random float `0 <= x <= r` using the selected RNG (see [ref=anm:v7-randMode]).'},
+  'v4-rand': {sig: '$S', args: ['x', 'n'], succ: 'rand', desc: 'Draw a random integer `0 <= x < n` using the selected RNG (see [ref=anm:v4-randMode]).'},
+  'v4-randF': {sig: '%f', args: ['x', 'r'], succ: 'randF', desc: 'Draw a random float `0 <= x <= r` using the selected RNG (see [ref=anm:v4-randMode]).'},
 
-  'v7-randMode': {
+  'v4-randMode': {
     sig: 'S', args: ['mode'], succ: 'v8-randMode', desc: `
     Selects the RNG used by this VM.
 
@@ -523,12 +523,11 @@ Object.assign(ANM_INS_DATA, {
   `},
 
   'v8-randMode': {
-    // FIXME: v7-randMode link is broken until support for other games is added
     sig: 'S', args: ['mode'], wip: 1, desc: `
-    A ([wip=1]completely ineffectual?[/wip]) leftover of [ref=anm:v7-randMode].
+    A ([wip=1]completely ineffectual?[/wip]) leftover of [ref=anm:v4-randMode].
 
     [tiphide]
-    Scripts in modern games still use this exactly as they did back in ANM V7, and
+    Scripts in modern games still use this exactly as they did back in ANM V4/V7, and
     [tip=though some of it is plain bugged in later games due to a memcpy added in TD after the flag is set in some
     instructions]all of the code that manipulates this bitflag on child creation is still present[/tip],
     but all of the code that _uses_ the bitflag appears to be gone.
@@ -576,7 +575,7 @@ Object.assign(ANM_INS_DATA, {
     sig: 'SS', args: ['a', 'b'], desc: `
     Selects a random sprite from \`a\` (inclusive) to \`a + b\` (exclusive).
 
-    * (&ndash;[game=128]): uses the [replay RNG](#anm/concepts&a=rng), regardless of [ref=anm:v7-randMode].
+    * (&ndash;[game=128]): uses the [replay RNG](#anm/concepts&a=rng), regardless of [ref=anm:v4-randMode].
     * ([game=13]&ndash;): uses the [animation RNG](#anm/concepts&a=rng).
   `},
   'blendMode': {
@@ -1301,17 +1300,17 @@ Object.assign(ANM_INS_DATA, {
   'v8-flag-419': {sig: 'S', args: ['enable'], wip: 2, desc: `[wip=2]Sets the state of an unknown bitflag.[/wip]`},
   'v8-flag-431': {sig: 'S', args: ['enable'], wip: 2, desc: `[wip=2]Sets the state of an unknown bitflag.[/wip]`},
   'v8-flag-432': {sig: 'S', args: ['enable'], wip: 2, desc: `[wip=2]Sets the state of an unknown bitflag.[/wip]`},
-  'v7-texCircle2': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified member of texCircle family, likely [ref=anm:textureArcEven][/wip]'},
-  'v7-texCircle3': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified member of texCircle family, likely [ref=anm:textureArc][/wip]'},
-  'v7-drawRect1': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified member of drawRect family, likely [ref=anm:drawRect][/wip]'},
-  'v7-drawRect2': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified member of drawRect family, likely [ref=anm:drawRectGrad][/wip]'},
-  'v7-drawRect3': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified member of drawRect family, likely [ref=anm:drawRectShadow][/wip]'},
-  'v7-drawRect4': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified member of drawRect family, likely [ref=anm:drawRectShadowGrad][/wip]'},
-  'v7-mathSin': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified trig function. Probably `sin` like in v8, but tough to be sure without testing.[/wip]'},
-  'v7-mathCos': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified trig function. Probably `cos` like in v8, but tough to be sure without testing.[/wip]'},
-  'v7-mathTan': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified trig function. Probably `tan` like in v8, but tough to be sure without testing.[/wip]'},
-  'v7-mathAcos': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified trig function. Probably `acos` like in v8, but tough to be sure without testing.[/wip]'},
-  'v7-mathAtan': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified trig function. Probably `atan` like in v8, but tough to be sure without testing.[/wip]'},
+  'v4-texCircle2': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified member of texCircle family, likely [ref=anm:textureArcEven][/wip]'},
+  'v4-texCircle3': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified member of texCircle family, likely [ref=anm:textureArc][/wip]'},
+  'v4-drawRect1': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified member of drawRect family, likely [ref=anm:drawRect][/wip]'},
+  'v4-drawRect2': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified member of drawRect family, likely [ref=anm:drawRectGrad][/wip]'},
+  'v4-drawRect3': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified member of drawRect family, likely [ref=anm:drawRectShadow][/wip]'},
+  'v4-drawRect4': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified member of drawRect family, likely [ref=anm:drawRectShadowGrad][/wip]'},
+  'v4-mathSin': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified trig function. Probably `sin` like in v8, but tough to be sure without testing.[/wip]'},
+  'v4-mathCos': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified trig function. Probably `cos` like in v8, but tough to be sure without testing.[/wip]'},
+  'v4-mathTan': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified trig function. Probably `tan` like in v8, but tough to be sure without testing.[/wip]'},
+  'v4-mathAcos': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified trig function. Probably `acos` like in v8, but tough to be sure without testing.[/wip]'},
+  'v4-mathAtan': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified trig function. Probably `atan` like in v8, but tough to be sure without testing.[/wip]'},
   'vd-imaginary-439': {sig: 'S', args: ['_'], desc: `
     ANM \`ins_439\` does not exi[s](http://www.scpwiki.com/scp-3930)t.
     It is used by [game=165] in \`photo.anm\`, where it does nothing because, again, *it does not exist.*
