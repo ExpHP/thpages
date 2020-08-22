@@ -79,6 +79,9 @@ function setupGameSelector($select) {
 
   $select.addEventListener('change', (ev) => {
     const query = Object.assign({}, currentQuery, {g: ev.target.value});
+    // clear the anchor; if the user is changing the dropbox, they're at the top of the page,
+    // and we don't need it suddenly scrolling back to the last clicked opcode.
+    delete query.a;
     window.location.href = queryUrl(query);
   });
 }
@@ -419,30 +422,23 @@ function generateTip(ins, ref, context, tableHandlers) {
 }
 
 function getUrlByRef(ref, context, tableHandlers) {
-  const samePageUrl = getSamePageUrlByRef(ref, context, tableHandlers);
-  if (samePageUrl != null) return samePageUrl;
-
   const {reverseTable, tablePage, formatAnchor} = tableHandlers;
 
-  const data = getDataByRef(ref, tableHandlers);
-  if (!data) return null;
-  const game = data.maxGame;
-  const opcode = reverseTable[game][ref];
+  // On the same page: try to preserve full URL except anchor.
+  // On different page: Just preserve things that share meaning across pages.
+  //   (E.g. we want UFO var table to link to UFO ins table rather than WBaWC when possible.)
+  const query = (context.s === tablePage) ? context : {s: tablePage, g: context.g};
+
+  let game = queryGame(query);
+  let table, opcode;
+  if (!((table = reverseTable[game]) && (opcode = table[ref]) && opcode != null)) {
+    // not available in same game, use latest game that has it
+    const data = getDataByRef(ref, tableHandlers);
+    if (!data) return null; // ref does not exist
+    game = data.maxGame;
+    opcode = reverseTable[game][ref];
+  }
+  query.a = formatAnchor(opcode);
+
   return queryUrl({s: tablePage, g: game, a: formatAnchor(opcode)});
-}
-
-// Try to identify links to things available on the current page,
-// so that we can build a URL that avoids regenerating the table.
-function getSamePageUrlByRef(ref, context, tableHandlers) {
-  const {reverseTable, tablePage, formatAnchor} = tableHandlers;
-
-  if (context.s !== tablePage) return null; // not on right page
-
-  const curGame = queryGame(context);
-  const opcode = reverseTable[curGame][ref];
-  if (opcode == null) return null; // this instr is not in the current game
-
-  // change the anchor on the existing query to guarantee no reload
-  context.a = formatAnchor(opcode);
-  return queryUrl(context);
 }
