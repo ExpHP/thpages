@@ -280,6 +280,10 @@ function generateTablePageHtml(tableHandlers) {
     table += "</table>";
   }
   if (shouldHaveNav) navigation += "</ul></div>";
+
+  // Even though this is right next to the dropdown, the current game is displayed here for the sake of pages like the var-table
+  // that can refresh so quickly that it can be hard to realize that the page did in fact respond to changing the dropdown selection.
+  base += `Now showing: [game-thlong=${game}]<br>`;
   base += `Documented rate: ${documented}/${total} (${(documented/total*100).toFixed(2)}%)<br>`;
   base += "[wip=1]Items marked like this are not fully understood.[/wip]<br>[wip=2]Items like this are complete mysteries.[/wip]";
 

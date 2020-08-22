@@ -63,6 +63,20 @@ export const ext = function() {
       return `[gc=${game}]${gameData(game).short}[/gc]`;
     },
   };
+  const gameTh = {
+    type: "lang",
+    regex: /\[game-th=([01][0-9]*?)\]/g,
+    replace: function(match, game) {
+      return `[gc=${game}]${gameData(game).thname}[/gc]`;
+    },
+  };
+  const gameNum = {
+    type: "lang",
+    regex: /\[game-num=([01][0-9]*?)\]/g,
+    replace: function(match, game) {
+      return `[gc=${game}]${gameData(game).thname.substring(2)}[/gc]`;
+    },
+  };
   const gameThLong = {
     type: "lang",
     regex: /\[game-thlong=([01][0-9]*?)\]/g,
@@ -153,7 +167,7 @@ export const ext = function() {
 
   return [
     ref, refNotip, headlessTable, code, title, c,
-    game, gameThLong, gameLong, script, tip, tipNodeco, wip, weak,
+    game, gameTh, gameThLong, gameNum, gameLong, script, tip, tipNodeco, wip, weak,
     gc, // must be after things that use it (e.g. game)
   ];
 };

@@ -49,6 +49,32 @@ There are two random number generators available to ANM scripts.  The terms I wi
 
 In modern games the replay RNG is accessed via a separate, dedicated set of variables (e.g. you can use [ref=anmvar:randf-01-replay] instead of [ref=anmvar:randf-01]).  In earlier games, there is instead a bitflag you can toggle using [ref=anm:v7-randMode] that decides which RNG is used.  This bitflag and instruction still exist in modern games, but they appear to no longer have any legitimate effect...
 
+<h1 id="children">Parent-child relationships</h1>
+
+In [game=10] onwards, ANM VMs can create children using [ref=anm:createChild].  Parents affect children in some of the following ways:
+
+* A child's position is always relative to the parent (it moves with the parent).
+* A child's scale is relative to its parent. (i.e. scaling a parent scales its children).
+* Scaling a parent may scale its children's offsets relative to it.
+* Rotating a parent may rotate its children.
+* Deleting a parent deletes its children.
+
+**Parent-child relationships can differ significantly from game to game.** Not all of the above properties apply in all games (IIRC nearly every game from [game=10] to [game=16] adds at least one thing to that list.)
+
+### On nested parent hierarchies
+
+Some broad advice: **Don't let child VMs create children.**  The way that children is implemented is pretty janky in most games and, again, changes quite freuquently from game to game.  Though I haven't tested it much, there are many, many things that just look plain "off" to me in the code.  Early games are clearly not meant to have grandchildren, and the latest games have grandchild support that looks buggy and seems unused.
+
+Some examples: The implementation of [anm:createChildPos] is clearly not meant to be used on children.
+Many places in early games only look at the first parent.
+Even in [game-th=17], [ref=anmvar:effective-rot-z] only cares about the first parent.
+While the latest games store two linked-list nodes as required for proper grandchild support, early games only have one.
+VMs in [game-th=16] frequently call recursive functions that *appear* like they are designed to e.g. recursively account for the parent's scale, then the grandparent's scale, and etc...
+but the "parent" pointer that these functions use actually appears to store the *root* VM of any ancestral tree, not the direct parent, so the recursive part is never used.
+*And even then* I don't think it matters, because I took a snapshot of memory in [game-th16] and found no ancestral trees with grandchildren.
+
+So yeah.  I wouldn't touch grandchild VMs with a 20 foot pole in *any* Touhou game.  You do so at your own risk.
+
 ---
 
 <h1 id="switch">Switching</h1>

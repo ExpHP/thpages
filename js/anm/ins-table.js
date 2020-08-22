@@ -26,7 +26,7 @@ export const GROUPS_V8 = [
 ];
 
 // ---- V7 ----
-ANM_BY_OPCODE.set('10', {
+ANM_BY_OPCODE.set('095', {
   0: {ref: 'anm:nop'},
   1: {ref: 'anm:delete'},
   2: {ref: 'anm:static', wip: 1},
@@ -122,13 +122,16 @@ ANM_BY_OPCODE.set('10', {
   85: UNASSIGNED, // flag lo:30 (DS: lo:31)
   86: UNASSIGNED, // flag lo:31 (DS: hi:0)
   87: {ref: 'anm:v7-randMode'},
+});
+
+ANM_BY_OPCODE.set('10', Object.assign({}, ANM_BY_OPCODE.get('095'), {
   88: {ref: 'anm:createChild', wip: 1},
   89: {ref: 'anm:resampleMode', wip: 1}, // flag hi:1 (DS: hi:2)
 
   90: {ref: 'anm:prependChild', wip: 1},
   91: {ref: 'anm:createChildUi', wip: 1},
   92: {ref: 'anm:prependChildUi', wip: 1},
-});
+}));
 
 ANM_BY_OPCODE.set('11', Object.assign({}, ANM_BY_OPCODE.get('10'), {
   93: {ref: 'anm:uVelTime'},

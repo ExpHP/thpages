@@ -25,17 +25,17 @@ The following are fairly simple easing functions.
 | 4     | `easeOut2(x) = flip(easeIn2)`              | ease out |
 | 5     | `easeOut3(x) = flip(easeIn3)`              | ease out (cubic) |
 | 6     | `easeOut4(x) = flip(easeIn4)`              | ease out (quartic) |
-| 7     | Discussed below                            | constant velocity |
-| 8     | `smoothstep(x) = 3x^2 - 2x^3`              | [smoothstep](https://en.wikipedia.org/wiki/Smoothstep); (technically Bezier; see below) |
-| 9     | `easeInOut2(x) = split(easeIn2, easeOut2)` | ease in then ease out |
-| 10    | `easeInOut3(x) = split(easeIn3, easeOut3)` | ease in then ease out (cubic) |
-| 11    | `easeInOut4(x) = split(easeIn4, easeOut4)` | ease in then ease out (quartic) |
-| 12    | `easeOutIn2(x) = split(easeOut2, easeIn2)` | ease out then ease in |
-| 13    | `easeOutIn3(x) = split(easeOut3, easeIn3)` | ease out then ease in (cubic) |
-| 14    | `easeOutIn4(x) = split(easeOut4, easeIn4)` | ease out then ease in (quartic) |
-| 15    | `delayed(x) =  0  if x < 1`<br>`delayed(x) =  1  if x == 1` | suddenly change after a delay |
-| 16    | `instant(x) = flip(delayed)`               | changes immediately (x is never 0).  (why interpolate then?) |
-| 17    | Discussed below                            | constant acceleration |
+| 7  ([game=10]&ndash;) | Discussed below                            | constant velocity |
+| 8  ([game=10]&ndash;) | `smoothstep(x) = 3x^2 - 2x^3`              | [smoothstep](https://en.wikipedia.org/wiki/Smoothstep); (technically Bezier; see below) |
+| 9  ([game=10]&ndash;) | `easeInOut2(x) = split(easeIn2, easeOut2)` | ease in then ease out |
+| 10 ([game=10]&ndash;) | `easeInOut3(x) = split(easeIn3, easeOut3)` | ease in then ease out (cubic) |
+| 11 ([game=10]&ndash;) | `easeInOut4(x) = split(easeIn4, easeOut4)` | ease in then ease out (quartic) |
+| 12 ([game=10]&ndash;) | `easeOutIn2(x) = split(easeOut2, easeIn2)` | ease out then ease in |
+| 13 ([game=10]&ndash;) | `easeOutIn3(x) = split(easeOut3, easeIn3)` | ease out then ease in (cubic) |
+| 14 ([game=10]&ndash;) | `easeOutIn4(x) = split(easeOut4, easeIn4)` | ease out then ease in (quartic) |
+| 15 ([game=10]&ndash;) | `delayed(x) =  0  if x < 1`<br>`delayed(x) =  1  if x == 1` | suddenly change after a delay |
+| 16 ([game=10]&ndash;) | `instant(x) = flip(delayed)`               | changes immediately (x is never 0).  (why interpolate then?) |
+| 17 ([game=10]&ndash;) | Discussed below                            | constant acceleration |
 | 18 ([game=13]&ndash;) | `easeOutSin(x) = sin(x * pi/2)`            | ease out (sine) |
 | 19 ([game=13]&ndash;) | `easeInSin(x) = flip(easeOutSin)`          | ease in (sine) |
 | 20 ([game=13]&ndash;) | `easeOutInSin(x) = split(easeOutSin, easeInSin)` | ease out then ease in (sine) |
