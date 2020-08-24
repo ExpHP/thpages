@@ -13,7 +13,7 @@ export type GameData = {
   short: string,
 };
 
-const GAMES = new Map([
+const GAMES = new Map<Game, GameData>([
   ['06', {color: "#ff5959", thname: "TH06", long: "Embodiment of Scarlet Devil", short: "EoSD"}],
   ['07', {color: "#62ffff", thname: "TH07", long: "Perfect Cherry Blossom", short: "PCB"}],
   ['08', {color: "#c0b6d6", thname: "TH08", long: "Imperishable Night", short: "IN"}],
@@ -39,7 +39,7 @@ export function allGames() {
 }
 
 export function parseGame(s: string): Game | null {
-  return GAMES.has(s) ? s as Game : null;
+  return GAMES.has(s as Game) ? s as Game : null;
 }
 
 export function gameData(key: Game) {

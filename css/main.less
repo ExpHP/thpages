@@ -57,6 +57,12 @@ a code {
   text-underline-position: under;
 }
 
+body {
+  // force scrollbar so that things don't change width when navigating between
+  // pages that require one and pages that don't
+  overflow-y: scroll;
+}
+
 code, instr {
   background: @code-block-bg;
   font-family: @monospace;

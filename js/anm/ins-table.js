@@ -25,6 +25,105 @@ export const GROUPS_V8 = [
   {min: 600, max: 699, title: 'Drawing'},
 ];
 
+// ---- V3 ----
+ANM_BY_OPCODE.set('09', {
+  0: {ref: 'anm:nop'},
+  1: {ref: 'anm:delete'},
+  2: {ref: 'anm:static'},
+  3: {ref: 'anm:sprite'},
+  4: {ref: 'anm:jmp'},
+  5: {ref: 'anm:jmpDec'},
+  6: {ref: 'anm:pos'},
+  7: {ref: 'anm:scale'},
+  8: {ref: 'anm:alpha'},
+  9: {ref: 'anm:rgb'},
+  10: {ref: 'anm:flipX'},
+  11: {ref: 'anm:flipY'},
+  12: {ref: 'anm:rotate'},
+  13: {ref: 'anm:angleVel'},
+  14: {ref: 'anm:scaleGrowth'},
+  15: {ref: 'anm:alphaTimeLinear'},
+  16: UNASSIGNED, // PoFV:  flag 4 = arg, flag 5 = 0 ??
+  17: {ref: 'anm:posTimeLinear'},
+  18: {ref: 'anm:posTimeEaseout'},
+  19: {ref: 'anm:posTimeEaseout4'},
+  20: {ref: 'anm:stop'},
+  21: {ref: 'anm:case'},
+  22: UNASSIGNED, // PoFV:  flags 11=1, 12=1
+  23: {ref: 'anm:stop2'},
+  24: {ref: 'anm:posMode'},
+  25: UNASSIGNED, // reads a word field
+  26: {ref: 'anm:uAdd'},
+  27: {ref: 'anm:vAdd'},
+  28: UNASSIGNED, // PoFV:  sets flag 0
+  29: {ref: 'anm:scaleTimeLinear'},
+  30: UNASSIGNED, // PoFV:  sets flag 13
+  31: UNASSIGNED, // PoFV:  sets flag 15
+  32: {ref: 'anm:posTime'},
+  33: {ref: 'anm:rgbTime'},
+  34: {ref: 'anm:alphaTime'},
+  35: {ref: 'anm:rotateTime'},
+  36: {ref: 'anm:scaleTime'},
+
+  37: {ref: 'anm:set'},
+  38: {ref: 'anm:setF'},
+  39: {ref: 'anm:add'},
+  40: {ref: 'anm:addF'},
+  41: {ref: 'anm:sub'},
+  42: {ref: 'anm:subF'},
+  43: {ref: 'anm:mul'},
+  44: {ref: 'anm:mulF'},
+  45: {ref: 'anm:div'},
+  46: {ref: 'anm:divF'},
+  47: {ref: 'anm:mod'},
+  48: {ref: 'anm:modF'},
+  49: {ref: 'anm:add3'},
+  50: {ref: 'anm:addF3'},
+  51: {ref: 'anm:sub3'},
+  52: {ref: 'anm:subF3'},
+  53: {ref: 'anm:mul3'},
+  54: {ref: 'anm:mulF3'},
+  55: {ref: 'anm:div3'},
+  56: {ref: 'anm:divF3'},
+  57: {ref: 'anm:mod3'},
+  58: {ref: 'anm:modF3'},
+  59: {ref: 'anm:v3-rand'}, // FIXME merge
+  60: {ref: 'anm:v3-randF'}, // FIXME
+  61: {ref: 'anm:mathSin'},
+  62: {ref: 'anm:mathCos'},
+  63: {ref: 'anm:mathTan'},
+  64: {ref: 'anm:mathAcos'},
+  65: {ref: 'anm:v4-mathAtan'},
+  66: {ref: 'anm:mathReduceAngle'},
+
+  67: {ref: 'anm:jmpEq'},
+  68: {ref: 'anm:jmpEqF'},
+  69: {ref: 'anm:jmpNe'},
+  70: {ref: 'anm:jmpNeF'},
+  71: {ref: 'anm:jmpLt'},
+  72: {ref: 'anm:jmpLtF'},
+  73: {ref: 'anm:jmpLe'},
+  74: {ref: 'anm:jmpLeF'},
+  75: {ref: 'anm:jmpGt'},
+  76: {ref: 'anm:jmpGtF'},
+  77: {ref: 'anm:jmpGe'},
+  78: {ref: 'anm:jmpGeF'},
+
+  79: {ref: 'anm:wait'}, // FIXME: mention differences before MoF
+
+  80: {ref: 'anm:uVel'},
+  81: {ref: 'anm:vVel'},
+
+  82: UNASSIGNED, // PoFV:  sets 2-bit field of flags 4+5, like in ins_16
+  83: UNASSIGNED, // stores dword field
+  84: {ref: 'anm:rgb2'},
+  85: {ref: 'anm:alpha2'},
+  86: {ref: 'anm:rgb2Time'},
+  87: {ref: 'anm:alpha2Time'},
+  88: UNASSIGNED, // PoFV:  sets flag 17 if floor(arg/256) is odd
+  89: {ref: 'anm:caseReturn'},
+});
+
 // ---- V4 ----
 ANM_BY_OPCODE.set('095', {
   0: {ref: 'anm:nop'},
@@ -70,13 +169,13 @@ ANM_BY_OPCODE.set('095', {
   38: {ref: 'anm:jmpGe'},
   39: {ref: 'anm:jmpGeF'},
 
-  40: {ref: 'anm:v4-rand', wip: 1},
-  41: {ref: 'anm:v4-randF', wip: 1},
-  42: {ref: 'anm:v4-mathSin', wip: 1},
-  43: {ref: 'anm:v4-mathCos', wip: 1},
-  44: {ref: 'anm:v4-mathTan', wip: 1},
+  40: {ref: 'anm:rand'},
+  41: {ref: 'anm:randF'},
+  42: {ref: 'anm:mathSin'},
+  43: {ref: 'anm:mathCos'},
+  44: {ref: 'anm:mathTan'},
   45: {ref: 'anm:v4-mathAcos', wip: 1},
-  46: {ref: 'anm:v4-mathAtan', wip: 1},
+  46: {ref: 'anm:mathAtan'},
   47: {ref: 'anm:mathReduceAngle'},
 
   48: {ref: 'anm:pos'},
@@ -501,7 +600,8 @@ for (const [mnemonic, operator] of Object.entries(OPERATOR_3_DATA)) {
 }
 
 Object.assign(ANM_INS_DATA, {
-  // TODO: link instruction that sets RNG flag once we find it >_>
+  'v3-rand': {sig: '$S', args: ['x', 'n'], succ: 'rand', desc: 'Draw a random integer `0 <= x < n` using the global RNG.'},
+  'v3-randF': {sig: '%f', args: ['x', 'r'], succ: 'randF', desc: 'Draw a random float `0 <= x <= r` using the global RNG.'},
   'v4-rand': {sig: '$S', args: ['x', 'n'], succ: 'rand', desc: 'Draw a random integer `0 <= x < n` using the selected RNG (see [ref=anm:v4-randMode]).'},
   'v4-randF': {sig: '%f', args: ['x', 'r'], succ: 'randF', desc: 'Draw a random float `0 <= x <= r` using the selected RNG (see [ref=anm:v4-randMode]).'},
 
@@ -821,6 +921,20 @@ Object.assign(ANM_INS_DATA, {
     Basically, [ref-notip=anm:scaleGrowth] is to [ref=anm:scale] as [ref=anm:angleVel] is to [ref=anm:rotate].
     (they even share implemenation details...)
   `},
+  'uAdd': {sig: 'f', args: ['du'], wip: 1, desc: `
+    Adds \`du\` to the [texture u coordinate](#anm/concepts&a=uv-coords).
+
+    [tiphide]
+    [wip]UNTESTED.[/wip] Later versions remove this entirely in favor of [ref=anm:uVel].
+    [/tiphide]
+  `},
+  'vAdd': {sig: 'f', args: ['dv'], wip: 1, desc: `
+    Adds \`dv\` to the [texture v coordinate](#anm/concepts&a=uv-coords).
+
+    [tiphide]
+    [wip]UNTESTED.[/wip] Later versions remove this entirely in favor of [ref=anm:vVel].
+    [/tiphide]
+  `},
   'uVel': {sig: 'f', args: ['vel'], desc: `
     Add \`vel\` to the [texture u coordinate](#anm/concepts&a=uv-coords) every frame (in units of \`1 / total_image_width\`),
     causing the displayed sprite to scroll horizontally through the image file.
@@ -927,10 +1041,55 @@ Object.assign(ANM_INS_DATA, {
   `},
   'alphaTimeLinear': {
     sig: 'SS', args: ['alpha', 't'], desc: `
-    **Obsolete.** Use [ref=anm:alphaTime] instead.
+    [tiphide]**Obsolete.** Use [ref=anm:alphaTime] instead.[/tiphide]
 
+    [wip]UNTESTED:[/wip]
     Linearly changes alpha to \`alpha\` over the next \`t\` frames.
+    [tiphide]
     Identical to calling [ref=anm:alphaTime]\`(t, 0, alpha)\`.
+    [/tiphide]
+  `},
+  'posTimeLinear': {
+    sig: 'fffS', args: ['x', 'y', 'z', 't'], wip: 1, desc: `
+    [tiphide]**Obsolete.** Use [ref=anm:posTime] instead.[/tiphide]
+
+    [wip]UNTESTED:[/wip]
+    Linearly changes position to \`(x, y, z)\` over the next \`t\` frames.
+    [tiphide]
+    Identical to calling [ref=anm:posTime]\`(t, 0, x, y, z)\`.
+    [/tiphide]
+  `},
+  'posTimeEaseout': {
+    sig: 'fffS', args: ['x', 'y', 'z', 't'], wip: 1, desc: `
+    [tiphide]**Obsolete.** Use [ref=anm:posTime] instead.[/tiphide]
+
+    [wip]UNTESTED:[/wip]
+    Changes position to \`(x, y, z)\` over the next \`t\` frames with a sudden burst
+    of speed that decelerates over time.
+    [tiphide]
+    Identical to calling [ref=anm:posTime]\`(t, 4, x, y, z)\`.
+    [/tiphide]
+  `},
+  'posTimeEaseout4': {
+    sig: 'fffS', args: ['x', 'y', 'z', 't'], wip: 1, desc: `
+    [tiphide]**Obsolete.** Use [ref=anm:posTime] instead.[/tiphide]
+
+    [wip]UNTESTED:[/wip]
+    Changes position to \`(x, y, z)\` over the next \`t\` frames with a sudden burst
+    of speed that sharply decelerates as \`t^4\`.
+    [tiphide]
+    Identical to calling [ref=anm:posTime]\`(t, 6, x, y, z)\`.
+    [/tiphide]
+  `},
+  'scaleTimeLinear': {
+    sig: 'ffS', args: ['sx', 'sy', 't'], wip: 1, desc: `
+    [tiphide]**Obsolete.** Use [ref=anm:scaleTime] instead.[/tiphide]
+
+    [wip]UNTESTED:[/wip]
+    Linearly changes scale to \`(sx, sy)\` over the next \`t\` frames.
+    [tiphide]
+    Identical to calling [ref=anm:scaleTime]\`(t, 0, sx, sy)\`.
+    [/tiphide]
   `},
   'posBezier': {
     sig: 'Sfffffffff', args: ['t', 'x1', 'y1', 'z1', 'x2', 'y2', 'z2', 'x3', 'y3', 'z3'],
@@ -1311,10 +1470,15 @@ Object.assign(ANM_INS_DATA, {
   'v4-mathTan': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified trig function. Probably `tan` like in v8, but tough to be sure without testing.[/wip]'},
   'v4-mathAcos': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified trig function. Probably `acos` like in v8, but tough to be sure without testing.[/wip]'},
   'v4-mathAtan': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified trig function. Probably `atan` like in v8, but tough to be sure without testing.[/wip]'},
-  'vd-imaginary-439': {sig: 'S', args: ['_'], desc: `
+  'vd-imaginary-439': {
+    sig: 'S', args: ['_'], desc: `
     ANM \`ins_439\` does not exi[s](http://www.scpwiki.com/scp-3930)t.
     It is used by [game=165] in \`photo.anm\`, where it does nothing because, again, *it does not exist.*
     We thank you for your understanding.
+  `},
+  'posMode': {
+    sig: 'S', args: ['enable'], wip: 1, desc: `
+    [wip=1]Sets the state of a bitflag.  Wait a second, is that... is that the [alternate position flag!?](#anm/concepts&a=position)[/wip]
   `},
 });
 

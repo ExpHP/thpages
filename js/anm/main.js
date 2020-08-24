@@ -6,6 +6,8 @@ import {globalNames, globalLinks, PrefixResolver} from '../resolver.ts';
 import {parseQuery, queryUrl, queryGame} from '../url-format.ts';
 import {gameData} from '../game-names.ts';
 import {getCurrentAnmmaps} from '../settings.ts';
+import {SUPPORTED_ANM_VERSIONS, GAME_ANM_VERSIONS, ANM_VERSION_DATA} from './versions.ts';
+// import {buildInsStatsTable, buildVarStatsTable} from './stats.ts';
 
 /**
  * Resolves names from the suffix of 'anm:' namekeys,
@@ -17,29 +19,6 @@ const ANM_INS_NAMES = new PrefixResolver();
  * which look like 'anmvar:v8:10021'.
  */
 const ANM_VAR_NAMES = new PrefixResolver();
-
-
-const GAME_VERSIONS = {
-  // FIXME
-  // "06": 'v0', "07": 'v2',
-  // "08": 'v3', "09": 'v3',
-  "06": 'v4', "07": 'v4',
-  "08": 'v4', "09": 'v4',
-  // END FIXME
-  "095": 'v4', "10": 'v4', "11": 'v4',
-  "12": 'v4', "125": 'v4', "128": 'v4',
-  "13": 'v8', "14": 'v8', "143": 'v8', "15": 'v8',
-  "16": 'v8', "165": 'v8', "17": 'v8',
-};
-
-const VERSIONS = ["v4", "v8"];
-
-// game to use when looking up a variable to get its type,
-// or looking up a ref to get its opcode.
-const VERSION_DEFAULT_GAMES_FOR_INTERNAL_LOOKUP = {
-  'v4': '128',
-  'v8': '17',
-};
 
 const ARGTYPES_HTML = {
   "S": /* html */`<span class="type int">int</span>`,
@@ -55,6 +34,8 @@ export function initAnm() {
   window.setupGameSelector = setupGameSelector;
   window.generateAnmInsTableHtml = () => generateTablePageHtml(INS_HANDLERS);
   window.generateAnmVarTableHtml = () => generateTablePageHtml(VAR_HANDLERS);
+  // window.buildInsStatsTable = buildInsStatsTable;
+  // window.buildVarStatsTable = buildVarStatsTable;
 
   initNames();
 
@@ -93,32 +74,32 @@ function validateGameString(game) {
   if (typeof game !== 'string') {
     throw new TypeError(`bad game; expected string, got ${game}`);
   }
-  if (!GAME_VERSIONS[game]) {
+  if (!GAME_ANM_VERSIONS[game]) {
     throw new Error(`bad game: '${game}'`);
   }
 }
 
 function getOpcodeNameKey(game, opcode) {
-  const version = GAME_VERSIONS[game];
+  const version = GAME_ANM_VERSIONS[game];
   return `anm:${version}:${opcode}`;
 }
 
 function getVarNameKey(game, num) {
-  const version = GAME_VERSIONS[game];
+  const version = GAME_ANM_VERSIONS[game];
   return `anmvar:${version}:${num}`;
 }
 
 function initNames() {
   // Adds e.g. a 'v4:' prefix to a name if the version doesn't match the current page.
   function possiblyAddVersionPrefix(s, version, ctx) {
-    if (version !== GAME_VERSIONS[queryGame(ctx)]) {
+    if (version !== GAME_ANM_VERSIONS[queryGame(ctx)]) {
       return `${version}:${s}`;
     }
     return s;
   }
 
   // Instructions
-  for (const version of VERSIONS) {
+  for (const version of SUPPORTED_ANM_VERSIONS) {
     const getDefaultName = (opcode) => `ins_${opcode}`;
 
     const getMappedName = (opcode, data) => {
@@ -140,7 +121,7 @@ function initNames() {
 
   // Variables
   // (this is sufficiently different from instructions that we'll just put up with the copypasta)
-  for (const version of VERSIONS) {
+  for (const version of SUPPORTED_ANM_VERSIONS) {
     const getDefaultName = (opcode, type) => `[${opcode}${type === '%' ? '.0f' : ''}]`;
 
     const getMappedName = (opcode, type) => {
@@ -154,7 +135,7 @@ function initNames() {
       if (Number.isNaN(opcode)) return null;
 
       // Variables are always required to have crossrefs associated with them so that we can get the type
-      const game = VERSION_DEFAULT_GAMES_FOR_INTERNAL_LOOKUP[version];
+      const game = ANM_VERSION_DATA[version].maxGame;
       const entry = ANM_VARS_BY_NUMBER.get(game)[opcode];
       if (entry == null) return null;
       const data = getDataByRef(entry.ref, VAR_HANDLERS);
@@ -168,8 +149,9 @@ function initNames() {
 
 // The implementation of instructions and variables share lots of commonalities,
 // which are factored out using this very ad-hoc "table handlers" type.
-const INS_HANDLERS = {
+export const INS_HANDLERS = {
   tablePage: 'anm/ins',
+  itemKindString: 'instruction', // for debug messages
   formatAnchor: (opcode) => `ins-${opcode}`,
   dataTable: ANM_INS_DATA,
   reverseTable: ANM_OPCODE_REVERSE,
@@ -179,11 +161,12 @@ const INS_HANDLERS = {
   maxNumberRange: {min: 0, max: 1300}, // range that doesn't take long to iterate but is guaranteed to hold all opcodes
   descFromData: (data) => data.desc,
   generateTipHeader: generateAnmInsSiggy,
-  getGroups: (game) => GAME_VERSIONS[game] == 'v8' ? GROUPS_V8 : [{min: 0, max: 1300, title: null}],
+  getGroups: (game) => GAME_ANM_VERSIONS[game] == 'v8' ? GROUPS_V8 : [{min: 0, max: 1300, title: null}],
   generateTableRowHtml: generateInsTableRowHtml,
 };
-const VAR_HANDLERS = {
+export const VAR_HANDLERS = {
   tablePage: 'anm/var',
+  itemKindString: 'variable',
   formatAnchor: (num) => `var-${num}`,
   dataTable: ANM_VAR_DATA,
   reverseTable: ANM_VAR_NUMBER_REVERSE,
@@ -215,19 +198,19 @@ function registerRefNamesForTable(tableHandlers) {
       const currentGame = queryGame(ctx);
       const table = reverseTable[currentGame];
       if (table && table[ref]) { // opcode in current game?
-        return GAME_VERSIONS[currentGame];
+        return GAME_ANM_VERSIONS[currentGame];
       }
 
       // else find the latest game that has it and use that anmmap
       const data = getDataByRef(ref, tableHandlers);
       if (!data) return null;
-      return GAME_VERSIONS[data.maxGame];
+      return GAME_ANM_VERSIONS[data.maxGame];
     }
 
     const version = preferredVersion();
     if (!version) return null;
 
-    const versionGame = VERSION_DEFAULT_GAMES_FOR_INTERNAL_LOOKUP[version];
+    const versionGame = ANM_VERSION_DATA[version].maxGame;
     const opcode = reverseTable[versionGame][ref];
     if (opcode == null) return null;
     return globalNames.getNow(`${mainPrefix}:${version}:${opcode}`, ctx);

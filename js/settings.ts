@@ -1,4 +1,7 @@
+import {MD} from './main.js';
 import {Eclmap} from './anm/eclmap';
+import dedent from './lib/dedent';
+import {SupportedAnmVersion, SUPPORTED_ANM_VERSIONS, ANM_VERSION_DATA} from './anm/versions';
 import {readFileSync} from "fs";
 
 const LOCAL_STORAGE_KEY_ANMMAP = 'anmmap';
@@ -28,16 +31,55 @@ export function clearSettingsCache() {
 // Functions that implement the settings page.
 
 export function initSettings() {
-  (window as any).setupSettingsPage = setupSettingsPage;
+  (window as any).buildSettingsPage = buildSettingsPage;
 }
 
-function setupSettingsPage() {
+/** Selects things on the settings page to match the stored settings. */
+function setupSettingsPageInitialState() {
+  resetSettingsPageAnmmapsFromStorage();
+}
+
+/** Generates HTML for the settings page. */
+function buildSettingsPage() {
+  buildAnmmapSelector(document.querySelector<HTMLElement>('#upload-anmmaps')!);
   setupSettingsPageInitialState();
   setupSettingsPageHooks();
 }
 
-function setupSettingsPageInitialState() {
-  resetSettingsPageAnmmapsFromStorage();
+/** Generates HTML for the anmmaps selector. */
+function buildAnmmapSelector($div: HTMLElement) {
+  $div.classList.add('map-files');
+  $div.innerHTML = /* HTML */`
+    <div class="rows"></div>
+    <button class='confirm' disabled='true'></button>
+    <div class="save-status"></div>
+  `;
+  const $rows = document.querySelector('.rows')!;
+
+  let rowsHtml = '';
+  for (const version of SUPPORTED_ANM_VERSIONS) {
+    const {minGame, maxGame} = ANM_VERSION_DATA[version];
+    rowsHtml += dedent(/* html */`
+      <div class="row ${version}">
+        <div class='col label'>${version} (TH[game-num=${minGame}]&ndash;[game-num=${maxGame}])</div>
+        <div class='col raw'>
+          <input type='radio' id='anmmap-${version}-raw' name='anmmap-${version}'>
+          <label for='anmmap-${version}-raw'></label>
+        </div>
+        <div class='col auto'>
+          <input type='radio' id='anmmap-${version}-auto' name='anmmap-${version}'>
+          <label for='anmmap-${version}-auto'></label>
+        </div>
+        <div class='col file'>
+          <input type='radio' id='anmmap-${version}-file' name='anmmap-${version}'>
+          <label for='anmmap-${version}-file'><input type='file'></label>
+        </div>
+        <div class='col status'></div>
+      </div>
+    `);
+  }
+
+  $rows.innerHTML = MD.makeHtml(rowsHtml);
 }
 
 function resetSettingsPageAnmmapsFromStorage() {
@@ -50,7 +92,7 @@ function resetSettingsPageAnmmapsFromStorage() {
   }
 
   const anmmapSettings = storageReadAnmmapsOrDefault();
-  for (const version of ALL_ANM_VERSIONS) {
+  for (const version of SUPPORTED_ANM_VERSIONS) {
     const setting = anmmapSettings[version];
     const $row = $maps.querySelector(`.row.${version}`) as HTMLElement;
     const {$rawRadio, $autoRadio, $fileRadio, $fileUpload, $status} = getMapSettingsRowStuff($row);
@@ -139,7 +181,7 @@ async function readAnmmapSettingsFromPage($maps: Element) {
 
   // begin with current settings for reason described below.
   const anmmapSettings = storageReadAnmmapsOrDefault();
-  for (const version of ALL_ANM_VERSIONS) {
+  for (const version of SUPPORTED_ANM_VERSIONS) {
     const $row = $maps.querySelector(`.row.${version}`) as HTMLElement;
     const {$rawRadio, $autoRadio, $fileRadio, $fileUpload} = getMapSettingsRowStuff($row);
 
@@ -181,15 +223,14 @@ function setMapsSaveStatus($maps: Element, status: null | 'success' | 'error' | 
 // --------------------------------------------------------------
 // Settings implementation.
 
-type AnmVersion = 'v4' | 'v8';
-const ALL_ANM_VERSIONS: AnmVersion[] = ['v4', 'v8'];
-export const DEFAULT_ANMM_TEXT = {
+export const DEFAULT_ANMM_TEXT: {[v in SupportedAnmVersion]: string} = {
+  'v3': readFileSync(__dirname + '/../static/eclmap/anmmap/v3.anmm', 'utf8'),
   'v4': readFileSync(__dirname + '/../static/eclmap/anmmap/v4.anmm', 'utf8'),
   'v8': readFileSync(__dirname + '/../static/eclmap/anmmap/v8.anmm', 'utf8'),
 };
 
-export type LoadedAnmMaps = {[v in AnmVersion]: LoadedMap};
-export type AnmMapSettings = {[v in AnmVersion]: MapSetting};
+export type LoadedAnmMaps = {[v in SupportedAnmVersion]: LoadedMap};
+export type AnmMapSettings = {[v in SupportedAnmVersion]: MapSetting};
 
 /** Form of an ECLMap stored in memory. */
 export type LoadedMap = {ins: NumberMap, vars: NumberMap};
@@ -200,8 +241,8 @@ export type NumberMap = Record<number, string>;
 /** Initializes ANM maps, possibly from localStorage. */
 function storageLoadAnmmaps(): LoadedAnmMaps {
   const settings = storageReadAnmmapsOrDefault();
-  const out = {} as Record<AnmVersion, LoadedMap>;
-  for (const version of ALL_ANM_VERSIONS) {
+  const out = {} as Record<SupportedAnmVersion, LoadedMap>;
+  for (const version of SUPPORTED_ANM_VERSIONS) {
     out[version] = loadMapFromSetting(version, settings[version]);
   }
   return out;
@@ -221,11 +262,11 @@ function storageReadAnmmapsOrDefault(): AnmMapSettings {
     return parseSettingAnmmapJson(json);
   } catch (e) {
     console.error(`ignoring saved anmmaps due to an error`, e);
-    return {'v4': 'auto', 'v8': 'auto'};
+    return {'v3': 'auto', 'v4': 'auto', 'v8': 'auto'};
   }
 }
 
-function loadMapFromSetting(version: AnmVersion, m: MapSetting): LoadedMap {
+function loadMapFromSetting(version: SupportedAnmVersion, m: MapSetting): LoadedMap {
   if (m === 'raw') return {ins: {}, vars: {}};
   if (m === 'auto') return parseMapText(DEFAULT_ANMM_TEXT[version]);
   return m;
@@ -246,9 +287,9 @@ function parseMapText(s: string): LoadedMap {
 function parseSettingAnmmapJson(x: unknown): AnmMapSettings {
   if (!(x && typeof x === 'object')) throw new TypeError(`expected object, got ${typeof x}`);
 
-  const xobj = x as Record<AnmVersion, unknown>;
-  const out = {} as Record<AnmVersion, MapSetting>;
-  for (const version of ALL_ANM_VERSIONS) {
+  const xobj = x as Record<SupportedAnmVersion, unknown>;
+  const out = {} as Record<SupportedAnmVersion, MapSetting>;
+  for (const version of SUPPORTED_ANM_VERSIONS) {
     out[version] = parseStoredMapJson(xobj[version] || 'auto');
   }
   return out;

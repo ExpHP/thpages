@@ -55,12 +55,22 @@ So how about the position relative to that origin?  Well, as you might imagine, 
 
 <h1 id="rng">RNGs</h1>
 
-There are two random number generators available to ANM scripts.  The terms I will use for these are:
+In modern Touhou games there are two random number generators available to ANM scripts.  The terms I will use for these are:
 
-* The **animation RNG**, which most scripts use.
+* The **animation RNG**, which is only used by ANM.
 * The **replay RNG**, which gets saved to replays.
 
-In modern games the replay RNG is accessed via a separate, dedicated set of variables (e.g. you can use [ref=anmvar:randf-01-replay] instead of [ref=anmvar:randf-01]).  In earlier games, there is instead a bitflag you can toggle using [ref=anm:v4-randMode] that decides which RNG is used.  This bitflag and instruction still exist in modern games, but they appear to no longer have any legitimate effect...
+Different ANM versions access these RNGs in different ways:
+
+* **[game-th=09] and earlier:** Everything uses the replay RNG. (animation RNG doesn't exist)
+* **[game-th=095]&ndash;[game-th=128]:**
+    - [wip]Not sure, but the general design seems to be: Root VMs for game entities use the replay RNG, children use the animation RNG.[/wip]
+    - A VM can change its current RNG using [ref=anm:v4-randMode].
+    - [ref=anm:spriteRand] always uses the replay RNG.
+* **[game-th=13] and later:**
+    - Almost everything uses the animation RNG. (incl. [ref=anm:rand] and [ref=anm:spriteRand])
+    - There are dedicated vars for the replay RNG. (e.g. [ref=anmvar:randf-01-replay])
+    - [ref=anm:v8-randMode] still exists but has no effect.
 
 <h1 id="children">Parent-child relationships</h1>
 
