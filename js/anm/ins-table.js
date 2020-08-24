@@ -515,9 +515,18 @@ Object.assign(ANM_INS_DATA, {
       [ref=anm:wait](6);
       [ref=anm:alpha](0);
     [/code]
-    The difference between these two snippets is extremely subtle and does not matter most of the time.
-    (though generally [ref=anm:wait] is nicer if you need to perform jumps at some point, as it helps
-    keep time labels simple)
+    The difference between the two is subtle, and depends on the game:
+
+    * **[game=095] and earlier:**,
+      [ref=anm:wait] is implemented using a dedicated timer. [wip]This has not been tested[/wip],
+      but it seems this may cause the two snippets to behave differently in cases where the
+      current time is greater than the time label (which is possible through [ref=anm:jmp]);
+      in essence, [wip]it seems that [ref=anm:wait] will *always* wait the specified number of frames
+      regardless of the current time in these early games.[/wip]
+    * **[game=10] and later:** This now works by actually subtracting \`t\` from the current time
+      before executing the next instruction.  Thus, the only difference between the two snippets
+      is that [ref=anm:wait] produces simpler time labels.
+      (notice that \`thanm\` has \`timeof(label)\` syntax to make option 1 less painful anyways)
     [/tiphide]
   `},
   'caseReturn': {sig: '', args: [], desc: `
