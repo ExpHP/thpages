@@ -59,9 +59,16 @@ function buildAnmmapSelector($div: HTMLElement) {
   let rowsHtml = '';
   for (const version of SUPPORTED_ANM_VERSIONS) {
     const {minGame, maxGame} = ANM_VERSION_DATA[version];
+
+    let gameRangeStr;
+    if (minGame === maxGame) {
+      gameRangeStr = `TH[game-num=${minGame}]`
+    } else {
+      gameRangeStr = `TH[game-num=${minGame}]&ndash;[game-num=${maxGame}]`
+    }
     rowsHtml += dedent(/* html */`
       <div class="row ${version}">
-        <div class='col label'>${version} (TH[game-num=${minGame}]&ndash;[game-num=${maxGame}])</div>
+        <div class='col label'>${version} (${gameRangeStr})</div>
         <div class='col raw'>
           <input type='radio' id='anmmap-${version}-raw' name='anmmap-${version}'>
           <label for='anmmap-${version}-raw'></label>
@@ -224,6 +231,7 @@ function setMapsSaveStatus($maps: Element, status: null | 'success' | 'error' | 
 // Settings implementation.
 
 export const DEFAULT_ANMM_TEXT: {[v in SupportedAnmVersion]: string} = {
+  'v2': readFileSync(__dirname + '/../static/eclmap/anmmap/v3.anmm', 'utf8'),
   'v3': readFileSync(__dirname + '/../static/eclmap/anmmap/v3.anmm', 'utf8'),
   'v4': readFileSync(__dirname + '/../static/eclmap/anmmap/v4.anmm', 'utf8'),
   'v8': readFileSync(__dirname + '/../static/eclmap/anmmap/v8.anmm', 'utf8'),
@@ -262,7 +270,7 @@ function storageReadAnmmapsOrDefault(): AnmMapSettings {
     return parseSettingAnmmapJson(json);
   } catch (e) {
     console.error(`ignoring saved anmmaps due to an error`, e);
-    return {'v3': 'auto', 'v4': 'auto', 'v8': 'auto'};
+    return {'v2': 'auto', 'v3': 'auto', 'v4': 'auto', 'v8': 'auto'};
   }
 }
 

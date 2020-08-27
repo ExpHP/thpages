@@ -13,9 +13,7 @@ import dedent from "../lib/dedent.js";
  */
 export const ANM_VARS_BY_NUMBER = new Map(); // has to be a map because 'integer' keys defy insertion order
 
-// ------------
-// ---- V4 ----
-ANM_VARS_BY_NUMBER.set('09', {
+ANM_VARS_BY_NUMBER.set('07', {
   10000: {ref: 'anmvar:i0'},
   10001: {ref: 'anmvar:i1'},
   10002: {ref: 'anmvar:i2'},
@@ -26,12 +24,22 @@ ANM_VARS_BY_NUMBER.set('09', {
   10007: {ref: 'anmvar:f3'},
   10008: {ref: 'anmvar:i4'},
   10009: {ref: 'anmvar:i5'},
+});
+
+ANM_VARS_BY_NUMBER.set('08', Object.assign({}, ANM_VARS_BY_NUMBER.get('07')));
+
+ANM_VARS_BY_NUMBER.set('09', Object.assign({}, ANM_VARS_BY_NUMBER.get('08'), {
+  10010: {ref: 'anmvar:v3-randrad'},
+  10011: {ref: 'anmvar:v3-randf-01'},
+  10012: {ref: 'anmvar:v3-randf-11'},
+}));
+
+ANM_VARS_BY_NUMBER.set('095', Object.assign({}, ANM_VARS_BY_NUMBER.get('09'), {
+  // changed descriptions
   10010: {ref: 'anmvar:v4-randrad'},
   10011: {ref: 'anmvar:v4-randf-01'},
   10012: {ref: 'anmvar:v4-randf-11'},
-});
-
-ANM_VARS_BY_NUMBER.set('095', Object.assign({}, ANM_VARS_BY_NUMBER.get('09'), {
+  // new
   10013: {ref: 'anmvar:pos-x'},
   10014: {ref: 'anmvar:pos-y'},
   10015: {ref: 'anmvar:pos-z'},
@@ -58,9 +66,6 @@ ANM_VARS_BY_NUMBER.set('12', Object.assign({}, ANM_VARS_BY_NUMBER.get('11'), {
 
 ANM_VARS_BY_NUMBER.set('125', Object.assign({}, ANM_VARS_BY_NUMBER.get('12')));
 ANM_VARS_BY_NUMBER.set('128', Object.assign({}, ANM_VARS_BY_NUMBER.get('12')));
-
-// ------------
-// ---- V8 ----
 ANM_VARS_BY_NUMBER.set('13', Object.assign({}, ANM_VARS_BY_NUMBER.get('12'), {
   // changed descriptions
   10010: {ref: 'anmvar:randrad'},
@@ -151,6 +156,9 @@ Object.assign(ANM_VAR_DATA, {
   'i5': {type: '$', mut: true, wip: 1, desc: `[wip]Another general-purpose int? (#5)[/wip]`},
 
   // v4 random numbers
+  'v3-randrad': {type: '%', mut: false, desc: `Draws a random value from \`-PI\` to \`PI\` using the [replay RNG](#anm/concepts&a=rng).`},
+  'v3-randf-01': {type: '%', mut: false, desc: `Draws a random value from \`0.0\` to \`1.0\` using the [replay RNG](#anm/concepts&a=rng).`},
+  'v3-randf-11': {type: '%', mut: false, desc: `Draws a random value from \`-1.0\` to \`1.0\` using the [replay RNG](#anm/concepts&a=rng).`},
   'v4-randrad': {type: '%', mut: false, desc: `Draws a random value from \`-PI\` to \`PI\` using the selected RNG (see [ref=anm:v4-randMode]).`},
   'v4-randf-01': {type: '%', mut: false, desc: `Draws a random value from \`0.0\` to \`1.0\` using the selected RNG (see [ref=anm:v4-randMode]).`},
   'v4-randf-11': {type: '%', mut: false, desc: `Draws a random value from \`-1.0\` to \`1.0\` using the selected RNG (see [ref=anm:v4-randMode]).`},

@@ -1,8 +1,8 @@
 import {Game, allGames} from '../game-names';
 
 export type AnmVersion = 'v0' | 'v2' | 'v3' | 'v4' | 'v8';
-export type SupportedAnmVersion = 'v3' | 'v4' | 'v8';
-export const SUPPORTED_ANM_VERSIONS: SupportedAnmVersion[] = ['v3', 'v4', 'v8'];
+export type SupportedAnmVersion = 'v2' | 'v3' | 'v4' | 'v8';
+export const SUPPORTED_ANM_VERSIONS: SupportedAnmVersion[] = ['v2', 'v3', 'v4', 'v8'];
 export const GAME_ANM_VERSIONS: {[k in Game]: AnmVersion} = {
   "06": 'v0',
   "07": 'v2',

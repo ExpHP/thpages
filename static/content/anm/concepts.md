@@ -36,9 +36,9 @@ Anm files include version numbers that indicate when breaking changes are made t
 | :---: | ---     | --- |
 | v0 | [game=06] | |
 | v2 | [game=07] | |
-| v3 | [game=08], [game=09] | |
+| v3 | [game=08], [game=09] | anmmap-compatible with v2 (only signatures changed) |
 | v4 | [game=095], [game=10] | |
-| v7 | [game=11], [game=12], [game=125], [game=128] | Anmmap-compatible with v4. |
+| v7 | [game=11], [game=12], [game=125], [game=128] | anmmap-compatible with v4 (only container format changed) |
 | v8 | [game=13] onwards | |
 
 <h1 id="time">Time labels</h1>

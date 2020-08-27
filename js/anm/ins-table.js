@@ -25,8 +25,8 @@ export const GROUPS_V8 = [
   {min: 600, max: 699, title: 'Drawing'},
 ];
 
-// ---- V3 ----
-ANM_BY_OPCODE.set('09', {
+// ---- V2 ----
+ANM_BY_OPCODE.set('07', {
   0: {ref: 'anm:nop'},
   1: {ref: 'anm:delete'},
   2: {ref: 'anm:static'},
@@ -36,7 +36,7 @@ ANM_BY_OPCODE.set('09', {
   6: {ref: 'anm:pos'},
   7: {ref: 'anm:scale'},
   8: {ref: 'anm:alpha'},
-  9: {ref: 'anm:rgb'},
+  9: {ref: 'anm:rgb-dword'},
   10: {ref: 'anm:flipX'},
   11: {ref: 'anm:flipY'},
   12: {ref: 'anm:rotate'},
@@ -60,7 +60,7 @@ ANM_BY_OPCODE.set('09', {
   30: UNASSIGNED, // PoFV:  sets flag 13
   31: UNASSIGNED, // PoFV:  sets flag 15
   32: {ref: 'anm:posTime'},
-  33: {ref: 'anm:rgbTime'},
+  33: {ref: 'anm:rgbTime-dword'},
   34: {ref: 'anm:alphaTime'},
   35: {ref: 'anm:rotateTime'},
   36: {ref: 'anm:scaleTime'},
@@ -93,7 +93,7 @@ ANM_BY_OPCODE.set('09', {
   62: {ref: 'anm:mathCos'},
   63: {ref: 'anm:mathTan'},
   64: {ref: 'anm:mathAcos'},
-  65: {ref: 'anm:v4-mathAtan'},
+  65: {ref: 'anm:mathAtan'},
   66: {ref: 'anm:mathReduceAngle'},
 
   67: {ref: 'anm:jmpEq'},
@@ -113,7 +113,15 @@ ANM_BY_OPCODE.set('09', {
 
   80: {ref: 'anm:uVel'},
   81: {ref: 'anm:vVel'},
+});
 
+// ---- V3 ----
+ANM_BY_OPCODE.set('08', Object.assign({}, ANM_BY_OPCODE.get('07'), {
+  // changed signatures
+  9: {ref: 'anm:rgb'},
+  33: {ref: 'anm:rgbTime'},
+
+  // new instrs
   82: UNASSIGNED, // PoFV:  sets 2-bit field of flags 4+5, like in ins_16
   83: UNASSIGNED, // stores dword field
   84: {ref: 'anm:rgb2'},
@@ -122,7 +130,11 @@ ANM_BY_OPCODE.set('09', {
   87: {ref: 'anm:alpha2Time'},
   88: UNASSIGNED, // PoFV:  sets flag 17 if floor(arg/256) is odd
   89: {ref: 'anm:caseReturn'},
-});
+}));
+
+ANM_BY_OPCODE.set('09', Object.assign({}, ANM_BY_OPCODE.get('08'), {
+  // nothing changed.
+}));
 
 // ---- V4 ----
 ANM_BY_OPCODE.set('095', {
@@ -174,7 +186,7 @@ ANM_BY_OPCODE.set('095', {
   42: {ref: 'anm:mathSin'},
   43: {ref: 'anm:mathCos'},
   44: {ref: 'anm:mathTan'},
-  45: {ref: 'anm:v4-mathAcos', wip: 1},
+  45: {ref: 'anm:mathAcos', wip: 1},
   46: {ref: 'anm:mathAtan'},
   47: {ref: 'anm:mathReduceAngle'},
 
@@ -865,6 +877,12 @@ Object.assign(ANM_INS_DATA, {
     draw ellipses...).
     [/tiphide]
   `},
+  'rgb-dword': {
+    sig: 'S', args: ['rgb'], desc: `
+    Set a color which gets blended with this sprite.
+
+    This version takes a single dword in the form \`0x00RRGGBB\`.  Variables are not supported.
+  `},
   'rgb': {
     sig: 'SSS', args: ['r', 'g', 'b'], desc: `
     Set a color which gets blended with this sprite.
@@ -1018,6 +1036,12 @@ Object.assign(ANM_INS_DATA, {
     Over the next \`t\` frames, changes [ref=anm:alpha2] to the given value using [interpolation mode](#anm/interpolation) \`mode\`.
 
     [tiphide]For some reason, in [game=14] onwards, this also sets [ref=anm:colorMode] to 1, which can be a mild inconvenience.[/tiphide]
+  `},
+  'rgbTime-dword': {
+    sig: 'SSS', args: ['t', 'mode', 'rgb'], desc: `
+    Over the next \`t\` frames, changes [ref=anm:rgb-dword] to the given value using [interpolation mode](#anm/interpolation) \`mode\`.
+
+    This version takes a single dword in the form \`0x00RRGGBB\`.  Variables are not supported.
   `},
   'rgbTime': {sig: 'SSSSS', args: ['t', 'mode', 'r', 'g', 'b'], desc: `Over the next \`t\` frames, changes [ref=anm:rgb] to the given value using [interpolation mode](#anm/interpolation) \`mode\`.`},
   'rgb2Time': {sig: 'SSSSS', args: ['t', 'mode', 'r', 'g', 'b'], desc: `
@@ -1461,7 +1485,6 @@ Object.assign(ANM_INS_DATA, {
     sig: '', args: [], wip: 2, desc: `
     [wip=2]Copies [\`pos_3\`](#anm/concepts&a=position) into \`pos\`, and zeros out \`pos_3\`...[/wip]
   `},
-  'v8-flag-307': {sig: 'b', args: ['enable'], wip: 2, desc: `[wip=2]Sets the state of an unknown bitflag.[/wip]`},
   'v8-flag-310': {sig: 'b', args: ['enable'], wip: 2, desc: `[wip=2]Sets the state of an unknown bitflag.[/wip]`},
   'v8-flag-316': {sig: '', args: [], wip: 2, desc: `[wip=2]Enables an unknown bitflag. Clear with [ref=anm:v8-flag-317].[/wip]`},
   'v8-flag-317': {sig: '', args: [], wip: 2, desc: `[wip=2]Clears the bitflag from [ref=anm:v8-flag-316].[/wip]`},
@@ -1474,11 +1497,6 @@ Object.assign(ANM_INS_DATA, {
   'v4-drawRect2': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified member of drawRect family, likely [ref=anm:drawRectGrad][/wip]'},
   'v4-drawRect3': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified member of drawRect family, likely [ref=anm:drawRectShadow][/wip]'},
   'v4-drawRect4': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified member of drawRect family, likely [ref=anm:drawRectShadowGrad][/wip]'},
-  'v4-mathSin': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified trig function. Probably `sin` like in v8, but tough to be sure without testing.[/wip]'},
-  'v4-mathCos': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified trig function. Probably `cos` like in v8, but tough to be sure without testing.[/wip]'},
-  'v4-mathTan': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified trig function. Probably `tan` like in v8, but tough to be sure without testing.[/wip]'},
-  'v4-mathAcos': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified trig function. Probably `acos` like in v8, but tough to be sure without testing.[/wip]'},
-  'v4-mathAtan': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified trig function. Probably `atan` like in v8, but tough to be sure without testing.[/wip]'},
   'vd-imaginary-439': {
     sig: 'S', args: ['_'], desc: `
     ANM \`ins_439\` does not exi[s](http://www.scpwiki.com/scp-3930)t.

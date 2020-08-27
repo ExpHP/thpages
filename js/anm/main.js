@@ -7,7 +7,7 @@ import {parseQuery, queryUrl, queryGame} from '../url-format.ts';
 import {gameData} from '../game-names.ts';
 import {getCurrentAnmmaps} from '../settings.ts';
 import {SUPPORTED_ANM_VERSIONS, GAME_ANM_VERSIONS, ANM_VERSION_DATA} from './versions.ts';
-// import {buildInsStatsTable, buildVarStatsTable} from './stats.ts';
+import {buildInsStatsTable, buildVarStatsTable} from './stats.ts';
 
 /**
  * Resolves names from the suffix of 'anm:' namekeys,
@@ -34,8 +34,8 @@ export function initAnm() {
   window.setupGameSelector = setupGameSelector;
   window.generateAnmInsTableHtml = () => generateTablePageHtml(INS_HANDLERS);
   window.generateAnmVarTableHtml = () => generateTablePageHtml(VAR_HANDLERS);
-  // window.buildInsStatsTable = buildInsStatsTable;
-  // window.buildVarStatsTable = buildVarStatsTable;
+  window.buildInsStatsTable = buildInsStatsTable;
+  window.buildVarStatsTable = buildVarStatsTable;
 
   initNames();
 
