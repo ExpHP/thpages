@@ -1,4 +1,4 @@
-import dedent from "../lib/dedent.js";
+import dedent from "../lib/dedent.ts";
 
 export const UNASSIGNED = {ref: null, wip: 2};
 export const UNKNOWN_SIG = {};
@@ -1066,10 +1066,11 @@ Object.assign(ANM_INS_DATA, {
   'rotateTime2D': {
     sig: 'SSf', args: ['t', 'mode', 'rz'], desc: `
     A compact version of [ref=anm:rotateTime] that only interpolates the z rotation.
-
     [tiphide]
+    Only used by [game=128] in the main menu.
+
     (note: [ref=anm:rotateTime2D] and [ref=anm:rotateTime] are tracked separately, but judging from the code, they **are not** meant
-    to be used together and their effects do not stack properly. [wip]somebody test plz[/wip])
+    to be used together and their effects do not stack properly)
     [/tiphide]
   `},
   'alphaTimeLinear': {
@@ -1292,6 +1293,9 @@ Object.assign(ANM_INS_DATA, {
     Don't use this.
 
     [tiphide]
+    [more]
+    *Sigh.*  Fine, I'll tell you.
+
     The implementation does the following:
     1. Draw a rectangle like [ref=anm:drawRect] but of size \`(w+1, h+1)\`, and \`0.5 * alpha\`.
     2. Then draw a rectangle exactly like [ref=anm:drawRect].
@@ -1302,6 +1306,7 @@ Object.assign(ANM_INS_DATA, {
 
     You can force the shadow onto a given side by anchoring the opposite side.
     (this works because both rectangles are drawn with the same position and anchoring)
+    [/more]
     [/tiphide]
   `},
   'drawRectShadowGrad': {
@@ -1319,7 +1324,8 @@ Object.assign(ANM_INS_DATA, {
     sig: 'ff', args: ['len', 'unused'], desc: `
     Draws a 1-pixel thick horizontal line.  The second argument is unused.  No gradients.
 
-    If you want to change its direction, you must use [ref=anm:rotate].
+    Just like [ref=anm:drawRect], you can change the length on demand by setting the x-scale in [ref=anm:scale];
+    the y-scale has no effect. If you want to change its direction, you must use [ref=anm:rotate].
   `},
 });
 
@@ -1446,19 +1452,29 @@ Object.assign(ANM_INS_DATA, {
 // ============================
 Object.assign(ANM_INS_DATA, {
   'v8-418': {
-    sig: '', args: [], wip: 1, desc: `
-    A bizarre and **unused** (?) instruction that appears to select a new sprite in the image file based on the anm's coordinates.
+    sig: '', args: [], desc: `
+    A bizarre and **totally unused** instruction that appears to select a new sprite in the image file based on the anm's coordinates.
 
     [tiphide]
-    The code appears to do the following: [wip](expect inaccuracies!)[/wip]
+    [more]
+    The code does the following:
     * Using the current position, scale, etc. and [ref=anm:renderMode] setting (which must be \`<= 3\`),
       compute the corners of the rectangle that the ANM would occupy on the surface it is being drawn to.
     * Divide each corner's coords by 640x480 (regardless of resolution or original image size).
     * Use those as fractional uv coordinates for a region to pull sprite data from.
 
-    Presumably this lets you do weird things like use a rotated region of a .png file as a sprite.
+    This basically lets you use any arbitrary rectangular region of a spritesheet as a sprite, even rotated ones!
 
-    [wip=2]Sadly, Double Spoiler does not use this. So much for that one theory...[/wip]
+    Presumably, the intended use is to set [ref=anm:rotate] and [ref=anm:pos] and etc. for picking a sprite,
+    call this instruction, and then change [ref=anm:pos] and etc. again to the desired location for display.
+    You get a pretty cool effect though if you simply let the before and after positions be the same,
+    where it looks like a sort of window into another world.  (thanks to Priw8 for the video!)
+
+    <video controls width="400" height="300" preload="none" poster="content/anm/img/priw8-418-thumb.png">
+      <source type="video/mp4" src="content/anm/img/priw8-418.mp4">
+      <a download href="content/anm/img/priw8-418.mp4">Download video (.MP4)</a>
+    </video>
+    [/more]
     [/tiphide]
   `},
   'noZBuffer': {

@@ -1,14 +1,13 @@
 import {GROUPS_V8, ANM_INS_DATA, ANM_BY_OPCODE, ANM_OPCODE_REVERSE, DUMMY_DATA} from './ins-table.js';
 import {ANM_VAR_DATA, ANM_VARS_BY_NUMBER, ANM_VAR_NUMBER_REVERSE} from './var-table.js';
-import {globalRefNames, globalRefTips, globalRefLinks, getRefNameKey, getRefLinkKey} from '../ref.js';
-import {MD} from '../main.js';
+import {globalRefNames, globalRefTips, globalRefLinks, getRefNameKey, getRefLinkKey} from '../ref.ts';
+import {MD, addCallbacksForMdExt} from '../markdown.ts';
 import {globalNames, globalLinks, PrefixResolver} from '../resolver.ts';
 import {parseQuery, queryUrl, queryGame} from '../url-format.ts';
 import {gameData} from '../game-names.ts';
 import {getCurrentAnmmaps} from '../settings.ts';
-import {initStats} from './stats.ts';
+import {initStats, buildInsStatsTable, buildVarStatsTable} from './stats.ts';
 import {SUPPORTED_ANM_VERSIONS, GAME_ANM_VERSIONS, ANM_VERSION_DATA} from './versions.ts';
-import {buildInsStatsTable, buildVarStatsTable} from './stats.ts';
 
 /**
  * Resolves names from the suffix of 'anm:' namekeys,
@@ -279,6 +278,7 @@ function generateTablePageHtml(tableHandlers) {
   base += "[wip=1]Items marked like this are not fully understood.[/wip]<br>[wip=2]Items like this are complete mysteries.[/wip]";
 
   const $out = parseHtml('<div>' + MD.makeHtml(base) + MD.makeHtml(navigation) + table + '</div>');
+  addCallbacksForMdExt($out);
   globalNames.transformHtml($out, currentQuery);
   globalLinks.transformHtml($out, currentQuery);
   return $out;

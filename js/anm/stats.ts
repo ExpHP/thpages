@@ -3,7 +3,7 @@ import {GAME_ANM_VERSIONS} from './versions';
 import {INS_HANDLERS, VAR_HANDLERS} from './main.js';
 import {globalNames, globalLinks, PrefixResolver} from '../resolver';
 import {GridViewScroll} from '../lib/gridviewscroll';
-import {MD} from '../main.js';
+import {MD} from '../markdown';
 import {parseQuery} from '../url-format';
 import {globalTips, Tip} from '../tips';
 

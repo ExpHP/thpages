@@ -382,6 +382,17 @@ table, th, td, tr {
   font-size: 1.1em;
 }
 
+.show-more {
+  &.expanded {
+    &::after { content: "Show less"; }
+    & + * { display: initial; }
+  }
+  &:not(.expanded) {
+    &::after { content: "Show more"; }
+    & + * { display: none; }
+  }
+}
+
 [data-wip="1"] {
   color: rgb(250, 150, 74);
 }

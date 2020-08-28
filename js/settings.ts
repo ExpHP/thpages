@@ -1,4 +1,4 @@
-import {MD} from './main.js';
+import {MD} from './markdown';
 import {Eclmap} from './anm/eclmap';
 import dedent from './lib/dedent';
 import {SupportedAnmVersion, SUPPORTED_ANM_VERSIONS, ANM_VERSION_DATA} from './anm/versions';
@@ -62,9 +62,9 @@ function buildAnmmapSelector($div: HTMLElement) {
 
     let gameRangeStr;
     if (minGame === maxGame) {
-      gameRangeStr = `TH[game-num=${minGame}]`
+      gameRangeStr = `TH[game-num=${minGame}]`;
     } else {
-      gameRangeStr = `TH[game-num=${minGame}]&ndash;[game-num=${maxGame}]`
+      gameRangeStr = `TH[game-num=${minGame}]&ndash;[game-num=${maxGame}]`;
     }
     rowsHtml += dedent(/* html */`
       <div class="row ${version}">

@@ -1,5 +1,4 @@
-import showdown from "showdown";
-import {ext} from "./showdown-ext.js";
+import {MD} from "./markdown.ts";
 import {INDEX, ERROR} from "./index.js";
 import {initAnm} from "./anm/main.js";
 import {initTips} from "./tips.ts";
@@ -31,12 +30,6 @@ export function init() {
   initTips();
 }
 
-export const MD = new showdown.Converter({
-  extensions: [ext],
-  tables: true,
-  strikethrough: true,
-  literalMidWordUnderscores: true,
-});
 const $content = document.querySelector(".content-wrapper");
 let lastQuery = null;
 export const $scriptContent = document.querySelector(".script-wrapper");
