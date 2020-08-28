@@ -1,31 +1,43 @@
 .stats-table {
   resize: vertical;
   overflow: hidden;
-  max-width: 1100px;
   height: 300px;
+
+  .zero { opacity: 0.30; }
+  .na::after {
+    content: "—";
+    color: #aa0;
+    //opacity: 0.30;
+  }
+
+  tr:nth-child(even) .frozen-col {
+    background-color: #221f31;
+  }
+
+  tr.frozen-header,
+  tr.frozen-header .frozen-col,
+  tr:nth-child(odd) .frozen-col {
+    background-color: #282639;
+  }
+
+  tr:nth-child(even) {
+    background-color: #221f31a0;
+  }
+
+  tr:nth-child(odd) {
+    background-color: #282639a0;
+  }
+
+  tr:first-child { text-align: center; }
+  tr:not(:first-child) > :first-child { text-align: left; }
+  tr:not(:first-child) td:not(:first-child) {
+    font-family: Monaco, Bitstream Vera Sans Mono, Lucida Console, Terminal, monospace;
+    text-align: right;
+  }
 }
 
-.stats-table tr:nth-child(even) .frozen-col {
-  background-color: #221f31;
-}
-
-.stats-table tr.frozen-header,
-.stats-table tr.frozen-header .frozen-col,
-.stats-table tr:nth-child(odd) .frozen-col {
-  background-color: #282639;
-}
-
-.stats-table tr:nth-child(even) {
-  background-color: #221f31a0;
-}
-
-.stats-table tr:nth-child(odd) {
-  background-color: #282639a0;
-}
-
-.stats-table tr:first-child { text-align: center; }
-.stats-table tr:not(:first-child) > :first-child { text-align: left; }
-.stats-table tr:not(:first-child) td:not(:first-child) {
-  font-family: Monaco, Bitstream Vera Sans Mono, Lucida Console, Terminal, monospace;
-  text-align: right;
+#tip li {
+  // tip is smol, let lists fit better
+  margin-bottom: 0px;
+  margin-top: 0px;
 }

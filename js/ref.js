@@ -5,9 +5,9 @@ export const globalRefNames = new PrefixResolver();
 export const globalRefTips = new PrefixResolver();
 export const globalRefLinks = new PrefixResolver();
 
-globalLinks.registerPrefix('ref', (ref, c) => globalRefLinks.getNow(ref, c));
-globalNames.registerPrefix('ref', (ref, c) => globalRefNames.getNow(ref, c));
-globalTips.registerPrefix('ref', (ref, c) => globalRefTips.getNow(ref, c));
+globalLinks.registerPrefix('ref', globalRefLinks);
+globalNames.registerPrefix('ref', globalRefNames);
+globalTips.registerPrefix('ref', globalRefTips);
 
 /**
  * Get tooltip key of a reference.

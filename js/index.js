@@ -42,6 +42,11 @@ export const INDEX = [
         "type": "site",
         "url": "ontick-ondraw",
       },
+      {
+        "name": "Stats!",
+        "type": "site",
+        "url": "stats",
+      },
     ],
 
     // // subgroup example

@@ -40,7 +40,6 @@ export type GridViewScrollOptions = {
     // FIXME rename to freezeFirstColumns in consideration of RTL
     /** Freeze this many columns. */
     freezeLeftColumns?: number;
-
     /** Automatically add a class to frozen header <tr> elements. */
     frozenHeaderCssClass?: string;
 
@@ -176,7 +175,11 @@ export class GridViewScroll {
 
         this.resize();
 
-        const divWithScrollbars = this._rootDiv.querySelector<HTMLElement>(`${CSS_PATH_SUPERROW_CONTENT} > .${CLASS_SUBTABLE_FULL}`)!;
+        this.setupEvents();
+    }
+
+    private setupEvents() {
+        const divWithScrollbars = this.getTableDiv('content', 'full')!;
 
         divWithScrollbars.onscroll = (event: Event) => {
             const scrollTop = divWithScrollbars.scrollTop;
@@ -188,6 +191,20 @@ export class GridViewScroll {
             if (div = this.getTableDiv('footer', 'full')) div.scrollLeft = scrollLeft;
             if (this.options.onscroll) this.options.onscroll({scrollTop, scrollLeft});
         }
+
+        // Ugh.  This doesn't work very well.
+
+        // if (this.options.forwardWheel) {
+        //     let frozenColumn;
+        //     if (frozenColumn = this.getTableDiv('content', 'left')) {
+        //         frozenColumn.onwheel = (event: WheelEvent) => {
+        //             divWithScrollbars.scrollBy({
+        //                 top: event.deltaY,
+        //                 behavior: 'smooth',
+        //             });
+        //         };
+        //     }
+        // }
     }
 
     private getSuperRowDiv(superrow: SuperRow): HTMLElement | null {

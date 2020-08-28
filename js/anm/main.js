@@ -6,6 +6,7 @@ import {globalNames, globalLinks, PrefixResolver} from '../resolver.ts';
 import {parseQuery, queryUrl, queryGame} from '../url-format.ts';
 import {gameData} from '../game-names.ts';
 import {getCurrentAnmmaps} from '../settings.ts';
+import {initStats} from './stats.ts';
 import {SUPPORTED_ANM_VERSIONS, GAME_ANM_VERSIONS, ANM_VERSION_DATA} from './versions.ts';
 import {buildInsStatsTable, buildVarStatsTable} from './stats.ts';
 
@@ -38,6 +39,7 @@ export function initAnm() {
   window.buildVarStatsTable = buildVarStatsTable;
 
   initNames();
+  initStats();
 
   registerRefTipsForTable(INS_HANDLERS); // "ref:anm:" tips
   registerRefTipsForTable(VAR_HANDLERS); // "ref:anmvar:" tips
@@ -117,7 +119,7 @@ function initNames() {
       return possiblyAddVersionPrefix(name, version, ctx);
     });
   }
-  globalNames.registerPrefix('anm', (s, ctx) => ANM_INS_NAMES.getNow(s, ctx));
+  globalNames.registerPrefix('anm', ANM_INS_NAMES);
 
   // Variables
   // (this is sufficiently different from instructions that we'll just put up with the copypasta)
@@ -144,7 +146,7 @@ function initNames() {
       return possiblyAddVersionPrefix(name, version, ctx);
     });
   }
-  globalNames.registerPrefix('anmvar', (s, ctx) => ANM_VAR_NAMES.getNow(s, ctx));
+  globalNames.registerPrefix('anmvar', ANM_VAR_NAMES);
 }
 
 // The implementation of instructions and variables share lots of commonalities,

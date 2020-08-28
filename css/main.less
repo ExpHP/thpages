@@ -74,12 +74,13 @@ code, instr {
 }
 
 li {
-  margin-bottom: 9px;
-  margin-top: 9px;
+  margin-bottom: 0.5625em;
+  margin-top: 0.5625em;
 }
 
-// compress table of contents lists
-.toc li {
+.toc li, // compress table of contents lists
+#tip li // tip is smol, let lists fit better
+{
   margin-bottom: 0px;
   margin-top: 0px;
 }

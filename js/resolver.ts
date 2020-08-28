@@ -50,12 +50,21 @@ export class PrefixResolver<Out> implements Resolver<Out> {
   registerPrefix(
       prefix: string,
       func: (suff: string, ctx: Context) => Out | null,
-  ): void {
+  ): void;
+
+  /** Assign another resolver to a handle keys with the given prefix followed by a colon. */
+  registerPrefix(prefix: string, resolver: Resolver<Out>): void;
+
+  registerPrefix(prefix: string, arg: unknown) {
     if (prefix.includes(':')) {
       throw new Error(`invalid prefix '${prefix}'`);
     }
 
-    this.map[prefix] = func;
+    if ((arg as any).getNow) {
+      this.map[prefix] = (ref, c) => (arg as any).getNow(ref, c);
+    } else {
+      this.map[prefix] = arg as any;
+    }
   }
 }
 
