@@ -1287,7 +1287,6 @@ Object.assign(ANM_INS_DATA, {
     sig: 'ff', args: ['w', 'h'], desc: `
     Same as [ref=anm:drawRect] but supports gradients ([ref=anm:rgb2]), which go from left to right.
   `},
-  // TODO: find a way to "collapse" this by default
   'drawRectShadow': {
     sig: 'ff', args: ['w', 'h'], desc: `
     A variant of \`drawRect\` intended for rotated rectangles, which smooths out the edges
