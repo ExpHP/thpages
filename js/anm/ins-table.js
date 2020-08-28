@@ -1290,22 +1290,33 @@ Object.assign(ANM_INS_DATA, {
   // TODO: find a way to "collapse" this by default
   'drawRectShadow': {
     sig: 'ff', args: ['w', 'h'], desc: `
-    Don't use this.
+    A variant of \`drawRect\` intended for rotated rectangles, which smooths out the edges
+    somewhat.
 
     [tiphide]
-    [more]
-    *Sigh.*  Fine, I'll tell you.
+    **Be careful!** This can look ugly if your rotation is zero, *especially* if it moves!
 
-    The implementation does the following:
+    [more]
+    More precisely, the implementation does the following:
     1. Draw a rectangle like [ref=anm:drawRect] but of size \`(w+1, h+1)\`, and \`0.5 * alpha\`.
     2. Then draw a rectangle exactly like [ref=anm:drawRect].
 
-    This has the visual effect of creating a 1 pixel "shadow" along two of the edges.
-    Unfortunately, WHICH sides have shadows is not well-defined with centered anchoring,
-    and the shadow will tend to bounce around in an ugly fashion as the object moves.
+    The first step is basically a sort of poor man's anti-aliasing hack, by creating something
+    that's half of a pixel larger in each direction.  When the rectangle is rotated, some of the
+    pixels along each edge will receive this half-alpha color, creating less jagged edges.
+    In this image, [ref=anm:drawRectShadow] is on the right:
 
-    You can force the shadow onto a given side by anchoring the opposite side.
-    (this works because both rectangles are drawn with the same position and anchoring)
+    <img src="content/anm/img/shadowgrad-rotate.gif">
+
+    At zero rotation however, the effect looks pretty bad, because basically all of the
+    pixels along one horizontal edge and one vertical edge will get the half-alpha color.
+    This creates a sort of "drop shadow" that will bounce around between opposite sides of
+    the object as it moves, as seen here:
+
+    <img src="content/anm/img/shadowgrad-move.gif">
+
+    Even if you can't quite see it, something certainly *feels* off about the square
+    on the right, wouldn't you agree?
     [/more]
     [/tiphide]
   `},
