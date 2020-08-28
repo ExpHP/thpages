@@ -156,14 +156,14 @@ Object.assign(ANM_VAR_DATA, {
   'i5': {type: '$', mut: true, wip: 1, desc: `[wip]Another general-purpose int? (#5)[/wip]`},
 
   // v4 random numbers
-  'v3-randrad': {type: '%', mut: false, desc: `Draws a random value from \`-PI\` to \`PI\` using the [replay RNG](#anm/concepts&a=rng).`},
-  'v3-randf-01': {type: '%', mut: false, desc: `Draws a random value from \`0.0\` to \`1.0\` using the [replay RNG](#anm/concepts&a=rng).`},
-  'v3-randf-11': {type: '%', mut: false, desc: `Draws a random value from \`-1.0\` to \`1.0\` using the [replay RNG](#anm/concepts&a=rng).`},
-  'v4-randrad': {type: '%', mut: false, desc: `Draws a random value from \`-PI\` to \`PI\` using the selected RNG (see [ref=anm:v4-randMode]).`},
-  'v4-randf-01': {type: '%', mut: false, desc: `Draws a random value from \`0.0\` to \`1.0\` using the selected RNG (see [ref=anm:v4-randMode]).`},
-  'v4-randf-11': {type: '%', mut: false, desc: `Draws a random value from \`-1.0\` to \`1.0\` using the selected RNG (see [ref=anm:v4-randMode]).`},
+  'v3-randrad': {type: '%', mut: false, succ: 'v4-randrad', desc: `Draws a random value from \`-PI\` to \`PI\` using the [replay RNG](#anm/concepts&a=rng).`},
+  'v3-randf-01': {type: '%', mut: false, succ: 'v4-randf-01', desc: `Draws a random value from \`0.0\` to \`1.0\` using the [replay RNG](#anm/concepts&a=rng).`},
+  'v3-randf-11': {type: '%', mut: false, succ: 'v4-randf-11', desc: `Draws a random value from \`-1.0\` to \`1.0\` using the [replay RNG](#anm/concepts&a=rng).`},
+  'v4-randrad': {type: '%', mut: false, succ: 'randrad', desc: `Draws a random value from \`-PI\` to \`PI\` using the selected RNG (see [ref=anm:v4-randMode]).`},
+  'v4-randf-01': {type: '%', mut: false, succ: 'randf-01', desc: `Draws a random value from \`0.0\` to \`1.0\` using the selected RNG (see [ref=anm:v4-randMode]).`},
+  'v4-randf-11': {type: '%', mut: false, succ: 'randf-11', desc: `Draws a random value from \`-1.0\` to \`1.0\` using the selected RNG (see [ref=anm:v4-randMode]).`},
   'v4-rand': {
-    type: '$', mut: false, desc: `
+    type: '$', mut: false, succ: 'rand', desc: `
     Draws a random integer using the selected RNG (see [ref=anm:v4-randMode]).
 
     [wip]What's the range?[/wip]
@@ -205,12 +205,12 @@ Object.assign(ANM_VAR_DATA, {
   'lookat-y': {type: '%', mut: false, wip: 1, desc: `y of normalized direction vector that the stage BG camera is facing. [wip](what is it used for?)[/wip]`},
   'lookat-z': {type: '%', mut: false, wip: 1, desc: `z of normalized direction vector that the stage BG camera is facing. [wip](what is it used for?)[/wip]`},
 
-  'v4-camera-x': {type: '%', mut: false, wip: 1, desc: `[wip=2]Probably stage BG camera's y position like in V8. (but no rocking vector is added in V4)[/wip]`},
-  'v4-camera-y': {type: '%', mut: false, wip: 1, desc: `[wip=2]Probably stage BG camera's y position like in V8. (but no rocking vector is added in V4)[/wip]`},
-  'v4-camera-z': {type: '%', mut: false, wip: 1, desc: `[wip=2]Probably stage BG camera's z position like in V8. (but no rocking vector is added in V4)[/wip]`},
-  'v4-lookat-x': {type: '%', mut: false, wip: 1, desc: `[wip=2]Probably x of normalized direction vector that the stage BG camera is facing, like in V8.[/wip]`},
-  'v4-lookat-y': {type: '%', mut: false, wip: 1, desc: `[wip=2]Probably y of normalized direction vector that the stage BG camera is facing, like in V8.[/wip]`},
-  'v4-lookat-z': {type: '%', mut: false, wip: 1, desc: `[wip=2]Probably z of normalized direction vector that the stage BG camera is facing, like in V8.[/wip]`},
+  'v4-camera-x': {type: '%', mut: false, succ: 'camera-x', wip: 1, desc: `[wip=2]Probably stage BG camera's y position like in V8. (but no rocking vector is added in V4)[/wip]`},
+  'v4-camera-y': {type: '%', mut: false, succ: 'camera-y', wip: 1, desc: `[wip=2]Probably stage BG camera's y position like in V8. (but no rocking vector is added in V4)[/wip]`},
+  'v4-camera-z': {type: '%', mut: false, succ: 'camera-z', wip: 1, desc: `[wip=2]Probably stage BG camera's z position like in V8. (but no rocking vector is added in V4)[/wip]`},
+  'v4-lookat-x': {type: '%', mut: false, succ: 'lookat-x', wip: 1, desc: `[wip=2]Probably x of normalized direction vector that the stage BG camera is facing, like in V8.[/wip]`},
+  'v4-lookat-y': {type: '%', mut: false, succ: 'lookat-y', wip: 1, desc: `[wip=2]Probably y of normalized direction vector that the stage BG camera is facing, like in V8.[/wip]`},
+  'v4-lookat-z': {type: '%', mut: false, succ: 'lookat-z', wip: 1, desc: `[wip=2]Probably z of normalized direction vector that the stage BG camera is facing, like in V8.[/wip]`},
 });
 
 // Add `minGame` and `maxGame` keys to each crossref.

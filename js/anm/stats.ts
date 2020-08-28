@@ -1,6 +1,6 @@
 import {Game, allGames, gameData} from '../game-names';
 import {GAME_ANM_VERSIONS} from './versions';
-import {INS_HANDLERS, VAR_HANDLERS} from './main.js';
+import {INS_HANDLERS, VAR_HANDLERS, makeRefGameIndependent} from './main.js';
 import {globalNames, globalLinks, PrefixResolver} from '../resolver';
 import {GridViewScroll} from '../lib/gridviewscroll';
 import {MD} from '../markdown';
@@ -127,11 +127,13 @@ function getStatsRows(statsByOpcode: StatsByOpcode, tableHandlers: any) {
     const game = gameStr as Game;
     const srcInner = statsByOpcode[game];
     const version = GAME_ANM_VERSIONS[game];
-    const opcodes = Array.from(Object.keys(innerByOpcode as object));
+    const opcodes = Array.from(Object.keys(innerByOpcode as object)).map((opcodeStr) => parseInt(opcodeStr));
     opcodes.sort();
-    opcodes.reverse();
 
-    for (const [opcodeStr, {ref}] of Object.entries<{ref: string | null}>(innerByOpcode)) {
+    for (const opcodeStr of opcodes) {
+      let {ref} = innerByOpcode[opcodeStr];
+      if (ref) ref = makeRefGameIndependent(ref, tableHandlers);
+
       const nameKey = (ref === null) ? `${mainPrefix}:${version}:${opcodeStr}` : `ref:${ref}`;
       if (!keyIndices.has(nameKey)) {
         keyIndices.set(nameKey, out.length);

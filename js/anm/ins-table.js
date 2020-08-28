@@ -621,8 +621,8 @@ for (const [mnemonic, operator] of Object.entries(OPERATOR_3_DATA)) {
 }
 
 Object.assign(ANM_INS_DATA, {
-  'v3-rand': {sig: '$S', args: ['x', 'n'], succ: 'rand', desc: 'Draw a random integer `0 <= x < n` using the global RNG.'},
-  'v3-randF': {sig: '%f', args: ['x', 'r'], succ: 'randF', desc: 'Draw a random float `0 <= x <= r` using the global RNG.'},
+  'v3-rand': {sig: '$S', args: ['x', 'n'], succ: 'v4-rand', desc: 'Draw a random integer `0 <= x < n` using the global RNG.'},
+  'v3-randF': {sig: '%f', args: ['x', 'r'], succ: 'v4-randF', desc: 'Draw a random float `0 <= x <= r` using the global RNG.'},
   'v4-rand': {sig: '$S', args: ['x', 'n'], succ: 'rand', desc: 'Draw a random integer `0 <= x < n` using the selected RNG (see [ref=anm:v4-randMode]).'},
   'v4-randF': {sig: '%f', args: ['x', 'r'], succ: 'randF', desc: 'Draw a random float `0 <= x <= r` using the selected RNG (see [ref=anm:v4-randMode]).'},
 
@@ -878,7 +878,7 @@ Object.assign(ANM_INS_DATA, {
     [/tiphide]
   `},
   'rgb-dword': {
-    sig: 'S', args: ['rgb'], desc: `
+    sig: 'S', args: ['rgb'], succ: 'rgb', desc: `
     Set a color which gets blended with this sprite.
 
     This version takes a single dword in the form \`0x00RRGGBB\`.  Variables are not supported.
@@ -1038,7 +1038,7 @@ Object.assign(ANM_INS_DATA, {
     [tiphide]For some reason, in [game=14] onwards, this also sets [ref=anm:colorMode] to 1, which can be a mild inconvenience.[/tiphide]
   `},
   'rgbTime-dword': {
-    sig: 'SSS', args: ['t', 'mode', 'rgb'], desc: `
+    sig: 'SSS', args: ['t', 'mode', 'rgb'], succ: 'rgbTime', desc: `
     Over the next \`t\` frames, changes [ref=anm:rgb-dword] to the given value using [interpolation mode](#anm/interpolation) \`mode\`.
 
     This version takes a single dword in the form \`0x00RRGGBB\`.  Variables are not supported.
@@ -1415,14 +1415,20 @@ Object.assign(ANM_INS_DATA, {
     [/tiphide]
   `},
   'ignoreParent': {
-    sig: 'S', args: ['ignore'], wip: 2, desc: `
+    sig: 'S', args: ['ignore'], desc: `
     Sets a bitflag.  If the bitflag is 1, then in many different contexts, the ANM will e.g. ignore the
-    parent's scale and rotation and it will be allowed to use [ref=anm:originMode] as though it were root, etc.
+    parent's position/scale/rotation/etc. and it will be allowed to use e.g. [ref=anm:originMode] as though
+    it were root.
 
     [tiphide]
-    Completely unused in games with ANM version 8.  Well, it's used, but only by one thing (I think it's the
-    copyright logo in TH15-17?) to set [ref-notip=anm:ignoreParent]\`(0)\`, which is unnecessary because
-    the flag is already zero by default.
+    The only game to ever make proper use this was [game=125], where it was used by some multilayered,
+    rotating spell backgrounds as well as the enemy names and diagonal banners on level entry
+    (children of the "Shoot!" text).
+
+    Generally speaking, it does not seem that this instruction is ever really *necessary*, which is
+    probably why it's no longer used.  If you find yourself needing it, you may want to consider the
+    alternative of turning the child into a sibling instead, by giving the two scripts a common parent.
+    (This will probably be more reliable/less buggy in the end.)
     [/tiphide]
   `},
   'copyParentVars': {

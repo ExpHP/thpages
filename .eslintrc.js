@@ -27,6 +27,7 @@ module.exports = {
     "operator-linebreak": ["error", "before"],
     // allow `let a, b;` but not `let a = 2, b = 3;`
     "one-var": ["error", {"initialized": "never"}],
+    "no-constant-condition": ["error", {'checkLoops': false}],
   },
   "ignorePatterns": ["js/lib/*"],
 

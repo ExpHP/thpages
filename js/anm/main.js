@@ -1,6 +1,6 @@
 import {GROUPS_V8, ANM_INS_DATA, ANM_BY_OPCODE, ANM_OPCODE_REVERSE, DUMMY_DATA} from './ins-table.js';
 import {ANM_VAR_DATA, ANM_VARS_BY_NUMBER, ANM_VAR_NUMBER_REVERSE} from './var-table.js';
-import {globalRefNames, globalRefTips, globalRefLinks, getRefNameKey, getRefLinkKey} from '../ref.ts';
+import {globalRefNames, globalRefTips, globalRefLinks, getRefNameKey} from '../ref.ts';
 import {MD, addCallbacksForMdExt} from '../markdown.ts';
 import {globalNames, globalLinks, PrefixResolver} from '../resolver.ts';
 import {parseQuery, queryUrl, queryGame} from '../url-format.ts';
@@ -69,15 +69,6 @@ function setupGameSelector($select) {
     delete query.a;
     window.location.href = queryUrl(query);
   });
-}
-
-function validateGameString(game) {
-  if (typeof game !== 'string') {
-    throw new TypeError(`bad game; expected string, got ${game}`);
-  }
-  if (!GAME_ANM_VERSIONS[game]) {
-    throw new Error(`bad game: '${game}'`);
-  }
 }
 
 function getOpcodeNameKey(game, opcode) {
@@ -429,4 +420,26 @@ function getUrlByRef(ref, context, tableHandlers) {
   query.a = formatAnchor(opcode);
 
   return queryUrl({s: tablePage, g: game, a: formatAnchor(opcode)});
+}
+
+/**
+ * Given a ref that may be for an outdated instruction, get the ref in the latest games.
+ *
+ * Sometimes instructions are given different refs in different games because they have
+ * different signatures, or they work very differently and it is desirable to be able to
+ * link to them separately.  This can hinder code that wants to track an instruction across
+ * all games, however, so this function can be used to normalize instructions to their
+ * latest ref.
+ *
+ * @param {string} ref
+ * @param {any} tableHandlers
+ * @return {string}
+ */
+export function makeRefGameIndependent(ref, tableHandlers) {
+  while (true) {
+    const {succ} = getDataByRef(ref, tableHandlers);
+    if (!succ) return ref;
+
+    ref = `${tableHandlers.mainPrefix}:${succ}`;
+  }
 }
