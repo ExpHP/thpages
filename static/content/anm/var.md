@@ -1,4 +1,4 @@
-# ANM instruction reference
+# ANM variable reference
 
 Select game version:
 <select id='anm-table-game-select'></select>

@@ -231,8 +231,9 @@ function setMapsSaveStatus($maps: Element, status: null | 'success' | 'error' | 
 // Settings implementation.
 
 export const DEFAULT_ANMM_TEXT: {[v in SupportedAnmVersion]: string} = {
-  'v2': readFileSync(__dirname + '/../static/eclmap/anmmap/v3.anmm', 'utf8'),
-  'v3': readFileSync(__dirname + '/../static/eclmap/anmmap/v3.anmm', 'utf8'),
+  'v0': readFileSync(__dirname + '/../static/eclmap/anmmap/v0.anmm', 'utf8'),
+  'v2': readFileSync(__dirname + '/../static/eclmap/anmmap/v2.anmm', 'utf8'),
+  'v3': readFileSync(__dirname + '/../static/eclmap/anmmap/v2.anmm', 'utf8'),
   'v4': readFileSync(__dirname + '/../static/eclmap/anmmap/v4.anmm', 'utf8'),
   'v8': readFileSync(__dirname + '/../static/eclmap/anmmap/v8.anmm', 'utf8'),
 };

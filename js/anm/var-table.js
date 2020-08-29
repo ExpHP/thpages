@@ -13,6 +13,7 @@ import dedent from "../lib/dedent.ts";
  */
 export const ANM_VARS_BY_NUMBER = new Map(); // has to be a map because 'integer' keys defy insertion order
 
+ANM_VARS_BY_NUMBER.set('06', {});
 ANM_VARS_BY_NUMBER.set('07', {
   10000: {ref: 'anmvar:i0'},
   10001: {ref: 'anmvar:i1'},

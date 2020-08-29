@@ -25,6 +25,42 @@ export const GROUPS_V8 = [
   {min: 600, max: 699, title: 'Drawing'},
 ];
 
+// ---- V0 ----
+ANM_BY_OPCODE.set('06', {
+  0: {ref: 'anm:delete'},
+  1: {ref: 'anm:sprite'},
+  2: {ref: 'anm:scale'},
+  3: {ref: 'anm:alpha'},
+  4: {ref: 'anm:rgb-dword'},
+  5: {ref: 'anm:v0-jmp'},
+  6: {ref: 'anm:nop'},
+  7: {ref: 'anm:flipX'},
+  8: {ref: 'anm:flipY'},
+  9: {ref: 'anm:rotate'},
+  10: {ref: 'anm:angleVel'},
+  11: {ref: 'anm:scaleGrowth'},
+  12: {ref: 'anm:alphaTimeLinear'},
+  13: UNASSIGNED, // anm:blendAlpha
+  14: UNASSIGNED, // anm:blendAdditive
+  15: {ref: 'anm:static'},
+  16: {ref: 'anm:spriteRand'},
+  17: {ref: 'anm:pos'},
+  18: {ref: 'anm:posTimeLinear'}, // seets 0b00
+  19: UNASSIGNED, // posTimeDecel // sets 0b01
+  20: UNASSIGNED, // posTimeAccel // sets 0b10
+  21: {ref: 'anm:stop'},
+  22: {ref: 'anm:case'},
+  23: UNASSIGNED, // anchor bottom left
+  24: {ref: 'anm:stop2'},
+  25: {ref: 'anm:posMode'}, // set_allow_dest_offset (alternate_pos_flag)
+  26: {ref: 'anm:v0-26'}, // set_automatic_angle
+  27: {ref: 'anm:uAdd'},
+  28: {ref: 'anm:vAdd'},
+  29: {ref: 'anm:visible'}, // set_visible
+  30: {ref: 'anm:scaleTimeLinear'}, //
+  31: UNASSIGNED, // bitflag 12
+});
+
 // ---- V2 ----
 ANM_BY_OPCODE.set('07', {
   0: {ref: 'anm:nop'},
@@ -52,10 +88,10 @@ ANM_BY_OPCODE.set('07', {
   22: UNASSIGNED, // PoFV:  flags 11=1, 12=1
   23: {ref: 'anm:stop2'},
   24: {ref: 'anm:posMode'},
-  25: UNASSIGNED, // reads a word field
+  25: {ref: 'anm:v0-26'}, // reads a word field
   26: {ref: 'anm:uAdd'},
   27: {ref: 'anm:vAdd'},
-  28: UNASSIGNED, // PoFV:  sets flag 0
+  28: {ref: 'anm:visible'}, // PoFV:  sets flag 0
   29: {ref: 'anm:scaleTimeLinear'},
   30: UNASSIGNED, // PoFV:  sets flag 13
   31: UNASSIGNED, // PoFV:  sets flag 15
@@ -216,7 +252,7 @@ ANM_BY_OPCODE.set('095', {
 
   70: {ref: 'anm:uVel'},
   71: {ref: 'anm:vVel'},
-  72: {ref: 'anm:v8-flag-310', wip: 1},
+  72: {ref: 'anm:visible', wip: 1}, // flag 0
   73: {ref: 'anm:noZBuffer', wip: 1}, // flag 12
   74: {ref: 'anm:v8-306', wip: 1},
   75: {ref: 'anm:wait', wip: 1},
@@ -348,7 +384,7 @@ ANM_BY_OPCODE.set('13', {
   307: {ref: 'anm:v8-randMode'},
   308: {ref: 'anm:flipX'},
   309: {ref: 'anm:flipY'},
-  310: {ref: 'anm:v8-flag-310'},
+  310: {ref: 'anm:visible'},
   311: {ref: 'anm:resampleMode'},
   312: {ref: 'anm:scrollMode'},
 
@@ -423,8 +459,8 @@ ANM_BY_OPCODE.set('14', Object.assign({}, ANM_BY_OPCODE.get('13'), {
 }));
 
 ANM_BY_OPCODE.set('15', Object.assign({}, ANM_BY_OPCODE.get('14'), {
-  316: {ref: 'anm:v8-flag-316'},
-  317: {ref: 'anm:v8-flag-317'},
+  316: {ref: 'anm:v8-flag-316'}, // in 16: flag 2
+  317: {ref: 'anm:v8-flag-317'}, // in 16: flag 2
   611: {ref: 'anm:drawRing'},
 }));
 
@@ -561,6 +597,11 @@ Object.assign(ANM_INS_DATA, {
 // ==== OPS N JUMPS ====
 // =====================
 Object.assign(ANM_INS_DATA, {
+  'v0-jmp': {
+    sig: 'S', args: ['dest'], succ: 'jmp', desc: `
+    Jumps to byte offset \`dest\` from the script's beginning, and sets the time to that
+    instruction's [time label](#anm/concepts&a=time).
+  `},
   'jmp': {
     sig: 'SS', args: ['dest', 't'], desc: `
     Jumps to byte offset \`dest\` from the script's beginning and sets the time to \`t\`.
@@ -1517,7 +1558,14 @@ Object.assign(ANM_INS_DATA, {
     sig: '', args: [], wip: 2, desc: `
     [wip=2]Copies [\`pos_3\`](#anm/concepts&a=position) into \`pos\`, and zeros out \`pos_3\`...[/wip]
   `},
-  'v8-flag-310': {sig: 'b', args: ['enable'], wip: 2, desc: `[wip=2]Sets the state of an unknown bitflag.[/wip]`},
+  'visible': {sig: 'b', args: ['visible'], desc: `Set the visibility flag.  This is the same flag manipulated by [ref=anm:stop2].`},
+  'v0-26': {
+    sig: 's', args: ['arg'], wip: 2, desc: `
+    [wip=2]
+    Sets a word-sized field.  Supposedly this is just the auto-rotate flag ([ref=anm:rotateAuto])? Why is it an entire word?
+    Shenanigans, I tell you.
+    [/wip]
+  `},
   'v8-flag-316': {sig: '', args: [], wip: 2, desc: `[wip=2]Enables an unknown bitflag. Clear with [ref=anm:v8-flag-317].[/wip]`},
   'v8-flag-317': {sig: '', args: [], wip: 2, desc: `[wip=2]Clears the bitflag from [ref=anm:v8-flag-316].[/wip]`},
   'v8-flag-419': {sig: 'S', args: ['enable'], wip: 2, desc: `[wip=2]Sets the state of an unknown bitflag.[/wip]`},
