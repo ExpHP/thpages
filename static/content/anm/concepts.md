@@ -100,15 +100,19 @@ So yeah.  I wouldn't touch grandchild VMs with a 20 foot pole in *any* Touhou ga
 
 ---
 
-<h1 id="switch">Switching</h1>
+<!-- span used to provide an additional label -->
+# <span id="switch"><span id="interrupt">Interrupts</span></span>
 
-Oftentimes, graphics have special animations associated with certain events.  For instance, menu items may glow when selected, fly away when a different item is chosen, etc.  Or maybe the game just wants to get rid of a graphic for whatever reason, but wants to let it animate out gracefully.  The way these events are handled is called **switching** and is basically done as follows:
+Oftentimes, graphics have special animations associated with certain events.  For instance, menu items may glow when selected, fly away when a different item is chosen, etc.  Or maybe the game just wants to get rid of a graphic for whatever reason, but wants to let it animate out gracefully.  The way these events are handled is by invoking **interrupts** on the ANM, as follows:
 
-* A field on the ANM VM is set to some number representing the event.
+* A field on the ANM VM is set to some number representing the type of event.
 * The next time the VM is [ticked](#anm/ontick-ondraw),
-  it will check this field, look for a matching [ref=anm:case] instruction, and start executing from there.
-* When a switch successfully occurs, the time and instruction pointer of the VM just before the switch are
-  saved so that they can be potentially restored with [ref=anm:caseReturn].
+  it will check this field, and search the script for a matching [ref=anm:case] instruction if it is nonzero.
+* When it finds one:
+    + It will jump to the matching label and set the current time to its [time label](#anm/concepts&a=time).
+    + Right before doing so, it will save the current time and instruction pointer
+      so that they can be potentially restored with [ref=anm:caseReturn].
+    + It will enable the "visible" bitflag if not already (see [ref=anm:visible]).
 
 ### An example
 
@@ -143,45 +147,47 @@ offset144:
 }
 [/code]
 
-This script has four case labels.  The code that manages the GUI watches for the following conditions and triggers switches to these labels:
+This script has four interrupts, which are manually triggered by code in the GUI that watches for the following conditions:
 
-* Label 2 (which also runs immediately) is invoked whenever a release drops season level to 0, making it disappear.
-* Label 3 is invoked when season level changes from 0 to 1.  First, it appears, and then it blinks in a loop.
+* Label 3 (which also runs immediately) is invoked whenever a release drops season level to 0, making it disappear.
+* Label 2 is invoked when season level changes from 0 to 1.  First, it appears, and then it blinks in a loop.
 * Label 5 makes it transparent when the player gets too close to the season gauge.
 * Label 4 makes it opaque when the player moves away from the gauge.
 
 > An aside: this actually has a silly bug in that, if the player moves near the season gauge at 0 season power,
-> "Releasable" suddenly appears.  This shows just how difficult it can be to write good switches!
+> "Releasable" suddenly appears.  This shows just how difficult it can be to write good interrupts!
 
-The meaning of these labels are obviously specific to the season gauge,
-and other parts of the gauge also have labels with the same meaning.  (e.g. the "filled" part of the bar uses labels 2 and 3 to toggle between blue at level 0 and yellow-white at levels 1+).
-That said, there is one label that has a nearly universal meaning:
-Label `1` pretty much always means "disappear forever". I.e. label 1, if it exists, will always be some kind of exit animation like fade-out,
+The meaning of these interrupt numbers are obviously specific to the season gauge,
+and other parts of the gauge also have interrupts with the same meaning.
+(e.g. the "filled" part of the bar uses labels 2 and 3 to toggle between blue at level 0 and yellow-white at levels 1+).
+That said, there is one interrupt that has a nearly universal meaning:
+Interrupt `1` pretty much always means "disappear forever". I.e. label 1, if it exists, will always be some kind of exit animation like fade-out,
 shrinking, or flyout, and will end in [ref=anm:delete].
 
-The vast majority of switching is hardcoded in the game, but notably, ECL scripts can invoke [ref=anm:case] labels
+The vast majority of interrupts are used by hardcoded code in the game, but notably, ECL scripts can invoke [ref=anm:case] labels
 on their own sprites by using the `anmSwitch` ECL instruction.
 The games seldom use this but it is pretty hecking useful for modders!
 
 ### [ref=anm:caseReturn] versus [ref=anm:stop]
 
-Notice that labels 4 and 5 end in [ref=anm:caseReturn] while labels 2 and 3 do not.  The reason for this is because **switching can occur at any point where the VM is waiting.**  Oftentimes, this is at a [ref=anm:stop] (since that basically means "wait forever"), but it can also occur at any [ref=anm:wait] instruction, or whenever the time label increases.
+Notice that labels 4 and 5 end in [ref=anm:caseReturn] while labels 2 and 3 do not.  The reason for this is because **interrupts can occur at any point where the VM is waiting.**  Oftentimes, this is at a [ref=anm:stop] (since that basically means "wait forever"), but it can also occur at any [ref=anm:wait] instruction, or whenever the time label increases.
 
-Think about it this way: The code for label 2 is a loop to make it blink:
+So how do we know which one we should use?  Well, think about it this way: The code for label 2 is a loop to make it blink:
 
 <img src="content/anm/img/releasable-blonk.gif" alt="*blonk*">
 
-Even as the player moves around and triggers switches 4 and 5, we want it to continue blinking as long as the player has season power.  Therefore, switches 4 and 5 use [ref=anm:caseReturn] so that the VM can seemlessly return back to the blinking loop.  However, we do *not* want it to continue blinking when the player has season level 0.  Therefore, label 2 ends in a [ref=anm:stop]. [weak](okay, technically it doesn't matter if it keeps blinking since alpha would be 0, but finding examples is hard okay?)[/weak]
+Even as the player moves around and triggers interrupts 4 and 5, we want it to continue blinking as long as the player has season power.  Therefore, labels 4 and 5 end in [ref=anm:caseReturn] so that the VM can seemlessly return back to the blinking loop.  However, we do *not* want it to continue blinking when the player has season level 0.  Therefore, label 2 ends in a [ref=anm:stop]. [weak](okay, technically it doesn't matter if it keeps blinking since alpha would be 0, but finding examples is hard okay?)[/weak]
 
-There is an important caveat to [ref=anm:caseReturn], which is that only a single return address is stored&mdash;not a stack!  Therefore, **whenever you use [ref=anm:caseReturn], you should avoid any waiting inside that [ref=anm:case] block,** because if the VM gets interrupted by another switch during this time, the script may unexpectedly end up in an infinite loop where [ref=anm:caseReturn] keeps sending it back to the point where it got interrupted.
+There is an important caveat to [ref=anm:caseReturn], which is that only a single return address is stored&mdash;not a stack!  Therefore, **whenever you use [ref=anm:caseReturn], you should avoid any waiting inside that [ref=anm:case] block,** because if the VM receives another interrupt during this time, the script may unexpectedly end up in an infinite loop where [ref=anm:caseReturn] keeps sending it back to a point shortly before the [ref=anm:caseReturn].
 
-### Other miscellaneous notes on switching
+### Other miscellaneous notes on interrupts
 
 * The game always searches for [ref=anm:case] labels starting from the *beginning* of the function. (not from the current instruction)
-* If multiple switches occur on one frame, only the **last** takes effect.
-* [ref=anm:case](0) doesn't work due to how pending switch numbers are stored.
+* It is impossible to invoke multiple interrupts on a single frame.
 * [wip=2][ref=anm:case](-1) appears to work differently from the others?
+  Could it be a default interrupt?
   According to 32th System it is ignored...[/wip]
+* [wip=2][ref=anm:case](0) also has a special meaning, and is only used once in both [game=125] and [game=165].[/wip]
 
 ---
 

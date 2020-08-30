@@ -101,7 +101,8 @@ ANM_VARS_BY_NUMBER.set('14', Object.assign({}, ANM_VARS_BY_NUMBER.get('13'), {
   10035: {ref: 'anmvar:mystery-angle-z'},
 }));
 
-ANM_VARS_BY_NUMBER.set('15', Object.assign({}, ANM_VARS_BY_NUMBER.get('14')));
+ANM_VARS_BY_NUMBER.set('143', Object.assign({}, ANM_VARS_BY_NUMBER.get('14')));
+ANM_VARS_BY_NUMBER.set('15', Object.assign({}, ANM_VARS_BY_NUMBER.get('143')));
 ANM_VARS_BY_NUMBER.set('16', Object.assign({}, ANM_VARS_BY_NUMBER.get('15')));
 ANM_VARS_BY_NUMBER.set('165', Object.assign({}, ANM_VARS_BY_NUMBER.get('16')));
 ANM_VARS_BY_NUMBER.set('17', Object.assign({}, ANM_VARS_BY_NUMBER.get('165')));

@@ -70,12 +70,13 @@ function buildStatsTable($elem: HTMLElement, statsByOpcode: StatsByOpcode, table
       const cellData = rowData.get(game);
       if (cellData && cellData.total === undefined) console.error(cellData);
 
-      let cellText;
-      if (!cellData) cellText = `<span class="na"></span>`;
-      else if (cellData.total === 0) cellText = `<span class="zero">0</span>`;
+      let cellClass = '';
+      let cellText = '';
+      if (!cellData) cellClass = 'class="na"';
+      else if (cellData.total === 0) [cellClass, cellText] = ['class="zero"', '0'];
       else cellText = `${cellData.total}`;
 
-      tableBody += `<td data-tip-id="${tipId}">${cellText}</td>`;
+      tableBody += `<td ${cellClass} data-tip-id="${tipId}"><span>${cellText}</span></td>`;
     }
     tableBody += '</tr>';
   }

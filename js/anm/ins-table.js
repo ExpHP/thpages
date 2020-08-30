@@ -46,8 +46,8 @@ ANM_BY_OPCODE.set('06', {
   16: {ref: 'anm:spriteRand'},
   17: {ref: 'anm:pos'},
   18: {ref: 'anm:posTimeLinear'}, // seets 0b00
-  19: UNASSIGNED, // posTimeDecel // sets 0b01
-  20: UNASSIGNED, // posTimeAccel // sets 0b10
+  19: {ref: 'anm:posTimeEaseout'}, // posTimeDecel // sets 0b01
+  20: {ref: 'anm:posTimeEaseout4'}, // posTimeAccel // sets 0b10
   21: {ref: 'anm:stop'},
   22: {ref: 'anm:case'},
   23: UNASSIGNED, // anchor bottom left
@@ -292,7 +292,7 @@ ANM_BY_OPCODE.set('11', Object.assign({}, ANM_BY_OPCODE.get('10'), {
   100: {ref: 'anm:posBezier'},
   101: {ref: 'anm:v4-texCircle2'}, // type 13 in GFW
   102: {ref: 'anm:spriteRand'},
-  103: {ref: 'anm:v4-drawRect1'}, // type 15 in GFW
+  103: {ref: 'anm:drawRect'}, // type 15 in GFW
 }));
 
 ANM_BY_OPCODE.set('12', Object.assign({}, ANM_BY_OPCODE.get('11'), {
@@ -300,9 +300,9 @@ ANM_BY_OPCODE.set('12', Object.assign({}, ANM_BY_OPCODE.get('11'), {
   105: {ref: 'anm:drawPolyBorder'},
   106: {ref: 'anm:uvScale'},
   107: {ref: 'anm:uvScaleTime'},
-  108: {ref: 'anm:v4-drawRect2'}, // type 19 in GFW
-  109: {ref: 'anm:v4-drawRect3'}, // type 20 in GFW
-  110: {ref: 'anm:v4-drawRect4'}, // type 21 in GFW
+  108: {ref: 'anm:drawRectGrad'}, // type 19 in GFW
+  109: {ref: 'anm:drawRectShadow'}, // type 20 in GFW
+  110: {ref: 'anm:drawRectShadowGrad'}, // type 21 in GFW
 }));
 
 ANM_BY_OPCODE.set('125', Object.assign({}, ANM_BY_OPCODE.get('12'), {
@@ -458,10 +458,14 @@ ANM_BY_OPCODE.set('14', Object.assign({}, ANM_BY_OPCODE.get('13'), {
   610: {ref: 'anm:textureRing3D'},
 }));
 
-ANM_BY_OPCODE.set('15', Object.assign({}, ANM_BY_OPCODE.get('14'), {
+ANM_BY_OPCODE.set('143', Object.assign({}, ANM_BY_OPCODE.get('14'), {
   316: {ref: 'anm:v8-flag-316'}, // in 16: flag 2
   317: {ref: 'anm:v8-flag-317'}, // in 16: flag 2
   611: {ref: 'anm:drawRing'},
+}));
+
+ANM_BY_OPCODE.set('15', Object.assign({}, ANM_BY_OPCODE.get('143'), {
+  // nothing was added
 }));
 
 ANM_BY_OPCODE.set('16', Object.assign({}, ANM_BY_OPCODE.get('15'), {
@@ -524,33 +528,38 @@ Object.assign(ANM_INS_DATA, {
 
     [tiphide]
     Any interpolation instructions like [ref=anm:posTime] will no longer advance,
-    and [switching](#anm/concepts&a=switch) is disabled.
+    and [interrupts](#anm/concepts&a=interrupt) are disabled.
     [/tiphide]
   `},
   'stop': {sig: '', args: [], desc: `
     Stops executing the script (at least for now), but keeps the graphic alive.
 
     [tiphide]
-    This essentially behaves like an infinitely long [ref=anm:wait].
     Interpolation instructions like [ref=anm:posTime] will continue to advance,
-    and the VM can be [switched](#anm/concepts&a=switch) at any time.
+    and [interrupts](#anm/concepts&a=interrupt) can be triggered at any time.
+    You could say this essentially behaves like an infinitely long [ref=anm:wait].
     [/tiphide]
   `},
-  'stop2': {sig: '', args: [], wip: 2, desc: "[wip=2]This is [ref=anm:stop] except that it additionally clears an unknown bitflag...[/wip]"},
+  'stop2': {
+    sig: '', args: [], wip: 2, desc: `
+    This is like [ref=anm:stop] except that it also hides the graphic by clearing
+    the visibility flag (see [ref=anm:visible]).
+
+    [tiphide]
+    Interpolation instructions like [ref=anm:posTime] will continue to advance,
+    and [interrupts](#anm/concepts&a=interrupt) can be triggered at any time.
+    Successful interrupts will automatically re-enable the visibility flag.
+    [/tiphide]
+  `},
   'case': {
     sig: 'S', args: ['n'], desc: `
-    A label used to externally control an ANM via a process called [switching](#anm/concepts&a=switch).
-
-    [tiphide]Mind that this instruction only acts as a label. When executed, it is a no-op.[/tiphide]
+    A label for an [interrupt](#anm/concepts&a=interrupt). When executed, it is a no-op.
   `},
   'wait': {
     sig: 'S', args: ['t'], desc: `
     Wait \`t\` frames.
 
     [tiphide]
-    The way this works is by actually subtracting \`t\` from the current time before executing
-    the next instruction.
-
     An extremely similar effect can be achieved using [time labels](#anm/concepts&a=time):
     [code]
     // Option 1: increasing the time label between instructions (+n: syntax)
@@ -579,11 +588,11 @@ Object.assign(ANM_INS_DATA, {
   `},
   'caseReturn': {sig: '', args: [], desc: `
     Can be used at the end of a [ref=anm:case] block to return back
-    to the moment just before the VM was [switched](#anm/concepts&a=switch).
+    to the moment just before the VM received the [interrupt](#anm/concepts&a=interrupt).
 
     [tiphide]
     This is not the only way to end a [ref=anm:case] block; oftentimes the game may use a [ref=anm:stop] instead.
-    You can read a more detailed discussion in the link above on switching, but the broad recommendation is:
+    You can read a more detailed discussion in the link above on interrupts, but the broad recommendation is:
 
     * [ref=anm:caseReturn] is required if you want to allow your VM to return to a longer running part of
       the script after being interrupted.
@@ -884,6 +893,12 @@ Object.assign(ANM_INS_DATA, {
     [tiphide]
     In some rare cases, x rotation has a special meaning for [special drawing instructions](#anm/ins&a=group-600).
     Graphics rotate around their anchor point (see [ref=anm:anchor]).
+
+    Generally speaking, the game follows D3D conventions of a left-handed coordinate system (not just in ANM, but everywhere).
+    This means that a positive angle around the z-axis goes **clockwise** from the +x direction towards the +y direction (defined to point down).
+    Modern games have a [ref=anm:rotationSystem] instruction for configuring the definition of 3D rotations.
+
+    [c=red]TODO: what's the default for 3D angles?[/c]
 
     (if nothing seems to be happening when you call this, check your [ref=anm:renderMode] setting!)
     [/tiphide]
@@ -1558,7 +1573,17 @@ Object.assign(ANM_INS_DATA, {
     sig: '', args: [], wip: 2, desc: `
     [wip=2]Copies [\`pos_3\`](#anm/concepts&a=position) into \`pos\`, and zeros out \`pos_3\`...[/wip]
   `},
-  'visible': {sig: 'b', args: ['visible'], desc: `Set the visibility flag.  This is the same flag manipulated by [ref=anm:stop2].`},
+  'visible': {
+    sig: 'b', args: ['visible'], desc: `
+    Set the visibility flag (1 = visible). Invisible graphics are skipped during rendering.
+
+    [tiphide]
+    Generally speaking this is not a huge deal as the most expensive parts of rendering are typically
+    skipped anyways whenever [ref=anm:alpha] and [ref=anm:alpha2] are both 0. (and the latter defaults to 0).
+
+    The visibility flag is automatically set to 1 whenever a successful [interrupt](#anm/concepts&a=interrupt) occurs.
+    [/tiphide]
+  `},
   'v0-26': {
     sig: 's', args: ['arg'], wip: 2, desc: `
     [wip=2]

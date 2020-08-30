@@ -3,11 +3,13 @@
   overflow: hidden;
   height: 300px;
 
-  .zero { opacity: 0.30; }
+  .zero span { opacity: 0.30; }
+
+  .na { background-color: #171520; }
   .na::after {
     content: "—";
-    color: #aa0;
-    //opacity: 0.30;
+    //color: #aa0;
+    opacity: 0.30;
   }
 
   tr:nth-child(even) .frozen-col {
