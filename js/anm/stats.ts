@@ -117,6 +117,9 @@ function buildStatsTable($elem: HTMLElement, statsByOpcode: StatsByOpcode, table
 function getStatsRows(statsByOpcode: StatsByOpcode, tableHandlers: any) {
   const {tableByOpcode, mainPrefix, itemKindString} = tableHandlers;
 
+  // Deep-copy.  We're about to tear it down...
+  statsByOpcode = JSON.parse(JSON.stringify(statsByOpcode));
+
   // We use namekeys to identify things here so that we can also show stats for instructions
   // that have no crossref yet.
   const out: [NameKey, Map<Game, CellData>][] = [];
