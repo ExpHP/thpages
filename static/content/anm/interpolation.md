@@ -10,7 +10,7 @@ Thanks to:
 
 <a href="content/anm/img/th17modes.png"><img src="content/anm/img/th17modes.png" style="max-width: 100%;"></a>
 
-Modern touhou games have a common "interpolator" struct that is used by many things to create smooth motions and transitions.  For the modding scene in particular, these are notably used to implement all of the "change over time" instructions in both ECL and ANM (e.g. [ref=anm:scaleTime]).
+From [game-long=10] onwards, modern touhou games have a common "interpolator" struct that is used by many things to create smooth motions and transitions.  For the modding scene in particular, these are notably used to implement all of the "change over time" instructions in both ECL and ANM (e.g. [ref=anm:scaleTime]).
 
 ## Simple easing functions
 
@@ -18,13 +18,13 @@ The following are fairly simple easing functions.
 
 | Mode  | Function                                   | Description |
 |:---:  | ---                                        | ---         |
-| 0     | `linear(x) = x`                            | linear      |
-| 1     | `easeIn2(x) = x^2`                         | ease in  |
-| 2     | `easeIn3(x) = x^3`                         | ease in (cubic) |
-| 3     | `easeIn4(x) = x^4`                         | ease in (quartic) |
-| 4     | `easeOut2(x) = flip(easeIn2)`              | ease out |
-| 5     | `easeOut3(x) = flip(easeIn3)`              | ease out (cubic) |
-| 6     | `easeOut4(x) = flip(easeIn4)`              | ease out (quartic) |
+| 0 ([game=07][foot-ref=1]&ndash;) | `linear(x) = x`                 | linear      |
+| 1 ([game=07][foot-ref=1]&ndash;) | `easeIn2(x) = x^2`              | ease in  |
+| 2 ([game=07][foot-ref=1]&ndash;) | `easeIn3(x) = x^3`              | ease in (cubic) |
+| 3 ([game=07][foot-ref=1]&ndash;) | `easeIn4(x) = x^4`              | ease in (quartic) |
+| 4 ([game=07][foot-ref=1]&ndash;) | `easeOut2(x) = flip(easeIn2)`   | ease out |
+| 5 ([game=07][foot-ref=1]&ndash;) | `easeOut3(x) = flip(easeIn3)`   | ease out (cubic) |
+| 6 ([game=07][foot-ref=1]&ndash;) | `easeOut4(x) = flip(easeIn4)`   | ease out (quartic) |
 | 7  ([game=10]&ndash;) | Discussed below                            | constant velocity |
 | 8  ([game=10]&ndash;) | `smoothstep(x) = 3x^2 - 2x^3`              | [smoothstep](https://en.wikipedia.org/wiki/Smoothstep); (technically Bezier; see below) |
 | 9  ([game=10]&ndash;) | `easeInOut2(x) = split(easeIn2, easeOut2)` | ease in then ease out |
@@ -40,6 +40,9 @@ The following are fairly simple easing functions.
 | 19 ([game=13]&ndash;) | `easeInSin(x) = flip(easeOutSin)`          | ease in (sine) |
 | 20 ([game=13]&ndash;) | `easeOutInSin(x) = split(easeOutSin, easeInSin)` | ease out then ease in (sine) |
 | 21 ([game=13]&ndash;) | `easeInOutSin(x) = split(easeInSin, easeOutSin)` | ease in then ease out (sine) |
+[table-footnotes,ncols=3]
+[foot-def=1] STD and ECL are different in pre-[game=10] games; [see below](#anm/interpolation&a=early-games).
+[/table-footnotes]
 
 The table above has used two helper functions:
 
@@ -146,6 +149,28 @@ times(duration) {
 Do with this insane knowledge whatever you will.
 
 (Oh, and since I said we'd come back to mode 17:  Yes, ECL `ins_92` also makes it possible to do constant acceleration *with an initial velocity*, by supplying the initial velocity in `extra_2`)
+
+## <span id="early-games">STD and ECL in early games</span>
+
+Prior to [game=10], the common interpolator struct did not exist.  In other words, ANM, ECL, and STD each had separate implementations of interpolation modes in all early Windows era games, and these three implementations were not always consistent.  The tables above are accurate for ANM, so we'll now quickly go over ECL and STD:
+
+Interpolation modes in PCB STD files are different from the numbers in ANM and ECL:
+
+| Mode in PCB STD  | Description | Comment |
+|:---: | ---         |  ---   |
+| 0     | linear      | |
+| 1     | ease out           | mode 4 in PCB ANM/ECL |
+| 2     | ease out (cubic)   | mode 5 in PCB ANM/ECL |
+| 3     | ease out (quartic) | mode 6 in PCB ANM/ECL |
+| 4     | ease in            | mode 1 in PCB ANM/ECL |
+| 5     | ease in (cubic)    | mode 2 in PCB ANM/ECL |
+| 6     | ease in (quartic)  | mode 3 in PCB ANM/ECL |
+| 7     | bezier             | doesn't exist yet (??) in PCB ANM/ECL.  Mode 8 in modern games |
+
+[wip]TODO: STD in EoSD? PoFV? StB?[/wip]
+
+[According to Dai](https://priw8.github.io/#s=modding/ins&table=8), IN's version of `floatTime` (ECL `ins_36`) also supports Beziers as mode 7, but [wip]I don't see where this is implemented[/wip]...
+
 
 ---
 

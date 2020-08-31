@@ -32,6 +32,7 @@ export function getRefHtml({ref, tip, url}: {ref: string, tip: boolean, url: boo
     out = globalLinks.wrapHtml(getRefLinkKey(ref), out);
   }
 
+  // using <instr> instead of <code> due to https://github.com/showdownjs/showdown/issues/819
   if (tip) {
     out = `<instr data-tip-id="${getRefTipKey(ref)}">${out}</instr>`;
   } else {

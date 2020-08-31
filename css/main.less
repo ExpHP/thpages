@@ -70,7 +70,9 @@ code, instr {
   display: inline;
 
   color: @code-color;
-  padding: 4px 6px;
+  padding: 4px 2px;
+  margin-left: -1px;
+  margin-right: -1px;
 }
 
 li {
@@ -258,7 +260,7 @@ blockquote {
 }
 
 .content-wrapper .content {
-  background: #ffffff14;
+  background: #ffffff0c;
   margin-top: 20px;
   border-radius: 25px;
   padding: 20px;
@@ -266,7 +268,10 @@ blockquote {
   overflow-x: auto;
 }
 
-.hljs {
+// MD generates <pre><code></code></pre> for GHFM code fences
+pre > code { display: block; }
+
+.hljs, pre > code {
   font-family: @monospace;
   border: 2px solid #12121280;
   padding: 5px;
@@ -279,6 +284,16 @@ table, th, td, tr {
   border: 1px solid #ffcc0060;
   border-collapse: collapse;
   padding: 5px;
+}
+
+tfoot {
+  font-size: 0.9em;
+  &, th, td, tr {
+    border-left-style: hidden;
+    border-right-style: hidden;
+  }
+  // move text closer to bottom border
+  td { transform: translate(0, 3px); }
 }
 
 #tip {

@@ -1,7 +1,7 @@
 import {GROUPS_V8, ANM_INS_DATA, ANM_BY_OPCODE, ANM_OPCODE_REVERSE, DUMMY_DATA} from './ins-table.js';
 import {ANM_VAR_DATA, ANM_VARS_BY_NUMBER, ANM_VAR_NUMBER_REVERSE} from './var-table.js';
 import {globalRefNames, globalRefTips, globalRefLinks, getRefNameKey} from '../ref.ts';
-import {MD, addCallbacksForMdExt} from '../markdown.ts';
+import {MD, postprocessConvertedMarkdown} from '../markdown.ts';
 import {globalNames, globalLinks, PrefixResolver} from '../resolver.ts';
 import {parseQuery, queryUrl, queryGame} from '../url-format.ts';
 import {gameData} from '../game-names.ts';
@@ -278,7 +278,7 @@ function generateTablePageHtml(tableHandlers) {
   }
 
   const $out = parseHtml('<div>' + MD.makeHtml(base) + MD.makeHtml(navigation) + table + '</div>');
-  addCallbacksForMdExt($out);
+  postprocessConvertedMarkdown($out);
   globalNames.transformHtml($out, currentQuery);
   globalLinks.transformHtml($out, currentQuery);
   return $out;

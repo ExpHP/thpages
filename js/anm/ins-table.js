@@ -40,8 +40,8 @@ ANM_BY_OPCODE.set('06', {
   10: {ref: 'anm:angleVel'},
   11: {ref: 'anm:scaleGrowth'},
   12: {ref: 'anm:alphaTimeLinear'},
-  13: UNASSIGNED, // anm:blendAlpha
-  14: UNASSIGNED, // anm:blendAdditive
+  13: {ref: 'anm:blendAdditive'}, // anm:blendAlpha
+  14: {ref: 'anm:blendAlpha'}, // anm:blendAdditive
   15: {ref: 'anm:static'},
   16: {ref: 'anm:spriteRand'},
   17: {ref: 'anm:pos'},
@@ -50,7 +50,7 @@ ANM_BY_OPCODE.set('06', {
   20: {ref: 'anm:posTimeEaseout4'}, // posTimeAccel // sets 0b10
   21: {ref: 'anm:stop'},
   22: {ref: 'anm:case'},
-  23: UNASSIGNED, // anchor bottom left
+  23: {ref: 'anm:v0-anchorBottomLeft'},
   24: {ref: 'anm:stop2'},
   25: {ref: 'anm:posMode'}, // set_allow_dest_offset (alternate_pos_flag)
   26: {ref: 'anm:v0-26'}, // set_automatic_angle
@@ -58,7 +58,7 @@ ANM_BY_OPCODE.set('06', {
   28: {ref: 'anm:vAdd'},
   29: {ref: 'anm:visible'}, // set_visible
   30: {ref: 'anm:scaleTimeLinear'}, //
-  31: UNASSIGNED, // bitflag 12
+  31: {ref: 'anm:noZBuffer', wip: 1}, // bitflag 12
 });
 
 // ---- V2 ----
@@ -749,6 +749,22 @@ Object.assign(ANM_INS_DATA, {
     * (&ndash;[game=128]): uses the [replay RNG](#anm/concepts&a=rng), regardless of [ref=anm:v4-randMode].
     * ([game=13]&ndash;): uses the [animation RNG](#anm/concepts&a=rng).
   `},
+  'blendAdditive': {
+    sig: '', args: [], wip: 1, desc: `
+    Enables additive blending by setting \`D3DRS_DESTBLEND\` to \`D3DBLEND_ONE\`.
+
+    [tiphide]
+    [wip]pytouhou has these the other way around. Who's right? Gotta test.[/wip]
+    [/tiphide]
+  `},
+  'blendAlpha': {
+    sig: '', args: [], wip: 1, desc: `
+    Disables additive blending by setting \`D3DRS_DESTBLEND\` to \`D3DBLEND_INVSRCALPHA\`. (the default)
+
+    [tiphide]
+    [wip]pytouhou has these the other way around. Who's right? Gotta test.[/wip]
+    [/tiphide]
+  `},
   'blendMode': {
     sig: 'S', args: ['mode'], desc: `
     Set color blending mode.
@@ -894,13 +910,14 @@ Object.assign(ANM_INS_DATA, {
     In some rare cases, x rotation has a special meaning for [special drawing instructions](#anm/ins&a=group-600).
     Graphics rotate around their anchor point (see [ref=anm:anchor]).
 
-    Generally speaking, the game follows D3D conventions of a left-handed coordinate system (not just in ANM, but everywhere).
-    This means that a positive angle around the z-axis goes **clockwise** from the +x direction towards the +y direction (defined to point down).
-    Modern games have a [ref=anm:rotationSystem] instruction for configuring the definition of 3D rotations.
+    A positive angle around the z-axis goes **clockwise** from the +x direction towards the +y direction (defined to point down).
+    3D rotations are performed as follows: (see the [conventions](#anm/conventions) page for more info)
 
-    [c=red]TODO: what's the default for 3D angles?[/c]
+    * ([game=06]) Rotate first around x, then around y, then around z.
+    * ([game=07]&ndash;[game=128]) [wip]Haven't checked. Probably the same?[/wip]
+    * ([game=13]TD&ndash;) You can choose the rotation system with [ref=anm:rotationSystem]. [wip](what's the default? probably the same?)[/wip]
 
-    (if nothing seems to be happening when you call this, check your [ref=anm:renderMode] setting!)
+    *If nothing seems to be happening when you call this, check your [ref=anm:renderMode] setting!*
     [/tiphide]
   `},
   'rotateAuto': {
@@ -1004,18 +1021,18 @@ Object.assign(ANM_INS_DATA, {
     Basically, [ref-notip=anm:scaleGrowth] is to [ref=anm:scale] as [ref=anm:angleVel] is to [ref=anm:rotate].
     (they even share implemenation details...)
   `},
-  'uAdd': {sig: 'f', args: ['du'], wip: 1, desc: `
+  'uAdd': {sig: 'f', args: ['du'], desc: `
     Adds \`du\` to the [texture u coordinate](#anm/concepts&a=uv-coords).
 
     [tiphide]
-    [wip]UNTESTED.[/wip] Later versions remove this entirely in favor of [ref=anm:uVel].
+    Later versions remove this entirely in favor of [ref=anm:uVel].
     [/tiphide]
   `},
-  'vAdd': {sig: 'f', args: ['dv'], wip: 1, desc: `
+  'vAdd': {sig: 'f', args: ['dv'], desc: `
     Adds \`dv\` to the [texture v coordinate](#anm/concepts&a=uv-coords).
 
     [tiphide]
-    [wip]UNTESTED.[/wip] Later versions remove this entirely in favor of [ref=anm:vVel].
+    Later versions remove this entirely in favor of [ref=anm:vVel].
     [/tiphide]
   `},
   'uVel': {sig: 'f', args: ['vel'], desc: `
@@ -1043,6 +1060,17 @@ Object.assign(ANM_INS_DATA, {
     and \`vscale\` to 3 on the right.  (in this case, the sprite occupies the full texture)
 
     <img src="content/anm/img/ins-uv-scale.gif" height="200px">
+    [/tiphide]
+  `},
+  'v0-anchorBottomLeft': {sig: '', args: [], desc: `
+    Changes the anchor point to the bottom left. (default is center)
+
+    [tiphide]
+    [wip]UNTESTED:[/wip]
+    This is not entirely the same as [ref=anm:anchor] in future games.  In particular, judging from the code,
+    I do not believe it changes the center of rotation or scaling, but rather merely translates the sprite
+    by \`(+sx*w/2, -sy*h/2)\` *after* scaling and rotating it. (where \`w,h\` are sprite dimensions
+    and \`sx,sy\` come from [ref=anm:scale]).
     [/tiphide]
   `},
   'anchor': {sig: 'ss', args: ['h', 'v'], desc: `
@@ -1609,7 +1637,7 @@ Object.assign(ANM_INS_DATA, {
     We thank you for your understanding.
   `},
   'posMode': {
-    sig: 'S', args: ['enable'], wip: 1, desc: `
+    sig: 'S', args: ['flag'], wip: 1, desc: `
     [wip=1]Sets the state of a bitflag.  Wait a second, is that... is that the [alternate position flag!?](#anm/concepts&a=position)[/wip]
   `},
 });

@@ -2,6 +2,7 @@ import {Converter, ShowdownExtension} from 'showdown';
 import {highlightCode, $scriptContent} from "./main";
 import {getRefHtml} from "./ref";
 import {gameData, parseGame, GameData} from './game-names';
+import {parseQuery, queryUrl} from './url-format';
 import dedent from "./lib/dedent";
 
 export const MD: Converter = new Converter({
@@ -9,7 +10,7 @@ export const MD: Converter = new Converter({
   tables: true,
   strikethrough: true,
   literalMidWordUnderscores: true,
-  noheaderId: true,
+  noHeaderId: true,
 });
 
 type ReplaceFunc = (match: string, ...sf: (string | null)[]) => string;
@@ -202,22 +203,80 @@ function showdownExt() {
     replace: '<span class="weak">$1</span>',
   };
 
+  const footRef = {
+    type: "lang",
+    regex: /\[foot-ref=([^\]]+)\]/g,
+    replace: sf((_match, id) => {
+      const query = parseQuery(window.location.hash);
+      query.a = `footnote-${id}`;
+      return `<sup class="footnote link"><a href="${queryUrl(query)}">${id}</a></sup>`;
+    }),
+  };
+
+  const footDef = {
+    type: "lang",
+    regex: /\[foot-def=([^\]]+)\]/g,
+    replace: '<sup class="footnote def" id="footnote-$1">$1</sup>',
+  };
+
+  const tableFootnotes = {
+    type: "lang",
+    regex: /\[table-footnotes, *ncols=([0-9]+)\]([^]*?)\[\/table-footnotes\]/g,
+    replace: sf((_match, ncolsStr, content) => {
+      // Ultimately we want to put the contents in a tfoot in the above table, but we have
+      // to wait until the table has been parsed.  For now, we'll render the contents into a
+      // div right below the table, and move it where it belongs as a post-processing step.
+      return `<div class="tfoot" data-ncols="${ncolsStr}">${MD.makeHtml(content!)}</div>`;
+    }),
+  };
+
   return [
-    more, ref, refNotip, headlessTable, code, title, c,
+    more, ref, refNotip, headlessTable, code, title, c, tableFootnotes,
     game, gameTh, gameThLong, gameNum, gameLong, script, tip, tipNodeco, wip, weak,
+    footRef, footDef,
     gc, // must be after things that use it (e.g. game)
   ];
 }
 
 /**
- * Add callbacks for things like [more] in showdown generated output.
+ * Perform postprocessing on markdown that is only feasible after conversion to HTML and
+ * being parsed into a DOM tree.
  *
  * Because showdown primarily operates on strings, code that uses the markdown converter
  * will need to find a place to call this after all markdown conversion is finished and
  * the HTML has been parsed into elements.
  * */
-export function addCallbacksForMdExt($root: HTMLElement) {
+export function postprocessConvertedMarkdown($root: HTMLElement) {
+  // Add callbacks for things like [more] in showdown generated output.
   for (const $elem of $root.querySelectorAll<HTMLElement>('.show-more')) {
     $elem.addEventListener('click', () => $elem.classList.toggle('expanded'));
+  }
+
+  // This is a bit fragile and depends on how the markdown engine handles a div on the next line
+  // after a GHFM table.  Currently, showdown leaves it undisturbed after the table.
+  for (const $div of $root.querySelectorAll<HTMLElement>('div.tfoot')) {
+    const $table = $div.previousElementSibling;
+    if ($table?.tagName !== 'TABLE') {
+      console.error("can't find table for table footer, did markdown output change?");
+      continue;
+    }
+
+    // Because Showdown didn't know this was table cell text when it converted it, it will have wrapped
+    // any non-block content in a <p> tag.  Eliminate that so we don't have to fix its spacing.
+    if ($div!.children.length === 1) {
+      let $p;
+      if ($p = $div.querySelector(':scope > p')) {
+        $div.removeChild($p);
+        $div.append(...$p.childNodes);
+      }
+    }
+
+    $div.parentElement!.removeChild($div);
+    const $tfoot = document.createElement('tfoot');
+    $tfoot.innerHTML = `<tr><td colspan='${$div.dataset.ncols}'></td></tr>`;
+    $tfoot.querySelector('td')!.append(...$div.childNodes);
+
+    // Thankfully, in HTML 5, tfoot goes at the end, unlike in HTML 4 where this would be much more complicated...
+    $table.appendChild($tfoot);
   }
 }

@@ -1,4 +1,4 @@
-import {MD} from "./markdown.ts";
+import {MD, postprocessConvertedMarkdown} from "./markdown.ts";
 import {INDEX, ERROR} from "./index.js";
 import {initAnm} from "./anm/main.js";
 import {initTips} from "./tips.ts";
@@ -231,6 +231,7 @@ function loadMd(txt, path, file) {
   $scriptContent.innerHTML = "";
   const html = MD.makeHtml(txt);
   $content.innerHTML = "<div class='content'>" + html + "</div>";
+  postprocessConvertedMarkdown($content);
   setActiveNavigation(path, file);
   resetScroll();
 
