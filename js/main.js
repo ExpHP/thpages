@@ -49,7 +49,6 @@ function initNavigation() {
   const $nav = document.querySelector(".header-navigation");
   const html = getNavigation(INDEX);
   $nav.innerHTML = html;
-  $nav.addEventListener("click", handleNavigation);
   window.addEventListener("hashchange", initOrScrollToContent, false);
 }
 
@@ -116,32 +115,6 @@ function getNavEntryHref(item, path) {
   return `href='${url}'`;
 }
 
-function handleNavigation(e) {
-  if (typeof e.target.dataset.type != "undefined") {
-    navigate(e.target.dataset);
-    e.preventDefault();
-  }
-}
-
-function navigate(data) {
-  let {path, url} = data;
-  if (url.charAt(0) == "/") {
-    const li = url.lastIndexOf("/");
-    path = url.substring(1, li);
-    url = url.substring(li);
-  }
-
-  if (data.type == "href") {
-    if (data.newtab == "true") {
-      window.open(url);
-    } else {
-      window.location.replace(url);
-    }
-  } else if (data.type == "site") {
-    loadContent(path, url);
-  }
-}
-
 function getContent(path, file, clb, err, forceDelay) {
   const realPath = path+file;
   if (cache[realPath]) {
@@ -166,19 +139,7 @@ function getContent(path, file, clb, err, forceDelay) {
   xhr.send();
 }
 
-let activePath = null;
-let activeFile = null;
 function loadContent(path, file, writeQuery=true) {
-  // HACK: This function gets called twice when navigating from one page to another
-  //       and I'm not sure why.  The following is similar to what priw's site does,
-  //       where this function also gets called twice.
-  //
-  //       I feel like a cleaner solution would be to not have this function get called
-  //       twice...
-  if (path === activePath && file === activeFile) return;
-  activePath = path;
-  activeFile = file;
-
   clearSettingsCache();
 
   const group = getGroupByPath(path);
