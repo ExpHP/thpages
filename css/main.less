@@ -150,53 +150,50 @@ blockquote {
   color: inherit;
   text-decoration: inherit;
 }
-.navigation-entry {
+.navigation-entry.outermost {
   font-family: @sans-serif;
   display: inline-table;
   width: 100px;
   height: 40px;
 }
-.navigation-entry.active {
+.navigation-entry.outermost.active,
+.navigation-entry.outermost.active-child {
   border-bottom: 2px fade(@link-color, @nav-alpha) solid;
 }
-.navigation-entry:hover {
+.navigation-entry.inner.has-children {
+  border-right: 2px fade(@text-color, 0.5 * @nav-alpha) solid;
+}
+.navigation-entry.inner.has-children.active-child {
+  border-right: 2px fade(@link-color, @nav-alpha) solid;
+}
+.navigation-entry.outermost > .navigation-entry-name { padding: 10px; }
+.navigation-entry.inner > .navigation-entry-name { padding: 8px; }
+.navigation-entry.outermost:hover {
   background: #222222a0;
 }
-.navigation-entry:hover .navigation-entry-list {
-  display: block;
+.navigation-entry.inner.active {
+  background: fade(mix(@link-color, @nav-bg-color, 20%), @nav-alpha);
 }
-.navigation-entry-name {
-  padding: 10px;
-  cursor: pointer;
+.navigation-entry.inner:hover {
+  background: #363636;
 }
-.navigation-entry-list {
+// prevent text cursor. (we want pointer on clickable entries, arrow otherwise)
+.navigation-entry-name { pointer-events: none; }
+
+.navigation-entry > .navigation-entry-list { display: none; }
+.navigation-entry:hover > .navigation-entry-list { display: block; }
+.navigation-entry.outermost > .navigation-entry-list {
   position: absolute;
-  display: none;
   width: 150px;
   background: #080808d0;
   margin-left: -1px;
 }
-.navigation-entry-list-item.active {
-  background: fade(mix(@link-color, @nav-bg-color, 20%), @nav-alpha);
-}
-.navigation-entry-list-item:hover {
-  background: #363636;
-}
-.navigation-entry-list-item {
-  cursor: pointer;
-  padding: 8px;
-}
-
-.navigation-entry-list-item.subgroup-parent > div {
-  display: none;
+.navigation-entry.inner > .navigation-entry-list {
   position: absolute;
   background: #222222;
   left: 100%;
-  margin-top: -8px;
   width: 150px;
-}
-.navigation-entry-list-item.subgroup-parent:hover > div {
-  display: block;
+  margin-top: -55px; // FIXME FIXME HACK OH GOD WHY IS IT LIKE THIS
 }
 
 // pseudoclasses for inheritance

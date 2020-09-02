@@ -13,6 +13,8 @@ import {Game, parseGame} from "./game-names";
 //
 // Each key and value is %-encoded like a URI component except that ',' and '/' are not escaped.
 //
+// The leading number of slashes in the 's=' is irrelevant for the purposes of equality testing.
+//
 // Any other keys else are page-specific.
 
 export type Query = {
@@ -25,7 +27,7 @@ export type Query = {
 export const DEFAULT_GAME = '17';
 
 function encodeComponent(s: string): string {
-  return encodeURIComponent(s).replace('%2C', ',').replace('%2F', '/');
+  return encodeURIComponent(s).replace(/%2C/g, ',').replace(/%2F/g, '/');
 }
 function decodeComponent(s: string): string {
   return decodeURIComponent(s);
@@ -80,13 +82,28 @@ export function queryUrl(query: Query) {
   return '#' + str;
 }
 
-// Query values are all strings so this simple test is fine.
 export function queryEquals(a: Query, b: Query) {
+  a = Object.assign({}, a, {s: normalizePage(a.s || '')});
+  b = Object.assign({}, b, {s: normalizePage(b.s || '')});
+  return dumbObjectEquals(a, b);
+}
+
+/** Test that two queries have equal `s` fields, upto path normalization. */
+export function queryPageEquals(a: Query, b: Query) {
+  return normalizePage(a.s || '') === normalizePage(b.s || '');
+}
+
+// Equality check between two objects where all values can be tested using '==='.
+function dumbObjectEquals(a: Query, b: Query) {
   const aProps = Object.getOwnPropertyNames(a);
   const bProps = Object.getOwnPropertyNames(b);
 
   if (aProps.length != bProps.length) return false;
   return aProps.every((propName) => a[propName] === b[propName]);
+}
+
+export function normalizePage(s: string) {
+  return s.replace(/^\/*/, '/');
 }
 
 export function queryEqualsUptoAnchor(q1: Query, q2: Query) {
@@ -126,7 +143,7 @@ const TESTS: ['2way' | 'encode' | 'decode', Query, string][] = [
   [DECODE, {s: 'anm/ins', a: 'dummy'}, '#a=dummy&s=anm/ins'],
   [DECODE, {s: 'anm/ins'}, '#s=anm/ins'],
   // comma legal
-  [TWO_WAY, {s: ',', b: ',', a: ','}, '#,&b=,&a=,'],
+  [TWO_WAY, {s: ',,', b: ',,', a: ',,'}, '#,,&b=,,&a=,,'],
 ];
 // percent encoding
 const METACHARS = '&=%#';
@@ -151,6 +168,32 @@ for (const [testKind, query, str] of TESTS) {
       fail = true;
       window.console.error("Decoding test failed", str, parseQuery(str), query);
     }
+  }
+}
+
+const EQUALITY_TESTS: [Query, Query, (a: Query, b: Query) => boolean, boolean][] = [
+  // simple cases
+  [{s: 'a/b'}, {s: 'a/b'}, queryEquals, true],
+  [{s: 'a/b', a: 'dummy'}, {s: 'a/b', a: 'dummy'}, queryEquals, true],
+  [{s: 'a/b', x: 'lol', b: 'true', a: 'dummy'}, {s: 'a/b', b: 'true', x: 'lol', a: 'dummy'}, queryEquals, true],
+  // leading slashes in s doesn't matter
+  [{s: '//a/b', a: 'dummy'}, {s: 'a/b', a: 'dummy'}, queryEquals, true],
+  [{s: 'a/b', a: '/dummy'}, {s: 'a/b', a: 'dummy'}, queryEquals, false],
+  // anchor
+  [{s: 'a/b', a: 'dummy'}, {s: 'a/b', a: 'other'}, queryEquals, false],
+  [{s: 'a/b', a: 'dummy'}, {s: 'a/b', a: 'other'}, queryEqualsUptoAnchor, true],
+  [{s: 'a/b', a: 'dummy'}, {s: 'b/b', a: 'other'}, queryEqualsUptoAnchor, false],
+  [{s: 'a/b', b: 'x', a: 'dummy'}, {s: 'a/b', b: 'x', a: 'dummy'}, queryEqualsUptoAnchor, true],
+  [{s: 'a/b', b: 'x', a: 'dummy'}, {s: 'a/b', b: 'y', a: 'dummy'}, queryEqualsUptoAnchor, false],
+];
+
+for (const [a, b, func, expected] of EQUALITY_TESTS) {
+  if (func(a, b) !== expected) {
+    fail = true;
+    window.console.error('equality test failed', a, b, func);
+  } else if (func(b, a) !== expected) {
+    fail = true;
+    window.console.error('equality test failed', b, a, func);
   }
 }
 

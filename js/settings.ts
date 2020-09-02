@@ -271,7 +271,7 @@ function storageReadAnmmapsOrDefault(): AnmMapSettings {
     return parseSettingAnmmapJson(json);
   } catch (e) {
     console.error(`ignoring saved anmmaps due to an error`, e);
-    return {'v2': 'auto', 'v3': 'auto', 'v4': 'auto', 'v8': 'auto'};
+    return {'v0': 'auto', 'v2': 'auto', 'v3': 'auto', 'v4': 'auto', 'v8': 'auto'};
   }
 }
 

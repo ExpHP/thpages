@@ -1,5 +1,5 @@
 import {Converter, ShowdownExtension} from 'showdown';
-import {highlightCode, $scriptContent} from "./main";
+import {setWindowTitle, highlightCode, $scriptContent} from "./main";
 import {getRefHtml} from "./ref";
 import {gameData, parseGame, GameData} from './game-names';
 import {parseQuery, queryUrl} from './url-format';
@@ -55,7 +55,7 @@ function showdownExt() {
     type: "lang",
     regex: /\[title=(.*?)\]\n/,
     replace: sf((_match, content) => {
-      document.head.querySelector("title")!.innerText = `${content} — ExpHP's Touhou Pages`;
+      setWindowTitle(content);
       return "";
     }),
   };

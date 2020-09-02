@@ -3,7 +3,7 @@ import {ANM_VAR_DATA, ANM_VARS_BY_NUMBER, ANM_VAR_NUMBER_REVERSE} from './var-ta
 import {globalRefNames, globalRefTips, globalRefLinks, getRefNameKey} from '../ref.ts';
 import {MD, postprocessConvertedMarkdown} from '../markdown.ts';
 import {globalNames, globalLinks, PrefixResolver} from '../resolver.ts';
-import {parseQuery, queryUrl, queryGame} from '../url-format.ts';
+import {parseQuery, queryUrl, queryGame, queryPageEquals} from '../url-format.ts';
 import {gameData} from '../game-names.ts';
 import {getCurrentAnmmaps} from '../settings.ts';
 import {initStats, buildInsStatsTable, buildVarStatsTable} from './stats.ts';
@@ -415,20 +415,27 @@ function getUrlByRef(ref, context, tableHandlers) {
   // On the same page: try to preserve full URL except anchor.
   // On different page: Just preserve things that share meaning across pages.
   //   (E.g. we want UFO var table to link to UFO ins table rather than WBaWC when possible.)
-  const query = (context.s === tablePage) ? context : {s: tablePage, g: context.g};
+  let query;
+  if (queryPageEquals(context, {s: tablePage})) {
+    query = Object.assign({}, context);
+  } else {
+    query = {s: tablePage, g: context.g};
+  }
 
-  let game = queryGame(query);
+  const game = queryGame(query);
   let table, opcode;
-  if (!((table = reverseTable[game]) && (opcode = table[ref]) && opcode != null)) {
+  if ((table = reverseTable[game]) && (opcode = table[ref]) && opcode != null) {
+    // available in same game, keep context.g exactly as it is
+  } else {
     // not available in same game, use latest game that has it
     const data = getDataByRef(ref, tableHandlers);
     if (!data) return null; // ref does not exist
-    game = data.maxGame;
-    opcode = reverseTable[game][ref];
+    query.g = data.maxGame;
+    opcode = reverseTable[query.g][ref];
   }
   query.a = formatAnchor(opcode);
 
-  return queryUrl({s: tablePage, g: game, a: formatAnchor(opcode)});
+  return queryUrl(query);
 }
 
 /**
