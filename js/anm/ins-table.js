@@ -40,8 +40,8 @@ ANM_BY_OPCODE.set('06', {
   10: {ref: 'anm:angleVel'},
   11: {ref: 'anm:scaleGrowth'},
   12: {ref: 'anm:alphaTimeLinear'},
-  13: {ref: 'anm:blendAdditive'}, // anm:blendAlpha
-  14: {ref: 'anm:blendAlpha'}, // anm:blendAdditive
+  13: {ref: 'anm:blendAdditive'},
+  14: {ref: 'anm:blendAlpha'},
   15: {ref: 'anm:static'},
   16: {ref: 'anm:spriteRand'},
   17: {ref: 'anm:pos'},
@@ -164,7 +164,7 @@ ANM_BY_OPCODE.set('08', Object.assign({}, ANM_BY_OPCODE.get('07'), {
   85: {ref: 'anm:alpha2'},
   86: {ref: 'anm:rgb2Time'},
   87: {ref: 'anm:alpha2Time'},
-  88: UNASSIGNED, // PoFV:  sets flag 17 if floor(arg/256) is odd
+  88: {ref: 'anm:blink'}, // PoFV:  sets flag 17 if floor(arg/256) is odd
   89: {ref: 'anm:caseReturn'},
 }));
 
@@ -749,22 +749,8 @@ Object.assign(ANM_INS_DATA, {
     * (&ndash;[game=128]): uses the [replay RNG](#anm/concepts&a=rng), regardless of [ref=anm:v4-randMode].
     * ([game=13]&ndash;): uses the [animation RNG](#anm/concepts&a=rng).
   `},
-  'blendAdditive': {
-    sig: '', args: [], wip: 1, desc: `
-    Enables additive blending by setting \`D3DRS_DESTBLEND\` to \`D3DBLEND_ONE\`.
-
-    [tiphide]
-    [wip]pytouhou has these the other way around. Who's right? Gotta test.[/wip]
-    [/tiphide]
-  `},
-  'blendAlpha': {
-    sig: '', args: [], wip: 1, desc: `
-    Disables additive blending by setting \`D3DRS_DESTBLEND\` to \`D3DBLEND_INVSRCALPHA\`. (the default)
-
-    [tiphide]
-    [wip]pytouhou has these the other way around. Who's right? Gotta test.[/wip]
-    [/tiphide]
-  `},
+  'blendAdditive': {sig: '', args: [], desc: `Enables additive blending by setting \`D3DRS_DESTBLEND\` to \`D3DBLEND_ONE\`.`},
+  'blendAlpha': {sig: '', args: [], desc: `Disables additive blending by setting \`D3DRS_DESTBLEND\` to \`D3DBLEND_INVSRCALPHA\`. (the default)`},
   'blendMode': {
     sig: 'S', args: ['mode'], desc: `
     Set color blending mode.
@@ -1614,10 +1600,15 @@ Object.assign(ANM_INS_DATA, {
   `},
   'v0-26': {
     sig: 's', args: ['arg'], wip: 2, desc: `
-    [wip=2]
-    Sets a word-sized field.  Supposedly this is just the auto-rotate flag ([ref=anm:rotateAuto])? Why is it an entire word?
-    Shenanigans, I tell you.
-    [/wip]
+    Uhhhhh. Geeze.  I dunno.  Might be a precursor to [ref=anm:renderMode]?
+
+    [tiphide]
+    Sets a word-sized field. Only ever called with the arguments 1, 2, or ([game=08]&ndash;) 18.
+    * **1** &mdash; [wip=2]Don't know.  Used by player and bullet ANMs in all pre-[game=10] games.
+      There's something added in the IN background code at \`th08.exe+0x0a0ce\` where it does something with color...[/wip]
+    * **2** &mdash; enables spherical billboarding when used on 3D background sprites.
+    * **18** &mdash; [wip=2]...also enables sperical billboarding? See \`th08.exe+0x0a929\` in the background rendering code.[/wip]
+    [/tiphide]
   `},
   'v8-flag-316': {sig: '', args: [], wip: 2, desc: `[wip=2]Enables an unknown bitflag. Clear with [ref=anm:v8-flag-317].[/wip]`},
   'v8-flag-317': {sig: '', args: [], wip: 2, desc: `[wip=2]Clears the bitflag from [ref=anm:v8-flag-316].[/wip]`},
@@ -1639,6 +1630,19 @@ Object.assign(ANM_INS_DATA, {
   'posMode': {
     sig: 'S', args: ['flag'], wip: 1, desc: `
     [wip=1]Sets the state of a bitflag.  Wait a second, is that... is that the [alternate position flag!?](#anm/concepts&a=position)[/wip]
+  `},
+  'blink': {
+    sig: 'S', args: ['arg'], wip: 2, desc: `
+    [wip=2]
+    **Never used.** Does some bit math and then sets what *appears* to be the color flag
+    (which picks between [ref=anm:rgb] and [ref=anm:rgb2])?
+    [tiphide]
+    Somebody plz test.
+
+    Specifically, I think it sets the color flag equal to \`floor(arg / 256) % 2\`.  Thus, calling it with an
+    increasing argument should lead to blinking.
+    [/tiphide]
+    [/wip]
   `},
 });
 

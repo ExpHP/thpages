@@ -68,7 +68,7 @@ This alone almost fully specifies how the majority of the source code should loo
 
 As an aside, on so-called "FORTRAN order:" FORTRAN matrices are also vector-major, meaning that C code written to operate on FORTRAN matrices will tend to look similar to C code written to work on Direct3D matrices.  However, FORTRAN is thoroughly entrenched in the column-based formalism.
 
-## Color
+## <span id="color">Color</span>
 
 Whenever Touhou games use a single DWORD to store a color, it is always a `D3DCOLOR`.  This is a type defined as follows:
 
