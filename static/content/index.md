@@ -13,6 +13,11 @@ The information on this site is the culmination of several pretty deep dives int
 
 My efforts have slowed down quite a bit as I've stopped to put together this site, but hopefully one day we can push that documented instruction count to 100%!
 
-[wip]**Current focus:** Right now I am mostly working backwards through the series to fill in support for earlier games.[/wip]
-
 Be sure to check out [Priw8's site](https://priw8.github.io) as a companion for ECL.
+
+## Updates
+
+[wip]**Current focus:** I'm reversing some stage background stuff to help figure out some of the trickier bitflag instructions.  Maybe we'll get some STD tables out of this...[/wip]
+
+* 2020-08-29 &mdash; the ANM database now supports **all Touhou games**
+* 2020-08-27 &mdash; check out the new [stats table](#anm/stats)!

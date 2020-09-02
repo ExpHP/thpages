@@ -275,8 +275,8 @@ ANM_BY_OPCODE.set('10', Object.assign({}, ANM_BY_OPCODE.get('095'), {
   88: {ref: 'anm:createChild', wip: 1},
   89: {ref: 'anm:resampleMode', wip: 1}, // flag hi:1 (DS: hi:2)
 
-  90: {ref: 'anm:prependChild', wip: 1},
-  91: {ref: 'anm:createChildUi', wip: 1},
+  90: {ref: 'anm:createChildUi', wip: 1},
+  91: {ref: 'anm:prependChild', wip: 1},
   92: {ref: 'anm:prependChildUi', wip: 1},
 }));
 
@@ -429,8 +429,8 @@ ANM_BY_OPCODE.set('13', {
   438: {ref: 'anm:originMode'},
 
   500: {ref: 'anm:createChild'},
-  501: {ref: 'anm:prependChild'},
-  502: {ref: 'anm:createChildUi'},
+  501: {ref: 'anm:createChildUi'},
+  502: {ref: 'anm:prependChild'},
   503: {ref: 'anm:prependChildUi'},
   504: {ref: 'anm:createRoot'},
   505: {ref: 'anm:createChildPos'},
@@ -1617,10 +1617,6 @@ Object.assign(ANM_INS_DATA, {
   'v8-flag-432': {sig: 'S', args: ['enable'], wip: 2, desc: `[wip=2]Sets the state of an unknown bitflag.[/wip]`},
   'v4-texCircle2': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified member of texCircle family, likely [ref=anm:textureArcEven][/wip]'},
   'v4-texCircle3': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified member of texCircle family, likely [ref=anm:textureArc][/wip]'},
-  'v4-drawRect1': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified member of drawRect family, likely [ref=anm:drawRect][/wip]'},
-  'v4-drawRect2': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified member of drawRect family, likely [ref=anm:drawRectGrad][/wip]'},
-  'v4-drawRect3': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified member of drawRect family, likely [ref=anm:drawRectShadow][/wip]'},
-  'v4-drawRect4': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified member of drawRect family, likely [ref=anm:drawRectShadowGrad][/wip]'},
   'vd-imaginary-439': {
     sig: 'S', args: ['_'], desc: `
     ANM \`ins_439\` does not exi[s](http://www.scpwiki.com/scp-3930)t.
