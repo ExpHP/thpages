@@ -166,7 +166,19 @@ function getContent(path, file, clb, err, forceDelay) {
   xhr.send();
 }
 
+let activePath = null;
+let activeFile = null;
 function loadContent(path, file, writeQuery=true) {
+  // HACK: This function gets called twice when navigating from one page to another
+  //       and I'm not sure why.  The following is similar to what priw's site does,
+  //       where this function also gets called twice.
+  //
+  //       I feel like a cleaner solution would be to not have this function get called
+  //       twice...
+  if (path === activePath && file === activeFile) return;
+  activePath = path;
+  activeFile = file;
+
   clearSettingsCache();
 
   const group = getGroupByPath(path);
@@ -227,13 +239,13 @@ function getGroupByPath(path) {
 }
 
 function loadMd(txt, path, file) {
+  resetScroll();
   setWindowTitle(path, file);
   $scriptContent.innerHTML = "";
   const html = MD.makeHtml(txt);
   $content.innerHTML = "<div class='content'>" + html + "</div>";
   postprocessConvertedMarkdown($content);
   setActiveNavigation(path, file);
-  resetScroll();
 
   const context = parseQuery(window.location.hash);
   globalNames.transformHtml($content, context);
