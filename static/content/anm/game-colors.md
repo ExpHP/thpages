@@ -1,3 +1,5 @@
+[title=SEEKRIT PAGE]
+
 Secret page for seeing all the game colors in this theme.
 
 [game-thlong=10]<br>

@@ -1,6 +1,5 @@
 [title=Concepts in ANM]
-
-<h1 id="why-anm">What is ANM used for?</h1>
+# <span id="why-anm">What is ANM used for?</span>
 
 LITERALLY EVERYTHING
 
@@ -14,7 +13,7 @@ How Seija rotates the screen?  **Yes, that's ANM too!**
 
 ANM is how 99% of the game code is able to avoid having to worry about the ugliness of Direct3D APIs.  But it also means that, when you want to make mods for Touhou, you'll inevitably run into ANM at some point.  *It's kind of a big deal,* and that's why this site exists.
 
-<h1 id="jargon">Terminology</h1>
+# <span id="jargon">Terminology</span>
 
 On this site you'll see lots of words used that sound like they have similar meanings, but there are important nuances between them.  Here's an overview:
 
@@ -28,7 +27,7 @@ On this site you'll see lots of words used that sound like they have similar mea
 - **graphic** &mdash; I use this to refer to *the output* of a single VM (i.e. the graphical content it draws).  Or I try, at least. Out of habit I tend to use the terms "graphic" and "VM" interchangeably.
 - **surface** &mdash; Much like how a texture is a thing you draw *from,* a surface is a thing you draw *to.* TH14-17 have three different surfaces, as will be explained in [stages of rendering](#anm/stages-of-rendering).  The destination surface of a graphic is determined by its layer (the [ref=anm:layer] instruction).
 
-<h1 id="versions">Versions</h1>
+# <span id="versions">Versions</span>
 
 Anm files include version numbers that indicate when breaking changes are made to the format or instruction set.  For the most part `thanm` takes care of this, but you need to be aware of it when using anmmaps.
 
@@ -41,11 +40,11 @@ Anm files include version numbers that indicate when breaking changes are made t
 | v7 | [game=11], [game=12], [game=125], [game=128] | anmmap-compatible with v4 (only container format changed) |
 | v8 | [game=13] onwards | |
 
-<h1 id="time">Time labels</h1>
+# <span id="time">Time labels</span>
 
 COMING SOON (TM)
 
-<h1 id="position">Position vectors</h1>
+# <span id="position">Position vectors</span>
 
 The position of a graphic is ironically one of the least understood aspects of how ANM works.
 
@@ -53,7 +52,7 @@ Each VM has an **origin.**  For child scripts, the origin is the location of the
 
 So how about the position relative to that origin?  Well, as you might imagine, each VM holds a position vector which can be modified using [ref=anm:pos]... but there are also two other vectors!!  The true position of the graphic relative to its origin *is the sum of all three of these vectors.*  These other two vectors are used in all sorts of different, weird places for weird things, and nobody has been able to make any real sense of them yet, so for now I'll just call them `pos_2` and `pos_3` until their purpose is better understood.
 
-<h1 id="rng">RNGs</h1>
+# <span id="rng">RNGs</span>
 
 In modern Touhou games there are two random number generators available to ANM scripts.  The terms I will use for these are:
 
@@ -72,7 +71,7 @@ Different ANM versions access these RNGs in different ways:
     - There are dedicated vars for the replay RNG. (e.g. [ref=anmvar:randf-01-replay])
     - [ref=anm:v8-randMode] still exists but has no effect.
 
-<h1 id="children">Parent-child relationships</h1>
+# <span id="children">Parent-child relationships</span>
 
 In [game=10] onwards, ANM VMs can create children using [ref=anm:createChild].  Parents affect children in some of the following ways:
 
@@ -100,7 +99,6 @@ So yeah.  I wouldn't touch grandchild VMs with a 20 foot pole in *any* Touhou ga
 
 ---
 
-<!-- span used to provide an additional label -->
 # <span id="switch"><span id="interrupt">Interrupts</span></span>
 
 Oftentimes, graphics have special animations associated with certain events.  For instance, menu items may glow when selected, fly away when a different item is chosen, etc.  Or maybe the game just wants to get rid of a graphic for whatever reason, but wants to let it animate out gracefully.  The way these events are handled is by invoking **interrupts** on the ANM, as follows:
@@ -191,7 +189,7 @@ There is an important caveat to [ref=anm:caseReturn], which is that only a singl
 
 ---
 
-<h1 id="uv-coords">Texture coordinates</h1>
+# <span id="uv-coords">Texture coordinates</span>
 
 Numerous instructions change the region of coordinates in the texture image file that a sprite's image is pulled from.  These include [ref=anm:uVel], [ref=anm:uvScale], and [ref=anm:textureCircle]. To fully understand how these instructions work, you must have a basic understanding of texure addressing.
 

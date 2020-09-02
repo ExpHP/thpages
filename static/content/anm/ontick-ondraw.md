@@ -1,3 +1,4 @@
+[title=on_tick and on_draw]
 # `on_tick` and `on_draw`
 
 There's quite a decent amount to be said on the subject of how the touhou games update each frame, but the real short of the matter is:

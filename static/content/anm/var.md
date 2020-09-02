@@ -1,3 +1,4 @@
+[title=ANM variable reference]
 # ANM variable reference
 
 Select game version:

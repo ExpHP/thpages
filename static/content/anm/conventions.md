@@ -1,3 +1,4 @@
+[title=Conventions]
 # Conventions
 
 Touhou games primarily use the conventions of Direct3D for defining transformations in 3-dimensional space.

@@ -1,3 +1,4 @@
+[title=ANM stats]
 # ANM usage stats
 
 <div id="ins-stats-table"></div>

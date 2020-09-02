@@ -1,3 +1,4 @@
+[title=ANM instruction reference]
 # ANM instruction reference
 
 Select game version:

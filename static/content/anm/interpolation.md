@@ -1,5 +1,4 @@
-[title=Interpolation modes in Touhou]
-
+[title=Interpolation modes]
 # Interpolation modes
 
 Thanks to:

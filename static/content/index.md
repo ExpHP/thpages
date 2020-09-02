@@ -1,3 +1,4 @@
+[title=]
 # ExpHP's Touhou pages
 
 On this site you'll find some resources for modding Touhou, most notably for ANM scripting.
