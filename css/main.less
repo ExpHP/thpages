@@ -237,6 +237,7 @@ blockquote {
     align-items: center;
     overflow: hidden;
     transform: perspective(1px) translateZ(0);
+    pointer-events: initial; // undo pointer-events: none so we can hover
 
     .gear {
       &:extend(.gear-unselected);
