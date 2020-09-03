@@ -149,6 +149,7 @@ blockquote {
 .header-navigation a {
   color: inherit;
   text-decoration: inherit;
+  // * { box-sizing: border-box; }
 }
 .navigation-entry.outermost {
   font-family: @sans-serif;
@@ -159,6 +160,10 @@ blockquote {
 .navigation-entry.outermost.active,
 .navigation-entry.outermost.active-child {
   border-bottom: 2px fade(@link-color, @nav-alpha) solid;
+}
+.navigation-entry.outermost:not(.active):not(.active-child) {
+  // an invisible border so that there's no gap that would break cursor selection
+  border-bottom: 2px #00000000 solid;
 }
 .navigation-entry.inner.has-children {
   border-right: 2px fade(@text-color, 0.5 * @nav-alpha) solid;
@@ -185,12 +190,13 @@ blockquote {
 .navigation-entry.outermost > .navigation-entry-list {
   position: absolute;
   width: 150px;
-  background: #080808d0;
+  background: #080808e8;
   margin-left: -1px;
+  margin-top: 2px; // don't cover the border
 }
 .navigation-entry.inner > .navigation-entry-list {
   position: absolute;
-  background: #222222;
+  background: #080808e8;
   left: 100%;
   width: 150px;
   margin-top: -55px; // FIXME FIXME HACK OH GOD WHY IS IT LIKE THIS

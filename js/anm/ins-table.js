@@ -574,7 +574,7 @@ Object.assign(ANM_INS_DATA, {
     [/code]
     The difference between the two is subtle, and depends on the game:
 
-    * **[game=095] and earlier:**,
+    * **[game=095] and earlier:**
       [ref=anm:wait] is implemented using a dedicated timer. [wip]This has not been tested[/wip],
       but it seems this may cause the two snippets to behave differently in cases where the
       current time is greater than the time label (which is possible through [ref=anm:jmp]);
