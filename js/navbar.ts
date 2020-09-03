@@ -128,5 +128,3 @@ export function highlightCurrentPageInNavbar() {
     }
   }
 }
-
-export const DEFAULT = "default";
