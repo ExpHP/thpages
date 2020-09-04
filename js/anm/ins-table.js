@@ -791,8 +791,22 @@ Object.assign(ANM_INS_DATA, {
     Be especially careful when porting something from one game to another, as the layer groupings may have changed.
     [/tiphide]
   `},
-  'flipX': {sig: '', args: [], desc: "Toggles mirroring on the x axis.  [wip](sounds straightforward, but which things are affected?[/wip]"},
-  'flipY': {sig: '', args: [], desc: "Toggles mirroring on the y axis.  [wip](sounds straightforward, but which things are affected?[/wip]"},
+  'flipX': {
+    sig: '', args: [], desc: `
+    Toggles mirroring on the x axis.
+    [tiphide]
+    This very simply [tip=It also sets a bitflag but I think only EoSD uses it to keep the sign flipped during interpolation of scale.]just[/tip]
+    flips the sign of \`sx\` in [ref=anm:scale].  Future calls to [ref=anm:scale] will thus basically undo it.
+    [/tiphide]
+  `},
+  'flipY': {
+    sig: '', args: [], desc: `
+    Toggles mirroring on the y axis.
+    [tiphide]
+    This very simply [tip=It also sets a bitflag but I think only EoSD uses it to keep the sign flipped during interpolation of scale.]just[/tip]
+    flips the sign of \`sy\` in [ref=anm:scale].  Future calls to [ref=anm:scale] will thus basically undo it.
+    [/tiphide]
+  `},
   'resampleMode': {
     sig: 'S', args: ['n'], desc: `
     Determines how a sprite is resampled when scale is greater or less than 1f.
@@ -929,9 +943,7 @@ Object.assign(ANM_INS_DATA, {
   'rgb': {
     sig: 'SSS', args: ['r', 'g', 'b'], desc: `
     Set a color which gets blended with this sprite.
-    Set white (255, 255, 255) to eliminate the effect.
-
-    ([wip]what's the blend operation?[/wip] Probably multiply, since white is the identity...)
+    Blend operation is [multiply](https://en.wikipedia.org/wiki/Blend_modes#Multiply), so setting white (255, 255, 255) eliminates the effect.
   `},
   'alpha': {
     sig: 'S', args: ['alpha'], desc: `
@@ -1616,13 +1628,15 @@ Object.assign(ANM_INS_DATA, {
     [wip=2]
     **Never used.** Does some bit math and then sets what *appears* to be the color flag
     (which picks between [ref=anm:rgb] and [ref=anm:rgb2])?
+    [/wip]
     [tiphide]
-    Somebody plz test.
+    [wip=2]Somebody plz test.[/wip]
 
+    [wip=2]
     Specifically, I think it sets the color flag equal to \`floor(arg / 256) % 2\`.  Thus, calling it with an
     increasing argument should lead to blinking.
-    [/tiphide]
     [/wip]
+    [/tiphide]
   `},
 });
 

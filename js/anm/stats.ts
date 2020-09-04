@@ -1,6 +1,6 @@
 import {Game, allGames, gameData} from '../game-names';
 import {GAME_ANM_VERSIONS} from './versions';
-import {INS_HANDLERS, VAR_HANDLERS, makeRefGameIndependent} from './tables.ts';
+import {ANM_INS_HANDLERS, ANM_VAR_HANDLERS, makeRefGameIndependent} from './tables';
 import {globalNames, globalLinks, PrefixResolver} from '../resolver';
 import {GridViewScroll} from '../lib/gridviewscroll';
 import {MD} from '../markdown';
@@ -36,14 +36,14 @@ export function initStats() {
 
 export async function buildInsStatsTable($elem: HTMLElement) {
   const statsRaw = await statsJson;
-  const stats = buildStatsTable($elem, statsRaw.ins, INS_HANDLERS);
-  registerStatsTips(statsRaw, stats, INS_HANDLERS);
+  const stats = buildStatsTable($elem, statsRaw.ins, ANM_INS_HANDLERS);
+  registerStatsTips(statsRaw, stats, ANM_INS_HANDLERS);
 }
 
 export async function buildVarStatsTable($elem: HTMLElement) {
   const statsRaw = await statsJson;
-  const stats = buildStatsTable($elem, statsRaw.var, VAR_HANDLERS);
-  registerStatsTips(statsRaw, stats, VAR_HANDLERS);
+  const stats = buildStatsTable($elem, statsRaw.var, ANM_VAR_HANDLERS);
+  registerStatsTips(statsRaw, stats, ANM_VAR_HANDLERS);
 }
 
 function buildStatsTable($elem: HTMLElement, statsByOpcode: StatsByOpcode, tableHandlers: any): StatsByNameKey {
