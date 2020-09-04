@@ -8,7 +8,7 @@ Select game version:
 
 [script]
 onContentLoad(async function() {
-    setupGameSelector(document.getElementById('anm-table-game-select'));
+    setupGameSelectorForAnm(document.getElementById('anm-table-game-select'));
     window.setTimeout(function() {
         const target = document.querySelector(".ecl-table-wrapper");
         target.innerHTML = '';

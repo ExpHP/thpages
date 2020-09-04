@@ -1,6 +1,6 @@
 import {Game, allGames, gameData} from '../game-names';
 import {GAME_ANM_VERSIONS} from './versions';
-import {INS_HANDLERS, VAR_HANDLERS, makeRefGameIndependent} from './main.js';
+import {INS_HANDLERS, VAR_HANDLERS, makeRefGameIndependent} from './tables.ts';
 import {globalNames, globalLinks, PrefixResolver} from '../resolver';
 import {GridViewScroll} from '../lib/gridviewscroll';
 import {MD} from '../markdown';

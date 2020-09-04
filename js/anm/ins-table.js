@@ -1,21 +1,14 @@
 import dedent from "../lib/dedent.ts";
-
-export const UNASSIGNED = {ref: null, wip: 2};
-export const UNKNOWN_SIG = {};
+import {NumMap} from "../util.ts";
 
 // ==========================================================================
 // ==========================================================================
 // ===================    LOOKUP TABLE BY OPCODE    =========================
 
-/**
- * Table indexed first by game number string, then by opcode number,
- * producing the crossref associated with that opcode.
- *
- * Iterating the first table should produce games in ascending order.
- * There are NO GUARANTEES about iteration order of opcodes within a game.
- */
-export const ANM_BY_OPCODE = new Map(); // has to be a map because 'integer' keys defy insertion order
-export const GROUPS_V8 = [
+const UNASSIGNED = {ref: null, wip: 2};
+
+export const ANM_BY_OPCODE = new Map();
+export const ANM_GROUPS_V8 = [
   {min: 0, max: 99, title: 'System'},
   {min: 100, max: 199, title: 'Math'},
   {min: 200, max: 299, title: 'Jumps'},
@@ -145,14 +138,15 @@ ANM_BY_OPCODE.set('07', {
   77: {ref: 'anm:jmpGe'},
   78: {ref: 'anm:jmpGeF'},
 
-  79: {ref: 'anm:wait'}, // FIXME: mention differences before MoF
-
+  79: {ref: 'anm:wait'},
   80: {ref: 'anm:uVel'},
   81: {ref: 'anm:vVel'},
 });
 
 // ---- V3 ----
-ANM_BY_OPCODE.set('08', Object.assign({}, ANM_BY_OPCODE.get('07'), {
+ANM_BY_OPCODE.set('08', {
+  ...ANM_BY_OPCODE.get('07'),
+
   // changed signatures
   9: {ref: 'anm:rgb'},
   33: {ref: 'anm:rgbTime'},
@@ -166,11 +160,11 @@ ANM_BY_OPCODE.set('08', Object.assign({}, ANM_BY_OPCODE.get('07'), {
   87: {ref: 'anm:alpha2Time'},
   88: {ref: 'anm:blink'}, // PoFV:  sets flag 17 if floor(arg/256) is odd
   89: {ref: 'anm:caseReturn'},
-}));
+});
 
-ANM_BY_OPCODE.set('09', Object.assign({}, ANM_BY_OPCODE.get('08'), {
-  // nothing changed.
-}));
+ANM_BY_OPCODE.set('09', {
+  ...ANM_BY_OPCODE.get('08'),
+});
 
 // ---- V4 ----
 ANM_BY_OPCODE.set('095', {
@@ -271,16 +265,20 @@ ANM_BY_OPCODE.set('095', {
   87: {ref: 'anm:v4-randMode'},
 });
 
-ANM_BY_OPCODE.set('10', Object.assign({}, ANM_BY_OPCODE.get('095'), {
+ANM_BY_OPCODE.set('10', {
+  ...ANM_BY_OPCODE.get('095'),
+
   88: {ref: 'anm:createChild', wip: 1},
   89: {ref: 'anm:resampleMode', wip: 1}, // flag hi:1 (DS: hi:2)
 
   90: {ref: 'anm:createChildUi', wip: 1},
   91: {ref: 'anm:prependChild', wip: 1},
   92: {ref: 'anm:prependChildUi', wip: 1},
-}));
+});
 
-ANM_BY_OPCODE.set('11', Object.assign({}, ANM_BY_OPCODE.get('10'), {
+ANM_BY_OPCODE.set('11', {
+  ...ANM_BY_OPCODE.get('10'),
+
   93: {ref: 'anm:uVelTime'},
   94: {ref: 'anm:vVelTime'},
   95: {ref: 'anm:createRoot'},
@@ -293,9 +291,10 @@ ANM_BY_OPCODE.set('11', Object.assign({}, ANM_BY_OPCODE.get('10'), {
   101: {ref: 'anm:v4-texCircle2'}, // type 13 in GFW
   102: {ref: 'anm:spriteRand'},
   103: {ref: 'anm:drawRect'}, // type 15 in GFW
-}));
+});
 
-ANM_BY_OPCODE.set('12', Object.assign({}, ANM_BY_OPCODE.get('11'), {
+ANM_BY_OPCODE.set('12', {
+  ...ANM_BY_OPCODE.get('11'),
   104: {ref: 'anm:drawPoly'},
   105: {ref: 'anm:drawPolyBorder'},
   106: {ref: 'anm:uvScale'},
@@ -303,17 +302,19 @@ ANM_BY_OPCODE.set('12', Object.assign({}, ANM_BY_OPCODE.get('11'), {
   108: {ref: 'anm:drawRectGrad'}, // type 19 in GFW
   109: {ref: 'anm:drawRectShadow'}, // type 20 in GFW
   110: {ref: 'anm:drawRectShadowGrad'}, // type 21 in GFW
-}));
+});
 
-ANM_BY_OPCODE.set('125', Object.assign({}, ANM_BY_OPCODE.get('12'), {
+ANM_BY_OPCODE.set('125', {
+  ...ANM_BY_OPCODE.get('12'),
   111: UNASSIGNED, // (DS: hi:6-8)
   112: {ref: 'anm:ignoreParent'}, // (DS: hi:8)
-}));
+});
 
-ANM_BY_OPCODE.set('128', Object.assign({}, ANM_BY_OPCODE.get('125'), {
+ANM_BY_OPCODE.set('128', {
+  ...ANM_BY_OPCODE.get('125'),
   113: {ref: 'anm:rotateTime2D'},
   114: {ref: 'anm:v4-texCircle3'}, // type 14 in GFW
-}));
+});
 
 // ---- V8 ----
 ANM_BY_OPCODE.set('13', {
@@ -449,69 +450,51 @@ ANM_BY_OPCODE.set('13', {
   608: {ref: 'anm:drawRectShadowGrad'},
 });
 
-ANM_BY_OPCODE.set('14', Object.assign({}, ANM_BY_OPCODE.get('13'), {
+ANM_BY_OPCODE.set('14', {
+  ...ANM_BY_OPCODE.get('13'),
   313: {ref: 'anm:resolutionMode'},
   314: {ref: 'anm:attached'},
   315: {ref: 'anm:colorizeChildren'},
   509: {ref: 'anm:copyParentVars'},
   609: {ref: 'anm:textureCylinder3D'},
   610: {ref: 'anm:textureRing3D'},
-}));
+});
 
-ANM_BY_OPCODE.set('143', Object.assign({}, ANM_BY_OPCODE.get('14'), {
+ANM_BY_OPCODE.set('143', {
+  ...ANM_BY_OPCODE.get('14'),
   316: {ref: 'anm:v8-flag-316'}, // in 16: flag 2
   317: {ref: 'anm:v8-flag-317'}, // in 16: flag 2
   611: {ref: 'anm:drawRing'},
-}));
+});
 
-ANM_BY_OPCODE.set('15', Object.assign({}, ANM_BY_OPCODE.get('143'), {
-  // nothing was added
-}));
+ANM_BY_OPCODE.set('15', {
+  ...ANM_BY_OPCODE.get('143'),
+});
 
-ANM_BY_OPCODE.set('16', Object.assign({}, ANM_BY_OPCODE.get('15'), {
+ANM_BY_OPCODE.set('16', {
+  ...ANM_BY_OPCODE.get('15'),
   612: {ref: 'anm:drawRectBorder'},
   613: {ref: 'anm:drawLine'},
-}));
+});
 
-ANM_BY_OPCODE.set('165', Object.assign({}, ANM_BY_OPCODE.get('16'), {
+ANM_BY_OPCODE.set('165', {
+  ...ANM_BY_OPCODE.get('16'),
   439: {ref: 'anm:vd-imaginary-439'},
-}));
+});
 
-ANM_BY_OPCODE.set('17', Object.assign({}, ANM_BY_OPCODE.get('165'), {
-  // nothing was added
-}));
+ANM_BY_OPCODE.set('17', {
+  ...ANM_BY_OPCODE.get('165'),
+});
 
-// ==========================================================================
-// ==========================================================================
-// ==================    REVERSE LOOKUP TABLE     ===========================
-
-// This table gets an opcode from a ref, so that the name can be looked up in an eclmap.
-
-export const ANM_OPCODE_REVERSE = {};
-for (const [game, inner] of ANM_BY_OPCODE.entries()) {
-  ANM_OPCODE_REVERSE[game] = {};
-  for (const [opcodeStr, {ref}] of Object.entries(inner)) {
-    if (ref === null) continue; // no associated data entry yet
-
-    if (!ref.startsWith('anm:')) {
-      window.console.error(`wrong prefix in anm lookup table: (game ${game}, opcode ${opcodeStr}): ${ref}`);
-      continue;
-    }
-
-    const opcode = parseInt(opcodeStr, 10);
-    if (Number.isNaN(opcode)) {
-      window.console.error(`bad opcode: (game ${game}, opcode ${opcodeStr})`);
-      continue;
-    }
-    ANM_OPCODE_REVERSE[game][ref] = opcode;
+for (const [, inner] of ANM_BY_OPCODE.entries()) {
+  for (const [opcode, {ref, wip}] of NumMap.entries(inner)) {
+    inner[opcode] = {ref, wip: wip || 0};
   }
 }
 
 // ==========================================================================
 // ==========================================================================
 // =====================    INSTRUCTION DATA    =============================
-
-export const DUMMY_DATA = {sig: '', args: [], wip: 2, desc: '[wip=2]*No data.*[/wip]'};
 
 // Lookup table by ref id. (game-independent, anmmap-independent name)
 export const ANM_INS_DATA = {};
@@ -586,7 +569,8 @@ Object.assign(ANM_INS_DATA, {
       (notice that \`thanm\` has \`timeof(label)\` syntax to make option 1 less painful anyways)
     [/tiphide]
   `},
-  'caseReturn': {sig: '', args: [], desc: `
+  'caseReturn': {
+    sig: '', args: [], desc: `
     Can be used at the end of a [ref=anm:case] block to return back
     to the moment just before the VM received the [interrupt](#anm/concepts&a=interrupt).
 
@@ -901,7 +885,7 @@ Object.assign(ANM_INS_DATA, {
 
     * ([game=06]) Rotate first around x, then around y, then around z.
     * ([game=07]&ndash;[game=128]) [wip]Haven't checked. Probably the same?[/wip]
-    * ([game=13]TD&ndash;) You can choose the rotation system with [ref=anm:rotationSystem]. [wip](what's the default? probably the same?)[/wip]
+    * ([game=13]&ndash;) You can choose the rotation system with [ref=anm:rotationSystem]. [wip](what's the default? probably the same?)[/wip]
 
     *If nothing seems to be happening when you call this, check your [ref=anm:renderMode] setting!*
     [/tiphide]
@@ -1359,7 +1343,7 @@ Object.assign(ANM_INS_DATA, {
   `},
   'drawRectShadow': {
     sig: 'ff', args: ['w', 'h'], desc: `
-    A variant of \`drawRect\` intended for rotated rectangles, which smooths out the edges
+    A variant of [ref=anm:drawRect] intended for rotated rectangles, which smooths out the edges
     somewhat.
 
     [tiphide]
@@ -1673,6 +1657,5 @@ for (const [key, value] of Object.entries(ANM_INS_DATA)) {
   // automatically remove tips from self-references
   const re = new RegExp(`\\[ref=anm:${key}\\]`, 'g');
   value.desc = value.desc.replace(re, `[tip-nodeco=YOU ARE HERE][ref-notip=anm:${key}][/tip-nodeco]`);
-
   value.desc = dedent(value.desc);
 }

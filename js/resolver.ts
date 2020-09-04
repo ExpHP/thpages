@@ -13,7 +13,7 @@ export type Context = Query;
  * function associated with `ref:` for crossref names, and that function will find that a function
  * was registered for `anm:`.
  */
-interface Resolver<Out> {
+export interface Resolver<Out> {
   /**
    * Get the value for a key from the given context.
    */

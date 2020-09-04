@@ -106,6 +106,19 @@ export function normalizePage(s: string) {
   return s.replace(/^\/*/, '/');
 }
 
+/**
+ * Filters a query to just contain things that typically share meaning across
+ * different pages.
+ */
+export function queryFilterCommonProps(q: Query) {
+  const {s, g, ...rest} = q;
+  rest; // pretend to use
+
+  const out = {s} as Query;
+  if (g) out.g = g;
+  return out;
+}
+
 export function queryEqualsUptoAnchor(q1: Query, q2: Query) {
   const {a: a1, ...rest1} = q1;
   const {a: a2, ...rest2} = q2;

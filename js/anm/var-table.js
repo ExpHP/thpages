@@ -27,15 +27,15 @@ ANM_VARS_BY_NUMBER.set('07', {
   10009: {ref: 'anmvar:i5'},
 });
 
-ANM_VARS_BY_NUMBER.set('08', Object.assign({}, ANM_VARS_BY_NUMBER.get('07')));
+ANM_VARS_BY_NUMBER.set('08', {...ANM_VARS_BY_NUMBER.get('07')});
 
-ANM_VARS_BY_NUMBER.set('09', Object.assign({}, ANM_VARS_BY_NUMBER.get('08'), {
+ANM_VARS_BY_NUMBER.set('09', {...ANM_VARS_BY_NUMBER.get('08'),
   10010: {ref: 'anmvar:v3-randrad'},
   10011: {ref: 'anmvar:v3-randf-01'},
   10012: {ref: 'anmvar:v3-randf-11'},
-}));
+});
 
-ANM_VARS_BY_NUMBER.set('095', Object.assign({}, ANM_VARS_BY_NUMBER.get('09'), {
+ANM_VARS_BY_NUMBER.set('095', {...ANM_VARS_BY_NUMBER.get('09'),
   // changed descriptions
   10010: {ref: 'anmvar:v4-randrad'},
   10011: {ref: 'anmvar:v4-randf-01'},
@@ -44,30 +44,30 @@ ANM_VARS_BY_NUMBER.set('095', Object.assign({}, ANM_VARS_BY_NUMBER.get('09'), {
   10013: {ref: 'anmvar:pos-x'},
   10014: {ref: 'anmvar:pos-y'},
   10015: {ref: 'anmvar:pos-z'},
-}));
+});
 
-ANM_VARS_BY_NUMBER.set('10', Object.assign({}, ANM_VARS_BY_NUMBER.get('095'), {
+ANM_VARS_BY_NUMBER.set('10', {...ANM_VARS_BY_NUMBER.get('095'),
   10016: {ref: 'anmvar:v4-camera-x'},
   10017: {ref: 'anmvar:v4-camera-y'},
   10018: {ref: 'anmvar:v4-camera-z'},
   10019: {ref: 'anmvar:v4-lookat-x'},
   10020: {ref: 'anmvar:v4-lookat-y'},
   10021: {ref: 'anmvar:v4-lookat-z'},
-}));
+});
 
-ANM_VARS_BY_NUMBER.set('11', Object.assign({}, ANM_VARS_BY_NUMBER.get('10'), {
+ANM_VARS_BY_NUMBER.set('11', {...ANM_VARS_BY_NUMBER.get('10'),
   10022: {ref: 'anmvar:v4-rand'},
-}));
+});
 
-ANM_VARS_BY_NUMBER.set('12', Object.assign({}, ANM_VARS_BY_NUMBER.get('11'), {
+ANM_VARS_BY_NUMBER.set('12', {...ANM_VARS_BY_NUMBER.get('11'),
   10023: {ref: 'anmvar:rot-x'},
   10024: {ref: 'anmvar:rot-y'},
   10025: {ref: 'anmvar:rot-z'},
-}));
+});
 
-ANM_VARS_BY_NUMBER.set('125', Object.assign({}, ANM_VARS_BY_NUMBER.get('12')));
-ANM_VARS_BY_NUMBER.set('128', Object.assign({}, ANM_VARS_BY_NUMBER.get('12')));
-ANM_VARS_BY_NUMBER.set('13', Object.assign({}, ANM_VARS_BY_NUMBER.get('12'), {
+ANM_VARS_BY_NUMBER.set('125', {...ANM_VARS_BY_NUMBER.get('12')});
+ANM_VARS_BY_NUMBER.set('128', {...ANM_VARS_BY_NUMBER.get('12')});
+ANM_VARS_BY_NUMBER.set('13', {...ANM_VARS_BY_NUMBER.get('12'),
   // changed descriptions
   10010: {ref: 'anmvar:randrad'},
   10011: {ref: 'anmvar:randf-01'},
@@ -93,19 +93,19 @@ ANM_VARS_BY_NUMBER.set('13', Object.assign({}, ANM_VARS_BY_NUMBER.get('12'), {
   10030: {ref: 'anmvar:randrad-replay'},
   10031: {ref: 'anmvar:randf-01-replay'},
   10032: {ref: 'anmvar:randf-11-replay'},
-}));
+});
 
-ANM_VARS_BY_NUMBER.set('14', Object.assign({}, ANM_VARS_BY_NUMBER.get('13'), {
+ANM_VARS_BY_NUMBER.set('14', {...ANM_VARS_BY_NUMBER.get('13'),
   10033: {ref: 'anmvar:mystery-angle-x'},
   10034: {ref: 'anmvar:mystery-angle-y'},
   10035: {ref: 'anmvar:mystery-angle-z'},
-}));
+});
 
-ANM_VARS_BY_NUMBER.set('143', Object.assign({}, ANM_VARS_BY_NUMBER.get('14')));
-ANM_VARS_BY_NUMBER.set('15', Object.assign({}, ANM_VARS_BY_NUMBER.get('143')));
-ANM_VARS_BY_NUMBER.set('16', Object.assign({}, ANM_VARS_BY_NUMBER.get('15')));
-ANM_VARS_BY_NUMBER.set('165', Object.assign({}, ANM_VARS_BY_NUMBER.get('16')));
-ANM_VARS_BY_NUMBER.set('17', Object.assign({}, ANM_VARS_BY_NUMBER.get('165')));
+ANM_VARS_BY_NUMBER.set('143', {...ANM_VARS_BY_NUMBER.get('14')});
+ANM_VARS_BY_NUMBER.set('15', {...ANM_VARS_BY_NUMBER.get('143')});
+ANM_VARS_BY_NUMBER.set('16', {...ANM_VARS_BY_NUMBER.get('15')});
+ANM_VARS_BY_NUMBER.set('165', {...ANM_VARS_BY_NUMBER.get('16')});
+ANM_VARS_BY_NUMBER.set('17', {...ANM_VARS_BY_NUMBER.get('165')});
 
 // Var table cannot have entries without refs because we need the type to generate the default name...
 for (const [game, inner] of ANM_VARS_BY_NUMBER.entries()) {
@@ -113,28 +113,6 @@ for (const [game, inner] of ANM_VARS_BY_NUMBER.entries()) {
     if (entry.ref == null) {
       window.console.error(`TABLE CORRUPT: anm var (game ${game}, num ${num}) has no crossref!`);
     }
-  }
-}
-
-// ==========================================================================
-
-export const ANM_VAR_NUMBER_REVERSE = {};
-for (const [game, inner] of ANM_VARS_BY_NUMBER.entries()) {
-  ANM_VAR_NUMBER_REVERSE[game] = {};
-  for (const [opcodeStr, {ref}] of Object.entries(inner)) {
-    if (ref === null) continue; // no associated data entry yet
-
-    if (!ref.startsWith('anmvar:')) {
-      window.console.error(`wrong prefix in anmvar lookup table: (game ${game}, number ${opcodeStr}): ${ref}`);
-      continue;
-    }
-
-    const opcode = parseInt(opcodeStr, 10);
-    if (Number.isNaN(opcode)) {
-      window.console.error(`bad var number: (game ${game}, number ${opcodeStr})`);
-      continue;
-    }
-    ANM_VAR_NUMBER_REVERSE[game][ref] = opcode;
   }
 }
 
@@ -214,25 +192,6 @@ Object.assign(ANM_VAR_DATA, {
   'v4-lookat-y': {type: '%', mut: false, succ: 'lookat-y', wip: 1, desc: `[wip=2]Probably y of normalized direction vector that the stage BG camera is facing, like in V8.[/wip]`},
   'v4-lookat-z': {type: '%', mut: false, succ: 'lookat-z', wip: 1, desc: `[wip=2]Probably z of normalized direction vector that the stage BG camera is facing, like in V8.[/wip]`},
 });
-
-// Add `minGame` and `maxGame` keys to each crossref.
-for (const [game, table] of ANM_VARS_BY_NUMBER.entries()) {
-  for (const [opcodeStr, {ref}] of Object.entries(table)) {
-    if (ref === null) continue;
-    const id = ref.substring('anmvar:'.length);
-    const entry = ANM_VAR_DATA[id];
-
-    if (!entry) {
-      window.console.error(`invalid ref in anm var table (game ${game}, var ${opcodeStr}): ${ref}`);
-      continue;
-    }
-
-    if (entry.minGame === undefined) {
-      entry.minGame = game;
-    }
-    entry.maxGame = game;
-  }
-}
 
 // Validate
 for (const [id, value] of Object.entries(ANM_VAR_DATA)) {

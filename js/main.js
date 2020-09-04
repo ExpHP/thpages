@@ -1,5 +1,5 @@
 import {MD, postprocessConvertedMarkdown} from "./markdown.ts";
-import {initAnm} from "./anm/main.js";
+import {initAnm} from "./anm/tables.ts";
 import {initTips} from "./tips.ts";
 import {initSettings, clearSettingsCache} from "./settings.ts";
 import {globalNames, globalLinks} from "./resolver.ts";
