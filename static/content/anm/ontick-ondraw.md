@@ -6,7 +6,7 @@ There's quite a decent amount to be said on the subject of how the touhou games 
 * There's a global list of `on_tick` functions that run in a particular order each frame.
 * There's also a global list of `on_draw` functions that run shortly after the `on_tick` functions.
 
-As you can probably imagine, `on_tick` is where all game logic occurs. It is also when all ANM VMs are "ticked;" i.e. this is when they are given a chance to step through their script.  `on_draw` functions on the other hand handle the rendering of everything to the screen.
+As you can probably imagine, `on_tick` is where all game logic occurs. It is also when all ANM VMs are "ticked;" i.e. this is when they are given a chance to step through their script.  `on_draw` functions on the other hand handle the rendering of everything to the screen.  Originally, many things had detailed `on_draw` methods for drawing all of their associated VMs, but massive refactorings in [game=095] and [game=10] automated a huge portion of it through the introduction of layer lists.
 
 [wip]I plan to write a page here which dives more deeply into the subject and how it concerns ANM, but in the meanwhile you can look at these:[/wip]
 

@@ -910,7 +910,9 @@ Object.assign(ANM_INS_DATA, {
 
     [wip]
     You can't just put this in any arbitrary script and expect it to work; the script must be used somewhere
-    specifically designed to support it, such as an enemy bullet, a player bullet, or an enemy's slot 0 anm.
+    specifically designed to support it, such as an enemy bullet, a player bullet.
+    A predecessor to this instruction [ref=anm:v0-26] also enabled auto rotation on secondary VMs on an enemy;
+    not sure if that is still true here.
     [/wip]
   `},
   'rotationSystem': {
@@ -1604,6 +1606,8 @@ Object.assign(ANM_INS_DATA, {
       There's something added in the IN background code at \`th08.exe+0x0a0ce\` where it does something with color...[/wip]
     * **2** &mdash; enables spherical billboarding when used on 3D background sprites.
     * **18** &mdash; [wip=2]...also enables sperical billboarding? See \`th08.exe+0x0a929\` in the background rendering code.[/wip]
+    * Additionally, enemy rendering code at \`th08.exe+0x42e1e6\` sets the z-rotation on any *slotted VM* where this
+      field is nonzero. (slotted VMs only; the primary VM looks at the flag on the enemy set by ECL \`ins_145\` instead)
     [/tiphide]
   `},
   'v8-flag-316': {sig: '', args: [], wip: 2, desc: `[wip=2]Enables an unknown bitflag. Clear with [ref=anm:v8-flag-317].[/wip]`},

@@ -42,9 +42,47 @@ Anm files include version numbers that indicate when breaking changes are made t
 
 # <span id="time">Time labels</span>
 
-COMING SOON (TM)
+Much like ECL and STD, every instruction in an ANM script is labeled with a `time` integer indicating the frame number at which it should run.  As a VM runs, it keeps track of both its current instruction in the script and an internal time counter which increments on each frame.  Every frame when the VM is [ticked](#/anm/ontick-ondraw), it compares the time label of the current instruction to its internal time, and will execute instructions until it encounters one whose time label is too large.
+
+Most of the time, large swathes of code in an ANM script will have equal time labels, so `thtk` doesn't label every line.  It labels the lines where the time changes; and it does so by writing an integer followed by a colon (like code labels, but integers instead of identifiers):
+
+[code]
+script script1 {
+    foo(0);   // has time label 0
+    bar(4);   // has time label 0
+30:
+    baz(3, 50f);   // has time label 30
+50:
+    quux(3, 50f);   // has time label 50
+}
+[/code]
+
+It also supports relative time labels, which begin with `+`, indicating that the label increases by this amount.
+
+[code]
+script script1 {
+    foo(0);   // has time label 0
+    bar(4);   // has time label 0
++30:
+    baz(3, 50f);   // has time label 30
++20:
+    quux(3, 50f);   // has time label 50
+-1:
+    lol(52);   // has time label -1
+}
+[/code]
+
+Notice with the last one that time labels can also be negative. `-1:` is an absolute time label, not a relative time label.
+
+Jumping often requires you to supply a time for the destination.  Most frequently, the simplest choice is to use the time label of the destination instruction.  `thanm` provides the `timeof()` syntax for this:
+
+[code]
+  [ref=anm:jmpDec]([ref=anmvar:i0], somelabel, timeof(somelabel));
+[/code]
 
 # <span id="position">Position vectors</span>
+
+<!-- Moved to [its own page](#/anm/position) -->
 
 The position of a graphic is ironically one of the least understood aspects of how ANM works.
 
