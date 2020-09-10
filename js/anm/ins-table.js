@@ -260,8 +260,8 @@ ANM_BY_OPCODE.set('095', {
   82: {ref: 'anm:rotateAuto', wip: 1}, // flag lo:29
   83: {ref: 'anm:posAdopt'},
   84: {ref: 'anm:textureCircle'},
-  85: UNASSIGNED, // flag lo:30 (DS: lo:31)
-  86: UNASSIGNED, // flag lo:31 (DS: hi:0)
+  85: {ref: 'anm:v8-flag-431', wip: 1}, // flag lo:30 (DS: lo:31)
+  86: {ref: 'anm:v8-flag-432', wip: 1}, // flag lo:31 (DS: hi:0)
   87: {ref: 'anm:v4-randMode'},
 });
 
@@ -913,6 +913,7 @@ Object.assign(ANM_INS_DATA, {
     specifically designed to support it, such as an enemy bullet, a player bullet.
     A predecessor to this instruction [ref=anm:v0-26] also enabled auto rotation on secondary VMs on an enemy;
     not sure if that is still true here.
+    <!-- there is something for enemies at th125.exe+0x41191b though -->
     [/wip]
   `},
   'rotationSystem': {
@@ -1614,7 +1615,7 @@ Object.assign(ANM_INS_DATA, {
   'v8-flag-317': {sig: '', args: [], wip: 2, desc: `[wip=2]Clears the bitflag from [ref=anm:v8-flag-316].[/wip]`},
   'v8-flag-419': {sig: 'S', args: ['enable'], wip: 2, desc: `[wip=2]Sets the state of an unknown bitflag.[/wip]`},
   'v8-flag-431': {sig: 'S', args: ['enable'], wip: 2, desc: `[wip=2]Sets the state of an unknown bitflag.[/wip]`},
-  'v8-flag-432': {sig: 'S', args: ['enable'], wip: 2, desc: `[wip=2]Sets the state of an unknown bitflag.[/wip]`},
+  'v8-flag-432': {sig: 'S', args: ['enable'], wip: 2, desc: `[wip=2]Sets the state of an unknown bitflag. Only used by photo games.[/wip]`},
   'v4-texCircle2': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified member of texCircle family, likely [ref=anm:textureArcEven][/wip]'},
   'v4-texCircle3': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified member of texCircle family, likely [ref=anm:textureArc][/wip]'},
   'vd-imaginary-439': {

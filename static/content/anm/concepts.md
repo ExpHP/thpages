@@ -67,18 +67,28 @@ script script1 {
     baz(3, 50f);   // has time label 30
 +20:
     quux(3, 50f);   // has time label 50
--1:
-    lol(52);   // has time label -1
+10:
+    fazbear(20);  // has time label 10
 }
 [/code]
 
-Notice with the last one that time labels can also be negative. `-1:` is an absolute time label, not a relative time label.
+Notice with the last label that time labels are also allowed to decrease.  When this happens it must be written as an absolute label, not as `-40:`, which would instead be interpreted as an absolute time label for the time `-40`.  *Speaking of negative time labels...*
 
-Jumping often requires you to supply a time for the destination.  Most frequently, the simplest choice is to use the time label of the destination instruction.  `thanm` provides the `timeof()` syntax for this:
+## The "minus 1st" frame
+
+Beginning in [game=13], whenever it loads an ANM file, for every script, it will create a VM and run that VM once with time set to `-1`.  Then it saves the resulting VM as a *template* for that script, and copies it each time an instance of that script is created. Basically what this means is that scripts can now have a "minus 1st" frame that only runs once when the file is loaded:
 
 [code]
-  [ref=anm:jmpDec]([ref=anmvar:i0], somelabel, timeof(somelabel));
+script script1 {
+-1:
+    [ref=anm:isetRand]([ref=anmvar:i0], 0, 5);
+0:
+    [ref=anm:isetRand]([ref=anmvar:i1], 0, 5);
+    ...
+}
 [/code]
+
+In the above example, every script created using `script1` will have the same value for [ref=anmvar:i0], but different values for [ref=anmvar:i1].  This is of course a contrived example to help exaggerate the effect; typically this initial frame is used to set the script's layer and a few other important properties.
 
 # <span id="position">Position vectors</span>
 

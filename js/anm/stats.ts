@@ -8,12 +8,13 @@ import {parseQuery} from '../url-format';
 import {globalTips, Tip} from '../tips';
 
 type CellData = {
+  opcode: number, // opcode in this game
   total: number, // total uses of an instruction in a game, across all anm files
   breakdown: [string, number][], // maps filename to usage count, by descending usage count (no zeros)
 };
 type OpcodeStr = string;
 type NameKey = string;
-type StatsByOpcode = Record<Game, Record<OpcodeStr, CellData>>;
+type StatsByOpcode = Record<Game, Record<OpcodeStr, Omit<CellData, 'opcode'>>>;
 type Stats = {
   numFiles: Record<Game, number>,
   ins: StatsByOpcode,
@@ -134,19 +135,19 @@ function getStatsRows(statsByOpcode: StatsByOpcode, tableHandlers: any) {
     const opcodes = Array.from(Object.keys(innerByOpcode as object)).map((opcodeStr) => parseInt(opcodeStr));
     opcodes.sort();
 
-    for (const opcodeStr of opcodes) {
-      let {ref} = innerByOpcode[opcodeStr];
+    for (const opcode of opcodes) {
+      let {ref} = innerByOpcode[opcode];
       if (ref) ref = makeRefGameIndependent(ref, tableHandlers);
 
-      const nameKey = (ref === null) ? `${mainPrefix}:${version}:${opcodeStr}` : `ref:${ref}`;
+      const nameKey = (ref === null) ? `${mainPrefix}:${version}:${opcode}` : `ref:${ref}`;
       if (!keyIndices.has(nameKey)) {
         keyIndices.set(nameKey, out.length);
         out.push([nameKey, new Map()]);
       }
       const [, destMap] = out[keyIndices.get(nameKey)!];
 
-      const cellData: CellData = srcInner[opcodeStr] || {total: 0, breakdown: []};
-      delete srcInner[opcodeStr];
+      const cellData: CellData = srcInner[opcode] ? {...srcInner[opcode], opcode} : {total: 0, breakdown: [], opcode};
+      delete srcInner[opcode];
 
       destMap.set(game, cellData);
     }
@@ -168,7 +169,7 @@ function registerStatsTips(statsRaw: Stats, table: StatsByNameKey, tableHandlers
     const cellData = table.get(nameKey)!.get(game);
     if (!cellData) return null;
 
-    let tipMd = `Used in ${cellData.breakdown.length} of ${statsRaw.numFiles[game]} files.\n\n`;
+    let tipMd = `Used in ${cellData.breakdown.length} of ${statsRaw.numFiles[game]} files. (as id ${cellData.opcode})\n\n`;
     for (const [filename, uses] of cellData.breakdown.slice(0, 5)) {
       tipMd += `* ${uses} uses in <code>${filename}</code>\n`;
     }
