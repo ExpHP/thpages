@@ -746,7 +746,7 @@ Object.assign(ANM_INS_DATA, {
     | :---: | ---           | --- | --- | --- |
     | 0 | \`SRCALPHA\` | \`INVSRCALPHA\` | \`ADD\` | Normal |
     | 1 | \`SRCALPHA\` | \`ONE\` | \`ADD\` | Add |
-    | 2 | \`SRCALPHA\` | \`ONE\` | \`REVSUBTRACT\` | Subtract (but weird?)† |
+    | 2 | \`SRCALPHA\` | \`ONE\` | \`REVSUBTRACT\` | Subtract (but weird?)<sup>†</sup> |
     | 3 | \`ONE\` | \`ZERO\` | \`ADD\` | Replace |
     | 4 | \`INVDESTCOLOR\` | \`INVSRCCOLOR\` | \`ADD\` | Screen? (S + D - SD) |
     | 5 | \`DESTCOLOR\` | \`ZERO\` | \`ADD\` | Multiply, I guess? |
@@ -754,11 +754,12 @@ Object.assign(ANM_INS_DATA, {
     | 7 | \`DESTALPHA\` | \`INVDESTALPHA\` | \`ADD\` | Normal but src is drawn *behind* dest |
     | 8 | \`SRCALPHA\` | \`ONE\` | \`MIN\` | Darken only? |
     | 9 | \`SRCALPHA\` | \`ONE\` | \`MAX\` | Lighten only? |
+    [table-footnotes,ncols=5]
+    <sup>†</sup> Weird because it seems this would also subtract alpha. (so if the thing you're drawing is fully opaque,
+    the result will be fully transparent, deleting even the background...?)
+    [/table-footnotes]
 
     [wip]These are all untested, I only looked at assembly.[/wip]
-
-    † Weird because it seems this would also subtract alpha. (so if the thing you're drawing is fully opaque,
-    the result will be fully transparent, deleting even the background...)
     [/tiphide]
   `},
   // TODO: Maybe link to RenderType enum.
@@ -829,7 +830,7 @@ Object.assign(ANM_INS_DATA, {
 
     [tiphide]
     | Mode | D3D constant | Meaning |
-    | ---  | --- | --- |
+    | :---: | --- | --- |
     | 0    | \`D3DTADDRESS_WRAP\` | texture repeats infinitely |
     | 1    | \`D3DTADDRESS_CLAMP\` | pixels at the edge extend to infinity |
     | 2    | \`D3DTADDRESS_MIRROR\` | like 0 but every other image is mirrored |
@@ -841,7 +842,7 @@ Object.assign(ANM_INS_DATA, {
 
     [tiphide]
     | Value | Origin | Appropriate for |
-    | ---   | ---    | --- |
+    | :---: | ---    | --- |
     | 0     | Top left of target surface. | Border around the game. |
     | 1     | Location of ECL's (0, 0) in [rendering stages 1 to 3](#anm/stages-of-rendering&a=stage-1) | Game elements always drawn at 640x480. |
     | 2     | Location of ECL's (0, 0) in [rendering stage 4](#anm/stages-of-rendering&a=stage-4) | Game elements drawn at full res (e.g. boss HP). |

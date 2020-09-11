@@ -79,9 +79,7 @@ function showdownExt() {
   const gc = {
     type: "lang",
     regex: /\[gc=([01][0-9]*?)\]([^]*?)\[\/gc\]/g,
-    replace: sf((match, gameStr, txt) => withGame(gameStr!, match, (data) => {
-      return /* html */`<span style="color: ${data.color}">${txt}</span>`;
-    })),
+    replace: /* html */`<span class="gamecolor gamecolor-$1">$2</span>`,
   };
 
   const game = {
