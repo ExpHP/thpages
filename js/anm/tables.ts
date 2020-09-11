@@ -91,6 +91,10 @@ export type VarData = {
   mut: boolean,
 } & CommonData;
 
+/**
+ * Ad-hoc interface used to factor out the differences between the tables so that we can write
+ * code that works equally well on all of them.
+ */
 type TableHandlers<Data> = {
   /** Page (URL s= field) where table is hosted. */
   tablePage: string,

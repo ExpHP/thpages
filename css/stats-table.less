@@ -43,16 +43,29 @@
 // resizable box
 .layer-viewer-scripts {
   width: 100%;
-  resize: none;
-  height: auto;
+  resize: vertical;
+  height: 400px;
   overflow-x: hidden;
+  overflow-y: scroll;
 
-  &.overflow {
-    overflow-y: scroll;
-    // height: 400px;  // initial height set by JS instead
-    resize: vertical;
+  .grid-item {
+    background-color: #33ffff08;
+    border: solid 1px #11eeee40;
+
+    &:hover {
+      transform: scale(1.2, 1.2);
+      border: solid 1px #11eeee70;
+    }
   }
+
+  // &.overflow {
+  //   overflow-x: hidden;
+  //   overflow-y: scroll;
+  //   resize: vertical;
+  // }
   border-radius: 7px;
   background-color: #221f31a0;
   padding: 7px;
+
+
 }

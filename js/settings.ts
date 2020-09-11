@@ -52,8 +52,8 @@ function buildAnmmapSelector($div: HTMLElement) {
   $div.classList.add('map-files');
   $div.innerHTML = /* HTML */`
     <div class="rows"></div>
-    <button class='confirm' disabled='true'></button>
-    <div class="save-status"></div>
+    <p><button class='confirm' disabled='true'></button><span class="save-status"></span></p>
+
   `;
   const $rows = document.querySelector('.rows')!;
 

@@ -20,6 +20,7 @@
     "eslint-plugin-import": "^2.22.0",
     "jszip": "^3.5.0",
     "less": "^3.12.2",
+    "packery": "^2.1.2",
     "parcel-bundler": "^1.12.4",
     "parcel-plugin-static-files-copy": "^2.5.0",
     "typescript": "^3.9.7"
@@ -34,5 +35,5 @@
     "watcherGlob": "**/*"
   },
   "author": "Michael Lamparski",
-  "license": "MIT"
+  "license": "GPL 3.0"
 }

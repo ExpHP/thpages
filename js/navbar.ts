@@ -56,6 +56,11 @@ export const NAVBAR: Entry[] = [
         url: "https://maribelhearn.com/",
         newTab: true,
       },
+      {
+        label: "Website source",
+        url: "https://github.com/ExpHP/thpages",
+        newTab: true,
+      },
     ],
   },
 

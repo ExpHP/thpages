@@ -13,10 +13,19 @@
     "noImplicitReturns": true,
     "pretty": true,
     "sourceMap": true,
+    "baseUrl": "./js/types",
+    "paths": {
+      "*": ["./js/types/*", "*"]
+    },
+    // "baseUrl": "./",
+    // "paths": {"*": ["./js/types"]},
     "strict": true,
     "target": "es2018"
   },
   "exclude": [
     "node_modules"
-  ]
+  ],
+  // "include": [
+  //   "js/types"
+  // ]
 }

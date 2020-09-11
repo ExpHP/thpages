@@ -2,6 +2,7 @@ import JSZip from 'jszip';
 import {readUploadedFile} from '../util';
 import {parseGame, Game} from '../game-names';
 import {ANM_INS_HANDLERS} from './tables';
+import Packery from 'packery';
 
 type AnmSpec = {
   textures: AnmSpecTexture[],
@@ -12,6 +13,7 @@ type AnmSpecScript = {sprite: number | null, layer: number | null};
 type AnmSpecSprite = {texture: number, left: number, top: number, width: number, height: number};
 type AnmSpecTexture = {path: string};
 
+const CONTAINER_HEIGHT_THRESHOLD = 400;
 
 (window as any).buildLayerViewer = buildLayerViewer;
 async function buildLayerViewer() {
@@ -34,11 +36,12 @@ async function buildLayerViewer() {
       throw new Error(`unable to parse game number "${game}"`);
     }
 
+    const layerPackers: Packery[] = [];
     for (const entry of zip.file(/spec\.spec/)) {
       const text = await entry.async('text');
       const parsed = parseAnmSpec(text, game, entry.name);
       const subdir = entry.name.split('/')[0];
-      updateLayerViewer($layerViewer, zip, subdir, parsed);
+      updateLayerViewer($layerViewer, layerPackers, zip, subdir, parsed);
     }
   });
 }
@@ -132,12 +135,11 @@ function parseAnmSpec(text: string, game: Game, filename?: string): AnmSpec {
   return out;
 }
 
-async function updateLayerViewer($layerViewer: HTMLElement, zip: JSZip, subdir: string, specData: AnmSpec) {
+async function updateLayerViewer($layerViewer: HTMLElement, layerPackers: Packery[], zip: JSZip, subdir: string, specData: AnmSpec) {
   // Add boxes for new layers as needed.
   const maxLayerInFile = specData.scripts.map((script) => script.layer || 0).reduce((a, b) => Math.max(a, b));
-  let numLayersListed = $layerViewer.querySelectorAll('.layer-viewer-scripts').length;
-  while (numLayersListed <= maxLayerInFile) {
-    const thisLayer = numLayersListed;
+  while (layerPackers.length <= maxLayerInFile) {
+    const thisLayer = layerPackers.length;
 
     const $header = document.createElement('h2');
     $header.innerText = `Layer ${thisLayer}`;
@@ -147,14 +149,19 @@ async function updateLayerViewer($layerViewer: HTMLElement, zip: JSZip, subdir: 
     $div.classList.add('layer-viewer-scripts');
     $layerViewer.appendChild($div);
 
-    numLayersListed += 1;
+    // don't give packery the div itself because it always sets height
+    const $inner = document.createElement('div');
+    $inner.classList.add('packery-container');
+    $div.appendChild($inner);
+
+    layerPackers.push(new Packery($inner, {itemSelector: '.grid-item', gutter: 4}));
   }
 
   // A canvas used to help extract the region of a texture corresponding to a sprite.
+
   const $clippingCanvas = document.createElement('canvas');
   const clippingCtx = $clippingCanvas.getContext('2d');
   if (!clippingCtx) throw new Error(`Failed to create 2D rendering context`);
-
   // Do one texture at a time so that the user starts seeing things happen immediately.
   for (let textureI = 0; textureI < specData.textures.length; textureI++) {
     const {path} = specData.textures[textureI];
@@ -179,6 +186,10 @@ async function updateLayerViewer($layerViewer: HTMLElement, zip: JSZip, subdir: 
         if (!script.sprite) continue;
         const sprite = specData.sprites[script.sprite];
         if (sprite.texture === textureI) {
+          // create a new <img> whose image is the texture cropped to this sprite.
+          const $clippingCanvas = document.createElement('canvas');
+          const clippingCtx = $clippingCanvas.getContext('2d');
+          if (!clippingCtx) throw new Error(`Failed to create 2D rendering context`);
           $clippingCanvas.width = sprite.width;
           $clippingCanvas.height = sprite.height;
           clippingCtx.clearRect(0, 0, sprite.width, sprite.height);
@@ -187,12 +198,18 @@ async function updateLayerViewer($layerViewer: HTMLElement, zip: JSZip, subdir: 
               sprite.left, sprite.top, sprite.width, sprite.height, // source rect
               0, 0, sprite.width, sprite.height, // dest rect
           );
+
           const $spriteImg = new Image();
+          $spriteImg.classList.add('grid-item');
+          const [nicerWidth, nicerHeight] = nicerImageSize([sprite.width, sprite.height]);
+          $spriteImg.width = nicerWidth;
+          $spriteImg.height = nicerHeight;
           $clippingCanvas.toBlob((blob) => {
             if (blob) setImageToObjectUrl($spriteImg, blob);
           });
 
-          $layerViewer.querySelectorAll('.layer-viewer-scripts').item(script.layer).appendChild($spriteImg);
+          $layerViewer.querySelectorAll('.layer-viewer-scripts .packery-container').item(script.layer).appendChild($spriteImg);
+          layerPackers[script.layer!].appended($spriteImg);
         }
       }
     });
@@ -206,4 +223,17 @@ async function updateLayerViewer($layerViewer: HTMLElement, zip: JSZip, subdir: 
 function setImageToObjectUrl($img: HTMLImageElement, object: Blob) {
   $img.src = URL.createObjectURL(object);
   $img.addEventListener('load', () => URL.revokeObjectURL($img.src));
+}
+
+function nicerImageSize([w, h]: [number, number]): [number, number] {
+  // shrink the image down to a maximum dimension of 200 px, unless this would cause the other dimension
+  // to be smaller than 16 px
+  if (Math.min(w, h) < 16) {
+    return [w, h];
+  }
+  let oversizeFactor = Math.max(1, w/150, h/150);
+  if (Math.min(w, h) / oversizeFactor < 16) {
+    oversizeFactor = Math.min(1, w/16, h/16);
+  }
+  return [w / oversizeFactor, h / oversizeFactor];
 }
