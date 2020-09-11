@@ -1,3 +1,5 @@
+@import "defs.less";
+
 .stats-table {
   resize: vertical;
   overflow: hidden;
@@ -33,7 +35,24 @@
   tr:first-child { text-align: center; }
   tr:not(:first-child) > :first-child { text-align: left; }
   tr:not(:first-child) td:not(:first-child) {
-    font-family: Monaco, Bitstream Vera Sans Mono, Lucida Console, Terminal, monospace;
+    font-family: @monospace;
     text-align: right;
   }
+}
+
+// resizable box
+.layer-viewer-scripts {
+  width: 100%;
+  resize: none;
+  height: auto;
+  overflow-x: hidden;
+
+  &.overflow {
+    overflow-y: scroll;
+    // height: 400px;  // initial height set by JS instead
+    resize: vertical;
+  }
+  border-radius: 7px;
+  background-color: #221f31a0;
+  padding: 7px;
 }
