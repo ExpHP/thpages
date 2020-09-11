@@ -48,3 +48,18 @@ function fromEntries<K extends string | number | symbol, V>(entries: [K, V][]): 
       {} as SafeRecord<K, V>,
   );
 }
+
+export async function readUploadedFile(file: File, mode: 'binary'): Promise<ArrayBuffer>;
+export async function readUploadedFile(file: File, mode?: 'text'): Promise<string>;
+export async function readUploadedFile(file: File, mode?: 'binary' | 'text'): Promise<ArrayBuffer | string> {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as any);
+    reader.onerror = reject;
+    if (mode === 'binary') {
+      reader.readAsArrayBuffer(file);
+    } else {
+      reader.readAsText(file);
+    }
+  });
+}

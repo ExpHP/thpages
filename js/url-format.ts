@@ -1,6 +1,6 @@
 // handles format of URLs on the site
 
-import {Game, parseGame} from "./game-names";
+import {Game, validateGame} from "./game-names";
 
 // This is effectively an SPA so we put basically everything in the hash.
 // After the hash is a &-separated list of key=value pairs, much like the normal '?' querystring.
@@ -35,7 +35,7 @@ function decodeComponent(s: string): string {
 
 /** Get the game most strongly associated with a query. */
 export function queryGame(q: Query): Game {
-  return parseGame(q.g || '') || DEFAULT_GAME;
+  return validateGame(q.g || '') || DEFAULT_GAME;
 }
 
 export function parseQuery(s: string): Query {

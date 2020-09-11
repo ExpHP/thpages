@@ -5,6 +5,7 @@
     "allowUnusedLabels": false,
     "declaration": true,
     "forceConsistentCasingInFileNames": true,
+    "esModuleInterop": true,
     "lib": ["dom", "dom.iterable", "es2018"],
     "module": "commonjs",
     "noEmitOnError": true,

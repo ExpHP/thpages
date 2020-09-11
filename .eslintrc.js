@@ -22,6 +22,7 @@ module.exports = {
   "rules": {
     "require-jsdoc": "off",
     "max-len": "off",
+    "padded-blocks": "off",
     "no-unused-vars": "warn",
     "quotes": "off", // bit harsh for an inherited codebase
     "operator-linebreak": ["error", "before"],

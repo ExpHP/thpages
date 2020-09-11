@@ -1,7 +1,7 @@
 import {Converter, ShowdownExtension} from 'showdown';
 import {setWindowTitle, highlightCode, $scriptContent} from "./main";
 import {getRefHtml} from "./ref";
-import {gameData, parseGame, GameData} from './game-names';
+import {gameData, validateGame, GameData} from './game-names';
 import {parseQuery, queryUrl} from './url-format';
 import dedent from "./lib/dedent";
 
@@ -67,7 +67,7 @@ function showdownExt() {
   };
 
   const withGame = (gameStr: string, fallback: string, func: (g: GameData) => string) => {
-    const game = parseGame(gameStr);
+    const game = validateGame(gameStr);
     if (game) {
       return func(gameData(game));
     } else {

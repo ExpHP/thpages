@@ -54,7 +54,7 @@ function getPossiblyCachedContentMd(page, clb, err) {
     return clb(pageMarkdownCache[page]);
   }
   const xhr = new window.XMLHttpRequest();
-  xhr.open("GET", "content/"+page+".md");
+  xhr.open("GET", `content/${page}.md`);
   xhr.onreadystatechange = function(...args) {
     if (this.readyState == 4) {
       if (this.status == 200) {
@@ -161,7 +161,7 @@ function resize() {
     // make it actually usable with horizontal orientation
     let w = "device-width";
     if (window.screen.height < 450) w = "900px";
-    document.querySelector("#viewport").setAttribute("content", "width="+w+", user-scalable=no");
+    document.querySelector("#viewport").setAttribute("content", `width=${w}, user-scalable=no`);
   }
 }
 

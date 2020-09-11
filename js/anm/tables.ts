@@ -8,6 +8,7 @@ import {getCurrentAnmmaps} from '../settings';
 import {initStats, buildInsStatsTable, buildVarStatsTable} from './stats';
 import {SUPPORTED_ANM_VERSIONS, GAME_ANM_VERSIONS, ANM_VERSION_DATA, AnmVersion} from './versions';
 import {StrMap, NumMap} from "../util";
+import './layer-viewer';
 
 import {ANM_INS_DATA, ANM_BY_OPCODE, ANM_GROUPS_V8} from './ins-table.js';
 import {ANM_VAR_DATA, ANM_VARS_BY_NUMBER} from './var-table.js';

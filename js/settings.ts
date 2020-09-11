@@ -2,7 +2,8 @@ import {MD} from './markdown';
 import {Eclmap} from './anm/eclmap';
 import dedent from './lib/dedent';
 import {SupportedAnmVersion, SUPPORTED_ANM_VERSIONS, ANM_VERSION_DATA} from './anm/versions';
-import {readFileSync} from "fs";
+import {readFileSync} from 'fs';
+import {readUploadedFile} from './util';
 
 const LOCAL_STORAGE_KEY_ANMMAP = 'anmmap';
 
@@ -337,13 +338,4 @@ function parseIntegerIndex(str: string) {
   if (Math.abs(n) === Infinity || n !== n || n < 0) throw new Error(`not a non-negative integer: ${str}`);
   if (String(n) !== str) throw new Error(`non-canonical form of number: ${str}`);
   return n;
-}
-
-async function readUploadedFile(file: File) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsText(file);
-  });
 }

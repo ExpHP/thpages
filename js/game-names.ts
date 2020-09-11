@@ -38,10 +38,19 @@ export function allGames() {
   return GAMES.keys();
 }
 
-export function parseGame(s: string): Game | null {
+/** A very strict form of `parseGame` for strings that should already be known to be valid. */
+export function validateGame(s: string): Game | null {
   return GAMES.has(s as Game) ? s as Game : null;
 }
 
 export function gameData(key: Game) {
   return GAMES.get(key)!;
+}
+
+/** Reads game strings that may have been inputted by a user somewhere. Tries to be a bit more liberal in accepting input. */
+export function parseGame(s: string): Game | null {
+  s = s.replace(/^th/i, ''); // e.g. th14
+  s = s.replace(/\./, ''); // e.g. 14.3
+  if (s.length === 1) s = `0${s}`; // e.g. 8
+  return validateGame(s);
 }
