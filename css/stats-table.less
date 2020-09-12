@@ -44,7 +44,7 @@
 .layer-viewer-scripts {
   width: 100%;
   resize: vertical;
-  height: 400px;
+  height: 200px;
   overflow-x: hidden;
   overflow-y: scroll;
 
@@ -53,9 +53,24 @@
     border: solid 1px #11eeee40;
 
     &:hover {
-      transform: scale(1.2, 1.2);
+      transform: scale(1.1, 1.1);
       border: solid 1px #11eeee70;
     }
+  }
+
+  .grid-item.imageless {
+    display: grid;
+    grid-template-rows: 35px 13px 13px;
+    justify-items: center;
+    align-items: center;
+    align-content: center;
+    gap: 5px 0px;
+    width: 80px;
+    height: 80px;
+    font-family: @monospace;
+    .buffer-type { font-size: 35px; }
+    .sprite-size { font-size: 12px; }
+    .anm-name { font-size: 13px; }
   }
 
   // &.overflow {
@@ -63,9 +78,9 @@
   //   overflow-y: scroll;
   //   resize: vertical;
   // }
-  border-radius: 7px;
+  border-radius: 10px;
   background-color: #221f31a0;
-  padding: 7px;
+  padding: 10px;
 
 
 }

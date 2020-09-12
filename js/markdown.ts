@@ -228,10 +228,17 @@ function showdownExt() {
     }),
   };
 
+  // download link with icon
+  const dl = {
+    type: "lang",
+    regex: /\[dl=([^\]]+)\]\(([^)]+)\)/g,
+    replace: `<a download class='download' href='$2'>$1</a>`,
+  };
+
   return [
     more, ref, refNotip, headlessTable, code, title, c, tableFootnotes,
     game, gameTh, gameThLong, gameNum, gameLong, script, tip, tipNodeco, wip, weak,
-    footRef, footDef,
+    footRef, footDef, dl,
     gc, // must be after things that use it (e.g. game)
   ];
 }

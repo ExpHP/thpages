@@ -245,4 +245,4 @@ A notable difference in the scripts between TH11 and TH14 is that, in TH11, some
 
 ## How'd you make those images, anyway?
 
-For the curious (and also because I kept screwing it up and had to redo it), I recorded the steps to obtain the relevant screenshots from DDC <a href="./content/anm/img/pipeline-raw-images.zip" download>here (ZIP archive)</a> (also includes the raw, unedited images).
+For the curious (and also because I kept screwing it up and had to redo it), I recorded the steps to obtain the relevant screenshots from DDC [dl=here (ZIP archive)](content/anm/img/pipeline-raw-images.zip) (also includes the raw, unedited images).

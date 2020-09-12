@@ -3,6 +3,7 @@ import {readUploadedFile} from '../util';
 import {parseGame, Game} from '../game-names';
 import {ANM_INS_HANDLERS} from './tables';
 import Packery from 'packery';
+import * as events from 'events';
 
 type AnmSpec = {
   textures: AnmSpecTexture[],
@@ -13,14 +14,15 @@ type AnmSpecScript = {sprite: number | null, layer: number | null};
 type AnmSpecSprite = {texture: number, left: number, top: number, width: number, height: number};
 type AnmSpecTexture = {path: string};
 
-const CONTAINER_HEIGHT_THRESHOLD = 400;
+type Progress = {anmFilesTotal: number, anmFilesDone: number};
 
 (window as any).buildLayerViewer = buildLayerViewer;
 async function buildLayerViewer() {
   const $layerViewer = document.querySelector<HTMLElement>('#layer-viewer-output')!;
   const $fileUpload = document.querySelector<HTMLInputElement>('#layer-viewer-file')!;
-  $fileUpload.addEventListener('change', async () => {
+  $fileUpload.addEventListener('change', async () => await trapErr(async () => {
     if ($fileUpload.files!.length === 0) return;
+    setStatus(`Reading zip file structure...`);
 
     const zipBytes = await readUploadedFile($fileUpload.files![0], 'binary');
     const zip = await JSZip.loadAsync(zipBytes);
@@ -36,14 +38,31 @@ async function buildLayerViewer() {
       throw new Error(`unable to parse game number "${game}"`);
     }
 
+    const specs = zip.file(/spec\.spec/);
+    const progress = {anmFilesDone: 0, anmFilesTotal: specs.length};
+    setStatusFromProgress(progress);
+
     const layerPackers: Packery[] = [];
-    for (const entry of zip.file(/spec\.spec/)) {
+    for (const entry of specs) {
       const text = await entry.async('text');
       const parsed = parseAnmSpec(text, game, entry.name);
       const subdir = entry.name.split('/')[0];
-      updateLayerViewer($layerViewer, layerPackers, zip, subdir, parsed);
+      addAnmFileToLayerViewer($layerViewer, layerPackers, zip, subdir, parsed, progress);
     }
-  });
+  }));
+}
+
+async function trapErr<T>(cb: () => Promise<T>): Promise<T> {
+  try {
+    return await cb();
+  } catch (e) {
+    const $error = document.querySelector<HTMLElement>('#layer-viewer-error')!;
+    if ($error.style.display === 'none') {
+      $error.innerText = `An error occurred:\n\n${e}`;
+      $error.style.display = 'block';
+    }
+    throw e;
+  }
 }
 
 // This is a really dumb parser that's easily fooled. Please be nice to it.
@@ -135,7 +154,7 @@ function parseAnmSpec(text: string, game: Game, filename?: string): AnmSpec {
   return out;
 }
 
-async function updateLayerViewer($layerViewer: HTMLElement, layerPackers: Packery[], zip: JSZip, subdir: string, specData: AnmSpec) {
+async function addAnmFileToLayerViewer($layerViewer: HTMLElement, layerPackers: Packery[], zip: JSZip, subdir: string, specData: AnmSpec, progress: Progress) {
   // Add boxes for new layers as needed.
   const maxLayerInFile = specData.scripts.map((script) => script.layer || 0).reduce((a, b) => Math.max(a, b));
   while (layerPackers.length <= maxLayerInFile) {
@@ -158,64 +177,92 @@ async function updateLayerViewer($layerViewer: HTMLElement, layerPackers: Packer
   }
 
   // A canvas used to help extract the region of a texture corresponding to a sprite.
-
   const $clippingCanvas = document.createElement('canvas');
   const clippingCtx = $clippingCanvas.getContext('2d');
   if (!clippingCtx) throw new Error(`Failed to create 2D rendering context`);
-  // Do one texture at a time so that the user starts seeing things happen immediately.
+
   for (let textureI = 0; textureI < specData.textures.length; textureI++) {
-    const {path} = specData.textures[textureI];
+    const texture = specData.textures[textureI];
+    const {path} = texture;
+
+    let getGridItem: (sprite: AnmSpecSprite) => Promise<HTMLElement>;
     if (path.startsWith('@')) {
-      // TODO
-      continue;
-    }
-
-    const file = zip.file(`${subdir}/${path}`);
-    if (!file) {
-      throw new Error(`Could not find image file "${path}" in archive`);
-    }
-    const $textureImg = new Image();
-    const textureBytes = await file.async('arraybuffer');
-    setImageToObjectUrl($textureImg, new Blob([textureBytes], {type: 'image/png'}));
-
-    $textureImg.addEventListener('load', () => {
-      // We haven't collected scripts for a texture ahead of time so just filter the list.
-      // This technically leads to quadratic complexity but no anm file in any game has THAT many textures...
-      for (const script of specData.scripts) {
-        if (!script.layer) continue;
-        if (!script.sprite) continue;
-        const sprite = specData.sprites[script.sprite];
-        if (sprite.texture === textureI) {
-          // create a new <img> whose image is the texture cropped to this sprite.
-          const $clippingCanvas = document.createElement('canvas');
-          const clippingCtx = $clippingCanvas.getContext('2d');
-          if (!clippingCtx) throw new Error(`Failed to create 2D rendering context`);
-          $clippingCanvas.width = sprite.width;
-          $clippingCanvas.height = sprite.height;
-          clippingCtx.clearRect(0, 0, sprite.width, sprite.height);
-          clippingCtx.drawImage(
-              $textureImg,
-              sprite.left, sprite.top, sprite.width, sprite.height, // source rect
-              0, 0, sprite.width, sprite.height, // dest rect
-          );
-
-          const $spriteImg = new Image();
-          $spriteImg.classList.add('grid-item');
-          const [nicerWidth, nicerHeight] = nicerImageSize([sprite.width, sprite.height]);
-          $spriteImg.width = nicerWidth;
-          $spriteImg.height = nicerHeight;
-          $clippingCanvas.toBlob((blob) => {
-            if (blob) setImageToObjectUrl($spriteImg, blob);
-          });
-
-          $layerViewer.querySelectorAll('.layer-viewer-scripts .packery-container').item(script.layer).appendChild($spriteImg);
-          layerPackers[script.layer!].appended($spriteImg);
-        }
+      getGridItem = (sprite) => makeGridItemForDynamicSprite(subdir, texture, sprite);
+    } else {
+      const file = zip.file(`${subdir}/${path}`);
+      if (!file) {
+        throw new Error(`Could not find image file "${path}" in archive`);
       }
-    });
+      const $textureImg = new Image();
+      const textureBytes = await file.async('arraybuffer');
+      setImageToObjectUrl($textureImg, new Blob([textureBytes], {type: 'image/png'}));
+
+      // FIXME: what's the idiomatic conversion from ErrorEvent to Error? ev.error is experimental...
+      const emitter = new events.EventEmitter();
+      $textureImg.addEventListener('load', () => emitter.emit('load'));
+      $textureImg.addEventListener('error', (ev) => emitter.emit('error', new Error(ev.message)));
+      await events.once(emitter, 'load');
+
+      getGridItem = (sprite) => makeGridItemForImageSprite($textureImg, sprite);
+    }
+
+    // We haven't collected scripts for a texture ahead of time so just filter the list.
+    // This technically leads to quadratic complexity but no anm file in any game has THAT many textures...
+    for (const script of specData.scripts) {
+      if (!script.layer) continue;
+      if (!script.sprite) continue;
+      const sprite = specData.sprites[script.sprite];
+      if (sprite.texture === textureI) {
+        // (TODO: consider getting all of these started and then using Promise.all)
+        const $gridItem = await getGridItem(sprite);
+        $gridItem.classList.add('grid-item');
+
+        $layerViewer.querySelectorAll('.layer-viewer-scripts .packery-container').item(script.layer).appendChild($gridItem);
+        layerPackers[script.layer!].appended($gridItem);
+      }
+    }
   }
+  // Because we awaited all promises we know everything for this anm file is done.
+  progress.anmFilesDone += 1;
+  setStatusFromProgress(progress);
 }
 
+async function makeGridItemForImageSprite($textureImg: HTMLImageElement, sprite: AnmSpecSprite) {
+  // create a new <img> whose image is the texture cropped to this sprite.
+  const $clippingCanvas = document.createElement('canvas');
+  const clippingCtx = $clippingCanvas.getContext('2d');
+  if (!clippingCtx) throw new Error(`Failed to create 2D rendering context`);
+  $clippingCanvas.width = sprite.width;
+  $clippingCanvas.height = sprite.height;
+  clippingCtx.clearRect(0, 0, sprite.width, sprite.height);
+  clippingCtx.drawImage(
+      $textureImg,
+      sprite.left, sprite.top, sprite.width, sprite.height, // source rect
+      0, 0, sprite.width, sprite.height, // dest rect
+  );
+
+  const $spriteImg = new Image();
+  const [nicerWidth, nicerHeight] = nicerImageSize([sprite.width, sprite.height]);
+  $spriteImg.width = nicerWidth;
+  $spriteImg.height = nicerHeight;
+  const blob = await canvasToBlobAsync($clippingCanvas);
+  setImageToObjectUrl($spriteImg, blob);
+
+  return $spriteImg;
+}
+
+async function makeGridItemForDynamicSprite(anmName: string, texture: AnmSpecTexture, sprite: AnmSpecSprite) {
+  const $gridItem = document.createElement('div');
+  $gridItem.classList.add('imageless');
+
+  $gridItem.innerHTML = /* html */`
+    <div class='buffer-type'>${texture.path}</div>
+    <div class='sprite-size'>${sprite.width}×${sprite.height}</div>
+    <div class='anm-name'>${anmName}</div>
+  `;
+
+  return $gridItem;
+}
 // FIXME: Due to SPA design, this probably still leaks memory if the user navigates to another "page" before
 //        the image loads, but the process of exacerbating this leak is slow so (a) it's difficult to validate the
 //        success of any solution to the problem and (b) the problem will probably never noticeably impact anyone.
@@ -223,6 +270,15 @@ async function updateLayerViewer($layerViewer: HTMLElement, layerPackers: Packer
 function setImageToObjectUrl($img: HTMLImageElement, object: Blob) {
   $img.src = URL.createObjectURL(object);
   $img.addEventListener('load', () => URL.revokeObjectURL($img.src));
+}
+
+function setStatus(text: string) {
+  document.getElementById('layer-viewer-status')!.innerText = text;
+}
+
+function setStatusFromProgress({anmFilesDone, anmFilesTotal}: Progress) {
+  const endPunctuation = anmFilesDone === anmFilesTotal ? '!' : '...';
+  setStatus(`Processed ${anmFilesDone} of ${anmFilesTotal} anm files${endPunctuation}`);
 }
 
 function nicerImageSize([w, h]: [number, number]): [number, number] {
@@ -236,4 +292,13 @@ function nicerImageSize([w, h]: [number, number]): [number, number] {
     oversizeFactor = Math.min(1, w/16, h/16);
   }
   return [w / oversizeFactor, h / oversizeFactor];
+}
+
+function canvasToBlobAsync($canvas: HTMLCanvasElement) {
+  return new Promise<Blob>((resolve, reject) => {
+    $canvas.toBlob((blob) => {
+      if (blob) resolve(blob);
+      else reject(new Error('toBlob() produced null!'));
+    });
+  });
 }

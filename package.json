@@ -18,6 +18,7 @@
     "eslint": "^7.6.0",
     "eslint-config-google": "^0.14.0",
     "eslint-plugin-import": "^2.22.0",
+    "events": "^3.2.0",
     "jszip": "^3.5.0",
     "less": "^3.12.2",
     "packery": "^2.1.2",

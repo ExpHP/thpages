@@ -1,49 +1,26 @@
 [title=UNDER CONSTRUCTION]
-# layer viewer
+# Layer Viewer
 
-<!-- <style>
-    * { box-sizing: border-box; }
+This page can show you can show you all of the sprites that use each layer in a Touhou game.
 
-body { font-family: sans-serif; }
+1. Make sure thtk binaries (particularly `thdat` and `thanm`) are available on your PATH.  Even as of September 2020, the latest release of thtk is not recent enough; you will need a development version of thanm from the [`thanm-new-spec-format`](https://github.com/thpatch/thtk/tree/thanm-new-spec-format) branch.  Windows builds of this branch are available in the `#thtk-builds` channel on the [ZUNcode Discord](https://discord.gg/fvPJvHJ). (commit `b7321bb` should do fine)
+2. Use [dl=this python script](content/anm/make-layer-viewer-zip.py) to repackage the anm files from `thXX.dat` into a zip file:
+   ```
+   py -3 make-layer-viewer-zip.py --game 125 th125.dat -o th125-anms.zip
+   ```
+3. Click the button below and select the zip you created.
+4. The page should begin to populate.
 
-/* ---- grid ---- */
-
-.outer {
-  background: #DDD;
-    width: 100%;
-  resize: vertical;
-  height: 400px;
-  overflow-x: hidden;
-  overflow-y: scroll;
-}
-/* ---- .grid-item ---- */
-
-.grid-item {
-  background: #C09;
-  border: 2px solid hsla(0, 0%, 0%, 0.5);
-}
-button { font-size: 20px; }
-
-</style> -->
 
 <input type='file' id='layer-viewer-file' accept='.zip'>
 
+---
+
+<h2 id='layer-viewer-status'>No zip file loaded</h2>
+
+<div id='layer-viewer-error' style='display: none;'></div>
+
 <div id='layer-viewer-output'></div>
-
-<!-- <h1>Packery - appended, vanilla JS</h1>
-<p><button class="append-button">Append items</button></p>
-<div class='outer'><div class="grid"></div> -->
-<!--
-  <div class="grid-item grid-item--width2"></div>
-  <div class="grid-item grid-item--height2"></div>
-  <div class="grid-item"></div>
-  <div class="grid-item"></div>
-  <div class="grid-item grid-item--height2"></div>
--->
-</div>
-
-
-
 
 [script]
 onContentLoad(buildLayerViewer);
