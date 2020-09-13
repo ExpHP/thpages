@@ -1,7 +1,7 @@
 // Updated since the official one on NPM is extremely out of date
 
 declare module 'packery' {
-  declare interface PackeryOptions
+  interface PackeryOptions
   {
     /**
     * [itemSelector Specifies which child elements to be used as item elements. Setting itemSelector is always recommended. itemSelector is useful to exclude sizing elements]

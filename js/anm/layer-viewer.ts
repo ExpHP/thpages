@@ -3,10 +3,14 @@ import {readUploadedFile} from '../util';
 import {parseGame, Game} from '../game-names';
 import {ANM_INS_HANDLERS} from './tables';
 import {globalTips, Tip} from '../tips';
-import JSZip from 'jszip';
-import Packery from 'packery';
 import * as events from 'events';
 import {PrefixResolver} from '../resolver';
+import type JSZip from 'jszip';
+import type Packery from 'packery';
+const BigImports = {
+  JSZip: import('jszip'),
+  Packery: import('packery') as unknown as Promise<typeof Packery>,
+};
 
 type AnmSpec = {
   textures: AnmSpecTexture[],
@@ -88,7 +92,7 @@ async function buildLayerViewer() {
     return async () => await trapErr({status, cancel}, async () => await cancel.scopeAsync(async () => {
       if ($fileUpload.files!.length === 0) return;
       const zipBytes = await readUploadedFile($fileUpload.files![0], 'binary');
-      const zip = await JSZip.loadAsync(zipBytes);
+      const zip = await (await BigImports.JSZip).loadAsync(zipBytes);
       cancel.check();
       status.set('working', `Reading zip file structure...`);
 
@@ -270,6 +274,7 @@ async function addAnmFileToLayerViewer(
     subdir: string, // subdir of zip to load images from.  Also anm basename
     specData: AnmSpec,
 ) {
+  const Packery = await BigImports.Packery;
   const {progress, status, cancel} = helpers;
   const anmBasename = subdir;
 
