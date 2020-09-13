@@ -4,6 +4,6 @@ import {init} from "./main.js";
 // that would require another module to have finished executing; this is so that we
 // can freely use circular imports.
 //
-// Calling this function begins doing all of that stuff that requires eveerything to
+// Calling this function begins doing all of that stuff that requires everything to
 // be fully imported.
 init();

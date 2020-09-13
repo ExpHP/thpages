@@ -1,61 +1,161 @@
-import JSZip from 'jszip';
+import dedent from '../lib/dedent';
 import {readUploadedFile} from '../util';
 import {parseGame, Game} from '../game-names';
 import {ANM_INS_HANDLERS} from './tables';
+import {globalTips, Tip} from '../tips';
+import JSZip from 'jszip';
 import Packery from 'packery';
 import * as events from 'events';
+import {PrefixResolver} from '../resolver';
 
 type AnmSpec = {
   textures: AnmSpecTexture[],
   sprites: AnmSpecSprite[],
   scripts: AnmSpecScript[],
 };
-type AnmSpecScript = {sprite: number | null, layer: number | null};
-type AnmSpecSprite = {texture: number, left: number, top: number, width: number, height: number};
-type AnmSpecTexture = {path: string};
+type AnmSpecScript = {indexInFile: number, sprite: number | null, layer: number | null};
+type AnmSpecSprite = {indexInFile: number, texture: number, left: number, top: number, width: number, height: number};
+type AnmSpecTexture = {indexInFile: number, path: string};
 
 type Progress = {anmFilesTotal: number, anmFilesDone: number};
+
+/** Helper used to cancel async operations on an error. */
+class Cancel {
+  public cancelled: boolean;
+  public Error: new () => Error;
+  constructor() {
+    class CancelError extends Error {}
+    this.cancelled = false;
+    this.Error = CancelError;
+  }
+  public cancel() {
+    this.cancelled = true;
+  }
+  public check() {
+    if (this.cancelled) throw new this.Error();
+  }
+  public scope<T>(cb: () => T): T | null {
+    try {
+      return cb();
+    } catch (e) {
+      if (e instanceof this.Error) return null;
+      throw e;
+    }
+  }
+  public async scopeAsync<T>(cb: () => Promise<T>): Promise<T | null> {
+    try {
+      return await cb();
+    } catch (e) {
+      if (e instanceof this.Error) return null;
+      throw e;
+    }
+  }
+}
+
+class Status {
+  private $elem;
+  constructor($elem: HTMLElement) {
+    this.$elem = $elem;
+  }
+  set(cssClass: 'idle' | 'working', text: string) {
+    this.$elem.innerText = text;
+    this.$elem.classList.remove('idle', 'working');
+    this.$elem.classList.add(cssClass);
+  }
+  setFromProgress({anmFilesDone, anmFilesTotal}: Progress) {
+    const endPunctuation = anmFilesDone === anmFilesTotal ? '!' : '...';
+    const cssClass = anmFilesDone === anmFilesTotal ? 'idle' : 'working';
+    this.set(cssClass, `Processed ${anmFilesDone} of ${anmFilesTotal} anm files${endPunctuation}`);
+  }
+}
+
+type Helpers = {status: Status, progress: Progress, cancel: Cancel};
+
+// This global could easily be replaced with a local variable, but I've deliberately made it global
+// to emphasize the fact that multiple cannot exist. (they would both try to register for the 'layer-viewer' prefix)
+/** Resolves tips for the layer viewers. Tip keys look like `layer-viewer:stg5enm:5` (last number is script). */
+let LVIEWER_TIP_RESOLVER = new PrefixResolver<Tip>();
 
 (window as any).buildLayerViewer = buildLayerViewer;
 async function buildLayerViewer() {
   const $layerViewer = document.querySelector<HTMLElement>('#layer-viewer-output')!;
   const $fileUpload = document.querySelector<HTMLInputElement>('#layer-viewer-file')!;
-  $fileUpload.addEventListener('change', async () => await trapErr(async () => {
-    if ($fileUpload.files!.length === 0) return;
-    setStatus(`Reading zip file structure...`);
+  const status = new Status(document.querySelector<HTMLElement>('#layer-viewer-status')!);
+  status.set('idle', 'No zip file loaded');
 
-    const zipBytes = await readUploadedFile($fileUpload.files![0], 'binary');
-    const zip = await JSZip.loadAsync(zipBytes);
+  $fileUpload.addEventListener('change', (() => {
+    const cancel = new Cancel();
+    return async () => await trapErr({status, cancel}, async () => await cancel.scopeAsync(async () => {
+      if ($fileUpload.files!.length === 0) return;
+      const zipBytes = await readUploadedFile($fileUpload.files![0], 'binary');
+      const zip = await JSZip.loadAsync(zipBytes);
+      cancel.check();
+      status.set('working', `Reading zip file structure...`);
 
-    const entry = zip.file('game.txt');
-    if (!entry) {
-      throw new Error('missing game.txt in archive');
-    }
-
-    const gameStr = (await entry.async('text')).trim();
-    const game = parseGame(gameStr);
-    if (game === null) {
-      throw new Error(`unable to parse game number "${game}"`);
-    }
-
-    const specs = zip.file(/spec\.spec/);
-    const progress = {anmFilesDone: 0, anmFilesTotal: specs.length};
-    setStatusFromProgress(progress);
-
-    const layerPackers: Packery[] = [];
-    for (const entry of specs) {
-      const text = await entry.async('text');
-      const parsed = parseAnmSpec(text, game, entry.name);
-      const subdir = entry.name.split('/')[0];
-      addAnmFileToLayerViewer($layerViewer, layerPackers, zip, subdir, parsed, progress);
-    }
-  }));
+      await runLayerViewer(status, cancel, zip, $layerViewer);
+    }));
+  })());
 }
 
-async function trapErr<T>(cb: () => Promise<T>): Promise<T> {
+async function runLayerViewer(status: Status, cancel: Cancel, zip: JSZip, $layerViewer: HTMLElement): Promise<void> {
+  // clear any existing stuff
+  $layerViewer.innerHTML = '';
+  LVIEWER_TIP_RESOLVER = new PrefixResolver();
+  globalTips.registerPrefix('layer-viewer', LVIEWER_TIP_RESOLVER);
+
+  const specZipObjs = zip.file(/spec\.spec/);
+  const progress = {anmFilesDone: 0, anmFilesTotal: specZipObjs.length};
+  status.setFromProgress(progress);
+
+  const helpers = {status, cancel, progress};
+  const game = await readGameFromZip(helpers, zip);
+
+  const layerPackers: Packery[] = [];
+  const promises = specZipObjs.map(async (specZipObj) => {
+    const text = await specZipObj.async('text');
+    cancel.check();
+    const parsedSpec = parseAnmSpec(text, game, specZipObj.name);
+    const subdir = specZipObj.name.split('/')[0];
+    const anmBasename = subdir;
+
+    LVIEWER_TIP_RESOLVER.registerPrefix(anmBasename, (scriptNumStr) => {
+      const script = parsedSpec.scripts[Number.parseInt(scriptNumStr)];
+      return generateTip(anmBasename, script, parsedSpec);
+    });
+
+    return addAnmFileToLayerViewer(helpers, $layerViewer, layerPackers, zip, subdir, parsedSpec);
+  });
+
+  // Work is now occurring on all anm files concurrently.
+  // To properly trap errors though we need to await everything.
+  await Promise.all(promises);
+}
+
+async function readGameFromZip({cancel}: Helpers, zip: JSZip) {
+  const gameZipObj = zip.file('game.txt');
+  if (!gameZipObj) {
+    throw new Error('missing game.txt in archive');
+  }
+
+  const gameStr = (await gameZipObj.async('text')).trim();
+  const game = parseGame(gameStr);
+  cancel.check();
+  if (game === null) {
+    throw new Error(`unable to parse game number "${game}"`);
+  }
+
+  return game;
+}
+
+async function trapErr(
+    {status, cancel}: Omit<Helpers, 'progress'>,
+    cb: () => Promise<any>,
+): Promise<void> {
   try {
     return await cb();
   } catch (e) {
+    status.set('idle', 'Operation cancelled due to an error.');
+    cancel.cancel();
     const $error = document.querySelector<HTMLElement>('#layer-viewer-error')!;
     if ($error.style.display === 'none') {
       $error.innerText = `An error occurred:\n\n${e}`;
@@ -84,7 +184,7 @@ function parseAnmSpec(text: string, game: Game, filename?: string): AnmSpec {
 
   const lines = text.split('\n');
   const out: AnmSpec = {textures: [], sprites: [], scripts: []};
-  for (let lineI=0; lineI < lines.length; lineI++) {
+  for (let lineI = 0; lineI < lines.length; lineI++) {
     const line = lines[lineI];
     const lineErr = (msg: string) => new Error(`${filename || '<unknown>'}:${lineI}: ${msg}`);
 
@@ -108,11 +208,11 @@ function parseAnmSpec(text: string, game: Game, filename?: string): AnmSpec {
           if (state.path === null) {
             throw lineErr(`No image filepath found in entry!`);
           }
-          out.textures.push({path: state.path});
+          out.textures.push({indexInFile: out.textures.length, path: state.path});
           state = {state: null};
           break;
         case 'script':
-          out.scripts.push({sprite: state.sprite, layer: state.layer});
+          out.scripts.push({indexInFile: out.scripts.length, sprite: state.sprite, layer: state.layer});
           state = {state: null};
           break;
       }
@@ -132,6 +232,7 @@ function parseAnmSpec(text: string, game: Game, filename?: string): AnmSpec {
         // the syntax is *almost* valid json
         const json = JSON.parse(match[2].replace(/(\w+):/g, '"$1":'));
         out.sprites.push({
+          indexInFile: out.sprites.length,
           texture: out.textures.length,
           left: json.x, top: json.y,
           width: json.w, height: json.h,
@@ -154,7 +255,20 @@ function parseAnmSpec(text: string, game: Game, filename?: string): AnmSpec {
   return out;
 }
 
-async function addAnmFileToLayerViewer($layerViewer: HTMLElement, layerPackers: Packery[], zip: JSZip, subdir: string, specData: AnmSpec, progress: Progress) {
+/** Add all images from an ANM file to the layer viewer. */
+async function addAnmFileToLayerViewer(
+    helpers: Helpers,
+    $layerViewer: HTMLElement,
+    layerPackers: Packery[],
+    zip: JSZip,
+    subdir: string, // subdir of zip to load images from.  Also anm basename
+    specData: AnmSpec,
+) {
+  const {progress, status, cancel} = helpers;
+  const anmBasename = subdir;
+
+  cancel.check();
+
   // Add boxes for new layers as needed.
   const maxLayerInFile = specData.scripts.map((script) => script.layer || 0).reduce((a, b) => Math.max(a, b));
   while (layerPackers.length <= maxLayerInFile) {
@@ -176,13 +290,7 @@ async function addAnmFileToLayerViewer($layerViewer: HTMLElement, layerPackers: 
     layerPackers.push(new Packery($inner, {itemSelector: '.grid-item', gutter: 4}));
   }
 
-  // A canvas used to help extract the region of a texture corresponding to a sprite.
-  const $clippingCanvas = document.createElement('canvas');
-  const clippingCtx = $clippingCanvas.getContext('2d');
-  if (!clippingCtx) throw new Error(`Failed to create 2D rendering context`);
-
-  for (let textureI = 0; textureI < specData.textures.length; textureI++) {
-    const texture = specData.textures[textureI];
+  for (const texture of specData.textures) {
     const {path} = texture;
 
     let getGridItem: (sprite: AnmSpecSprite) => Promise<HTMLElement>;
@@ -197,11 +305,8 @@ async function addAnmFileToLayerViewer($layerViewer: HTMLElement, layerPackers: 
       const textureBytes = await file.async('arraybuffer');
       setImageToObjectUrl($textureImg, new Blob([textureBytes], {type: 'image/png'}));
 
-      // FIXME: what's the idiomatic conversion from ErrorEvent to Error? ev.error is experimental...
-      const emitter = new events.EventEmitter();
-      $textureImg.addEventListener('load', () => emitter.emit('load'));
-      $textureImg.addEventListener('error', (ev) => emitter.emit('error', new Error(ev.message)));
-      await events.once(emitter, 'load');
+      // Wait for the image to load before using it to create sprites.
+      await domOnce($textureImg, 'load');
 
       getGridItem = (sprite) => makeGridItemForImageSprite($textureImg, sprite);
     }
@@ -212,22 +317,32 @@ async function addAnmFileToLayerViewer($layerViewer: HTMLElement, layerPackers: 
       if (!script.layer) continue;
       if (!script.sprite) continue;
       const sprite = specData.sprites[script.sprite];
-      if (sprite.texture === textureI) {
+      if (sprite.texture === texture.indexInFile) {
         // (TODO: consider getting all of these started and then using Promise.all)
         const $gridItem = await getGridItem(sprite);
         $gridItem.classList.add('grid-item');
+        $gridItem.dataset.tipId = `layer-viewer:${anmBasename}:${script.indexInFile}`;
+        cancel.check();
 
         $layerViewer.querySelectorAll('.layer-viewer-scripts .packery-container').item(script.layer).appendChild($gridItem);
         layerPackers[script.layer!].appended($gridItem);
       }
     }
   }
+  cancel.check();
   // Because we awaited all promises we know everything for this anm file is done.
   progress.anmFilesDone += 1;
-  setStatusFromProgress(progress);
+  status.setFromProgress(progress);
 }
 
 async function makeGridItemForImageSprite($textureImg: HTMLImageElement, sprite: AnmSpecSprite) {
+  if (sprite.width === 0 || sprite.height === 0) {
+    const $div = document.createElement('div');
+    $div.style.width = '16px';
+    $div.style.height = '16px';
+    return $div;
+  }
+
   // create a new <img> whose image is the texture cropped to this sprite.
   const $clippingCanvas = document.createElement('canvas');
   const clippingCtx = $clippingCanvas.getContext('2d');
@@ -245,10 +360,54 @@ async function makeGridItemForImageSprite($textureImg: HTMLImageElement, sprite:
   const [nicerWidth, nicerHeight] = nicerImageSize([sprite.width, sprite.height]);
   $spriteImg.width = nicerWidth;
   $spriteImg.height = nicerHeight;
-  const blob = await canvasToBlobAsync($clippingCanvas);
-  setImageToObjectUrl($spriteImg, blob);
+  try {
+    const blob = await canvasToBlobAsync($clippingCanvas);
+    setImageToObjectUrl($spriteImg, blob);
+  } catch (e) {
+    console.error(sprite);
+    throw e;
+  }
 
   return $spriteImg;
+}
+
+/**
+ * Async-ifies an HTML DOM event.
+ *
+ * E.g. `await domOnce(elem, 'click')` will wait for a single `'click'` event to occur.
+ * During this time, an `error` event will be mapped to `Promise.reject`; this is used by some
+ * HTML elements like `<img>`.
+ **/
+async function domOnce($elem: HTMLElement, type: string) {
+  const emitter = new events.EventEmitter();
+  const onerror = (ev: ErrorEvent) => {
+    $elem.removeEventListener('error', onerror);
+    // FIXME: what's the idiomatic conversion from ErrorEvent to Error? ev.error is experimental...
+    emitter.emit('error', new Error(ev.message));
+  };
+  const onevent = () => {
+    $elem.removeEventListener('error', onerror);
+    emitter.emit('trigger');
+  };
+  $elem.addEventListener(type, onevent);
+  $elem.addEventListener('error', onerror);
+  await events.once(emitter, 'trigger');
+}
+
+function generateTip(anmName: string, script: AnmSpecScript, anm: AnmSpec): Tip {
+  const scriptI: number = script.indexInFile;
+  const spriteI: number = script.sprite!;
+  const sprite = anm.sprites[spriteI];
+  return {
+    contents: dedent(`
+      <strong>${anmName}.anm</strong><br/>
+      entry${sprite.texture}<br/>
+      sprite${spriteI}<br/>
+      script${scriptI}<br/>
+      ${sprite.width}×${sprite.height}
+    `),
+    omittedInfo: false,
+  };
 }
 
 async function makeGridItemForDynamicSprite(anmName: string, texture: AnmSpecTexture, sprite: AnmSpecSprite) {
@@ -263,6 +422,7 @@ async function makeGridItemForDynamicSprite(anmName: string, texture: AnmSpecTex
 
   return $gridItem;
 }
+
 // FIXME: Due to SPA design, this probably still leaks memory if the user navigates to another "page" before
 //        the image loads, but the process of exacerbating this leak is slow so (a) it's difficult to validate the
 //        success of any solution to the problem and (b) the problem will probably never noticeably impact anyone.
@@ -270,15 +430,6 @@ async function makeGridItemForDynamicSprite(anmName: string, texture: AnmSpecTex
 function setImageToObjectUrl($img: HTMLImageElement, object: Blob) {
   $img.src = URL.createObjectURL(object);
   $img.addEventListener('load', () => URL.revokeObjectURL($img.src));
-}
-
-function setStatus(text: string) {
-  document.getElementById('layer-viewer-status')!.innerText = text;
-}
-
-function setStatusFromProgress({anmFilesDone, anmFilesTotal}: Progress) {
-  const endPunctuation = anmFilesDone === anmFilesTotal ? '!' : '...';
-  setStatus(`Processed ${anmFilesDone} of ${anmFilesTotal} anm files${endPunctuation}`);
 }
 
 function nicerImageSize([w, h]: [number, number]): [number, number] {

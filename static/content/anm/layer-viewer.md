@@ -16,9 +16,9 @@ This page can show you can show you all of the sprites that use each layer in a 
 
 ---
 
-<h2 id='layer-viewer-status'>No zip file loaded</h2>
+<h2 id='layer-viewer-status'></h2>
 
-<div id='layer-viewer-error' style='display: none;'></div>
+<div id='layer-viewer-error' class='error-box' style='display: none;'></div>
 
 <div id='layer-viewer-output'></div>
 

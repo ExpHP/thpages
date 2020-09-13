@@ -40,7 +40,12 @@
   }
 }
 
-// resizable box
+#layer-viewer-status {
+  &.working {
+    animation: working-pulse 2s infinite;
+  }
+}
+
 .layer-viewer-scripts {
   width: 100%;
   resize: vertical;
@@ -73,14 +78,13 @@
     .anm-name { font-size: 13px; }
   }
 
-  // &.overflow {
-  //   overflow-x: hidden;
-  //   overflow-y: scroll;
-  //   resize: vertical;
-  // }
   border-radius: 10px;
   background-color: #221f31a0;
   padding: 10px;
+}
 
-
+@keyframes working-pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 0.3; }
+  100% { opacity: 0.6; }
 }
