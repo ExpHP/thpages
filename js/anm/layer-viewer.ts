@@ -15,7 +15,7 @@ type AnmSpec = {
 };
 type AnmSpecScript = {indexInFile: number, sprite: number | null, layer: number | null};
 type AnmSpecSprite = {indexInFile: number, texture: number, left: number, top: number, width: number, height: number};
-type AnmSpecTexture = {indexInFile: number, path: string};
+type AnmSpecTexture = {indexInFile: number, path: string, xOffset: number, yOffset: number};
 
 type Progress = {anmFilesTotal: number, anmFilesDone: number};
 
@@ -169,7 +169,7 @@ async function trapErr(
 function parseAnmSpec(text: string, game: Game, filename?: string): AnmSpec {
   text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
 
-  type EntryState = {state: 'entry', path: string | null};
+  type EntryState = {state: 'entry', path: string | null, xOffset: number, yOffset: number};
   type ScriptState = {state: 'script', layer: number | null, sprite: number | null};
   type NoState = {state: null};
   let state: EntryState | ScriptState | NoState = {state: null};
@@ -192,7 +192,7 @@ function parseAnmSpec(text: string, game: Game, filename?: string): AnmSpec {
       if (state.state !== null) {
         throw lineErr(`Expected '}' before 'entry'`);
       }
-      state = {state: 'entry', path: null};
+      state = {state: 'entry', path: null, xOffset: 0, yOffset: 0};
 
     } else if (line.startsWith('script')) {
       if (state.state !== null) {
@@ -204,13 +204,15 @@ function parseAnmSpec(text: string, game: Game, filename?: string): AnmSpec {
       switch (state.state) {
         case null:
           throw lineErr(`Unexpected '}'`);
-        case 'entry':
+        case 'entry': {
           if (state.path === null) {
             throw lineErr(`No image filepath found in entry!`);
           }
-          out.textures.push({indexInFile: out.textures.length, path: state.path});
+          const {path, xOffset, yOffset} = state;
+          out.textures.push({indexInFile: out.textures.length, path, xOffset, yOffset});
           state = {state: null};
           break;
+        }
         case 'script':
           out.scripts.push({indexInFile: out.scripts.length, sprite: state.sprite, layer: state.layer});
           state = {state: null};
@@ -222,6 +224,10 @@ function parseAnmSpec(text: string, game: Game, filename?: string): AnmSpec {
       if (match = line.match(/name: "([^"]+)"/)) {
         // no need to unescape anything because thanm itself doesn't escape anything
         state.path = match[1];
+      } else if (match = line.match(/xOffset: ([0-9]+),/)) {
+        state.xOffset = Number.parseInt(match[1]);
+      } else if (match = line.match(/yOffset: ([0-9]+),/)) {
+        state.yOffset = Number.parseInt(match[1]);
       }
       // we rely on the default, sequential sprite names being used for simplicity
       if (match = line.match(/sprite([0-9]+): *(\{.+\})/)) {
@@ -308,7 +314,7 @@ async function addAnmFileToLayerViewer(
       // Wait for the image to load before using it to create sprites.
       await domOnce($textureImg, 'load');
 
-      getGridItem = (sprite) => makeGridItemForImageSprite($textureImg, sprite);
+      getGridItem = (sprite) => makeGridItemForImageSprite($textureImg, texture, sprite);
     }
 
     // We haven't collected scripts for a texture ahead of time so just filter the list.
@@ -335,7 +341,7 @@ async function addAnmFileToLayerViewer(
   status.setFromProgress(progress);
 }
 
-async function makeGridItemForImageSprite($textureImg: HTMLImageElement, sprite: AnmSpecSprite) {
+async function makeGridItemForImageSprite($textureImg: HTMLImageElement, texture: AnmSpecTexture, sprite: AnmSpecSprite) {
   if (sprite.width === 0 || sprite.height === 0) {
     const $div = document.createElement('div');
     $div.style.width = '16px';
@@ -352,7 +358,9 @@ async function makeGridItemForImageSprite($textureImg: HTMLImageElement, sprite:
   clippingCtx.clearRect(0, 0, sprite.width, sprite.height);
   clippingCtx.drawImage(
       $textureImg,
-      sprite.left, sprite.top, sprite.width, sprite.height, // source rect
+      sprite.left + texture.xOffset, // source rect
+      sprite.top + texture.yOffset,
+      sprite.width, sprite.height,
       0, 0, sprite.width, sprite.height, // dest rect
   );
 

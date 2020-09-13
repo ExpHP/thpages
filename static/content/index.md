@@ -18,8 +18,9 @@ Be sure to check out [Priw8's site](https://priw8.github.io) as a companion for 
 
 ## Updates
 
-[wip]**Current focus:** Taking a bit of a break from the site to work on a crazy patch idea.  In the process though, I think I'm going to end up making a tool that could help make it easier to match layer numbers between games...[/wip]
+[wip]**Current focus:** Taking a bit of a break from the site to work on a crazy patch idea.  It did force me to make the Layer Viewer though, so there's that![/wip]
 
+* 2020-09-13 &mdash; having trouble choosing layer numbers?  The new [layer viewer](#anm/layer-viewer) can help you see the sprites associated with each layer in a game.
 * 2020-09-02 &mdash; there's now a [STD table](#std/ins) for some early games.
 * 2020-08-29 &mdash; the ANM database now supports **all Touhou games**
 * 2020-08-27 &mdash; check out the new [stats table](#anm/stats)!

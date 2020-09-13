@@ -29,7 +29,13 @@ export const NAVBAR: Entry[] = [
       {url: "#/anm/ins", label: "Instruction reference"},
       {url: "#/anm/var", label: "Variable reference"},
       {url: "#/std/ins&g=08", label: "STD instruction reference"},
-      {url: "#/anm/stats", label: "Stats!"},
+      {
+        label: "Tools",
+        children: [
+          {url: "#/anm/stats", label: "Stats!"},
+          {url: "#/anm/layer-viewer", label: "Layer viewer"},
+        ],
+      },
     ],
   },
 

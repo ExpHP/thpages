@@ -2,7 +2,7 @@
 
 # The stages of rendering
 
-The following describes the rendering stages as they exist in [game=14]. Future games (at least up to [game=17]) have the same set of surfaces and rendering stages, though **[wip]layer and script numbers may differ!![/wip]**
+The following describes the rendering stages as they exist in [game=14]. Future games (at least up to [game=17]) have the same set of surfaces and rendering stages, though **[wip]layer and script numbers may differ!![/wip]**  (For now, no complete reference on layer number assignments exists; however, if you need help matching layers between games, you can try the [layer viewer](#anm/layers))
 
 ## tl;dr
 
