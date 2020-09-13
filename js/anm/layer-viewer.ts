@@ -179,7 +179,7 @@ function parseAnmSpec(text: string, game: Game, filename?: string): AnmSpec {
   let state: EntryState | ScriptState | NoState = {state: null};
 
   const layerOpcode = ANM_INS_HANDLERS.reverseTable[game]?.['anm:layer'];
-  if (layerOpcode === null) {
+  if (layerOpcode == null) {
     throw new Error(`game ${game} does not have layers, you silly billy`);
   }
 
