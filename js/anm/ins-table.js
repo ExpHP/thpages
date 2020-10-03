@@ -43,7 +43,7 @@ ANM_BY_OPCODE.set('06', {
   20: {ref: 'anm:posTimeEaseout4'}, // posTimeAccel // sets 0b10
   21: {ref: 'anm:stop'},
   22: {ref: 'anm:case'},
-  23: {ref: 'anm:v0-anchorBottomLeft'},
+  23: {ref: 'anm:anchorTopLeft'},
   24: {ref: 'anm:stop2'},
   25: {ref: 'anm:posMode'}, // set_allow_dest_offset (alternate_pos_flag)
   26: {ref: 'anm:v0-26'}, // set_automatic_angle
@@ -72,13 +72,13 @@ ANM_BY_OPCODE.set('07', {
   13: {ref: 'anm:angleVel'},
   14: {ref: 'anm:scaleGrowth'},
   15: {ref: 'anm:alphaTimeLinear'},
-  16: UNASSIGNED, // PoFV:  flag 4 = arg, flag 5 = 0 ??
+  16: {ref: 'anm:blendAdditiveSet'},
   17: {ref: 'anm:posTimeLinear'},
   18: {ref: 'anm:posTimeEaseout'},
   19: {ref: 'anm:posTimeEaseout4'},
   20: {ref: 'anm:stop'},
   21: {ref: 'anm:case'},
-  22: UNASSIGNED, // PoFV:  flags 11=1, 12=1
+  22: {ref: 'anm:anchorTopLeft'}, // PoFV:  flags 11=1, 12=1
   23: {ref: 'anm:stop2'},
   24: {ref: 'anm:posMode'},
   25: {ref: 'anm:v0-26'}, // reads a word field
@@ -86,8 +86,8 @@ ANM_BY_OPCODE.set('07', {
   27: {ref: 'anm:vAdd'},
   28: {ref: 'anm:visible'}, // PoFV:  sets flag 0
   29: {ref: 'anm:scaleTimeLinear'},
-  30: UNASSIGNED, // PoFV:  sets flag 13
-  31: UNASSIGNED, // PoFV:  sets flag 15
+  30: {ref: 'anm:noZBuffer'}, // PoFV:  sets flag 13
+  31: UNASSIGNED, // PoFV:  sets flag 15, usage at TH08+0x4626d6
   32: {ref: 'anm:posTime'},
   33: {ref: 'anm:rgbTime-dword'},
   34: {ref: 'anm:alphaTime'},
@@ -152,8 +152,8 @@ ANM_BY_OPCODE.set('08', {
   33: {ref: 'anm:rgbTime'},
 
   // new instrs
-  82: UNASSIGNED, // PoFV:  sets 2-bit field of flags 4+5, like in ins_16
-  83: UNASSIGNED, // stores dword field
+  82: {ref: 'anm:blendMode'},
+  83: UNASSIGNED, // stores dword field, it's at offset 0x200 in both games so good luck finding usages lol
   84: {ref: 'anm:rgb2'},
   85: {ref: 'anm:alpha2'},
   86: {ref: 'anm:rgb2Time'},
@@ -735,6 +735,19 @@ Object.assign(ANM_INS_DATA, {
   `},
   'blendAdditive': {sig: '', args: [], desc: `Enables additive blending by setting \`D3DRS_DESTBLEND\` to \`D3DBLEND_ONE\`.`},
   'blendAlpha': {sig: '', args: [], desc: `Disables additive blending by setting \`D3DRS_DESTBLEND\` to \`D3DBLEND_INVSRCALPHA\`. (the default)`},
+  'blendAdditiveSet': {
+    sig: 'S', args: ['enable'],
+    succ: undefined, // one could say blendMode is a successor to this, but unfortunately the two instructions coexist in TH08 and TH09
+    desc: `
+    Enables or disables additive blending.
+
+    [tiphide]
+    Note: in [game=08], the more general [ref=anm:blendMode] is added, and this instruction becomes identical to
+    [code]
+      [ref=anm:blendMode](enable & 1);
+    [/code]
+    [/tiphide]
+  `},
   'blendMode': {
     sig: 'S', args: ['mode'], desc: `
     Set color blending mode.
@@ -883,9 +896,7 @@ Object.assign(ANM_INS_DATA, {
     Sets the position of the graphic.
 
     [tiphide]
-    There is a bitflag that, when activated, causes [ref=anm:pos] and all other position-modifying code
-    to overwrite [\`pos_2\`](#anm/concepts&a=position) instead.
-    [wip]The method of setting this bitflag, and its purpose, is unknown.[/wip]
+    If you look in the code, you'll see that if a certain bitflag is set, this will write to a different variable.  This is part of the implementation of [ref=anm:posMode] in earlier games, and is, to my knowledge, entirely dead code in every game since [game=095].
     [/tiphide]
   `},
   'rotate': {
@@ -1048,14 +1059,14 @@ Object.assign(ANM_INS_DATA, {
     <img src="content/anm/img/ins-uv-scale.gif" height="200px">
     [/tiphide]
   `},
-  'v0-anchorBottomLeft': {sig: '', args: [], desc: `
-    Changes the anchor point to the bottom left. (default is center)
+  'anchorTopLeft': {sig: '', args: [], desc: `
+    Changes the anchor point to the top left. (default is center)
 
     [tiphide]
     [wip]UNTESTED:[/wip]
     This is not entirely the same as [ref=anm:anchor] in future games.  In particular, judging from the code,
     I do not believe it changes the center of rotation or scaling, but rather merely translates the sprite
-    by \`(+sx*w/2, -sy*h/2)\` *after* scaling and rotating it. (where \`w,h\` are sprite dimensions
+    by \`(+sx*w/2, +sy*h/2)\` *after* scaling and rotating it. (where \`w,h\` are sprite dimensions
     and \`sx,sy\` come from [ref=anm:scale]).
     [/tiphide]
   `},
@@ -1572,7 +1583,7 @@ Object.assign(ANM_INS_DATA, {
 
     [tiphide]
     It is extremely difficult to find examples where this has any noticeable effect,
-    but there's an example in stage 4:
+    but there's an example in [game=14] stage 4:
 
     <a href="./content/anm/img/ins-v8-305.png" target="_blank"><img src="./content/anm/img/ins-v8-305.png" style="max-width:100%;"></a>
     [/tiphide]
@@ -1627,7 +1638,11 @@ Object.assign(ANM_INS_DATA, {
   `},
   'posMode': {
     sig: 'S', args: ['flag'], wip: 1, desc: `
-    [wip=1]Sets the state of a bitflag.  Wait a second, is that... is that the [alternate position flag!?](#anm/concepts&a=position)[/wip]
+    Sets the state of a bitflag that controls how positioning works.
+
+    [tiphide]
+    I'm working on a page that explains in more detail, but the short of it is: VM positioning in pre-v4 games is awkward.  [ref=anm:pos] has virtually no effect on many types of sprites (e.g. enemies) due to how position is defined in these games.  For these types of sprites, you can use [ref=anm:posMode]\`(1)\` to cause [ref=anm:pos] to define a *relative* offset instead.
+    [/tiphide]
   `},
   'blink': {
     sig: 'S', args: ['arg'], wip: 2, desc: `
