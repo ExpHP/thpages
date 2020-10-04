@@ -40,6 +40,16 @@ export const NAVBAR: Entry[] = [
   },
 
   {
+    label: "My mods",
+    children: [
+      {url: "#/mods/bullet-cap", label: "Bullet (un-)cap"},
+      {url: "#/mods/debug-counters", label: "Debug counters"},
+      {url: "#/mods/seasonize", label: "seasonize (17)"},
+      {url: "#/mods/za-warudo", label: "za warudo (11-17)"},
+    ],
+  },
+
+  {
     label: "Links",
     children: [
       {
