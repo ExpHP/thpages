@@ -30,8 +30,6 @@ export function init() {
 
   window.addEventListener("hashchange", buildOrScrollToContent, false);
   buildOrScrollToContent();
-
-  initResize();
 }
 
 const MAIN_TITLE = `ExpHP's Touhou Pages`;
@@ -153,20 +151,4 @@ function buildOrScrollToContent() {
 export function highlightCode(content, lang) {
   lang = lang || "cpp";
   return hljs.fixMarkup(hljs.highlight(lang, content, true, false).value);
-}
-
-function resize() {
-  if (window.screen.width < 540) {
-    document.querySelector("#viewport").setAttribute("content", "width=540px, user-scalable=no");
-  } else {
-    // make it actually usable with horizontal orientation
-    let w = "device-width";
-    if (window.screen.height < 450) w = "900px";
-    document.querySelector("#viewport").setAttribute("content", `width=${w}, user-scalable=no`);
-  }
-}
-
-function initResize() {
-  window.onresize = resize;
-  resize();
 }

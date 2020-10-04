@@ -70,31 +70,25 @@ blockquote {
   padding: 5px;
 }
 
-.border-l {
-  width: 10%;
-  position: fixed;
-  height: 150%;
-  left: 0px;
-  top: 0px;
-  z-index: -1;
-  max-width: 120px;
+@media screen and (max-width: 400px) {
+  .header-wrapper {
+    display: none;
+  }
 }
-.border-r {
-  width: 10%;
-  position: fixed;
-  height: 150%;
-  right: 0px;
-  top: 0px;
-  z-index: -1;
-  max-width: 120px;
+
+.body-container {
+  width: 80%;
+  margin-left: 10%;
+  @media screen and (max-width: 750px) {
+    width: 100%;
+    margin-left: 0;
+  }
 }
 
 .content-wrapper {
-  width: 80%;
-  margin-left: 10%;
   margin-top: 10px;
   box-sizing: border-box;
-  margin-bottom: 100px;
+  margin-bottom: 4em;
 }
 
 .content-wrapper .content {

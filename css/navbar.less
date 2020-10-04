@@ -1,9 +1,7 @@
 @import "defs.less";
 
 .header-wrapper {
-  width: 80%;
   margin: 0;
-  margin-left: 10%;
   background: fade(@nav-bg-color, @nav-alpha);
   top: 0px;
   z-index: 9;
@@ -17,9 +15,7 @@
 }
 
 .header-navigation {
-  width: 80%;
   margin: 0;
-  margin-left: 10%;
   background: fade(@nav-bg-color, @nav-alpha);
 
   position: sticky;
@@ -97,6 +93,7 @@
   transition-property: top, transform, opacity;
   transition-timing-function: ease-in-out;
 }
+
 .navigation-entry.settings {
   float: right;
 
@@ -134,5 +131,18 @@
 
   &.active .navigation-entry-name .gear {
     &:extend(.gear-selected);
+  }
+}
+
+// If the device width is *just right* that the gear doesn't fit but the rest does,
+// then the gear gets pushed down to the next row, outside of the top bar.
+//
+// In order to prevent it from going outside of the bar, we would have to make the bar 'overflow: hidden'.
+// But, we *cannot* do that, because the hover menus wouldn't be able to pop out below the bar.
+//
+// So..... uh..... just sweep this sucker under the rug.
+@media screen and (max-width: 600px) {
+  .navigation-entry.settings {
+    display: none;
   }
 }
