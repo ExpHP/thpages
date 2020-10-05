@@ -176,9 +176,6 @@ tfoot {
 
 // TODO: needs moar display: grid
 .ins-table {
-  display: table;
-  width: 100%;
-
   // disable borders on THIS table only
   //
   // FIXME: this seems awfully delicate, maybe ins-table should be using divs with
@@ -192,16 +189,36 @@ tfoot {
   // (note: present on priw's site, uncertain of purpose...)
   * { box-sizing: border-box; }
 
-  .col-id { width: 3em; }
-  .col-name { width: 20%; min-width: 10em; }
-  .col-desc { width: 85%; }
-
-  .ins-table-header { display: table-row; }
-  .ins-table-entry { display: table-row; }
-
   .col-name .ins-siggy-wrapper .punct { color: #ffffff30; }
 
   td { vertical-align: text-top; }
+
+  // wide screen: table-like
+  @media screen and (min-width: 601px) {
+    display: table;
+    width: 100%;
+    .ins-table-entry { display: table-row; }
+    .col-id { width: 3em; }
+    .col-name { width: 20%; min-width: 10em; }
+    .col-desc { width: 85%; }
+  }
+
+  // small screen: instruction and name as headers
+  @media screen and (max-width: 600px) {
+    display: block;
+    >tbody { display: contents; }
+    .ins-table-entry {
+      display: block;
+      white-space: nowrap; // prevent the name div itself from being wrapped to the line after the opcode number
+      >* { white-space: initial; } // but allow text wrapping inside
+    }
+    .col-id { display: inline-block; margin-left: -1em; }
+    .col-name { display: inline-block; }
+    .col-desc { display: block; width: 100%; }
+    // make headings closer to their content than to the previous item
+    .col-desc >:first-child { margin-top: 0; }  // default was 1em
+    .col-desc >:last-child { margin-bottom: 0.5em; }  // default was 1em
+  }
 }
 
 .ins-siggy-wrapper {
