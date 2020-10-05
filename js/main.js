@@ -14,7 +14,8 @@ import hljsJson from "highlight.js/lib/languages/json";
 
 hljs.registerLanguage('c-like', hljsCLike);
 hljs.registerLanguage('cpp', hljsCpp);
-hljs.registerLanguage('json', hljsJs);
+hljs.registerLanguage('js', hljsJs);
+hljs.registerLanguage('json', hljsJson);
 
 /**
  * Do early initialization before page-specific scripts run.

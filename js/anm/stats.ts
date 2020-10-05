@@ -4,6 +4,7 @@ import {ANM_INS_HANDLERS, ANM_VAR_HANDLERS, makeRefGameIndependent} from './tabl
 import {globalNames, globalLinks, PrefixResolver} from '../resolver';
 import {GridViewScroll} from '../lib/gridviewscroll';
 import {MD} from '../markdown';
+import {getConfig} from '../settings';
 import {parseQuery} from '../url-format';
 import {globalTips, Tip} from '../tips';
 
@@ -37,18 +38,20 @@ export function initStats() {
 
 export async function buildInsStatsTable($elem: HTMLElement) {
   const statsRaw = await statsJson;
-  const stats = buildStatsTable($elem, statsRaw.ins, ANM_INS_HANDLERS);
+  const stats = getStatsRows(statsRaw.ins, ANM_INS_HANDLERS);
+  buildStatsTable($elem, stats, ANM_INS_HANDLERS);
   registerStatsTips(statsRaw, stats, ANM_INS_HANDLERS);
 }
 
 export async function buildVarStatsTable($elem: HTMLElement) {
   const statsRaw = await statsJson;
-  const stats = buildStatsTable($elem, statsRaw.var, ANM_VAR_HANDLERS);
+  const stats = getStatsRows(statsRaw.var, ANM_VAR_HANDLERS);
+  buildStatsTable($elem, stats, ANM_VAR_HANDLERS);
   registerStatsTips(statsRaw, stats, ANM_VAR_HANDLERS);
 }
 
-function buildStatsTable($elem: HTMLElement, statsByOpcode: StatsByOpcode, tableHandlers: any): StatsByNameKey {
-  const dataByRow = getStatsRows(statsByOpcode, tableHandlers);
+function buildStatsTable($elem: HTMLElement, dataByRow: StatsByNameKey, tableHandlers: any) {
+  const freezeHeaders = getConfig()['freeze-stats-headers'];
 
   let tableBody = '';
 
@@ -60,7 +63,7 @@ function buildStatsTable($elem: HTMLElement, statsByOpcode: StatsByOpcode, table
   }
   tableBody += '</tr>';
 
-  for (const [nameKey, rowData] of dataByRow) {
+  for (const [nameKey, rowData] of dataByRow.entries()) {
     if (nameKey.startsWith('ref:')) {
       tableBody += /* html */ `<tr class="GridViewScrollItem"><th>[ref=${nameKey.substring(4)}]</th>`;
     } else {
@@ -92,30 +95,37 @@ function buildStatsTable($elem: HTMLElement, statsByOpcode: StatsByOpcode, table
   globalNames.transformHtml($elem, context);
   globalLinks.transformHtml($elem, context);
 
-  const grid = new GridViewScroll({
-    table: $elem.querySelector<HTMLTableElement>(':scope > table')!,
-    container: $elem,
-    frozenHeaderCssClass: "frozen-header",
-    frozenLeftCssClass: "frozen-col",
-    freezeHeaderRows: 1,
-    freezeLeftColumns: 1,
-  });
+  if (freezeHeaders) {
+    const grid = new GridViewScroll({
+      table: $elem.querySelector<HTMLTableElement>(':scope > table')!,
+      container: $elem,
+      frozenHeaderCssClass: "frozen-header",
+      frozenLeftCssClass: "frozen-col",
+      freezeHeaderRows: 1,
+      freezeLeftColumns: 1,
+    });
 
-  grid.enhance();
+    grid.enhance();
 
-  const maxContainerSize = grid.maxContainerSize();
-  $elem.style.maxWidth = `${maxContainerSize.width}px`;
-  $elem.style.maxHeight = `${maxContainerSize.height}px`;
+    const maxContainerSize = grid.maxContainerSize();
+    $elem.style.maxWidth = `${maxContainerSize.width}px`;
+    $elem.style.maxHeight = `${maxContainerSize.height}px`;
 
-  const ResizeObserver = (window as any).ResizeObserver as any;
-  if (ResizeObserver) {
-    new ResizeObserver(() => grid.resize()).observe($elem);
+    // GridViewScroll uses some precomputed widths in its layout, so make sure it updates so the element can resize.
+    const ResizeObserver = (window as any).ResizeObserver as any;
+    if (ResizeObserver) {
+      new ResizeObserver(() => grid.resize()).observe($elem);
+    }
+  } else {
+    $elem.style.overflow = 'auto'; // scrollbars only if needed
+    // For blocks, 'width: auto' is basically 'width: 100%', allowing the resize handle to move away from the table.
+    // Therefore, use an inline block, so that width is computed from the content.
+    $elem.style.display = 'inline-block';
+    $elem.style.maxWidth = '100%'; // ensure that it shrinks with window
   }
-
-  return new Map(dataByRow);
 }
 
-function getStatsRows(statsByOpcode: StatsByOpcode, tableHandlers: any) {
+function getStatsRows(statsByOpcode: StatsByOpcode, tableHandlers: any): StatsByNameKey {
   const {tableByOpcode, mainPrefix, itemKindString} = tableHandlers;
 
   // Deep-copy.  We're about to tear it down...
@@ -156,7 +166,7 @@ function getStatsRows(statsByOpcode: StatsByOpcode, tableHandlers: any) {
       console.error(`game ${game} uses ${itemKindString} ${opcodeStr} but it's not in our table!`);
     }
   }
-  return out;
+  return new Map(out);
 }
 
 function registerStatsTips(statsRaw: Stats, table: StatsByNameKey, tableHandlers: any) {

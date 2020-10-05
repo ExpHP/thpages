@@ -81,9 +81,9 @@ Beginning in [game=13], whenever it loads an ANM file, for every script, it will
 [code]
 script script1 {
 -1:
-    [ref=anm:isetRand]([ref=anmvar:i0], 0, 5);
+    [ref=anm:rand]([ref=anmvar:i0], 0, 5);
 0:
-    [ref=anm:isetRand]([ref=anmvar:i1], 0, 5);
+    [ref=anm:rand]([ref=anmvar:i1], 0, 5);
     ...
 }
 [/code]

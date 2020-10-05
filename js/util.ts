@@ -1,3 +1,5 @@
+import { resetExtensions } from "showdown";
+
 /**
  * An object with safer typing of `obj[key]`.
  *
@@ -62,4 +64,30 @@ export async function readUploadedFile(file: File, mode?: 'binary' | 'text'): Pr
       reader.readAsText(file);
     }
   });
+}
+
+/** Memoizing wrapper around a zero-argument function. */
+export interface Cached<T> {
+  /** Obtain the value.  This invokes the function only on the first call. */
+  get(): T;
+  /** Clear the cache, so that the next call to `get` calls the function again. */
+  reset(): void;
+}
+
+export function cached<T>(func: () => T): Cached<T> {
+  /** Type of a guaranteed out-of-band value. */
+  class EmptyCache {}
+  let cache: T | EmptyCache = new EmptyCache();
+
+  return {
+    get() {
+      if (cache instanceof EmptyCache) {
+        cache = func();
+      }
+      return cache as T;
+    },
+    reset() {
+      cache = new EmptyCache();
+    },
+  };
 }

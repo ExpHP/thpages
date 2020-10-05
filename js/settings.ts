@@ -3,29 +3,44 @@ import {Eclmap} from './anm/eclmap';
 import dedent from './lib/dedent';
 import {SupportedAnmVersion, SUPPORTED_ANM_VERSIONS, ANM_VERSION_DATA} from './anm/versions';
 import {readFileSync} from 'fs';
-import {readUploadedFile} from './util';
+import {readUploadedFile, cached} from './util';
 
 const LOCAL_STORAGE_KEY_ANMMAP = 'anmmap';
+const LOCAL_STORAGE_KEY_OTHER_CONFIG = 'config';
+
+export type Config = {
+  /**
+   * On the stats table page, freeze the first column and header row.
+   * This looks buggy on some browsers that I can't easily test on.
+   */
+  'freeze-stats-headers': boolean,
+};
+
+const DEFAULT_CONFIG: Config = {
+  'freeze-stats-headers': true,
+};
 
 // --------------------------------------------------------------
 // API for loading settings so they can be used from javascript code.
 
 /** A cache so that getCurrentAnmmaps can be called even in reasonably tight loops. */
-let currentAnmmaps: LoadedAnmMaps | null = null;
+const currentAnmmaps = cached(() => storageLoadAnmmaps());
+const currentConfig = cached(() => storageLoadConfigOrDefault());
 
 /** Get objects with all info from the user's configured anmmaps. */
 export function getCurrentAnmmaps() {
-  if (currentAnmmaps == null) {
-    const out = storageLoadAnmmaps();
-    currentAnmmaps = out;
-    return out;
-  }
-  return currentAnmmaps;
+  return currentAnmmaps.get();
+}
+
+/** Get additional Config. */
+export function getConfig() {
+  return currentConfig.get();
 }
 
 /** Clear caches for all `getCurrent__` functions. Suitable for use whenever a page is loaded. */
 export function clearSettingsCache() {
-  currentAnmmaps = null;
+  currentAnmmaps.reset();
+  currentConfig.reset();
 }
 
 // --------------------------------------------------------------
@@ -33,6 +48,7 @@ export function clearSettingsCache() {
 
 export function initSettings() {
   (window as any).buildSettingsPage = buildSettingsPage;
+  (window as any).makeFrozenStatsTableCheckbox = makeFrozenStatsTableCheckbox;
 }
 
 /** Selects things on the settings page to match the stored settings. */
@@ -229,6 +245,19 @@ function setMapsSaveStatus($maps: Element, status: null | 'success' | 'error' | 
 }
 
 // --------------------------------------------------------------
+
+function makeFrozenStatsTableCheckbox($input: HTMLInputElement) {
+  $input.checked = getConfig()['freeze-stats-headers'];
+  $input.addEventListener('click', () => {
+    const config = getConfig();
+    config['freeze-stats-headers'] = $input.checked;
+    saveConfig(config);
+
+    window.location.reload();
+  });
+}
+
+// --------------------------------------------------------------
 // Settings implementation.
 
 export const DEFAULT_ANMM_TEXT: {[v in SupportedAnmVersion]: string} = {
@@ -248,6 +277,15 @@ export type LoadedMap = {ins: NumberMap, vars: NumberMap};
 export type MapSetting = 'raw' | 'auto' | LoadedMap;
 export type NumberMap = Record<number, string>;
 
+function storageLoadConfigOrDefault(): Config {
+  const text = localStorage.getItem(LOCAL_STORAGE_KEY_OTHER_CONFIG) || '{}';
+  return {...DEFAULT_CONFIG, ...JSON.parse(text)};
+}
+
+function saveConfig(config: Config) {
+  localStorage.setItem(LOCAL_STORAGE_KEY_OTHER_CONFIG, JSON.stringify(config));
+}
+
 /** Initializes ANM maps, possibly from localStorage. */
 function storageLoadAnmmaps(): LoadedAnmMaps {
   const settings = storageReadAnmmapsOrDefault();
@@ -260,13 +298,13 @@ function storageLoadAnmmaps(): LoadedAnmMaps {
 
 /** Get the settings for ANM maps. */
 function storageReadAnmmapsOrThrow(): AnmMapSettings {
-  const text = localStorage.getItem('anmmap') || '{}';
+  const text = localStorage.getItem(LOCAL_STORAGE_KEY_ANMMAP) || '{}';
   const json = JSON.parse(text);
   return parseSettingAnmmapJson(json);
 }
 
 function storageReadAnmmapsOrDefault(): AnmMapSettings {
-  const text = localStorage.getItem('anmmap') || '{}';
+  const text = localStorage.getItem(LOCAL_STORAGE_KEY_ANMMAP) || '{}';
   const json = JSON.parse(text);
   try {
     return parseSettingAnmmapJson(json);
