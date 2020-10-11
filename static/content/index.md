@@ -3,7 +3,11 @@
 
 On this site you'll find some resources for modding Touhou, most notably for ANM scripting.
 
-The most important page is here: [ANM Instruction Reference](#anm/ins)
+New to ANM?  See [What's this all about?](#/anm/concepts&a=why-anm)
+
+Otherwise, you're probably looking for this: [ANM Instruction Reference](#anm/ins)
+
+## About
 
 The information on this site is the culmination of several pretty deep dives into the lowest level parts of the rendering code in the Touhou games, with the goal being to fill in the many little gaps in our knowledge; all those instructions that didn't seem to do anything (or did *Peculiar, Unexplainable Things™*) when tested; all those dozens of bitflags with unknown purpose.  This work was done on the shoulders of giants, and could not have been possible without:
 
@@ -18,8 +22,9 @@ Be sure to check out [Priw8's site](https://priw8.github.io) as a companion for 
 
 ## Updates
 
-[wip]**Current focus:** Taking a bit of a break from the site to work on a crazy patch idea.  It did force me to make the Layer Viewer though, so there's that![/wip]
+[wip]**Current focus:** Crazy busy with porting `bullet_cap` to all games.[/wip]
 
+* 2020-10-04 &mdash; this site now hosts info on some of my bigger patches, in no small part because I wanted shorter URLs to share.
 * 2020-09-13 &mdash; having trouble choosing layer numbers?  The new [layer viewer](#anm/layer-viewer) can help you see the sprites associated with each layer in a game.
 * 2020-09-02 &mdash; there's now a [STD table](#std/ins) for some early games.
 * 2020-08-29 &mdash; the ANM database now supports **all Touhou games**

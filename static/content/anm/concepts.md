@@ -1,17 +1,25 @@
 [title=Concepts in ANM]
-# <span id="why-anm">What is ANM used for?</span>
+# <span id="why-anm">What's this all about?</span>
 
-LITERALLY EVERYTHING
+In the Windows titles in the Touhou series, all graphical content of the game comes in the form of `.anm` files, which are stored along with everything else inside the `thXX.dat` file for each game.  These ANM files contain spritesheets and tables of sprites within them, as well as numerous bytecode scripts that are responsible for selecting sprites, animating them and applying visual effects.
 
-Bullets? ANM.  The player?  ANM.  Text?  Some rendering system that's built on top of ANM.  The stage background?  *Well okay, the camera is controlled by STD scripts,* but all of the objects in that 3D environment are ANM.  Fireball flames, pause menu animations, 1Ups spinning on creation are all ANM scripts.
+These scripts are essentially series of instructions; each with an opcode and a variable number of arguments, which are interpreted in real-time by the game on every frame to update the sprites onscreen.  There are many instructions, up to around 120 in some games, and they differ from game to game.  While we understood, say, maybe about 60% of these instructions, many of them have had a completely unknown purpose for years.  Understanding these instructions are in large part the purpose of this website.
 
-Wanna know how the game handles upscaling to resolutions like 1280x960?  **ANM.**
+**This site will not discuss the actual binary format of `.anm` files.** As far as I am concerned, this problem has been pretty thoroughly solved by `thtk`.
 
-How the game fades to black during gamemode changes?  **ANM.**
+**This site will also assume you have a basic level of familiarity with `thtk` tools.**  Basically, this site assumes you can figure out how to extract anm scripts from game data and recompile them using `thanm`.  If not, you may find some parts of [Priw8's ECL tutorial](https://priw8.github.io/#b=ecl-tutorial/&p=1) useful, because it's very similar.
 
-How Seija rotates the screen?  **Yes, that's ANM too!**
+# <span id="anm-purpose">What is ANM used for?</span>
 
-ANM is how 99% of the game code is able to avoid having to worry about the ugliness of Direct3D APIs.  But it also means that, when you want to make mods for Touhou, you'll inevitably run into ANM at some point.  *It's kind of a big deal,* and that's why this site exists.
+People often ask, how much of the visual stuff in the game is hardcoded versus how much is controlled by ANM?  Well, *basically all of it* is controlled by ANM.  As in, the game largely never even touches the Direct3D APIs outside of the ANM code, because they are meant to serve as an abstraction around it.
+
+So obviously, there are anm scripts for each sprite in the game... but ANM is also used for a lot more than just that:
+
+* ANM is used to manipulate characters and construct strings from bitmap fonts.
+* ANM is used to handle upscaling to resolutions like 1280x960.
+* ANM is used to fade to black during gamemode changes.
+* ANM is used by Seija to rotate the screen.  (on that note, there is a lot of *incredibly wild stuff* you can do to the game just by editing this one anm script!)
+* ...and a lot more!
 
 # <span id="jargon">Terminology</span>
 

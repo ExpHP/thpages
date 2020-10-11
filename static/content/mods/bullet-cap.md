@@ -5,7 +5,7 @@
 **Available through thcrap.**
 
 **Supports:** TH10&ndash;TH13, TH125, TH128. <br>
-**In Beta:** TH08. [Please report bugs!](https://github.com/ExpHP/thcrap-patches/issues/new)
+**In Beta:** TH08, TH16. [Please report bugs!](https://github.com/ExpHP/thcrap-patches/issues/new)
 
 This patch can be used to increase or reduce the following caps:
 
@@ -52,9 +52,11 @@ Here are some additional options, with their default values.  As above, all stri
 
 # QnA
 
-## Pre-MoF games are "in beta"? What does that mean?
+## Some games are "in beta"? What does that mean?
 
-Basically, pre-MoF games may still undergo replay-breaking changes at some point in the future.  While I've tested them pretty thoroughly, they are more complicated than the other games and there may still be bugs.  So I'd like to see some other people playtesting them before I declare them as "TAS-ready."
+Basically, these games may still undergo replay-breaking changes at some point in the future.  While I've tested them pretty thoroughly, they are more complicated than the other games and there may still be bugs.  So I'd like to see some other people playtesting them before I declare them as "TAS-ready."
+
+LoLK and onwards are also difficult because of additional arrays that are related to pointdevice.
 
 ## "Cancel item cap"?
 
@@ -65,6 +67,10 @@ In [game-th=06]&ndash;[game-th=08], there is only one item array.  For these gam
 ## GFW has huge lag spikes when I freeze many bullets!
 
 Correct.
+
+## I see an enemy onscreen that won't disappear!
+
+This is a known bug that can effect games TH14 and onwards.  I believe it is due to ANM id collisions.
 
 ---
 
@@ -139,3 +145,9 @@ These functions have stdcall ABI, and additionally preserve `ecx` and `edx` (i.e
 e8[codecave:base-exphp.adjust-bullet_array]  |    call adjust_bullet_array
                                              |    ; eax now points to the array
 ```
+
+## I need to access one of the fields *after* an array?
+
+My apologies, currently there is no officially correct way to do this.  Please wait, I will eventually add a more general function to `base_exphp` for converting pointers to fields.
+
+If you want to access `bullet.anm` specifically, you can find a copy in the array of preloaded anms on `AnmManager`.  It will always be at a fixed offset on this type.  The structure notes in the [`ExpHP/th-re-data` repo](https://github.com/exphp-share/th-re-data) may be able to help you locate it in some games.
