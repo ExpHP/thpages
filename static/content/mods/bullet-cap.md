@@ -70,7 +70,7 @@ Correct.
 
 ## I see an enemy onscreen that won't disappear!
 
-This is a known bug that can effect games TH14 and onwards.  I believe it is due to ANM id collisions.
+This is a known bug that can affect games TH14 and onwards.  I believe it is due to ANM id collisions.
 
 ---
 
@@ -78,7 +78,7 @@ This is a known bug that can effect games TH14 and onwards.  I believe it is due
 
 ## How does it work?
 
-*Hoo boy.*  So, basically, bullets are stored in a big array on one of the game's global objects.  Because the array is in the middle of the object (and the object is used for other purposes), we can't just easily e.g. replace a pointer with our own allocation.  However, gererally speaking, there are only a small number of fields after the array. So......
+*Hoo boy.*  So, basically, bullets are stored in a big array on one of the game's global objects.  Because the array is in the middle of the object (and the object is used for other purposes), we can't just easily e.g. replace a pointer with our own allocation.  However, generally speaking, there are only a small number of fields after the array. So......
 
 Basically, this patch changes the size of that array by searching for and replacing a whole bunch of dword-sized values all over the program.  E.g. in SA it does a search and replace for the integer 2000, for the integer 2001, for the integer 0x46d678 (the size of the struct with the array), for the integer 0x46d216 (the offset where a sentinel value is written that marks the final array entry), and etc.
 
