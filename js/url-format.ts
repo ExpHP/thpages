@@ -127,6 +127,16 @@ export function queryEqualsUptoAnchor(q1: Query, q2: Query) {
   return queryEquals(rest1, rest2);
 }
 
+/**
+ * Get a URL for the current page, with a modified game or anchor.
+ */
+export function currentUrlWithProps({g, a}: {g?: Game, a?: string}) {
+  const query = parseQuery(window.location.hash);
+  if (g !== undefined) query.g = g;
+  if (a !== undefined) query.a = a;
+  return queryUrl(query);
+}
+
 // =============================================================
 
 // Testing framework?  What's that?

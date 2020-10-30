@@ -18,6 +18,11 @@ a {
   color: @link-color;
   text-decoration: none;
   &:hover { color: @link-color-hover; }
+  // don't color self-links
+  &.self-link {
+    color: inherit;
+    &:hover { color: inherit; }
+  }
 }
 
 .isref,

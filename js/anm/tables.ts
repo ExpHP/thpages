@@ -2,7 +2,7 @@ import dedent from '../lib/dedent';
 import {globalRefNames, globalRefTips, globalRefLinks, getRefNameKey, Ref} from '../ref';
 import {MD, postprocessConvertedMarkdown} from '../markdown';
 import {globalNames, globalLinks, PrefixResolver, Context} from '../resolver';
-import {parseQuery, queryUrl, queryGame, queryPageEquals, queryFilterCommonProps, Query} from '../url-format';
+import {parseQuery, queryUrl, queryGame, queryPageEquals, queryFilterCommonProps, Query, currentUrlWithProps} from '../url-format';
 import {gameData, Game} from '../game-names';
 import {getCurrentAnmmaps} from '../settings';
 import {initStats, buildInsStatsTable, buildVarStatsTable} from './stats';
@@ -436,7 +436,7 @@ function generateTablePageHtml<D extends CommonData>(tableHandlers: TableHandler
       const navQuery = Object.assign({}, currentQuery, {a: groupAnchor});
       const navDest = queryUrl(navQuery);
       toc += /* html */`<li><a href="${navDest}">${group.title} (${group.min}..)</a></li>`;
-      table += /* html */`\n<h2 id="${groupAnchor}">${group.min}-${group.max}: ${group.title}</h2>`;
+      table += /* html */`\n<h2 id="${groupAnchor}"><a class="self-link" href="${navDest}">${group.min}-${group.max}: ${group.title}</a></h2>`;
     }
 
     table += /* html */`<table class='ins-table'>`;
@@ -513,9 +513,10 @@ function generateInsTableRowHtml<D>(this: TableHandlers<D>, game: Game, ins: Ins
   let [desc] = handleTipHide(ins.desc, false);
   desc = postprocessAnmDesc(desc, false);
 
+  const selfLinkTarget = currentUrlWithProps({a: `ins-${opcode}`});
   return /* html */`
   <tr class="ins-table-entry" id="ins-${opcode}">
-    <td class="col-id">${opcode}</td>
+    <td class="col-id"><a class="self-link" href="${selfLinkTarget}">${opcode}</a></td>
     <td class="col-name">${generateInsSiggy(ins, {nameKey})}</td>
     <td class="col-desc">${desc}</td>
   </tr>
@@ -528,10 +529,11 @@ function generateVarTableRowHtml<D>(this: TableHandlers<D>, game: Game, ins: Var
   let [desc] = handleTipHide(ins.desc, false);
   desc = postprocessAnmDesc(desc, false);
 
+  const selfLinkTarget = currentUrlWithProps({a: `var-${opcode}`});
   // FIXME: add a mutability column.
   return /* html */`
   <tr class="ins-table-entry" id="var-${opcode}">
-    <td class="col-id">${opcode}</td>
+    <td class="col-id"><a class="self-link" href="${selfLinkTarget}">${opcode}</a></td>
     <td class="col-name">${generateVarHeader(ins, {nameKey})}</td>
     <td class="col-desc">${desc}</td>
   </tr>
