@@ -4,8 +4,11 @@
 
 **Available through thcrap.**
 
-**Supports:** TH10&ndash;TH13, TH125, TH128. <br>
-**In Beta:** TH08, TH16. [Please report bugs!](https://github.com/ExpHP/thcrap-patches/issues/new)
+**Supports:** TH10&ndash;TH13, TH125, TH128, TH17<br>
+**In Beta:** TH07, TH08, TH15, TH16. [Please report bugs!](https://github.com/ExpHP/thcrap-patches/issues/new) <br>
+**In Alpha:** TH165. [See disclaimer!](#vd)
+
+<img alt="screenshot showing an obscene number of bullets, from Momiji maybe?" height="250" src="./content/mods/img/bullet-cap.png">
 
 This patch can be used to increase or reduce the following caps:
 
@@ -58,6 +61,12 @@ Basically, these games may still undergo replay-breaking changes at some point i
 
 LoLK and onwards are also difficult because of additional arrays that are related to pointdevice.
 
+## <span id="vd"></span> And VD is in alpha?!
+
+I have only given [game=165] superficial playtesting and have little desire to go further.  If you use it you're basically signing up as my guinea pig.
+
+In addition to still having the bullet pointdevice array, [game=165] is made even worse by its camera charge items having a cap of 200.  It is very difficult to locate all of the places where this cap appears in the code.  If I missed any, then that part of the code is likely to crash when using a reduced cap, and to produce fewer items than expected when using an increased cap.
+
 ## "Cancel item cap"?
 
 In all games from [game=10] onwards, cancel items live in a separate array from normal items.  I am simply referring to the length of this array.
@@ -70,7 +79,21 @@ Correct.
 
 ## I see an enemy onscreen that won't disappear!
 
-This is a known bug that can affect games TH14 and onwards.  I believe it is due to ANM id collisions.
+This is a known bug that can affect games TH14 and onwards.  It is due to ANM id collisions, and is impossible to resolve without some heavy reworking of how the game assigns these ids.
+
+## (TH15-165) The game crashes when I Esc-R, or exit to main menu and start another game
+
+I've observed this happening in TH16.  Ironically, I believe the cause of the crash is related to a fix for some vanilla crashes in these games.  (But I figure, a crash on restarting is a lot less terrible than a crash *during* gameplay!).  I'll fix it if I can find time later.
+
+[more]
+Basically it's a failed `malloc` for one of the enlarged globals (`BulletManager` or `ItemManager`).  Pointdevice and copious amounts of wasted space on the Bullet struct in these three games make the structs obscenely large (312 MiB BulletManager for 16x cap in TH16!).  It only seems to crash if you've at some point had an extremely large cancel producing lots of VMs, suggesting that part of the issue is the buffers left behind by `ExpHP/anm_leak` (the fix for the vanilla crashes).  Most likely, they're making it difficult for the OS to find large enough contiguous regions of the 32-bit address space so that everything can have all the memory it needs when it reallocates them all on a reset.
+[/more]
+
+## If the laser cap is too small during the Prismriver's last spell or PCB's manji spells, the game crashes on exiting the stage
+
+Yes, I noticed.  What on earth could the game possibly be doing to lasers at this strange point in time?  Is it even my responsibility to fix it, or should we just accept that bad things happen if ECL scripts expect lasers to exist when they do not?  Hey, why are you playing with a small laser cap, anyways?  And why am I using this README as an issue tracker when there's a perfectly good tracker on GitHub?
+
+Honey, there's some things the world just may never know.
 
 ---
 
@@ -84,7 +107,7 @@ Basically, this patch changes the size of that array by searching for and replac
 
 *Astonishingly,* this works.
 
-Granted, obviously, not every instance of the number 2000 is related to bullet cap (though the *vast majority* of them are), so there are also blacklists of addresses not to replace.
+Granted, obviously, not every instance of the number 2000 is related to bullet cap (though the *vast majority* of them are), so there are also blacklists of addresses not to replace.  Lately I've also been using whitelists for many things.
 
 **In TH06, TH07, and TH08, things are more complicated!**  In these games, the bullet array lives in static memory, making it impossible to resize safely.  The patch changes these games to instead allocate an array on the heap, storing a pointer to it at the beginning of where the array normally reside.
 
@@ -96,7 +119,7 @@ This patch can potentially break other patches if they contain a binhack whose n
 
 ## My patch needs to know the bullet cap.  How can it be made compatible with `bullet_cap`?
 
-> `bullet_cap` promises to preserve the location of&mdash;and modify the value of&mdash;any integer in the code whose value represents something related to a cap. (unless it also depends on the size of each array element)
+> `bullet_cap` promises to preserve the location of&mdash;and modify the value of&mdash;any dword-sized integer in the code whose value represents something related to a cap. (unless it also depends on the size of each array element)
 
 In other words, the recommended way to get the current bullet cap is to read the value (or a number related to it) from anywhere it appears in the code.  *Note that must be done at some point after the bullet-manager global has been initialized while starting a new game,* to ensure that `bullet_cap` has had a chance to apply all of its changes.
 
