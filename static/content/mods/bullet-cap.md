@@ -149,28 +149,8 @@ And for some examples of what **not** to use, from the same game:
   0042f374  f3ab               rep stosd dword [edi]
   ```
 
-## <span id="finding-arrays">My patch needs to access one of the arrays, but you relocate them in IN!  How can my patch be made compatible without depending on `bullet_cap`?</span>
+## <span id="finding-arrays">My patch needs to access one of the arrays or some field on `BulletManager`, but you move things all around!</span>
 
-Add `ExpHP/base_exphp` as a dependency instead.  That patch defines the following codecaves:
+Add [`ExpHP/base_exphp`](https://github.com/ExpHP/thcrap-patches/tree/master/patches/base_exphp#readme) as a dependency.  That patch defines a codecave named `codecave:base-exphp.adjust-field-ptr`, which you can use to find anything you need to on `BulletManager` or `ItemManager`.  Please follow the link for more information and examples on how to use it.
 
-* `codecave:base-exphp.adjust-bullet-array`
-* `codecave:base-exphp.adjust-cancel-array`
-* `codecave:base-exphp.adjust-laser-array`
-
-These are callable functions that take the address where an array *normally* would be, and produce the address where the array *actually* is.  When `bullet_cap` is not installed (and in games where the array doesn't need to be relocated), these functions will simply return the address you give it.
-
-These functions have stdcall ABI, and additionally preserve `ecx` and `edx` (i.e. all integer registers are preserved except `eax`).  You can call them from a binhack or codecave of your own using thcrap's square bracket syntax to get the relative address of a registered function.
-
-```
-            THCRAP BINHACK STRING            |         ENCODED ASSEMBLY
-                                             |
-6a 10f7f600                                  |    push BULLET_ARRAY
-e8[codecave:base-exphp.adjust-bullet_array]  |    call adjust_bullet_array
-                                             |    ; eax now points to the array
-```
-
-## I need to access one of the fields *after* an array?
-
-My apologies, currently there is no officially correct way to do this.  Please wait, I will eventually add a more general function to `base_exphp` for converting pointers to fields.
-
-If you want to access `bullet.anm` specifically, you can find a copy in the array of preloaded anms on `AnmManager`.  It will always be at a fixed offset on this type.  The structure notes in the [`ExpHP/th-re-data` repo](https://github.com/exphp-share/th-re-data) may be able to help you locate it in some games.
+Notice that depending on `ExpHP/base_exphp` does **not** require you to depend on `ExpHP/bullet_cap`.  This means your patch will still work without `bullet_cap` installed as well!

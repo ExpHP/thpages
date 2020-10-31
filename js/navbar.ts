@@ -73,6 +73,11 @@ export const NAVBAR: Entry[] = [
         newTab: true,
       },
       {
+        label: "Field offsets and function names",
+        url: "https://github.com/exphp-share/th-re-data",
+        newTab: true,
+      },
+      {
         label: "Website source",
         url: "https://github.com/ExpHP/thpages",
         newTab: true,
