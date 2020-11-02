@@ -4,7 +4,7 @@
 
 **Available through thcrap.**
 
-**Supports:** TH10&ndash;TH13, TH125, TH128, TH17<br>
+**Supports:** TH10&ndash;TH14, TH125, TH128, TH143, TH17<br>
 **In Beta:** TH07, TH08, TH15, TH16. [Please report bugs!](https://github.com/ExpHP/thcrap-patches/issues/new) <br>
 **In Alpha:** TH165. [See disclaimer!](#vd)
 

@@ -4,7 +4,7 @@
 
 **Available through thcrap.**
 
-**Supports:** TH07-TH08, TH10-TH17 (incl. point titles).
+**Supports:** TH06-TH17 all danmaku games (incl. point titles).
 
 Adds debug counters so you can see how much your dank memes are tormenting the game
 
@@ -16,6 +16,8 @@ Legend:
 * `itemC`: Number of **cancel items** onscreen (includes season items in TH16).  These have their own count because they live in a separate, *significantly larger* array.
 * `laser`: Number of **lasers** onscreen.
 * `etama`: Number of **bullets** onscreen.
+    * `et.Yo` : (PoFV) Number of **bullets from fairies.**
+    * `et.P2` : (PoFV) Number of **bullets from your rival.**
 * `anmid`: Number of **automatically-managed ANM VMs**.  This counts certain types of sprites that the game refers to by ID rather than storing them directly on a game object.
 * `enemy`: Number of **enemies**.  This includes all things that use ECL, even if they aren't strictly enemies.
 * `lgods`: (TH13) Number of **divine spirits** onscreen.
