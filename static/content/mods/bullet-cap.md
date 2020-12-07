@@ -4,35 +4,60 @@
 
 **Available through thcrap.**
 
-**Supports:** TH10&ndash;TH14, TH125, TH128, TH143, TH17<br>
-**In Beta:** TH07, TH08, TH15, TH16. [Please report bugs!](https://github.com/ExpHP/thcrap-patches/issues/new) <br>
+**Supports:** All STGs TH06-TH17 except TH095<br>
+**In Beta:** TH06-TH09, TH15-TH16. [Please report bugs!](https://github.com/ExpHP/thcrap-patches/issues/new) <br>
 **In Alpha:** TH165. [See disclaimer!](#vd)
 
 <img alt="screenshot showing an obscene number of bullets, from Momiji maybe?" height="250" src="./content/mods/img/bullet-cap.png">
 
 This patch can be used to increase or reduce the following caps:
 
-* **Bullet cap** (1536 in IN, 2000 in all games TH10-TH17).
-* **Laser cap** (256 in MoF, 512 in WBaWC).
-* **Cancel item cap** (2048 in MoF, 4096 in WBaWC).
+* **Bullet cap** (2000 in WBaWC).
+* **Laser cap** (512 in WBaWC).
+* **Cancel item cap** (4096 in WBaWC).
 
-**By default, all three caps will be increased by a factor of 16.**  This should be enough for any humanly-playable ultra patch. (total cheesefests aside)
+**By default, all three caps will be increased by a factor of 16.**  This should be enough for any humanly-playable ultra patch, total cheesefests aside.
 
 ---
 
 ## Configuration
 
-This patch relies on thcrap codecaves for configuration.  Limits can be configured by writing another thcrap patch to apply after this patch.  In that patch, you can put the the following in `<patch>/global.js` (or e.g. `<patch>/th11.v1.00a.js` to configure per-game):
+You can configure the caps using thcrap's recently added `options` feature.  There is no UI for this (yet), but you can still configure them by editing your thcrap config file:
+
+Look inside `<thcrap_dir>/config` for the file for your patch stack where you installed the patch.  E.g. if you're trying to play using a shortcut titled `th08 (myconfig)`, then look at `<thcrap_dir>/config/myconfig.js`. In this file, find the entry corresponding to `bullet_cap` in the `"patches"` array, and add a `"config"` object with `"options"` as follows:
 
 [code=json]
-{"codecaves": {
-    "bullet-cap": "00007d00",
-    "laser-cap": "00001000",
-    "cancel-cap": "00008000"
-}}
+{
+  ...
+  "patches": [
+    {
+      "archive": "repos/nmlgc/base_tsa/",
+    },
+    ...
+    {
+      "archive": "repos/ExpHP/bullet_cap/",
+      "config": {
+        "options": {
+          "bullet-cap.bullet-cap": {"val": 32000},
+          "bullet-cap.laser-cap": {"val": "0x1000"},
+          "bullet-cap.cancel-cap": {"val": "0x8000"}
+        }
+      }
+    },
+    ...
+  ]
+}
 [/code]
 
-The strings (which must contain 8 hexadecimal characters) are 4-byte integers encoded in **big-endian hexadecimal**.  The example value shown here is `0x7d00` bullets, `0x1000` lasers, and `0x8000` cancel items, which are the default settings in this patch for MoF.  **NOTICE:** There are currently some technical limitations in specific games, due to how the compiler compiled various loops:
+The values in the example above are the patch defaults for MoF: 16\*2000 bullets, 16\*256 lasers, and 16\*2048 cancel items.
+
+You can omit values to leave them as default.
+
+Alternatively, if you are writing a patch that depends on `bullet_cap`, you may similarly add an `"options"` key to your `<patch>/global.js` or `<patch>/th*.js` files to provide new default values.
+
+## Limitations
+
+There are currently some technical limitations in specific games, due to how the compiler compiled various loops:
 
 * Various games may crash if a cap is set to zero.
 * In **TH13**, `bullet-cap` must be divisible by 5.
@@ -40,26 +65,59 @@ The strings (which must contain 8 hexadecimal characters) are 4-byte integers en
 
 ## Additional options
 
-Here are some additional options, with their default values.  As above, all strings must be zero-padded to the correct number of digits, and all integers are big endian hexadecimal.
+Here are some additional options, along with their default values.
 
 [code=json]
-{"codecaves": {
-    "bullet-cap-config.anm-search-lag-spike-size": "00002000"
-}}
+"bullet-cap.fairy-bullet-cap": {"val": "0xaf0"},
+"bullet-cap.rival-bullet-cap": {"val": "0x1680"},
+"bullet-cap.anm-search-lag-spike-size": {"val": "0x2000"},
 [/code]
 
-* **`bullet-cap-config.anm-search-lag-spike-size`**:  This patch automatically softens some quadratic lag spike behavior when canceling many bullets in the following games: MoF, SA, TD.  You can configure the softening here; bigger number here = more lag. `"00000000"` will remove the lag spikes completely, while `"7fffffff"` will bring back the full vanilla behavior.<br>
-  *Compatability note: This option was previously named `bullet-cap-config.mof-sa-lag-spike-size`. This old name is still supported for backwards compatibility but is deprecated.*
+* **`fairy-bullet-cap`** and **`rival-bullet-cap`**: These are the bullet caps for PoFV; one for fairy popcorn and one for the rival's L2+ charge attacks. (`bullet-cap` is ignored in this game)
+* **`anm-search-lag-spike-size`**:  This patch automatically softens some quadratic lag spike behavior when canceling many bullets in the following games: MoF, SA, TD.  You can configure the softening here; bigger number here = more lag. `0` will remove the lag spikes completely, while `"0x7fffffff"` will bring back the full vanilla behavior.<br>
+
+## Legacy configuration codecaves
+
+Prior to the implementation of options in thcrap, `bullet_cap` used thcrap codecaves for configuration.  **These codecaves are now deprecated,** so this page will not elaborate much on how to use them. For backwards compatibility reasons, if both are used, *the legacy codecave configuration takes precedence over the new option-based configuration*.
+
+The codecaves have the following names:
+
+* `bullet-cap`, <br>
+  `laser-cap`, <br>
+  `cancel-cap`.
+* `bullet-cap-config.anm-search-lag-spike-size`, <br>
+  `bullet-cap-config.mof-sa-lag-spike-size` (deprecated alias)
+
+If these are to be used, they must encode an integer in (big-endian) hexadecimal format, zero-padded on the left to **exactly 8 digits** and without an `0x` prefix.  E.g. `{"codecaves": {"bullet-cap": "00007d00"}}`.  Currently, they all default to `"ffff ffff"`, a special value to indicate that they have not been set by the user.
 
 ---
 
 # QnA
 
+## Do the default settings vary by game?
+
+Yes.  By default, each cap will be set to 16 times its original, vanilla value in that specific game.
+
+## What are the vanilla caps in each game?
+
+<!--
+| Cap          | EoSD | PCB  | IN       | PoFV | StB  | MoF  | SA   | UFO  | DS   | GFW  | TD   | DDC  | ISC  | LoLK | HSiFS | VD  | WBaWC |
+-->
+| Cap          | [game=06] | [game=07] | [game=08] | [game=09] | [game=095] | [game=10] | [game=11] | [game=12] | [game=125] | [game=128] | [game=13] | [game=14] | [game=143] | [game=15] | [game=16] | [game=165] | [game=17] |
+| ---          | ---  | ---  | ---  | ---  | ---  | ---  | ---  | ---  | ---  | ---  | ---  | ---  | ---  | ---  | ---  | ---  | ---  |
+| `bullet-cap` | 640  | 1024 | 1536 | N/A  | 1600 | 2000 | 2000 | 2000 | 2000 | 2000 | 2000 | 2000 | 2000 | 2000 | 2000 | 2000 | 2000 |
+| `laser-cap`  | 64   | 64   | 256  | 48   | 256  | 256  | 256  | 256  | 256  | 256  | 256  | 256  | 256  | 512  | 512  | 512  | 512  |
+| `cancel-cap` | 512  | 1100 | 2096 | N/A  | 150  | 2048 | 2048 | 2048 | 200  | 100  | 2048 | 4096 | 4096 | 4096 | 4096 | 200  | 4096 |
+
+And for PoFV:
+* `fairy-bullet-cap` is 175.
+* `rival-bullet-cap` is 360.
+
 ## Some games are "in beta"? What does that mean?
 
 Basically, these games may still undergo replay-breaking changes at some point in the future.  While I've tested them pretty thoroughly, they are more complicated than the other games and there may still be bugs.  So I'd like to see some other people playtesting them before I declare them as "TAS-ready."
 
-LoLK and onwards are also difficult because of additional arrays that are related to pointdevice.
+[game=15] and onwards are also difficult because of additional arrays that are related to pointdevice.
 
 ## <span id="vd"></span> And VD is in alpha?!
 
