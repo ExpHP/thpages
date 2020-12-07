@@ -74,7 +74,7 @@ Here are some additional options, along with their default values.
 [/code]
 
 * **`fairy-bullet-cap`** and **`rival-bullet-cap`**: These are the bullet caps for PoFV; one for fairy popcorn and one for the rival's L2+ charge attacks. (`bullet-cap` is ignored in this game)
-* **`anm-search-lag-spike-size`**:  This patch automatically softens some quadratic lag spike behavior when canceling many bullets in the following games: MoF, SA, TD.  You can configure the softening here; bigger number here = more lag. `0` will remove the lag spikes completely, while `"0x7fffffff"` will bring back the full vanilla behavior.<br>
+* **`anm-search-lag-spike-size`**:  This patch automatically softens some quadratic lag spike behavior when canceling many bullets in the following games: MoF, SA, TD.  You can configure the softening here; bigger number here = more lag. `0` will remove the lag spikes completely, while `"0x7fffffff"` will bring back the full vanilla behavior.
 
 ## Legacy configuration codecaves
 
