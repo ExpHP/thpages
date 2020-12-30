@@ -59,9 +59,9 @@ export class Eclmap {
     if (magic == "!eclmap") {
       this.kind = "ecl";
       this.parseNew(magic);
-    } else if (magic == "!anmmap") {
+    } else if (magic == "!anmmap" || magic == '!stdmap') {
       this.kind = "anm";
-      this.parseNewAnm(magic);
+      this.parseNewAnm();
     } else {
       this.err(`map file has bad magic: ${magic}`);
       this.kind = null;
@@ -159,19 +159,16 @@ export class Eclmap {
 
   parseNew(magic) {
     this.control("!ins_names"); // default
-    this.seqmapLoad("!eclmap", this.set.bind(this), this.control.bind(this), magic);
+    this.seqmapLoad(this.set.bind(this), this.control.bind(this));
   }
 
   parseNewAnm(magic) {
     this.control("!ins_names"); // default
-    this.seqmapLoad("!anmmap", this.set.bind(this), this.control.bind(this), magic);
+    this.seqmapLoad(this.set.bind(this), this.control.bind(this));
   }
 
-  seqmapLoad(magic, set, control, line) {
-    if (line != magic) {
-      this.err("invalid magic");
-      return;
-    }
+  seqmapLoad(set, control) {
+    let line = null;
     while ((line = this.fgets()) != null) {
       // Remove comments.
       line = line.split("#")[0];
