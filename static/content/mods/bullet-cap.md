@@ -140,11 +140,14 @@ Correct.
 This is a known bug that can affect games TH14 and onwards.  It is due to ANM id collisions, and is impossible to resolve without some heavy reworking of how the game assigns these ids.
 
 ## (TH15-165) The game crashes when I Esc-R, or exit to main menu and start another game
-
-I've observed this happening in TH16.  Ironically, I believe the cause of the crash is related to a fix for some vanilla crashes in these games.  (But I figure, a crash on restarting is a lot less terrible than a crash *during* gameplay!).  I'll fix it if I can find time later.
+This problem should be fixed now!  Please let me know if it's still happening.
 
 [more]
-Basically it's a failed `malloc` for one of the enlarged globals (`BulletManager` or `ItemManager`).  Pointdevice and copious amounts of wasted space on the Bullet struct in these three games make the structs obscenely large (312 MiB BulletManager for 16x cap in TH16!).  It only seems to crash if you've at some point had an extremely large cancel producing lots of VMs, suggesting that part of the issue is the buffers left behind by `ExpHP/anm_leak` (the fix for the vanilla crashes).  Most likely, they're making it difficult for the OS to find large enough contiguous regions of the 32-bit address space so that everything can have all the memory it needs when it reallocates them all on a reset.
+I observed this happening in TH16.  Ironically, the cause of the crash was related to a fix for some vanilla crashes in these games.
+
+Basically it was a failed `malloc` for one of the enlarged globals (`BulletManager` or `ItemManager`).  Pointdevice and copious amounts of wasted space on the Bullet struct in these three games make the structs obscenely large (312 MiB BulletManager for 16x cap in TH16!).  It only seemed to crash if you've at some point had an extremely large cancel producing lots of VMs, suggesting that part of the issue was the buffers left behind by `ExpHP/anm_leak` (the fix for the vanilla crashes).  Most likely, they were making it difficult for the OS to find large enough contiguous regions of the 32-bit address space so that everything can have all the memory it needs when it reallocates them all on a reset.
+
+The solution was to keep `BulletManager` allocated, the same way that `ExpHP/anm_leak` keeps the VM allocations.  I haven't bothered to do the same yet with `ItemManager` since items are much smaller, but in the future this may also be necessary.
 [/more]
 
 ## If the laser cap is too small during the Prismriver's last spell or PCB's manji spells, the game crashes on exiting the stage

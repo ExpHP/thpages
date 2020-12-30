@@ -22,8 +22,9 @@ Be sure to check out [Priw8's site](https://priw8.github.io) as a companion for 
 
 ## Updates
 
-[wip]**Current focus:** Crazy busy with porting `bullet_cap` to all games.[/wip]
+[wip]**Current focus:** Busy with work, but in my free time I'm working on a _something big..._[/wip]
 
+* 2020-12-29 &mdash; STD table supports all games now.
 * 2020-10-04 &mdash; this site now hosts info on some of my bigger patches, in no small part because I wanted shorter URLs to share.
 * 2020-09-13 &mdash; having trouble choosing layer numbers?  The new [layer viewer](#anm/layer-viewer) can help you see the sprites associated with each layer in a game.
 * 2020-09-02 &mdash; there's now a [STD table](#std/ins&g=06) for some early games.

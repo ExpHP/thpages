@@ -77,6 +77,67 @@ STD_BY_OPCODE.set('08', {
   34: {ref: 'std:v0-sprite-c'},
 });
 
+STD_BY_OPCODE.set('09', {...STD_BY_OPCODE.get('08')});
+STD_BY_OPCODE.set('095', {
+  0: {ref: 'std:stop'},
+  1: {ref: 'std:jmp'},
+  2: {ref: 'std:pos'},
+  3: {ref: 'std:pos-time'},
+  4: {ref: 'std:facing'},
+  5: {ref: 'std:facing-time'},
+  6: {ref: 'std:up'},
+  7: {ref: 'std:fov'},
+  8: {ref: 'std:skyfog'},
+  9: {ref: 'std:skyfog-time'},
+  10: {ref: 'std:pos-bezier'},
+  11: {ref: 'std:facing-bezier'},
+  12: {ref: 'std:rock'},
+  13: {ref: 'std:clear-color'},
+  14: {ref: 'std:sprite-2arg'},
+  // it's hard to tell whether ins_15 officially "exists" in TH095/TH10 since it would be cut out
+  // of the jumptable by the compiler regardless (it's a nop at the end of the table).
+  //
+  // But invalid instructions are also nops, so we might as well assume it does exist
+  // (assuming it is in fact a nop with no additional semantics; contrast with ins_16)
+  15: {ref: 'std:ins-15'},
+
+  // NOTE: As far as I can tell, TH095 and TH10 have no interrupt labels.
+  // I say this not because they are missing from the STD jumptable (as explained for ins_15 above,
+  // that much would be expected); rather, I say it because there appears to be no ECL instruction
+  // to trigger an interrupt in these two games.
+});
+
+STD_BY_OPCODE.set('10', {...STD_BY_OPCODE.get('095')});
+STD_BY_OPCODE.set('11', {
+  ...STD_BY_OPCODE.get('10'),
+  16: {ref: 'std:case'},
+  17: {ref: 'std:distortion'},
+});
+
+STD_BY_OPCODE.set('12', {
+  ...STD_BY_OPCODE.get('11'),
+  14: {ref: 'std:sprite-3arg'}, // signature change!
+  18: {ref: 'std:up-time'},
+});
+
+STD_BY_OPCODE.set('125', {...STD_BY_OPCODE.get('12')});
+STD_BY_OPCODE.set('128', {...STD_BY_OPCODE.get('125')});
+STD_BY_OPCODE.set('13', {...STD_BY_OPCODE.get('128')});
+STD_BY_OPCODE.set('14', {
+  ...STD_BY_OPCODE.get('13'),
+  19: {ref: 'std:ins-19'},
+  20: {ref: 'std:ins-20'},
+});
+
+STD_BY_OPCODE.set('143', {...STD_BY_OPCODE.get('14')});
+STD_BY_OPCODE.set('15', {...STD_BY_OPCODE.get('143')});
+STD_BY_OPCODE.set('16', {...STD_BY_OPCODE.get('15')});
+STD_BY_OPCODE.set('165', {...STD_BY_OPCODE.get('16')});
+STD_BY_OPCODE.set('17', {
+  ...STD_BY_OPCODE.get('16'),
+  21: {ref: 'std:fov-time'},
+});
+
 // ==========================================================================
 // ==========================================================================
 // =====================    INSTRUCTION DATA    =============================
@@ -369,6 +430,156 @@ for (const thing of ['pos', 'facing', 'up']) {
     This is the final derivative of the normalized easing function, so the final velocity
     will be \`(dx/t, dy/t, dz/t)\` (where \`t\` comes from [ref=std:v0-${thing}-bezier])
     [/tiphide]
+  `};
+}
+
+// Later games
+Object.assign(STD_INS_DATA, {
+  'stop': {sig: '', args: [], desc: `
+    Stops executing the script.
+
+    [tiphide]
+    This is basically like putting an infinitely large time label in the script.
+    Time-interpolated values will update, and interrupts can be triggered at any time (see [ref=std:case]).
+    [/tiphide]
+  `},
+
+  'jmp': {
+    sig: 'SS', args: ['offset', 'time'], desc: `
+    Jumps to the instruction at offset \`offset\` from the beginning of the script, and sets the current time to \`time\`.
+  `},
+
+  'pos': {sig: 'fff', args: ['x', 'y', 'z'], desc: `Set the position of the camera.`},
+  'facing': {sig: 'fff', args: ['x', 'y', 'z'], desc: `Set the direction the camera is facing.  The vector does not need to be normalized.`},
+  'up': {sig: 'fff', args: ['x', 'y', 'z'], desc: `Set the up direction of the camera.  The vector does not need to be normalized.`},
+  'fov': {sig: 'f', args: ['fovy'], desc: `Set the vertical field-of-view of the camera.`},
+
+  'skyfog': {
+    sig: 'Sff', args: ['color', 'near', 'far'], desc: `
+    Set the color, near plane, and far plane of the distance fog.
+
+    [tiphide]
+    Color is \`0xAARRGGBB\`. \`thstd\` also supports \`#RRGGBBAA\` notation.
+    [tiphide]
+  `},
+
+  'pos-bezier': {
+    sig: 'SSfffffffff', args: ['t', '_unused', 'x1', 'y1', 'z1', 'x2', 'y2', 'z2', 'x3', 'y3', 'z3'], desc: `
+    In \`t\` frames, moves the camera to \`(x2, y2, z2)\` using Bezier interpolation.
+
+    [tiphide]
+    [wip]Assuming everything works the same as [ref=anm:posBezier]:[/wip]
+    * The camera starts at its current position.
+    * \`(x1/t, y1/t, z1/t)\` is the **initial velocity.**
+    * \`(x2, y2, z2)\` is the **final position.**
+    * \`(x3/t, y3/t, z3/t)\` is the **final velocity.**
+
+    The second argument is entirely unused.
+    [/tiphide]
+  `},
+
+  'facing-bezier': {
+    sig: 'SSfffffffff', args: ['t', '_unused', 'x1', 'y1', 'z1', 'x2', 'y2', 'z2', 'x3', 'y3', 'z3'], desc: `
+    In \`t\` frames, moves to \`(x2, y2, z2)\` using Bezier interpolation.
+
+    [tiphide]
+    [wip]Assuming everything works the same as [ref=anm:posBezier]:[/wip]
+    * The camera's facing vector begins with the values set by [ref=std:facing].
+    * \`(x1/t, y1/t, z1/t)\` is the **initial derivative.**
+    * \`(x2, y2, z2)\` is the **final value.**
+    * \`(x3/t, y3/t, z3/t)\` is the **final derivative.**
+
+    The second argument is entirely unused.
+    [/tiphide]
+  `},
+
+  'rock': {
+    sig: 'S', args: ['mode'], desc: `
+    Sets the rocking mode and resets the rocking timer to 0.
+    [tiphide]
+    Different games have different modes. 0 disables rocking.
+    [/tiphide]
+  `},
+
+  'clear-color': {
+    sig: 'S', args: ['color'], desc: `
+    Sets a color that gets used at some point in a call to \`IDirect3DDevice8::Clear\`.
+    [tiphide]
+    I'm not sure when and where this color would ever be visible in-game...
+
+    Color is \`0xAARRGGBB\`. \`thstd\` also supports \`#RRGGBBAA\` notation.
+    [/tiphide]
+  `},
+
+  'sprite-2arg': {
+    sig: 'SS', args: ['slot', 'script'], desc: `
+    Load a 2d sprite, used for skyboxes and stuff.
+
+    In [game=095]&ndash;[game=17] there are 8 slots.  Prior to [game=14] this has no \`layer\` argument.
+  `},
+
+  'sprite-3arg': {
+    sig: 'SSS', args: ['slot', 'script', 'layer'], desc: `
+    Load a 2d sprite, used for skyboxes and stuff.
+
+    [tiphide]
+    In [game=095]&ndash;[game=17] there are 8 slots, numbered 0&ndash;7.
+    The \`layer\` argument serves a similar purpose to ANM layers (though it is a separate thing).
+    All sprites with layer 0 will be drawn before sprites with layer 1, and so on.
+    [wip]The number of layers in each game is different, so be careful![/wip]
+    [/tiphide]
+  `},
+
+  'ins-15': {sig: '', args: [], wip: 1, desc: `This appears to be a nop.  However, no game ever uses it.`},
+
+  'case': {
+    sig: 'S', args: ['n'], desc: `
+    A label for an interrupt.
+
+    [tiphide]
+    STD interrupts are similar to [ANM interrupts](#/anm/concepts&a=interrupt). They can occur
+    at any time the script is waiting (due to e.g. an increased [time label](#/anm/concepts&a=time)
+    or a [ref=std:stop]), and there is an ECL instruction to trigger them.
+    [/wiphide]
+  `},
+
+  'distortion': {
+    sig: 'S', args: ['a'], wip: 1, desc: `
+    Triggers distortion effects on the edge of the screen.
+
+    [wip]The meaning of the argument is not entirely clear.  [game=11] uses a value of 1 to create distortion
+    at the bottom of the screen, while [game=12] uses this same value to create distortion at the top.[/wip]
+  `},
+
+  'ins-19': {
+    sig: 'S', args: ['a'], wip: 2, desc: `
+    [wip=2]Unknown.[/wip]
+
+    [tiphide]
+    [wip=2]The implementation is entirely inscrutible.
+    It was added in [game=14], where it was used with an argument of 0 in stage 1.
+    [game=16] uses it in numerous stages with an argument of 1,
+    and [game=17] uses it in every stage.[/wip]
+    [/tiphide]
+  `},
+
+  'ins-20': {
+    sig: 'f', args: ['r'], wip: 2, desc: `
+    [wip=2]Unknown. No game has ever used it.[/wip]
+
+    [tiphide]
+    [wip=2]The argument gets used as a cutoff radius somewhere to skip a big block of floating point computations.[/wip]
+    [/tiphide]
+  `},
+});
+
+for (const thing of ['pos', 'up', 'facing', 'fov', 'skyfog']) {
+  STD_INS_DATA[`${thing}-time`] = {
+    sig: 'SS' + STD_INS_DATA[thing].sig,
+    args: ['t', 'mode', ...STD_INS_DATA[thing].args],
+    desc: `
+    Smoothly interpolates the value of [ref=std:${thing}] over the next \`t\` frames
+    using the given [interpolation mode](#/anm/interpolation&a=old-games).
   `};
 }
 
