@@ -19,3 +19,12 @@ onContentLoad(async function() {
   document.querySelector('#upload-anmmaps .row.v2 .col.label').innerHTML += ' (*)';
 });
 [/script]
+
+### stdmap
+
+Here you can customize names of STD instructions on the site.
+
+* **raw** &mdash; use names like `ins_14`.
+* **default** &mdash; use a pre-packaged copy of stdmaps from [truth](https://github.com/ExpHP/truth).
+
+<div id="upload-stdmaps"></div>

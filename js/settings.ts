@@ -1,11 +1,15 @@
 import {MD} from './markdown';
 import {Eclmap} from './anm/eclmap';
 import dedent from './lib/dedent';
-import {SupportedAnmVersion, SUPPORTED_ANM_VERSIONS, ANM_VERSION_DATA} from './anm/versions';
+import {
+  SupportedAnmVersion, StdVersion, VersionData,
+  SUPPORTED_ANM_VERSIONS, ANM_VERSION_DATA, SUPPORTED_STD_VERSIONS, STD_VERSION_DATA,
+} from './anm/versions';
 import {readFileSync} from 'fs';
-import {readUploadedFile, cached} from './util';
+import {readUploadedFile, cached, StrMap} from './util';
 
 const LOCAL_STORAGE_KEY_ANMMAP = 'anmmap';
+const LOCAL_STORAGE_KEY_STDMAP = 'stdmap';
 const LOCAL_STORAGE_KEY_OTHER_CONFIG = 'config';
 
 export type Config = {
@@ -24,12 +28,18 @@ const DEFAULT_CONFIG: Config = {
 // API for loading settings so they can be used from javascript code.
 
 /** A cache so that getCurrentAnmmaps can be called even in reasonably tight loops. */
-const currentAnmmaps = cached(() => storageLoadAnmmaps());
+const currentAnmmaps = cached(() => storageLoadMaps(anmmapSet));
+const currentStdmaps = cached(() => storageLoadMaps(stdmapSet));
 const currentConfig = cached(() => storageLoadConfigOrDefault());
 
 /** Get objects with all info from the user's configured anmmaps. */
 export function getCurrentAnmmaps() {
   return currentAnmmaps.get();
+}
+
+/** Get objects with all info from the user's configured stdmaps. */
+export function getCurrentStdmaps() {
+  return currentStdmaps.get();
 }
 
 /** Get additional Config. */
@@ -40,11 +50,55 @@ export function getConfig() {
 /** Clear caches for all `getCurrent__` functions. Suitable for use whenever a page is loaded. */
 export function clearSettingsCache() {
   currentAnmmaps.reset();
+  currentStdmaps.reset();
   currentConfig.reset();
 }
 
 // --------------------------------------------------------------
 // Functions that implement the settings page.
+
+type MapSet<V extends string> = {
+  /** ID of section on settings page. */
+  controlId: string,
+  /** Get all supported versions. */
+  supportedVersions: V[],
+  /** Get data about a version. */
+  versionData: {[k in V]: VersionData},
+  /** Prefix of some controls. */
+  mapType: string,
+  /** Where do we store settings for these maps in localStorage? */
+  localStorageKey: string,
+  /** Default map file contents for each version. */
+  defaultMapText: {[v in V]: string},
+}
+
+const anmmapSet: MapSet<SupportedAnmVersion> = {
+  controlId: 'upload-anmmaps',
+  supportedVersions: SUPPORTED_ANM_VERSIONS,
+  versionData: ANM_VERSION_DATA,
+  mapType: 'anmmap',
+  localStorageKey: LOCAL_STORAGE_KEY_ANMMAP,
+  defaultMapText: {
+    'v0': readFileSync(__dirname + '/../static/eclmap/anmmap/v0.anmm', 'utf8'),
+    'v2': readFileSync(__dirname + '/../static/eclmap/anmmap/v2.anmm', 'utf8'),
+    'v3': readFileSync(__dirname + '/../static/eclmap/anmmap/v2.anmm', 'utf8'),
+    'v4': readFileSync(__dirname + '/../static/eclmap/anmmap/v4.anmm', 'utf8'),
+    'v8': readFileSync(__dirname + '/../static/eclmap/anmmap/v8.anmm', 'utf8'),
+  },
+};
+
+const stdmapSet: MapSet<StdVersion> = {
+  controlId: 'upload-stdmaps',
+  supportedVersions: SUPPORTED_STD_VERSIONS,
+  versionData: STD_VERSION_DATA,
+  mapType: 'stdmap',
+  localStorageKey: LOCAL_STORAGE_KEY_STDMAP,
+  defaultMapText: {
+    'eosd': readFileSync(__dirname + '/../static/stdmap/std-06.stdm', 'utf8'),
+    'classic': readFileSync(__dirname + '/../static/stdmap/std-09.stdm', 'utf8'),
+    'modern': readFileSync(__dirname + '/../static/stdmap/std-14.stdm', 'utf8'),
+  },
+};
 
 export function initSettings() {
   (window as any).buildSettingsPage = buildSettingsPage;
@@ -53,29 +107,33 @@ export function initSettings() {
 
 /** Selects things on the settings page to match the stored settings. */
 function setupSettingsPageInitialState() {
-  resetSettingsPageAnmmapsFromStorage();
+  resetSettingsPageMapsFromStorage(anmmapSet);
+  resetSettingsPageMapsFromStorage(stdmapSet);
 }
 
 /** Generates HTML for the settings page. */
 function buildSettingsPage() {
-  buildAnmmapSelector(document.querySelector<HTMLElement>('#upload-anmmaps')!);
+  buildMapSelector(document.querySelector<HTMLElement>(`#${anmmapSet.controlId}`)!, anmmapSet);
+  buildMapSelector(document.querySelector<HTMLElement>(`#${stdmapSet.controlId}`)!, stdmapSet);
   setupSettingsPageInitialState();
   setupSettingsPageHooks();
 }
 
 /** Generates HTML for the anmmaps selector. */
-function buildAnmmapSelector($div: HTMLElement) {
+function buildMapSelector<V extends string>($div: HTMLElement, mapSet: MapSet<V>) {
+  const {mapType, supportedVersions, versionData} = mapSet;
+
   $div.classList.add('map-files');
   $div.innerHTML = /* HTML */`
     <div class="rows"></div>
     <p><button class='confirm' disabled='true'></button><span class="save-status"></span></p>
 
   `;
-  const $rows = document.querySelector('.rows')!;
+  const $rows = $div.querySelector('.rows')!;
 
   let rowsHtml = '';
-  for (const version of SUPPORTED_ANM_VERSIONS) {
-    const {minGame, maxGame} = ANM_VERSION_DATA[version];
+  for (const version of supportedVersions) {
+    const {minGame, maxGame} = versionData[version];
 
     let gameRangeStr;
     if (minGame === maxGame) {
@@ -87,16 +145,16 @@ function buildAnmmapSelector($div: HTMLElement) {
       <div class="row ${version}">
         <div class='col label'>${version} (${gameRangeStr})</div>
         <div class='col raw'>
-          <input type='radio' id='anmmap-${version}-raw' name='anmmap-${version}'>
-          <label for='anmmap-${version}-raw'></label>
+          <input type='radio' id='${mapType}-${version}-raw' name='${mapType}-${version}'>
+          <label for='${mapType}-${version}-raw'></label>
         </div>
         <div class='col auto'>
-          <input type='radio' id='anmmap-${version}-auto' name='anmmap-${version}'>
-          <label for='anmmap-${version}-auto'></label>
+          <input type='radio' id='${mapType}-${version}-auto' name='${mapType}-${version}'>
+          <label for='${mapType}-${version}-auto'></label>
         </div>
         <div class='col file'>
-          <input type='radio' id='anmmap-${version}-file' name='anmmap-${version}'>
-          <label for='anmmap-${version}-file'><input type='file'></label>
+          <input type='radio' id='${mapType}-${version}-file' name='${mapType}-${version}'>
+          <label for='${mapType}-${version}-file'><input type='file'></label>
         </div>
         <div class='col status'></div>
       </div>
@@ -106,8 +164,10 @@ function buildAnmmapSelector($div: HTMLElement) {
   $rows.innerHTML = MD.makeHtml(rowsHtml);
 }
 
-function resetSettingsPageAnmmapsFromStorage() {
-  const $maps = document.querySelector('#upload-anmmaps');
+function resetSettingsPageMapsFromStorage<V extends string>(mapSet: MapSet<V>) {
+  const {controlId, supportedVersions} = mapSet;
+
+  const $maps = document.querySelector(`#${controlId}`);
   if (!$maps) throw new Error('not on settings page!');
 
   const $rows = $maps.querySelector('.rows')!;
@@ -115,9 +175,9 @@ function resetSettingsPageAnmmapsFromStorage() {
     $input.disabled = false;
   }
 
-  const anmmapSettings = storageReadAnmmapsOrDefault();
-  for (const version of SUPPORTED_ANM_VERSIONS) {
-    const setting = anmmapSettings[version];
+  const mapSettings = storageReadMapsOrDefault(mapSet);
+  for (const version of supportedVersions) {
+    const setting = mapSettings[version];
     const $row = $maps.querySelector(`.row.${version}`) as HTMLElement;
     const {$rawRadio, $autoRadio, $fileRadio, $fileUpload, $status} = getMapSettingsRowStuff($row);
 
@@ -139,7 +199,14 @@ function resetSettingsPageAnmmapsFromStorage() {
 
 /** Sets up event hooks on the Settings page. */
 function setupSettingsPageHooks() {
-  const $maps = document.querySelector('#upload-anmmaps');
+  setupMapHooks(anmmapSet);
+  setupMapHooks(stdmapSet);
+}
+
+function setupMapHooks<V extends string>(mapSet: MapSet<V>) {
+  const {controlId} = mapSet;
+
+  const $maps = document.querySelector(`#${controlId}`);
   if (!$maps) throw new Error('not on settings page!');
 
   const $rows = $maps.querySelector('.rows')!;
@@ -156,11 +223,11 @@ function setupSettingsPageHooks() {
   }
 
   $confirmButton.addEventListener('click', () => {
-    saveNewAnmmapSettingsFromPage().then(
+    saveNewMapSettingsFromPage(mapSet).then(
         () => {},
         (err) => {
           window.alert(`Error: ${err}`);
-          resetSettingsPageAnmmapsFromStorage();
+          resetSettingsPageMapsFromStorage(mapSet);
         },
     );
   });
@@ -176,53 +243,59 @@ function getMapSettingsRowStuff($row: HTMLElement) {
   };
 }
 
-async function saveNewAnmmapSettingsFromPage() {
-  const $maps = document.querySelector('#upload-anmmaps');
+async function saveNewMapSettingsFromPage<V extends string>(mapSet: MapSet<V>) {
+  const {controlId, localStorageKey} = mapSet;
+
+  const $maps = document.querySelector(`#${controlId}`);
   if (!$maps) throw new Error('not on settings page!');
 
-  const oldValue = localStorage.getItem(LOCAL_STORAGE_KEY_ANMMAP);
+  const oldValue = localStorage.getItem(localStorageKey);
   try {
-    const anmmapSettings = await readAnmmapSettingsFromPage($maps);
-    localStorage.setItem(LOCAL_STORAGE_KEY_ANMMAP, JSON.stringify(anmmapSettings));
+    const mapSettings = await readMapSettingsFromPage($maps, mapSet);
+    localStorage.setItem(localStorageKey, JSON.stringify(mapSettings));
 
     // Just check to make sure they can be loaded without errors...
-    storageReadAnmmapsOrThrow();
+    storageReadMapsOrThrow(mapSet);
     setMapsSaveStatus($maps, 'success');
   } catch (e) {
     console.error(e);
     setMapsSaveStatus($maps, 'error');
-    restoreLocalStorageItem(LOCAL_STORAGE_KEY_ANMMAP, oldValue);
+    restoreLocalStorageItem(localStorageKey, oldValue);
   }
 
-  resetSettingsPageAnmmapsFromStorage();
+  resetSettingsPageMapsFromStorage(mapSet);
 }
 
-async function readAnmmapSettingsFromPage($maps: Element) {
+async function readMapSettingsFromPage<V extends string>($maps: Element, mapSet: MapSet<V>) {
+  const {supportedVersions} = mapSet;
+
   const $rows = $maps.querySelector('.rows')!;
   for (const $input of $rows.querySelectorAll('input')) {
     $input.disabled = true;
   }
 
   // begin with current settings for reason described below.
-  const anmmapSettings = storageReadAnmmapsOrDefault();
-  for (const version of SUPPORTED_ANM_VERSIONS) {
+  const mapSettings = storageReadMapsOrDefault(mapSet);
+  for (const version of supportedVersions) {
     const $row = $maps.querySelector(`.row.${version}`) as HTMLElement;
     const {$rawRadio, $autoRadio, $fileRadio, $fileUpload} = getMapSettingsRowStuff($row);
 
-    if ($rawRadio.checked) anmmapSettings[version] = 'raw';
-    else if ($autoRadio.checked) anmmapSettings[version] = 'auto';
+    let mapSetting: MapSetting | undefined;
+    if ($rawRadio.checked) mapSetting = 'raw';
+    else if ($autoRadio.checked) mapSetting = 'auto';
     else if ($fileRadio.checked) {
       // If no file was uploaded during the current page visit, it is very likely because
-      // anmmapSettings already contains a loaded file, so we should just keep that.
+      // mapSettings already contains a loaded file, so we should just keep that.
       if ($fileUpload.files!.length === 0) continue;
 
       const text = await readUploadedFile($fileUpload.files![0]);
-      anmmapSettings[version] = parseMapText(text);
+      mapSetting = parseMapText(text);
     }
-    loadMapFromSetting(version, anmmapSettings[version]);
+    mapSettings[version] = mapSetting!;
+    loadMapFromSetting(version, mapSetting!, mapSet);
   }
 
-  return anmmapSettings;
+  return mapSettings;
 }
 
 /**
@@ -260,16 +333,8 @@ function makeFrozenStatsTableCheckbox($input: HTMLInputElement) {
 // --------------------------------------------------------------
 // Settings implementation.
 
-export const DEFAULT_ANMM_TEXT: {[v in SupportedAnmVersion]: string} = {
-  'v0': readFileSync(__dirname + '/../static/eclmap/anmmap/v0.anmm', 'utf8'),
-  'v2': readFileSync(__dirname + '/../static/eclmap/anmmap/v2.anmm', 'utf8'),
-  'v3': readFileSync(__dirname + '/../static/eclmap/anmmap/v2.anmm', 'utf8'),
-  'v4': readFileSync(__dirname + '/../static/eclmap/anmmap/v4.anmm', 'utf8'),
-  'v8': readFileSync(__dirname + '/../static/eclmap/anmmap/v8.anmm', 'utf8'),
-};
-
-export type LoadedAnmMaps = {[v in SupportedAnmVersion]: LoadedMap};
-export type AnmMapSettings = {[v in SupportedAnmVersion]: MapSetting};
+export type LoadedMaps<V extends string> = {[v in V]: LoadedMap};
+export type MapSettings<V extends string> = StrMap<V, MapSetting>;
 
 /** Form of an ECLMap stored in memory. */
 export type LoadedMap = {ins: NumberMap, vars: NumberMap};
@@ -287,36 +352,42 @@ function saveConfig(config: Config) {
 }
 
 /** Initializes ANM maps, possibly from localStorage. */
-function storageLoadAnmmaps(): LoadedAnmMaps {
-  const settings = storageReadAnmmapsOrDefault();
-  const out = {} as Record<SupportedAnmVersion, LoadedMap>;
-  for (const version of SUPPORTED_ANM_VERSIONS) {
-    out[version] = loadMapFromSetting(version, settings[version]);
+function storageLoadMaps<V extends string>(mapSet: MapSet<V>): LoadedMaps<V> {
+  const {supportedVersions} = mapSet;
+
+  const settings = storageReadMapsOrDefault(mapSet);
+  const out = {} as Record<V, LoadedMap>;
+  for (const version of supportedVersions) {
+    out[version] = loadMapFromSetting(version, StrMap.getOrDefault(settings, version, 'auto'), mapSet);
   }
   return out;
 }
 
 /** Get the settings for ANM maps. */
-function storageReadAnmmapsOrThrow(): AnmMapSettings {
-  const text = localStorage.getItem(LOCAL_STORAGE_KEY_ANMMAP) || '{}';
+function storageReadMapsOrThrow<V extends string>(mapSet: MapSet<V>): MapSettings<V> {
+  const {localStorageKey} = mapSet;
+
+  const text = localStorage.getItem(localStorageKey) || '{}';
   const json = JSON.parse(text);
-  return parseSettingAnmmapJson(json);
+  return parseSettingMapJson(json, mapSet);
 }
 
-function storageReadAnmmapsOrDefault(): AnmMapSettings {
-  const text = localStorage.getItem(LOCAL_STORAGE_KEY_ANMMAP) || '{}';
+function storageReadMapsOrDefault<V extends string>(mapSet: MapSet<V>): MapSettings<V> {
+  const {localStorageKey, mapType} = mapSet;
+
+  const text = localStorage.getItem(localStorageKey) || '{}';
   const json = JSON.parse(text);
   try {
-    return parseSettingAnmmapJson(json);
+    return parseSettingMapJson(json, mapSet);
   } catch (e) {
-    console.error(`ignoring saved anmmaps due to an error`, e);
-    return {'v0': 'auto', 'v2': 'auto', 'v3': 'auto', 'v4': 'auto', 'v8': 'auto'};
+    console.error(`ignoring saved ${mapType}s due to an error`, e);
+    return {};
   }
 }
 
-function loadMapFromSetting(version: SupportedAnmVersion, m: MapSetting): LoadedMap {
+function loadMapFromSetting<V extends string>(version: V, m: MapSetting, mapSet: MapSet<V>): LoadedMap {
   if (m === 'raw') return {ins: {}, vars: {}};
-  if (m === 'auto') return parseMapText(DEFAULT_ANMM_TEXT[version]);
+  if (m === 'auto') return parseMapText(mapSet.defaultMapText[version]);
   return m;
 }
 
@@ -332,12 +403,14 @@ function parseMapText(s: string): LoadedMap {
   return out;
 }
 
-function parseSettingAnmmapJson(x: unknown): AnmMapSettings {
+function parseSettingMapJson<V extends string>(x: unknown, mapSet: MapSet<V>): MapSettings<V> {
+  const {supportedVersions} = mapSet;
+
   if (!(x && typeof x === 'object')) throw new TypeError(`expected object, got ${typeof x}`);
 
-  const xobj = x as Record<SupportedAnmVersion, unknown>;
-  const out = {} as Record<SupportedAnmVersion, MapSetting>;
-  for (const version of SUPPORTED_ANM_VERSIONS) {
+  const xobj = x as Record<V, unknown>;
+  const out = {} as Record<V, MapSetting>;
+  for (const version of supportedVersions) {
     out[version] = parseStoredMapJson(xobj[version] || 'auto');
   }
   return out;

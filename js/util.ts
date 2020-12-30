@@ -23,6 +23,12 @@ export const StrMap = {
   mapValues: function<K extends string | symbol, V, V2>(obj: StrMap<K, V>, func: (v:V, k:K) => V2): StrMap<K, V2> {
     return StrMap.fromEntries([...StrMap.entries(obj)].map(([k, v]) => [k, func(v, k)]));
   },
+  // it is actually surprisingly hard to write this in a way that typechecks
+  getOrDefault: function<K extends string | symbol, V>(obj: StrMap<K, V>, key: K, def: V): V {
+    // mut annotate as `V | undefined` because otherwise it will be `StrMap<K, V>[K]` and do dumb things.
+    const value: V | undefined = obj[key];
+    return value || def;
+  },
 };
 
 export const NumMap = {
