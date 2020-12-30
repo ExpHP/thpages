@@ -153,7 +153,8 @@ ANM_BY_OPCODE.set('08', {
 
   // new instrs
   82: {ref: 'anm:blendMode'},
-  83: UNASSIGNED, // stores dword field, it's at offset 0x200 in both games so good luck finding usages lol
+  // This might be some sort of early renderMode analogue that's specific to player bullets.
+  83: {ref: 'anm:playerBulletMode2'},
   84: {ref: 'anm:rgb2'},
   85: {ref: 'anm:alpha2'},
   86: {ref: 'anm:rgb2Time'},
@@ -777,7 +778,7 @@ Object.assign(ANM_INS_DATA, {
   `},
   // TODO: Maybe link to RenderType enum.
   'renderMode': {
-    sig: 'S', args: ['t'], desc: `
+    sig: 'S', args: ['mode'], desc: `
     Determines how the ANM is rendered.
 
     [tiphide]
@@ -794,6 +795,19 @@ Object.assign(ANM_INS_DATA, {
     * Many mode numbers are not intended for use by ANM scripts, and are instead reserved for instructions
       like [ref=anm:textureCircle] and [ref=anm:drawRect] (each one has its own mode).
     [/tiphide]
+  `},
+  'playerBulletMode2': {
+    sig: 'S', args: ['mode'], wip: 2, desc: `
+    Some weird kind of proto-[ref=anm:renderMode] used strictly for player bullet hit animations **and nothing else**.
+
+    The hit animation for a player bullet that has hit an enemy uses one of 6 different possible functions to
+    render itself based on this value.  Based on experimentation, these appear to be
+
+    * 0: Ignore scale and rotation.
+    * 2: Apply scale and rotation.
+    * 1, 3, 4, 5: Unused by IN. They're all different. Who knows why they exist.
+
+    If you try to use this on anything other than a player bullet hit animation, it has no effect.
   `},
   'layer': {
     sig: 'S', args: ['n'], desc: `
