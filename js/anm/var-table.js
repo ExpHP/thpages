@@ -83,9 +83,6 @@ ANM_VARS_BY_NUMBER.set('13', {...ANM_VARS_BY_NUMBER.get('12'),
   10021: {ref: 'anmvar:lookat-z'},
 
   // new
-  10023: {ref: 'anmvar:rot-x'},
-  10024: {ref: 'anmvar:rot-y'},
-  10025: {ref: 'anmvar:rot-z'},
   10026: {ref: 'anmvar:rot-z-effective'},
   10027: {ref: 'anmvar:rand-param-one'},
   10028: {ref: 'anmvar:rand-param-pi'},

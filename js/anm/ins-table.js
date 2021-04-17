@@ -505,7 +505,18 @@ export const ANM_INS_DATA = {};
 // ==============
 Object.assign(ANM_INS_DATA, {
   'nop': {sig: '', args: [], desc: "Does nothing."},
-  'delete': {sig: '', args: [], desc: "Destroys the graphic."},
+  'delete': {sig: '', args: [], desc: `
+    Destroys the graphic.
+
+    [tiphide]
+    * **[game=06]:** this instruction and [ref=anm:static] may only appear as the final instruction of a script,
+      and one of these **must** appear.  thstd and trustd will implicitly insert a [ref=anm:delete] at the closing brace if there isn't one.
+      <!-- TH06 has no markers in-between scripts.  The way that interrupt labels know when to stop searching in this
+           game is that they stop once they encounter ins_0 or ins_15. -->
+    * **[game=07]&ndash;:** this instruction may appear anywhere.  Additionally, a VM that reaches the end of the script
+      will be automatically deleted *as if* it encountered this instruction.
+    [/tiphide]
+  `},
   'static': {
     sig: '', args: [], desc: `
     Freezes the graphic until it is destroyed externally.
@@ -513,6 +524,8 @@ Object.assign(ANM_INS_DATA, {
     [tiphide]
     Any interpolation instructions like [ref=anm:posTime] will no longer advance,
     and [interrupts](#anm/concepts&a=interrupt) are disabled.
+
+    **In [game=06] only,** this instruction and [ref=anm:delete] may only appear as the final instruction of a script.
     [/tiphide]
   `},
   'stop': {sig: '', args: [], desc: `
