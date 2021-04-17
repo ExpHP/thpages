@@ -95,8 +95,8 @@ Object.assign(MSG_INS_DATA, {
   },
   'th10-show-textbox': {sig: '', args: [], desc: `Show the text box.`},
   'th10-hide-player': {sig: '', args: [], desc: `Hide the player portrait.`},
-  'th10-hide-enemy': {sig: '', args: [], desc: `Hide the enemy portrait.`},
-  'th10-hide-textbox': {sig: '', args: [], desc: `Hide the text box.`},
+  'th10-hide-enemy': {sig: '', args: [], desc: `Hide the enemy portrait. [tiphide](and typically also their intro if still visible)[/tiphide]`},
+  'th10-hide-textbox': {sig: '', args: [], desc: `Hide the text box. (and all text on it)`},
   'th10-focus-player': {sig: '', args: [], desc: `Indicates that the player is speaking.`},
   'th10-focus-enemy': {sig: '', args: [], desc: `Indicates that the enemy is speaking.`},
   'th10-focus-youkai': {sig: '', args: [], wip: 1, desc: `[wip]Probably indicates that the youkai ally from aboveground is speaking.[/wip]`},
@@ -115,7 +115,7 @@ Object.assign(MSG_INS_DATA, {
   `},
   'th10-enemy-appear': {
     sig: '', args: [], desc: `
-    [wip]Bears a resemblance to enemyAppear from earlier games.  Never used.[/wip]
+    Tells the boss enemy to fly onscreen.
   `},
   'th10-face-player': {
     sig: 'S', args: ['id'], desc: `
