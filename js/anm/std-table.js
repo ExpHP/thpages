@@ -14,15 +14,6 @@ export const UNASSIGNED = {ref: null, wip: 2};
  * There are NO GUARANTEES about iteration order of opcodes within a game.
  */
 export const STD_BY_OPCODE = new Map(); // has to be a map because 'integer' keys defy insertion order
-export const GROUPS_V8 = [
-  {min: 0, max: 99, title: 'System'},
-  {min: 100, max: 199, title: 'Math'},
-  {min: 200, max: 299, title: 'Jumps'},
-  {min: 300, max: 399, title: 'Settings'},
-  {min: 400, max: 499, title: 'General'},
-  {min: 500, max: 599, title: 'Child management'},
-  {min: 600, max: 699, title: 'Drawing'},
-];
 
 // ---- EoSD ----
 STD_BY_OPCODE.set('06', {
@@ -608,7 +599,7 @@ for (const [key, value] of Object.entries(STD_INS_DATA)) {
   if (value.sig === undefined) window.console.error(`TABLE CORRUPT: std ref ${key} has no 'sig'`);
   if (value.sig != null && value.args === undefined) window.console.error(`TABLE CORRUPT: std ref ${key} has no 'args'`);
   if (value.sig && value.sig.length !== value.args.length) {
-    window.console.error(`TABLE CORRUPT: astdnm ref ${key} has arg count mismatch`);
+    window.console.error(`TABLE CORRUPT: std ref ${key} has arg count mismatch`);
   }
 
   // automatically remove tips from self-references
