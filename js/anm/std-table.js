@@ -543,14 +543,11 @@ Object.assign(STD_INS_DATA, {
   `},
 
   'ins-19': {
-    sig: 'S', args: ['a'], wip: 2, desc: `
-    [wip=2]Unknown.[/wip]
+    sig: 'S', args: ['n'], wip: 1, desc: `
+    Invokes ANM interrupt \`n + 7\` on all sprites in the stage background.
 
     [tiphide]
-    [wip=2]The implementation is entirely inscrutible.
-    It was added in [game=14], where it was used with an argument of 0 in stage 1.
-    [game=16] uses it in numerous stages with an argument of 1,
-    and [game=17] uses it in every stage.[/wip]
+    [wip=1]What's it used for?[/wip]
     [/tiphide]
   `},
 
