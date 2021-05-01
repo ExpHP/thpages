@@ -17,7 +17,7 @@ type AnmSpec = {
   sprites: AnmSpecSprite[],
   scripts: AnmSpecScript[],
 };
-type AnmSpecScript = {indexInFile: number, sprite: number | null, layer: number | null};
+type AnmSpecScript = {indexInFile: number, sprites: (number | null)[], layers: (number | null)[]};
 type AnmSpecSprite = {indexInFile: number, texture: number, left: number, top: number, width: number, height: number};
 type AnmSpecTexture = {indexInFile: number, path: string, xOffset: number, yOffset: number};
 
@@ -77,7 +77,7 @@ type Helpers = {status: Status, progress: Progress, cancel: Cancel};
 
 // This global could easily be replaced with a local variable, but I've deliberately made it global
 // to emphasize the fact that multiple cannot exist. (they would both try to register for the 'layer-viewer' prefix)
-/** Resolves tips for the layer viewers. Tip keys look like `layer-viewer:stg5enm:5` (last number is script). */
+/** Resolves tips for the layer viewers. Tip keys look like `layer-viewer:stg5enm:5-4` (last two numbers are script and sprite). */
 let LVIEWER_TIP_RESOLVER = new PrefixResolver<Tip>();
 
 (window as any).buildLayerViewer = buildLayerViewer;
@@ -122,9 +122,11 @@ async function runLayerViewer(status: Status, cancel: Cancel, zip: JSZip, $layer
     const subdir = specZipObj.name.split('/')[0];
     const anmBasename = subdir;
 
-    LVIEWER_TIP_RESOLVER.registerPrefix(anmBasename, (scriptNumStr) => {
-      const script = parsedSpec.scripts[Number.parseInt(scriptNumStr)];
-      return generateTip(anmBasename, script, parsedSpec);
+    LVIEWER_TIP_RESOLVER.registerPrefix(anmBasename, (scriptSpriteStr) => {
+      const [scriptStr, spriteStr] = scriptSpriteStr.split("-");
+      const script = parsedSpec.scripts[Number.parseInt(scriptStr)];
+      const sprite = parsedSpec.sprites[Number.parseInt(spriteStr)];
+      return generateTip(anmBasename, script, sprite);
     });
 
     return addAnmFileToLayerViewer(helpers, $layerViewer, layerPackers, zip, subdir, parsedSpec);
@@ -174,7 +176,7 @@ function parseAnmSpec(text: string, game: Game, filename?: string): AnmSpec {
   text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
 
   type EntryState = {state: 'entry', path: string | null, xOffset: number, yOffset: number};
-  type ScriptState = {state: 'script', layer: number | null, sprite: number | null};
+  type ScriptState = {state: 'script', layers: (number | null)[], sprites: (number | null)[]};
   type NoState = {state: null};
   let state: EntryState | ScriptState | NoState = {state: null};
 
@@ -202,13 +204,14 @@ function parseAnmSpec(text: string, game: Game, filename?: string): AnmSpec {
       if (state.state !== null) {
         throw lineErr(`Expected '}' before 'script'`);
       }
-      state = {state: 'script', layer: null, sprite: null};
+      state = {state: 'script', layers: [], sprites: []};
 
     } else if (line.startsWith('}')) {
       switch (state.state) {
         case null:
           throw lineErr(`Unexpected '}'`);
         case 'entry': {
+          // end of entry
           if (state.path === null) {
             throw lineErr(`No image filepath found in entry!`);
           }
@@ -218,7 +221,12 @@ function parseAnmSpec(text: string, game: Game, filename?: string): AnmSpec {
           break;
         }
         case 'script':
-          out.scripts.push({indexInFile: out.scripts.length, sprite: state.sprite, layer: state.layer});
+          // end of script
+          state.sprites = [...new Set(state.sprites)];
+          state.sprites.sort();
+          state.layers = [...new Set(state.layers)];
+          state.layers.sort();
+          out.scripts.push({indexInFile: out.scripts.length, sprites: state.sprites, layers: state.layers});
           state = {state: null};
           break;
       }
@@ -252,15 +260,15 @@ function parseAnmSpec(text: string, game: Game, filename?: string): AnmSpec {
     } else if (state.state === 'script') {
       let match: RegExpMatchArray | null;
       if (match = line.match(/sprite([0-9]+)/)) {
-        state.sprite = Number.parseInt(match[1], 10);
+        state.sprites.push(Number.parseInt(match[1], 10));
       }
 
       const layerStr = readLayerInsDigits(line);
       if (layerStr) {
-        state.layer = Number.parseInt(layerStr, 10);
+        state.layers.push(Number.parseInt(layerStr, 10));
       }
     }
-  }
+  } // for (let lineI = ...)
 
   return out;
 }
@@ -281,7 +289,9 @@ async function addAnmFileToLayerViewer(
   cancel.check();
 
   // Add boxes for new layers as needed.
-  const maxLayerInFile = specData.scripts.map((script) => script.layer || 0).reduce((a, b) => Math.max(a, b));
+  const maxLayerInFile = Math.max(...specData.scripts.map(
+      (script) => Math.max(...script.layers.map((lay) => lay || 0)),
+  ));
   while (layerPackers.length <= maxLayerInFile) {
     const thisLayer = layerPackers.length;
 
@@ -299,7 +309,7 @@ async function addAnmFileToLayerViewer(
     $div.appendChild($inner);
 
     layerPackers.push(new Packery($inner, {itemSelector: '.grid-item', gutter: 4}));
-  }
+  } // while (layerPackers.length < ...)
 
   for (const texture of specData.textures) {
     const {path} = texture;
@@ -325,21 +335,29 @@ async function addAnmFileToLayerViewer(
     // We haven't collected scripts for a texture ahead of time so just filter the list.
     // This technically leads to quadratic complexity but no anm file in any game has THAT many textures...
     for (const script of specData.scripts) {
-      if (!script.layer) continue;
-      if (!script.sprite) continue;
-      const sprite = specData.sprites[script.sprite];
-      if (sprite.texture === texture.indexInFile) {
-        // (TODO: consider getting all of these started and then using Promise.all)
-        const $gridItem = await getGridItem(sprite);
-        $gridItem.classList.add('grid-item');
-        $gridItem.dataset.tipId = `layer-viewer:${anmBasename}:${script.indexInFile}`;
-        cancel.check();
+      for (const layer of script.layers) {
+        if (layer == null) continue;
+        for (const spriteId of script.sprites) {
+          if (spriteId == null) continue;
 
-        $layerViewer.querySelectorAll('.layer-viewer-scripts .packery-container').item(script.layer).appendChild($gridItem);
-        layerPackers[script.layer!].appended($gridItem);
+          const sprite = specData.sprites[spriteId];
+          if (sprite.texture === texture.indexInFile) {
+            // (TODO: consider getting all of these started and then using Promise.all)
+            const $gridItem = await getGridItem(sprite);
+            $gridItem.classList.add('grid-item');
+            if (script.layers.length > 1) {
+              $gridItem.classList.add('warn-multiple-layer');
+            }
+            $gridItem.dataset.tipId = `layer-viewer:${anmBasename}:${script.indexInFile}-${spriteId}`;
+            cancel.check();
+
+            $layerViewer.querySelectorAll('.layer-viewer-scripts .packery-container').item(layer).appendChild($gridItem);
+            layerPackers[layer].appended($gridItem);
+          }
+        }
       }
-    }
-  }
+    } // for (const script ...)
+  } // for (const texture ...)
   cancel.check();
   // Because we awaited all promises we know everything for this anm file is done.
   progress.anmFilesDone += 1;
@@ -407,17 +425,19 @@ async function domOnce($elem: HTMLElement, type: string) {
   await events.once(emitter, 'trigger');
 }
 
-function generateTip(anmName: string, script: AnmSpecScript, anm: AnmSpec): Tip {
-  const scriptI: number = script.indexInFile;
-  const spriteI: number = script.sprite!;
-  const sprite = anm.sprites[spriteI];
+function generateTip(anmName: string, script: AnmSpecScript, sprite: AnmSpecSprite): Tip {
+  let warning = "";
+  if (script.layers.length > 1) {
+    const joined = script.layers.join(",");
+    warning = `<br/><span data-wip="1">Layer uncertain! Might belong to: ${joined}</span>`;
+  }
   return {
     contents: dedent(`
       <strong>${anmName}.anm</strong><br/>
       entry${sprite.texture}<br/>
-      sprite${spriteI}<br/>
-      script${scriptI}<br/>
-      ${sprite.width}×${sprite.height}
+      sprite${sprite.indexInFile}<br/>
+      script${script.indexInFile}<br/>
+      ${sprite.width}×${sprite.height}${warning}
     `),
     omittedInfo: false,
   };
