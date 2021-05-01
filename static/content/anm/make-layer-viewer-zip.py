@@ -5,6 +5,7 @@ import shutil
 import tempfile
 import glob
 import os
+import sys
 import argparse
 
 def main():
@@ -22,7 +23,7 @@ def run_with_tempdirs(datpath, game, outpath, dat_tmpdir, zip_tmpdir):
     # resolve this now so we can set cwd for thdat (which always extracts to cwd)
     datpath = os.path.realpath(datpath)
     # extract to tmpdir
-    subprocess.run(['thdat', '-x', game, datpath], cwd=dat_tmpdir, check=True, stdout=subprocess.PIPE)
+    run_process(['thdat', '-x', game, datpath], cwd=dat_tmpdir, check=True, stdout=subprocess.PIPE)
 
     for anm_path in glob.glob(os.path.join(dat_tmpdir, '*.anm')):
         basename = os.path.splitext(os.path.basename(anm_path))[0]
@@ -32,8 +33,8 @@ def run_with_tempdirs(datpath, game, outpath, dat_tmpdir, zip_tmpdir):
             continue # unfortunately thanm cannot extract this one
 
         print(f'=== {basename} ===')
-        subprocess.run(['thanm', '-x', anm_path], cwd=zip_subdir, check=True)
-        spec_bytes = subprocess.run(['thanm', '-l', anm_path], stdout=subprocess.PIPE, check=True).stdout
+        run_process(['thanm', '-x', anm_path], cwd=zip_subdir, check=True)
+        spec_bytes = run_process(['thanm', '-l', anm_path], stdout=subprocess.PIPE, check=True).stdout
 
         with open(os.path.join(zip_subdir, 'spec.spec'), 'wb') as f:
             f.write(spec_bytes)
@@ -50,6 +51,13 @@ def make_archive(source, destination):
     root_dir = os.path.dirname(source)
     base_dir = os.path.basename(source.strip(os.sep))
     shutil.make_archive(base_name, format, os.path.join(root_dir, base_dir), '.')
+
+def run_process(proc_args, *args, **kw):
+    try:
+        return subprocess.run(proc_args, *args, **kw)
+    except FileNotFoundError:
+        print(f'Cannot find {proc_args[0]}!', file=sys.stderr)
+        sys.exit(1)
 
 if __name__ == '__main__':
     main()
