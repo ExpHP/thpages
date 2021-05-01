@@ -21,7 +21,7 @@ type AnmSpecScript = {indexInFile: number, sprites: (number | null)[], layers: (
 type AnmSpecSprite = {indexInFile: number, texture: number, left: number, top: number, width: number, height: number};
 type AnmSpecTexture = {indexInFile: number, path: string, xOffset: number, yOffset: number};
 
-type Progress = {anmFilesTotal: number, anmFilesDone: number};
+type Progress = {anmFilesTotal: number, anmFilesDone: number, remainingFilenames: string[]};
 
 /** Helper used to cancel async operations on an error. */
 class Cancel {
@@ -61,15 +61,26 @@ class Status {
   constructor($elem: HTMLElement) {
     this.$elem = $elem;
   }
-  set(cssClass: 'idle' | 'working', text: string) {
-    this.$elem.innerText = text;
+  set(cssClass: 'idle' | 'working', text: string, filenamesText: string) {
+    const $mainText = this.$elem.querySelector('.main-text')! as HTMLElement;
+    const $filenamesText = this.$elem.querySelector('.filenames-text')! as HTMLElement;
     this.$elem.classList.remove('idle', 'working');
     this.$elem.classList.add(cssClass);
+    $mainText.innerText = text;
+    $filenamesText.innerText = filenamesText;
   }
-  setFromProgress({anmFilesDone, anmFilesTotal}: Progress) {
+  setFromProgress({anmFilesDone, anmFilesTotal, remainingFilenames}: Progress) {
     const endPunctuation = anmFilesDone === anmFilesTotal ? '!' : '...';
     const cssClass = anmFilesDone === anmFilesTotal ? 'idle' : 'working';
-    this.set(cssClass, `Processed ${anmFilesDone} of ${anmFilesTotal} anm files${endPunctuation}`);
+    const mainText = `Processed ${anmFilesDone} of ${anmFilesTotal} anm files${endPunctuation}`;
+
+    let filenamesText = "";
+    if (remainingFilenames.length > 0) {
+      const numToShow = 7;
+      const filenamesEllipsis = remainingFilenames.length > numToShow ? ", ..." : "";
+      filenamesText = "(working: " + remainingFilenames.slice(0, numToShow).join(", ") + filenamesEllipsis + ")";
+    }
+    this.set(cssClass, mainText, filenamesText);
   }
 }
 
@@ -85,7 +96,7 @@ async function buildLayerViewer() {
   const $layerViewer = document.querySelector<HTMLElement>('#layer-viewer-output')!;
   const $fileUpload = document.querySelector<HTMLInputElement>('#layer-viewer-file')!;
   const status = new Status(document.querySelector<HTMLElement>('#layer-viewer-status')!);
-  status.set('idle', 'No zip file loaded');
+  status.set('idle', 'No zip file loaded', '');
 
   $fileUpload.addEventListener('change', (() => {
     const cancel = new Cancel();
@@ -94,7 +105,7 @@ async function buildLayerViewer() {
       const zipBytes = await readUploadedFile($fileUpload.files![0], 'binary');
       const zip = await (await BigImports.JSZip).loadAsync(zipBytes);
       cancel.check();
-      status.set('working', `Reading zip file structure...`);
+      status.set('working', `Reading zip file structure...`, '');
 
       await runLayerViewer(status, cancel, zip, $layerViewer);
     }));
@@ -108,7 +119,11 @@ async function runLayerViewer(status: Status, cancel: Cancel, zip: JSZip, $layer
   globalTips.registerPrefix('layer-viewer', LVIEWER_TIP_RESOLVER);
 
   const specZipObjs = zip.file(/spec\.spec/);
-  const progress = {anmFilesDone: 0, anmFilesTotal: specZipObjs.length};
+  const progress = {
+    anmFilesDone: 0,
+    anmFilesTotal: specZipObjs.length,
+    remainingFilenames: specZipObjs.map((obj) => `${obj.name.split('/')[0]}.anm`),
+  };
   status.setFromProgress(progress);
 
   const helpers = {status, cancel, progress};
@@ -160,7 +175,7 @@ async function trapErr(
   try {
     return await cb();
   } catch (e) {
-    status.set('idle', 'Operation cancelled due to an error.');
+    status.set('idle', 'Operation cancelled due to an error.', '');
     cancel.cancel();
     const $error = document.querySelector<HTMLElement>('#layer-viewer-error')!;
     if ($error.style.display === 'none') {
@@ -361,6 +376,7 @@ async function addAnmFileToLayerViewer(
   cancel.check();
   // Because we awaited all promises we know everything for this anm file is done.
   progress.anmFilesDone += 1;
+  progress.remainingFilenames.splice(progress.remainingFilenames.indexOf(`${anmBasename}.anm`), 1);
   status.setFromProgress(progress);
 }
 
@@ -428,7 +444,7 @@ async function domOnce($elem: HTMLElement, type: string) {
 function generateTip(anmName: string, script: AnmSpecScript, sprite: AnmSpecSprite): Tip {
   let warning = "";
   if (script.layers.length > 1) {
-    const joined = script.layers.join(",");
+    const joined = script.layers.join(", ");
     warning = `<br/><span data-wip="1">Layer uncertain! Might belong to: ${joined}</span>`;
   }
   return {

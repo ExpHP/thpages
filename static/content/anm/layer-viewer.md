@@ -20,7 +20,10 @@ If you have problems/ideas/requests, go `@` me on the [ZUNcode discord](https://
 
 <hr style="clear:both;"/>
 
-<h2 id='layer-viewer-status'></h2>
+<h2 id='layer-viewer-status'>
+  <span class="main-text"></span>
+  <span class="filenames-text"></span>
+</h2>
 
 <div id='layer-viewer-error' class='error-box' style='display: none;'></div>
 
