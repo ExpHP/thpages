@@ -117,7 +117,7 @@ STD_BY_OPCODE.set('13', {...STD_BY_OPCODE.get('128')});
 STD_BY_OPCODE.set('14', {
   ...STD_BY_OPCODE.get('13'),
   19: {ref: 'std:ins-19'},
-  20: {ref: 'std:ins-20'},
+  20: {ref: 'std:draw-distance'},
 });
 
 STD_BY_OPCODE.set('143', {...STD_BY_OPCODE.get('14')});
@@ -543,20 +543,26 @@ Object.assign(STD_INS_DATA, {
   `},
 
   'ins-19': {
-    sig: 'S', args: ['n'], wip: 1, desc: `
+    sig: 'S', args: ['n'], desc: `
     Invokes ANM interrupt \`n + 7\` on all sprites in the stage background.
 
     [tiphide]
-    [wip=1]What's it used for?[/wip]
+    It has various uses, like messing with the doors in [game=16] stage 6.
     [/tiphide]
   `},
 
-  'ins-20': {
-    sig: 'f', args: ['r'], wip: 2, desc: `
-    [wip=2]Unknown. No game has ever used it.[/wip]
+  'draw-distance': {
+    sig: 'f', args: ['rsq'], desc: `
+    Changes the draw distance threshold. [tiphide](default value is \`9160000.0\`, or \`3100.0\` squared)[/tiphide]
 
     [tiphide]
-    [wip=2]The argument gets used as a cutoff radius somewhere to skip a big block of floating point computations.[/wip]
+    The game implements a radial draw distance, and sprites will instantly pop in or out as soon as
+    their squared distance to the camera crosses this threshold.  Ideally, this distance is greater than
+    the far plane for fog.
+    [/tiphide]
+
+    [tiphide]
+    No game actually uses this instruction.
     [/tiphide]
   `},
 });
