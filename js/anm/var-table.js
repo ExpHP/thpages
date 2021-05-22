@@ -104,15 +104,6 @@ ANM_VARS_BY_NUMBER.set('16', {...ANM_VARS_BY_NUMBER.get('15')});
 ANM_VARS_BY_NUMBER.set('165', {...ANM_VARS_BY_NUMBER.get('16')});
 ANM_VARS_BY_NUMBER.set('17', {...ANM_VARS_BY_NUMBER.get('165')});
 
-// Var table cannot have entries without refs because we need the type to generate the default name...
-for (const [game, inner] of ANM_VARS_BY_NUMBER.entries()) {
-  for (const [num, entry] of Object.entries(inner)) {
-    if (entry.ref == null) {
-      window.console.error(`TABLE CORRUPT: anm var (game ${game}, num ${num}) has no crossref!`);
-    }
-  }
-}
-
 // ==========================================================================
 // ==========================================================================
 // =====================    INSTRUCTION DATA    =============================

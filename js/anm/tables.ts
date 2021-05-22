@@ -44,11 +44,8 @@ export function initAnm() {
 export type OpcodeRefData = {
   /**
    * Game independent crossref for this opcode.
-   *
-   * `null` means the instruction exists (and therefore should have a row in the table)
-   * but we haven't created a crossref for it yet.
    */
-  ref: string | null,
+  ref: string,
   /**
    * How confident are we in matching this opcode to that crossref?
    *
@@ -384,8 +381,7 @@ function initAnmVarNames() {
       if (entry == null) return null;
 
       // Variables are always required to have crossrefs associated with them so that we can get the type
-      if (!entry.ref) throw new Error(`anmvar ${version}:${opcode} exists but has no ref`);
-      const data = getDataByRef(entry.ref!, ANM_VAR_HANDLERS);
+      const data = getDataByRef(entry.ref, ANM_VAR_HANDLERS);
       const name = getMappedName(opcode, data!.type);
       return possiblyAddVersionPrefix(name, version, ctx, ANM_VERSION_INFO);
     });

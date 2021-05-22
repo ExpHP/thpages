@@ -5,8 +5,6 @@ import {NumMap} from "../util.ts";
 // ==========================================================================
 // ===================    LOOKUP TABLE BY OPCODE    =========================
 
-const UNASSIGNED = {ref: null, wip: 2};
-
 export const ANM_BY_OPCODE = new Map();
 export const ANM_GROUPS_V8 = [
   {min: 0, max: 99, title: 'System'},
@@ -87,7 +85,7 @@ ANM_BY_OPCODE.set('07', {
   28: {ref: 'anm:visible'}, // PoFV:  sets flag 0
   29: {ref: 'anm:scaleTimeLinear'},
   30: {ref: 'anm:noZBuffer'}, // PoFV:  sets flag 13
-  31: UNASSIGNED, // PoFV:  sets flag 15, usage at TH08+0x4626d6
+  31: {ref: 'anm:v1-31'}, // PoFV:  sets flag 15, usage at TH08+0x4626d6
   32: {ref: 'anm:posTime'},
   33: {ref: 'anm:rgbTime-dword'},
   34: {ref: 'anm:alphaTime'},
@@ -307,7 +305,7 @@ ANM_BY_OPCODE.set('12', {
 
 ANM_BY_OPCODE.set('125', {
   ...ANM_BY_OPCODE.get('12'),
-  111: UNASSIGNED, // (DS: hi:6-8)
+  111: {ref: 'anm:v4-111'}, // (DS: hi:6-8)
   112: {ref: 'anm:ignoreParent'}, // (DS: hi:8)
 });
 
@@ -1575,6 +1573,8 @@ Object.assign(ANM_INS_DATA, {
 // ==== WEIRD-ASS NONSENSE ====
 // ============================
 Object.assign(ANM_INS_DATA, {
+  'v1-31': {sig: 'S', args: ['a'], wip: 2, desc: `[wip=2]Sets a bitflag.[/wip]`},
+  'v4-111': {sig: 'S', args: ['a'], wip: 2, desc: `[wip=2]Sets a 2-bit bitfield.[/wip]`},
   'v8-418': {
     sig: '', args: [], desc: `
     A bizarre and **totally unused** instruction that appears to select a new sprite in the image file based on the anm's coordinates.
