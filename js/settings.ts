@@ -1,6 +1,7 @@
 import {MD} from './markdown';
 import {Eclmap} from './anm/eclmap';
 import dedent from './lib/dedent';
+import {globalNames, Resolver} from './resolver';
 import {
   SupportedAnmVersion, StdVersion, VersionData,
   SUPPORTED_ANM_VERSIONS, ANM_VERSION_DATA, SUPPORTED_STD_VERSIONS, STD_VERSION_DATA,
@@ -23,6 +24,11 @@ export type Config = {
 const DEFAULT_CONFIG: Config = {
   'freeze-stats-headers': true,
 };
+
+export const globalConfigNames: Resolver<string> = {
+  getNow: (s, ctx) => null, // FIXME
+};
+globalNames.registerPrefix('cfg', globalConfigNames);
 
 // --------------------------------------------------------------
 // API for loading settings so they can be used from javascript code.

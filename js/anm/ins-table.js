@@ -1688,25 +1688,6 @@ Object.assign(ANM_INS_DATA, {
   `},
 });
 
-// Add `minGame` and `maxGame` keys to each crossref.
-for (const [game, table] of ANM_BY_OPCODE.entries()) {
-  for (const [opcodeStr, {ref}] of Object.entries(table)) {
-    if (ref === null) continue;
-    const id = ref.substring('anm:'.length);
-    const entry = ANM_INS_DATA[id];
-
-    if (!entry) {
-      window.console.error(`invalid ref in opcode table (game ${game}, opcode ${opcodeStr}): ${ref}`);
-      continue;
-    }
-
-    if (entry.minGame === undefined) {
-      entry.minGame = game;
-    }
-    entry.maxGame = game;
-  }
-}
-
 for (const [key, value] of Object.entries(ANM_INS_DATA)) {
   value.wip = value.wip || 0;
   if (value.desc === undefined) window.console.error(`TABLE CORRUPT: anm ref ${key} has no 'desc'`);
