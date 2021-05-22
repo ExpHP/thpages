@@ -5,7 +5,7 @@ import {globalNames, globalLinks, PrefixResolver, Context} from '../resolver';
 import {parseQuery, queryUrl, queryGame, queryPageEquals, queryFilterCommonProps, Query, currentUrlWithProps} from '../url-format';
 import {gameData, Game} from '../game-names';
 import {globalConfigNames} from '../settings';
-import {initStats, buildInsStatsTable, buildVarStatsTable} from './stats';
+import {initStats, buildStatsTable} from './stats';
 import {GAME_ANM_VERSIONS, GAME_STD_VERSIONS} from './versions';
 import {StrMap, NumMap} from "../util";
 import './layer-viewer';
@@ -13,31 +13,37 @@ import './layer-viewer';
 import {ANM_INS_DATA, ANM_BY_OPCODE, ANM_GROUPS_V8} from './ins-table.js';
 import {ANM_VAR_DATA, ANM_VARS_BY_NUMBER} from './var-table.js';
 import {STD_INS_DATA, STD_BY_OPCODE} from './std-table.js';
+import {MSG_INS_DATA, MSG_BY_OPCODE} from './msg-table.js';
 
 export function initAnm() {
-  (window as any).setupGameSelectorForAnm = ($e: HTMLElement) => setupGameSelector(ANM_INS_HANDLERS, $e);
-  (window as any).setupGameSelectorForStdIns = ($e: HTMLElement) => setupGameSelector(STD_HANDLERS, $e);
-  (window as any).generateAnmInsTableHtml = () => generateTablePageHtml(ANM_INS_HANDLERS);
-  (window as any).generateAnmVarTableHtml = () => generateTablePageHtml(ANM_VAR_HANDLERS);
-  (window as any).generateStdInsTableHtml = () => generateTablePageHtml(STD_HANDLERS);
-  (window as any).buildInsStatsTable = buildInsStatsTable;
-  (window as any).buildVarStatsTable = buildVarStatsTable;
+  (window as any).ANM_INS_HANDLERS = ANM_INS_HANDLERS;
+  (window as any).ANM_VAR_HANDLERS = ANM_VAR_HANDLERS;
+  (window as any).STD_HANDLERS = STD_HANDLERS;
+  (window as any).MSG_HANDLERS = MSG_HANDLERS;
+  (window as any).setupGameSelector = <D extends CommonData>(handlers: TableHandlers<D>, $e: HTMLElement) => setupGameSelector(handlers, $e);
+  (window as any).buildInsTable = <D extends CommonData>(handlers: TableHandlers<D>) => generateTablePageHtml(handlers);
+  (window as any).buildVarTable = <D extends CommonData>(handlers: TableHandlers<D>) => generateTablePageHtml(handlers);
+  (window as any).buildStatsTable = <D extends CommonData>(handlers: TableHandlers<D>, $elem: HTMLElement) => buildStatsTable(handlers, $elem);
 
   initInsNames(ANM_INS_HANDLERS); // "anm:th06:25" names
   initInsNames(STD_HANDLERS);
-  // initInsNames(MSG_HANDLERS);
+  initInsNames(MSG_HANDLERS);
   initVarNames(ANM_VAR_HANDLERS);
   initStats();
 
-  registerRefTipsForTable(ANM_INS_HANDLERS); // "ref:anm:" tips
-  registerRefTipsForTable(ANM_VAR_HANDLERS); // "ref:anmvar:" tips
-  registerRefTipsForTable(STD_HANDLERS); // "ref:std:" tips
-  registerRefNamesForTable(ANM_INS_HANDLERS); // "ref:anm:" names
-  registerRefNamesForTable(ANM_VAR_HANDLERS); // "ref:anmvar:" names
-  registerRefNamesForTable(STD_HANDLERS); // "ref:std:" names
-  globalRefLinks.registerPrefix('anm', (id, ctx) => getUrlByRef('anm:' + id, ctx, ANM_INS_HANDLERS));
-  globalRefLinks.registerPrefix('anmvar', (id, ctx) => getUrlByRef('anmvar:' + id, ctx, ANM_VAR_HANDLERS));
-  globalRefLinks.registerPrefix('std', (id, ctx) => getUrlByRef('std:' + id, ctx, STD_HANDLERS));
+  for (const handlers of [ANM_INS_HANDLERS, STD_HANDLERS, MSG_HANDLERS]) {
+    const {mainPrefix} = handlers;
+    registerRefTipsForTable(handlers); // "ref:anm:" tips
+    registerRefNamesForTable(handlers); // "ref:anm:" names
+    globalRefLinks.registerPrefix(mainPrefix, (id, ctx) => getUrlByRef(`${mainPrefix}:${id}`, ctx, handlers));
+  }
+  // (typescript complains if we put var handlers and ins handlers in the same loop...)
+  for (const handlers of [ANM_VAR_HANDLERS]) {
+    const {mainPrefix} = handlers;
+    registerRefTipsForTable(handlers); // "ref:anm:" tips
+    registerRefNamesForTable(handlers); // "ref:anm:" names
+    globalRefLinks.registerPrefix(mainPrefix, (id, ctx) => getUrlByRef(`${mainPrefix}:${id}`, ctx, handlers));
+  }
 }
 
 /** Data for a specific numbered entity (e.g. a specific ANM opcode number) in a specific game. */
@@ -95,7 +101,7 @@ export type VarData = {
  * Ad-hoc interface used to factor out the differences between the tables so that we can write
  * code that works equally well on all of them.
  */
-type TableHandlers<Data> = {
+export type TableHandlers<Data> = {
   /** Page (URL s= field) where table is hosted. */
   tablePage: string,
   /** Turns opcode into the anchor (URL a= field) for that item on the table's page. */
@@ -137,11 +143,6 @@ type TableHandlers<Data> = {
   /** Generate HTML for a tooltip header. */
   generateTipHeader(data: Data, _: {nameKey: string}): string,
 
-  getNameKey(game: Game, opcode: number): string,
-
-  /** Data used to generate a useless row in the table for an opcode whose ref is `null`. */
-  dummyDataWhenNoRef(game: Game): Data,
-
   /** Generate a row of the table. */
   generateTableRowHtml(this: TableHandlers<Data>, game: Game, data: Data, opcode: number): string,
 
@@ -155,6 +156,8 @@ const ANM_INS_NAMES = new PrefixResolver<string>();
 const ANM_VAR_NAMES = new PrefixResolver<string>();
 /** Resolves names from the suffix of 'std:' namekeys */
 const STD_INS_NAMES = new PrefixResolver<string>();
+/** Resolves names from the suffix of 'msg:' namekeys */
+const MSG_INS_NAMES = new PrefixResolver<string>();
 
 type QualifiedOpcode = {game: Game, opcode: number};
 type AutoGeneratedFields = 'latestGameTable' | 'reverseTable';
@@ -166,9 +169,7 @@ export const ANM_INS_HANDLERS: TableHandlers<InsData> = makeTableHandlers({
   dataTable: ANM_INS_DATA,
   tableByOpcode: ANM_BY_OPCODE,
   insNames: ANM_INS_NAMES,
-  dummyDataWhenNoRef: () => ({sig: '?', args: [''], wip: 2, desc: '[wip=2]*No data.*[/wip]'}),
   mainPrefix: 'anm',
-  getNameKey: (game: Game, opcode: number) => `anm:th${game}:${opcode}`,
   generateTipHeader: generateInsSiggy,
   getGroups: (game) => GAME_ANM_VERSIONS[game] == 'v8' ? ANM_GROUPS_V8 : [{min: 0, max: 1300, title: null}],
   generateTableRowHtml: generateInsTableRowHtml,
@@ -182,11 +183,7 @@ export const ANM_VAR_HANDLERS: TableHandlers<VarData> = makeTableHandlers({
   dataTable: ANM_VAR_DATA,
   tableByOpcode: ANM_VARS_BY_NUMBER,
   insNames: ANM_VAR_NAMES,
-  dummyDataWhenNoRef: () => {
-    throw new Error("anmvars must always have refs!");
-  },
   mainPrefix: 'anmvar',
-  getNameKey: (game: Game, opcode: number) => `anmvar:th${game}:${opcode}`,
   generateTipHeader: generateVarHeader,
   getGroups: () => [{min: 10000, max: 11000, title: null}],
   generateTableRowHtml: generateVarTableRowHtml,
@@ -200,9 +197,7 @@ export const STD_HANDLERS: TableHandlers<InsData> = makeTableHandlers({
   dataTable: STD_INS_DATA,
   tableByOpcode: STD_BY_OPCODE,
   insNames: STD_INS_NAMES,
-  dummyDataWhenNoRef: () => ({sig: '?', args: [''], wip: 2, desc: '[wip=2]*No data.*[/wip]'}),
   mainPrefix: 'std',
-  getNameKey: (game: Game, opcode: number) => `std:${GAME_STD_VERSIONS[game]}:${opcode}`,
   generateTipHeader: generateInsSiggy,
   getGroups: () => [{min: 0, max: 100, title: null}],
   generateTableRowHtml: generateInsTableRowHtml,
@@ -213,21 +208,19 @@ export const STD_HANDLERS: TableHandlers<InsData> = makeTableHandlers({
   `),
 });
 
-// export const MSG_HANDLERS: TableHandlers<InsData> = makeTableHandlers({
-//   tablePage: 'msg/ins',
-//   itemKindString: 'instruction',
-//   formatAnchor: (num: number) => `ins-${num}`,
-//   dataTable: MSG_INS_DATA,
-//   tableByOpcode: MSG_BY_OPCODE,
-//   insNames: MSG_INS_NAMES,
-//   dummyDataWhenNoRef: () => ({sig: '?', args: [''], wip: 2, desc: '[wip=2]*No data.*[/wip]'}),
-//   mainPrefix: 'msg',
-//   getNameKey: (game: Game, opcode: number) => `msg:${GAME_MSG_VERSIONS[game]}:${opcode}`,
-//   generateTipHeader: generateInsSiggy,
-//   getGroups: () => [{min: 0, max: 100, title: null}],
-//   generateTableRowHtml: generateInsTableRowHtml,
-//   textBeforeTable: (c: Context) => null,
-// });
+export const MSG_HANDLERS: TableHandlers<InsData> = makeTableHandlers({
+  tablePage: 'msg/ins',
+  itemKindString: 'instruction',
+  formatAnchor: (num: number) => `ins-${num}`,
+  dataTable: MSG_INS_DATA,
+  tableByOpcode: MSG_BY_OPCODE,
+  insNames: MSG_INS_NAMES,
+  mainPrefix: 'msg',
+  generateTipHeader: generateInsSiggy,
+  getGroups: () => [{min: 0, max: 1000, title: null}],
+  generateTableRowHtml: generateInsTableRowHtml,
+  textBeforeTable: () => null,
+});
 
 //  FIXME:  MSG is TODO.  Versions don't make sense for MSG and I'm not sure how to handle this.
 //          Versions probably conflate too many different ideas and we need to decouple them.
@@ -323,7 +316,7 @@ function initInsNames<D>(handlers: TableHandlers<D>) {
       const opcode = parseInt(suffix, 10);
       if (Number.isNaN(opcode)) return null;
 
-      const entry = tableByOpcode.get(game)![opcode];
+      const entry = tableForGame[opcode];
       if (entry == null) return null;
 
       const name = globalRefNames.getNow(entry.ref, ctx) || getDefaultName(opcode);
@@ -333,7 +326,7 @@ function initInsNames<D>(handlers: TableHandlers<D>) {
   globalNames.registerPrefix(mainPrefix, insNames);
 }
 
-function initVarNames<D>(handlers: TableHandlers<D>) {
+function initVarNames(handlers: TableHandlers<VarData>) {
   // (this is sufficiently different from instructions that we'll just put up with the copypasta)
   const {tableByOpcode, mainPrefix, insNames} = handlers;
 
@@ -347,20 +340,20 @@ function initVarNames<D>(handlers: TableHandlers<D>) {
       return type + name;
     };
 
-    ANM_VAR_NAMES.registerPrefix(`th${game}`, (suffix, ctx) => {
+    insNames.registerPrefix(`th${game}`, (suffix, ctx) => {
       const opcode = parseInt(suffix, 10);
       if (Number.isNaN(opcode)) return null;
 
-      const entry = tableByOpcode.get(game)![opcode];
+      const entry = tableForGame[opcode];
       if (entry == null) return null;
 
       // Variables are always required to have crossrefs associated with them so that we can get the type
-      const {type} = getDataByRef(entry.ref, ANM_VAR_HANDLERS)!;
+      const {type} = getDataByRef(entry.ref, handlers)!;
       const name = getMappedName(opcode, entry.ref, type, ctx) || getDefaultName(opcode, type);
       return possiblyAddGamePrefix(handlers, entry.ref, name, ctx);
     });
   }
-  globalNames.registerPrefix('anmvar', ANM_VAR_NAMES);
+  globalNames.registerPrefix(mainPrefix, insNames);
 }
 
 function registerRefTipsForTable<D extends CommonData>(tableHandlers: TableHandlers<D>) {
@@ -383,7 +376,7 @@ function registerRefNamesForTable<D>(tableHandlers: TableHandlers<D>) {
 }
 
 function generateTablePageHtml<D extends CommonData>(tableHandlers: TableHandlers<D>) {
-  const {getGroups, dummyDataWhenNoRef, mainPrefix, textBeforeTable} = tableHandlers;
+  const {getGroups, mainPrefix, textBeforeTable} = tableHandlers;
 
   const currentQuery = parseQuery(window.location.hash);
   const game = queryGame(currentQuery);
@@ -416,12 +409,10 @@ function generateTablePageHtml<D extends CommonData>(tableHandlers: TableHandler
 
       // instruction exists, but our docs may suck
       let {ref, wip} = refObj;
-      // (tricky logic.  ref === null is not an error case, but getDataByRef returning null IS)
-      let data = ref === null ? dummyDataWhenNoRef(game) : getDataByRef(ref, tableHandlers);
+      const data = getDataByRef(ref, tableHandlers);
       if (!data) {
         // instruction is assigned, but ref has no entry in table
-        window.console.error(`ref ${ref} is assigned to ${mainPrefix} number ${game}:${opcode} but has no data`);
-        data = dummyDataWhenNoRef(game);
+        throw new Error(`ref ${ref} is assigned to ${mainPrefix} number ${game}:${opcode} but has no data`);
       }
       wip = Math.max(wip, data.wip) as Wip;
 
@@ -479,7 +470,7 @@ function generateVarHeader(avar: VarData, {nameKey}: {nameKey: string}) {
 
 /** @this */ // appease eslint
 function generateInsTableRowHtml<D>(this: TableHandlers<D>, game: Game, ins: InsData, opcode: number) {
-  const nameKey = this.getNameKey(game, opcode);
+  const nameKey = getOpcodeNameKey(this, game, opcode);
   let [desc] = handleTipHide(ins.desc, false);
   desc = postprocessAnmDesc(desc, false);
 
@@ -495,7 +486,7 @@ function generateInsTableRowHtml<D>(this: TableHandlers<D>, game: Game, ins: Ins
 
 /** @this */ // appease eslint
 function generateVarTableRowHtml<D>(this: TableHandlers<D>, game: Game, ins: VarData, opcode: number) {
-  const nameKey = this.getNameKey(game, opcode);
+  const nameKey = getOpcodeNameKey(this, game, opcode);
   let [desc] = handleTipHide(ins.desc, false);
   desc = postprocessAnmDesc(desc, false);
 
@@ -508,6 +499,10 @@ function generateVarTableRowHtml<D>(this: TableHandlers<D>, game: Game, ins: Var
     <td class="col-desc">${desc}</td>
   </tr>
   `;
+}
+
+function getOpcodeNameKey<D>(handlers: TableHandlers<D>, game: Game, opcode: number) {
+  return `${handlers.mainPrefix}:th${game}:${opcode}`;
 }
 
 function generateInsParameters(ins: InsData) {

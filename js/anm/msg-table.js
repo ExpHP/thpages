@@ -13,105 +13,105 @@ import dedent from "../lib/dedent.ts";
  */
 export const MSG_BY_OPCODE = new Map(); // has to be a map because 'integer' keys defy insertion order
 
-MSG_BY_OPCODE.set('06', {
-  // TODO
-});
+// MSG_BY_OPCODE.set('06', {
+//   // TODO
+// });
 
 MSG_BY_OPCODE.set('10', {
-  0: 'modern-end',
-  1: 'modern-show-player',
-  2: 'th10-show-enemy',
-  3: 'modern-show-textbox',
-  4: 'modern-hide-player',
-  5: 'th10-hide-enemy',
-  6: 'modern-hide-textbox',
-  7: 'modern-focus-player',
-  8: 'th10-focus-enemy',
-  9: 'modern-skippable',
-  10: 'modern-pause',
-  11: 'modern-ecl-resume',
-  12: 'modern-face-player',
-  13: 'th10-face-enemy',
-  14: 'modern-text-1',
-  15: 'modern-text-2',
-  16: 'modern-text-add-nofuri',
-  17: 'modern-text-clear',
-  18: 'modern-music-boss',
-  19: 'th10-intro',
-  20: 'modern-stage-end',
-  21: 'modern-music-fade',
-  22: 'modern-shake-player',
-  23: 'modern-shake-enemy',
+  0: {ref: 'msg:modern-end'},
+  1: {ref: 'msg:modern-show-player'},
+  2: {ref: 'msg:th10-show-enemy'},
+  3: {ref: 'msg:modern-show-textbox'},
+  4: {ref: 'msg:modern-hide-player'},
+  5: {ref: 'msg:th10-hide-enemy'},
+  6: {ref: 'msg:modern-hide-textbox'},
+  7: {ref: 'msg:modern-focus-player'},
+  8: {ref: 'msg:th10-focus-enemy'},
+  9: {ref: 'msg:modern-skippable'},
+  10: {ref: 'msg:modern-pause'},
+  11: {ref: 'msg:modern-ecl-resume'},
+  12: {ref: 'msg:modern-face-player'},
+  13: {ref: 'msg:th10-face-enemy'},
+  14: {ref: 'msg:modern-text-1'},
+  15: {ref: 'msg:modern-text-2'},
+  16: {ref: 'msg:modern-text-add-nofuri'},
+  17: {ref: 'msg:modern-text-clear'},
+  18: {ref: 'msg:modern-music-boss'},
+  19: {ref: 'msg:th10-intro'},
+  20: {ref: 'msg:modern-stage-end'},
+  21: {ref: 'msg:modern-music-fade'},
+  22: {ref: 'msg:modern-shake-player'},
+  23: {ref: 'msg:modern-shake-enemy'},
 });
 MSG_BY_OPCODE.set('11', {
-  0: 'modern-end',
-  1: 'modern-show-player',
-  2: 'th10-show-enemy',
-  3: 'modern-show-textbox',
-  4: 'modern-hide-player',
-  5: 'th10-hide-enemy',
-  6: 'modern-hide-textbox',
-  7: 'modern-focus-player',
-  8: 'th10-focus-enemy',
-  9: 'modern-focus-none',
-  10: 'modern-skippable',
-  11: 'modern-pause',
-  12: 'modern-ecl-resume',
-  13: 'modern-face-player',
-  14: 'th10-face-enemy',
-  15: 'modern-text-1',
-  16: 'modern-text-2',
-  17: 'modern-text-add',
-  18: 'modern-text-clear',
-  19: 'modern-music-boss',
-  20: 'th10-intro',
-  21: 'modern-stage-end',
-  22: 'modern-music-fade',
-  23: 'modern-shake-player',
-  24: 'modern-shake-enemy',
-  25: 'modern-y-offset',
-  26: 'modern-flag-2',
+  0: {ref: 'msg:modern-end'},
+  1: {ref: 'msg:modern-show-player'},
+  2: {ref: 'msg:th10-show-enemy'},
+  3: {ref: 'msg:modern-show-textbox'},
+  4: {ref: 'msg:modern-hide-player'},
+  5: {ref: 'msg:th10-hide-enemy'},
+  6: {ref: 'msg:modern-hide-textbox'},
+  7: {ref: 'msg:modern-focus-player'},
+  8: {ref: 'msg:th10-focus-enemy'},
+  9: {ref: 'msg:modern-focus-none'},
+  10: {ref: 'msg:modern-skippable'},
+  11: {ref: 'msg:modern-pause'},
+  12: {ref: 'msg:modern-ecl-resume'},
+  13: {ref: 'msg:modern-face-player'},
+  14: {ref: 'msg:th10-face-enemy'},
+  15: {ref: 'msg:modern-text-1'},
+  16: {ref: 'msg:modern-text-2'},
+  17: {ref: 'msg:modern-text-add'},
+  18: {ref: 'msg:modern-text-clear'},
+  19: {ref: 'msg:modern-music-boss'},
+  20: {ref: 'msg:th10-intro'},
+  21: {ref: 'msg:modern-stage-end'},
+  22: {ref: 'msg:modern-music-fade'},
+  23: {ref: 'msg:modern-shake-player'},
+  24: {ref: 'msg:modern-shake-enemy'},
+  25: {ref: 'msg:modern-y-offset'},
+  26: {ref: 'msg:modern-flag-2'},
 });
 
 MSG_BY_OPCODE.set('12', {
   ...MSG_BY_OPCODE.get('11'),
-  27: 'modern-music-fade-custom',
+  27: {ref: 'msg:modern-music-fade-custom'},
 });
 
 MSG_BY_OPCODE.set('128', {
   ...MSG_BY_OPCODE.get('12'),
-  28: 'modern-callout-pos',
-  29: 'modern-callout-type',
-  30: '128-route-select',
+  28: {ref: 'msg:modern-callout-pos'},
+  29: {ref: 'msg:modern-callout-type'},
+  30: {ref: 'msg:128-route-select'},
 });
 
 MSG_BY_OPCODE.set('13', {
   ...MSG_BY_OPCODE.get('128'),
-  31: 'modern-31',
+  31: {ref: 'msg:modern-31'},
 });
 
 MSG_BY_OPCODE.set('14', {
   ...MSG_BY_OPCODE.get('13'),
-  2: 'modern-show-enemy',
-  5: 'modern-hide-enemy',
-  8: 'modern-focus-enemy',
-  14: 'modern-face-enemy',
-  20: 'modern-intro',
-  32: 'modern-32',
+  2: {ref: 'msg:modern-show-enemy'},
+  5: {ref: 'msg:modern-hide-enemy'},
+  8: {ref: 'msg:modern-focus-enemy'},
+  14: {ref: 'msg:modern-face-enemy'},
+  20: {ref: 'msg:modern-intro'},
+  32: {ref: 'msg:modern-32'},
 });
 
 MSG_BY_OPCODE.set('143', {
   ...MSG_BY_OPCODE.get('14'),
-  33: 'modern-tutorial',
+  33: {ref: 'msg:modern-tutorial'},
 });
 
 MSG_BY_OPCODE.set('15', {...MSG_BY_OPCODE.get('14')}); // NOT 143; tutorial is removed
 
 MSG_BY_OPCODE.set('16', {
   ...MSG_BY_OPCODE.get('15'),
-  33: 'modern-darken-portrait',
-  34: 'modern-highlight-portrait',
-  35: 'modern-lights-out',
+  33: {ref: 'msg:modern-darken-portrait'},
+  34: {ref: 'msg:modern-highlight-portrait'},
+  35: {ref: 'msg:modern-lights-out'},
 });
 
 MSG_BY_OPCODE.set('165', {...MSG_BY_OPCODE.get('143')}); // VD loses all of TH16's changes; identical to ISC.
@@ -134,8 +134,9 @@ Object.assign(MSG_INS_DATA, {
     Show the player portrait.
 
     [tiphide]
-    * ([game=10]&ndash;[game=th15]) The argument is never read.
-    * ([game=16]&ndash;) If the argument is nonzero, it instead loads a specific (hardcoded) anm script on a specific ANM file in the ECL's \`ANM\` list.  This is used to put Satono on the left in [game=16] Extra.
+    * ([game=10]&ndash;[game=15]) The argument is never read.
+    * ([game=16]&ndash;[game=17]) If the argument is nonzero, it instead loads a specific (hardcoded) anm script on a specific ANM file in the ECL's \`ANM\` list.  This is used to put Satono on the left in [game=16] Extra.
+    * ([game=18]&ndash;) The game can now show two portraits that are both on the player side simultaneously.  [wip=1]The ANM script is no longer hardcoded; I'm not sure what the new logic does.[/wip]
     [/tiphide]
   `},
   'th10-show-enemy': {
@@ -148,7 +149,7 @@ Object.assign(MSG_INS_DATA, {
     Show the text box.
 
     [tiphide]
-    In [game=th13] this becomes a nop as callouts are used instead.  (see [ref=msg:th10-callout-type])
+    In [game=13] this becomes a nop as callouts are used instead.  (see [ref=msg:th10-callout-type])
     [/tiphide]
   `},
   'modern-hide-player': {sig: '', args: [], desc: `Hide the player portrait.`},
@@ -200,7 +201,7 @@ Object.assign(MSG_INS_DATA, {
     [tiphide]The argument will be added to the ANM script index of the enemy's first face graphic.[/tiphide]
   `},
   'modern-face-enemy': {
-    sig: 'S', args: ['who', 'face'], desc: `
+    sig: 'SS', args: ['who', 'face'], desc: `
     Set an enemy's facial expression.
     [tiphide]The argument will be added to the ANM script index of the enemy's first face graphic.[/tiphide]
   `},
@@ -297,7 +298,7 @@ Object.assign(MSG_INS_DATA, {
     The callout type determines the following:
     * The shape of the callout.  E.g. rounded rectangle (normal), spikey (shouting), thought bubble.
     * ([game=13]&ndash;) The height of the callout. (1 or 2 lines)
-    * ([game=th17]) The background color. (red for beast speaking)
+    * ([game=17]) The background color. (red for beast speaking)
     It does not determine the width (this is automatically computed) or the placement of the callout "tip".
     [/tiphide]
 
@@ -305,7 +306,7 @@ Object.assign(MSG_INS_DATA, {
     You can generally find out all available callout types by looking at \`face/balloon.png\` or \`face/balloon_1024.png\` in \`front.anm\`.
     [/tiphide]
   `},
-  'th128-route-select': {
+  '128-route-select': {
     sig: '', args: [], desc: `
     Used in the first stage of GFW to let the player pick the second stage.
 

@@ -8,11 +8,11 @@ Select game version:
 
 [script]
 onContentLoad(async function() {
-    setupGameSelectorForStdIns(document.getElementById('std-table-game-select'));
+    setupGameSelector(STD_HANDLERS, document.getElementById('std-table-game-select'));
     window.setTimeout(function() {
         const target = document.querySelector(".std-table-wrapper");
         target.innerHTML = '';
-        target.appendChild(generateStdInsTableHtml());
+        target.appendChild(buildInsTable(STD_HANDLERS));
     }, 1)
 });
 [/script]

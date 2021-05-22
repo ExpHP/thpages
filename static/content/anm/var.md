@@ -8,11 +8,11 @@ Select game version:
 
 [script]
 onContentLoad(async function() {
-    setupGameSelectorForAnm(document.getElementById('anm-table-game-select'));
+    setupGameSelector(ANM_VAR_HANDLERS, document.getElementById('anm-table-game-select'));
     window.setTimeout(function() {
         const target = document.querySelector(".ecl-table-wrapper");
         target.innerHTML = '';
-        target.appendChild(generateAnmVarTableHtml());
+        target.appendChild(buildVarTable(ANM_VAR_HANDLERS));
     }, 1)
 });
 [/script]

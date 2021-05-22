@@ -29,6 +29,7 @@ export const NAVBAR: Entry[] = [
       {url: "#/anm/ins", label: "Instruction reference"},
       {url: "#/anm/var", label: "Variable reference"},
       {url: "#/std/ins", label: "STD instruction reference"},
+      {url: "#/msg/ins", label: "MSG instruction reference"},
       {
         label: "Tools",
         children: [

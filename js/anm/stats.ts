@@ -1,6 +1,6 @@
 import {Game, allGames, gameData} from '../game-names';
 import {GAME_ANM_VERSIONS} from './versions';
-import {ANM_INS_HANDLERS, ANM_VAR_HANDLERS, makeRefGameIndependent} from './tables';
+import {TableHandlers, makeRefGameIndependent, CommonData} from './tables';
 import {globalNames, globalLinks, PrefixResolver} from '../resolver';
 import {GridViewScroll} from '../lib/gridviewscroll';
 import {MD} from '../markdown';
@@ -36,21 +36,14 @@ export function initStats() {
   globalTips.registerPrefix('stats', STATS_TIPS);
 }
 
-export async function buildInsStatsTable($elem: HTMLElement) {
+export async function buildInsStatsTable<D extends CommonData>(handlers: TableHandlers<D>, $elem: HTMLElement) {
   const statsRaw = await statsJson;
-  const stats = getStatsRows(statsRaw.ins, ANM_INS_HANDLERS);
-  buildStatsTable($elem, stats, ANM_INS_HANDLERS);
-  registerStatsTips(statsRaw, stats, ANM_INS_HANDLERS);
+  const stats = getStatsRows(statsRaw.ins, handlers);
+  buildStatsTable($elem, stats, handlers);
+  registerStatsTips(statsRaw, stats, handlers);
 }
 
-export async function buildVarStatsTable($elem: HTMLElement) {
-  const statsRaw = await statsJson;
-  const stats = getStatsRows(statsRaw.var, ANM_VAR_HANDLERS);
-  buildStatsTable($elem, stats, ANM_VAR_HANDLERS);
-  registerStatsTips(statsRaw, stats, ANM_VAR_HANDLERS);
-}
-
-function buildStatsTable($elem: HTMLElement, dataByRow: StatsByNameKey, tableHandlers: any) {
+function buildStatsTable<D>($elem: HTMLElement, dataByRow: StatsByNameKey, tableHandlers: TableHandlers<D>) {
   const freezeHeaders = getConfig()['freeze-stats-headers'];
 
   let tableBody = '';
@@ -125,7 +118,7 @@ function buildStatsTable($elem: HTMLElement, dataByRow: StatsByNameKey, tableHan
   }
 }
 
-function getStatsRows(statsByOpcode: StatsByOpcode, tableHandlers: any): StatsByNameKey {
+function getStatsRows<D extends CommonData>(statsByOpcode: StatsByOpcode, tableHandlers: TableHandlers<D>): StatsByNameKey {
   const {tableByOpcode, mainPrefix, itemKindString} = tableHandlers;
 
   // Deep-copy.  We're about to tear it down...
@@ -169,9 +162,8 @@ function getStatsRows(statsByOpcode: StatsByOpcode, tableHandlers: any): StatsBy
   return new Map(out);
 }
 
-function registerStatsTips(statsRaw: Stats, table: StatsByNameKey, tableHandlers: any) {
+function registerStatsTips<D>(statsRaw: Stats, table: StatsByNameKey, tableHandlers: TableHandlers<D>) {
   const tipPrefix: string = tableHandlers.mainPrefix;
-  if (!tipPrefix) throw new Error('bug!'); // since we're using 'any'...
 
   STATS_TIPS.registerPrefix(tipPrefix, (suffix) => {
     const [gameStr, nameKey] = suffix.split(/:(.+)/);
