@@ -19,7 +19,7 @@
 [script]
 onContentLoad(async function() {
     makeFrozenStatsTableCheckbox(document.getElementById('checkbox-freeze-cells'));
-    buildInsStatsTable(document.getElementById('ins-stats-table'));
-    buildVarStatsTable(document.getElementById('var-stats-table'));
+    buildStatsTable('ins', ANM_INS_HANDLERS, document.getElementById('ins-stats-table'));
+    buildStatsTable('var', ANM_VAR_HANDLERS, document.getElementById('var-stats-table'));
 });
 [/script]

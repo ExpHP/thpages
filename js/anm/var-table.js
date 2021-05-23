@@ -103,6 +103,7 @@ ANM_VARS_BY_NUMBER.set('15', {...ANM_VARS_BY_NUMBER.get('143')});
 ANM_VARS_BY_NUMBER.set('16', {...ANM_VARS_BY_NUMBER.get('15')});
 ANM_VARS_BY_NUMBER.set('165', {...ANM_VARS_BY_NUMBER.get('16')});
 ANM_VARS_BY_NUMBER.set('17', {...ANM_VARS_BY_NUMBER.get('165')});
+ANM_VARS_BY_NUMBER.set('18', {...ANM_VARS_BY_NUMBER.get('17')});
 
 // ==========================================================================
 // ==========================================================================

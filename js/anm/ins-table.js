@@ -484,6 +484,13 @@ ANM_BY_OPCODE.set('165', {
 ANM_BY_OPCODE.set('17', {
   ...ANM_BY_OPCODE.get('165'),
 });
+delete ANM_BY_OPCODE.get('17')[439];
+
+ANM_BY_OPCODE.set('18', {
+  ...ANM_BY_OPCODE.get('17'),
+  439: {ref: 'anm:the-real-439'},
+  614: {ref: 'anm:drawArc'},
+});
 
 for (const [, inner] of ANM_BY_OPCODE.entries()) {
   for (const [opcode, {ref, wip}] of NumMap.entries(inner)) {
@@ -1443,6 +1450,15 @@ Object.assign(ANM_INS_DATA, {
     Just like [ref=anm:drawRect], you can change the length on demand by setting the x-scale in [ref=anm:scale];
     the y-scale has no effect. If you want to change its direction, you must use [ref=anm:rotate].
   `},
+  'drawArc': {
+    sig: 'ff', args: ['radius', 'angle'], wip: 1, desc: `
+    [wip]Draws an arc?[/wip]
+
+    [tiphide]
+    Dai wrote the following: *the instruction is \`ins_614(float a, float b)\`, and I think it draws a single polygon from the center of the ANM object to a distance set by \`a\`, with an angle width of \`b\`.*
+    [wip]FIXME: We need an image.  Also should check if [ref=anmvar:i0] controls the number of edges like in the texture instructions.[/wip]
+    [/tiphide]
+  `},
 });
 
 // ==================
@@ -1660,8 +1676,14 @@ Object.assign(ANM_INS_DATA, {
   'vd-imaginary-439': {
     sig: 'S', args: ['_'], desc: `
     ANM \`ins_439\` does not exi[s](http://www.scpwiki.com/scp-3930)t.
+    [tiphide]
     It is used by [game=165] in \`photo.anm\`, where it does nothing because, again, *it does not exist.*
     We thank you for your understanding.
+    [/tiphide]
+
+    [tiphide]
+    To make matters worse, in [game=18], this ID gets reused for another instruction with a different signature!
+    [/tiphide]
   `},
   'posMode': {
     sig: 'S', args: ['flag'], wip: 1, desc: `
@@ -1685,6 +1707,10 @@ Object.assign(ANM_INS_DATA, {
     increasing argument should lead to blinking.
     [/wip]
     [/tiphide]
+  `},
+  'the-real-439': {
+    sig: 'Sff', args: ['a', 'b', 'c'], wip: 2, desc: `
+    [wip=2]Unknown. Added in [game=18].[/wip]
   `},
 });
 

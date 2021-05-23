@@ -18,70 +18,56 @@ export const MSG_BY_OPCODE = new Map(); // has to be a map because 'integer' key
 // });
 
 MSG_BY_OPCODE.set('10', {
-  0: {ref: 'msg:modern-end'},
-  1: {ref: 'msg:modern-show-player'},
-  2: {ref: 'msg:th10-show-enemy'},
-  3: {ref: 'msg:modern-show-textbox'},
-  4: {ref: 'msg:modern-hide-player'},
-  5: {ref: 'msg:th10-hide-enemy'},
-  6: {ref: 'msg:modern-hide-textbox'},
-  7: {ref: 'msg:modern-focus-player'},
-  8: {ref: 'msg:th10-focus-enemy'},
-  9: {ref: 'msg:modern-skippable'},
-  10: {ref: 'msg:modern-pause'},
-  11: {ref: 'msg:modern-ecl-resume'},
-  12: {ref: 'msg:modern-face-player'},
-  13: {ref: 'msg:th10-face-enemy'},
-  14: {ref: 'msg:modern-text-1'},
-  15: {ref: 'msg:modern-text-2'},
-  16: {ref: 'msg:modern-text-add-nofuri'},
-  17: {ref: 'msg:modern-text-clear'},
-  18: {ref: 'msg:modern-music-boss'},
+  0: {ref: 'msg:end'},
+  1: {ref: 'msg:show-player'},
+  2: {ref: 'msg:show-enemy'},
+  3: {ref: 'msg:show-textbox'},
+  4: {ref: 'msg:hide-player-single'},
+  5: {ref: 'msg:hide-enemy-single'},
+  6: {ref: 'msg:hide-textbox'},
+  7: {ref: 'msg:focus-player-single'},
+  8: {ref: 'msg:focus-enemy-single'},
+  9: {ref: 'msg:skippable'},
+  10: {ref: 'msg:pause'},
+  11: {ref: 'msg:ecl-resume'},
+  12: {ref: 'msg:face-player-single'},
+  13: {ref: 'msg:face-enemy-single'},
+  14: {ref: 'msg:text-1'},
+  15: {ref: 'msg:text-2'},
+  16: {ref: 'msg:text-add-nofuri'},
+  17: {ref: 'msg:text-clear'},
+  18: {ref: 'msg:music-boss'},
   19: {ref: 'msg:th10-intro'},
-  20: {ref: 'msg:modern-stage-end'},
-  21: {ref: 'msg:modern-music-fade'},
-  22: {ref: 'msg:modern-shake-player'},
-  23: {ref: 'msg:modern-shake-enemy'},
+  20: {ref: 'msg:stage-end'},
+  21: {ref: 'msg:music-fade'},
+  22: {ref: 'msg:shake-player-single'},
+  23: {ref: 'msg:shake-enemy-single'},
 });
+
+// TH11 inserted one in the middle, rawr
+function insertSpaceInNumericObject(obj, insertedIndex) {
+  return Object.fromEntries(Object.entries(obj).map(([key, value]) => {
+    const intKey = parseInt(key, 10);
+    return [intKey >= insertedIndex ? intKey + 1 : intKey, value];
+  }));
+}
+
 MSG_BY_OPCODE.set('11', {
-  0: {ref: 'msg:modern-end'},
-  1: {ref: 'msg:modern-show-player'},
-  2: {ref: 'msg:th10-show-enemy'},
-  3: {ref: 'msg:modern-show-textbox'},
-  4: {ref: 'msg:modern-hide-player'},
-  5: {ref: 'msg:th10-hide-enemy'},
-  6: {ref: 'msg:modern-hide-textbox'},
-  7: {ref: 'msg:modern-focus-player'},
-  8: {ref: 'msg:th10-focus-enemy'},
-  9: {ref: 'msg:modern-focus-none'},
-  10: {ref: 'msg:modern-skippable'},
-  11: {ref: 'msg:modern-pause'},
-  12: {ref: 'msg:modern-ecl-resume'},
-  13: {ref: 'msg:modern-face-player'},
-  14: {ref: 'msg:th10-face-enemy'},
-  15: {ref: 'msg:modern-text-1'},
-  16: {ref: 'msg:modern-text-2'},
-  17: {ref: 'msg:modern-text-add'},
-  18: {ref: 'msg:modern-text-clear'},
-  19: {ref: 'msg:modern-music-boss'},
-  20: {ref: 'msg:th10-intro'},
-  21: {ref: 'msg:modern-stage-end'},
-  22: {ref: 'msg:modern-music-fade'},
-  23: {ref: 'msg:modern-shake-player'},
-  24: {ref: 'msg:modern-shake-enemy'},
-  25: {ref: 'msg:modern-y-offset'},
-  26: {ref: 'msg:modern-flag-2'},
+  ...insertSpaceInNumericObject(MSG_BY_OPCODE.get('10'), 9),
+  9: {ref: 'msg:focus-none'},
+  25: {ref: 'msg:y-offset'},
+  26: {ref: 'msg:modern-26'},
 });
 
 MSG_BY_OPCODE.set('12', {
   ...MSG_BY_OPCODE.get('11'),
-  27: {ref: 'msg:modern-music-fade-custom'},
+  27: {ref: 'msg:music-fade-custom'},
 });
 
 MSG_BY_OPCODE.set('128', {
   ...MSG_BY_OPCODE.get('12'),
-  28: {ref: 'msg:modern-callout-pos'},
-  29: {ref: 'msg:modern-callout-type'},
+  28: {ref: 'msg:callout-pos'},
+  29: {ref: 'msg:callout-type'},
   30: {ref: 'msg:128-route-select'},
 });
 
@@ -92,30 +78,37 @@ MSG_BY_OPCODE.set('13', {
 
 MSG_BY_OPCODE.set('14', {
   ...MSG_BY_OPCODE.get('13'),
-  2: {ref: 'msg:modern-show-enemy'},
-  5: {ref: 'msg:modern-hide-enemy'},
-  8: {ref: 'msg:modern-focus-enemy'},
-  14: {ref: 'msg:modern-face-enemy'},
-  20: {ref: 'msg:modern-intro'},
+  5: {ref: 'msg:hide-enemy'},
+  8: {ref: 'msg:focus-enemy'},
+  14: {ref: 'msg:face-enemy'},
+  24: {ref: 'msg:shake-enemy'},
+  20: {ref: 'msg:intro'},
   32: {ref: 'msg:modern-32'},
 });
 
 MSG_BY_OPCODE.set('143', {
   ...MSG_BY_OPCODE.get('14'),
-  33: {ref: 'msg:modern-tutorial'},
+  33: {ref: 'msg:tutorial'},
 });
 
 MSG_BY_OPCODE.set('15', {...MSG_BY_OPCODE.get('14')}); // NOT 143; tutorial is removed
 
 MSG_BY_OPCODE.set('16', {
   ...MSG_BY_OPCODE.get('15'),
-  33: {ref: 'msg:modern-darken-portrait'},
-  34: {ref: 'msg:modern-highlight-portrait'},
-  35: {ref: 'msg:modern-lights-out'},
+  33: {ref: 'msg:darken-portrait'},
+  34: {ref: 'msg:highlight-portrait'},
+  35: {ref: 'msg:lights-out'},
 });
 
 MSG_BY_OPCODE.set('165', {...MSG_BY_OPCODE.get('143')}); // VD loses all of TH16's changes; identical to ISC.
 MSG_BY_OPCODE.set('17', {...MSG_BY_OPCODE.get('16')}); // But WBaWC is like HSiFS.
+MSG_BY_OPCODE.set('18', {...MSG_BY_OPCODE.get('17'),
+  4: {ref: 'msg:hide-player'},
+  7: {ref: 'msg:focus-player'},
+  13: {ref: 'msg:face-player'},
+  23: {ref: 'msg:shake-player'},
+  36: {ref: 'msg:store'},
+});
 
 // ==========================================================================
 // ==========================================================================
@@ -126,54 +119,62 @@ export const MSG_INS_DATA = {};
 
 // EoSD
 Object.assign(MSG_INS_DATA, {
-  'modern-end': {
+  'end': {
     sig: '', args: [], desc: `End the script.`,
   },
-  'modern-show-player': {
-    sig: 'S', args: ['silly'], desc: `
+  // These two are funny; clearly, ZUN anticipated eventually having multiple portraits on the same side of the screen,
+  // and thus gave these two dummy arguments in MoF.  All of the other instructions related to portraits did NOT start
+  // out with these arguments, and they had to be added in by later games.
+  'show-player': {
+    sig: 'S', args: ['who'], succ: 'show-player', desc: `
     Show the player portrait.
 
     [tiphide]
     * ([game=10]&ndash;[game=15]) The argument is never read.
-    * ([game=16]&ndash;[game=17]) If the argument is nonzero, it instead loads a specific (hardcoded) anm script on a specific ANM file in the ECL's \`ANM\` list.  This is used to put Satono on the left in [game=16] Extra.
+    * ([game=16]&ndash;[game=17]) If the argument is nonzero, then instead of the player, it loads a specific (hardcoded) anm script on a specific ANM file in the ECL's \`ANM\` list.  This is used to put Satono on the left in [game=16] Extra.
     * ([game=18]&ndash;) The game can now show two portraits that are both on the player side simultaneously.  [wip=1]The ANM script is no longer hardcoded; I'm not sure what the new logic does.[/wip]
     [/tiphide]
   `},
-  'th10-show-enemy': {
-    sig: 'S', args: ['unused'], succ: 'modern-show-enemy', desc: `Show the enemy portrait.  The argument is never read.`,
-  },
-  'modern-show-enemy': {
-    sig: 'S', args: ['who'], desc: `Show the enemy portrait.  The argument is for stages with multiple boss characters.`,
-  },
-  'modern-show-textbox': {sig: '', args: [], desc: `
+  'show-enemy': {
+    sig: 'S', args: ['who'], desc: `
+    Make the enemy portrait appear.
+
+    [tiphide]
+    * ([game=10]&ndash;[game=13]) The argument is never read.
+    * ([game=14]&ndash;) The argument indicates which boss to show in stages that can show multiple bosses simultaneously.
+    [/tiphide]
+  `},
+  'show-textbox': {sig: '', args: [], desc: `
     Show the text box.
 
     [tiphide]
     In [game=13] this becomes a nop as callouts are used instead.  (see [ref=msg:th10-callout-type])
     [/tiphide]
   `},
-  'modern-hide-player': {sig: '', args: [], desc: `Hide the player portrait.`},
-  'th10-hide-enemy': {
-    sig: '', args: [], succ: 'modern-hide-enemy', desc: `
+  'hide-player-single': {sig: '', args: [], succ: 'hide-player', desc: `Hide the player portrait.`},
+  'hide-enemy-single': {
+    sig: '', args: [], succ: 'hide-enemy', desc: `
     Hide the enemy portrait. [tiphide](and typically also their intro if still visible)[/tiphide]
   `},
-  'modern-hide-enemy': {sig: 'S', args: ['who'], desc: `Hide an enemy portrait.`},
-  'modern-hide-textbox': {sig: '', args: [], desc: `Hide the text box. (and all text on it)`},
-  'modern-focus-player': {sig: '', args: [], desc: `Indicates that the player is speaking.`},
-  'th10-focus-enemy': {sig: '', args: [], succ: 'modern-focus-enemy', desc: `Indicates that the enemy is speaking.`},
-  'modern-focus-enemy': {sig: 'S', args: ['who'], desc: `Indicates that an enemy is speaking.`},
-  'modern-focus-none': {sig: '', args: [], desc: `
+  'hide-player': {sig: 'S', args: ['who'], desc: `Hide the player portrait (or any character on the left side).`},
+  'hide-enemy': {sig: 'S', args: ['who'], desc: `Hide an enemy portrait.`},
+  'hide-textbox': {sig: '', args: [], desc: `Hide the text box. (and all text on it)`},
+  'focus-player-single': {sig: '', args: [], succ: 'focus-player', desc: `Indicates that the player is speaking.`},
+  'focus-enemy-single': {sig: '', args: [], succ: 'focus-enemy', desc: `Indicates that the enemy is speaking.`},
+  'focus-player': {sig: 'S', args: ['who'], desc: `Indicates that the player (or another character on the left side) is speaking.`},
+  'focus-enemy': {sig: 'S', args: ['who'], desc: `Indicates that an enemy is speaking.`},
+  'focus-none': {sig: '', args: [], desc: `
     Indicates that nobody is speaking.
 
     [tiphide]
     Examples: Used in [game=11] for the helper Youkai from aboveground, and in [game=13] for the message at the end of Extra that tells you how to get the secret ending.
     [/tiphide]
   `},
-  'modern-skippable': {
+  'skippable': {
     sig: 'S', args: ['skippable'], desc: `
     Sets a boolean bitflag.  When the flag is 1, text can be fast-forwarded.
   `},
-  'modern-pause': {
+  'pause': {
     sig: 'S', args: ['max'], desc: `
     Waits up to some maximum number of frames for the player to press the Shoot key.
 
@@ -182,7 +183,7 @@ Object.assign(MSG_INS_DATA, {
     the time label by any similar amount.
     [/tiphide]
   `},
-  'modern-ecl-resume': {
+  'ecl-resume': {
     sig: '', args: [], desc: `
     Resumes any ECL scripts that are waiting on MSG.  Often used to tell the boss when to fly onscreen.
 
@@ -190,28 +191,33 @@ Object.assign(MSG_INS_DATA, {
     Specifically, this resumes ECL scripts that are using the \`dialogWait\` instruction. (instruction 519 in [game=17])
     [/tiphide]
   `},
-  'modern-face-player': {
-    sig: 'S', args: ['face'], desc: `
+  'face-player-single': {
+    sig: 'S', args: ['face'], succ: 'face-player', desc: `
     Set the player's facial expression.
     [tiphide]The argument will be added to the ANM script index of the player's first face graphic.[/tiphide]
   `},
-  'th10-face-enemy': {
-    sig: 'S', args: ['face'], succ: 'modern-face-enemy', desc: `
+  'face-enemy-single': {
+    sig: 'S', args: ['face'], succ: 'face-enemy', desc: `
     Set the enemy's facial expression.
     [tiphide]The argument will be added to the ANM script index of the enemy's first face graphic.[/tiphide]
   `},
-  'modern-face-enemy': {
+  'face-player': {
+    sig: 'SS', args: ['who', 'face'], desc: `
+    Set the player's facial expression. (or any other character on the left side)
+    [tiphide]The argument will be added to the ANM script index of the player's first face graphic.[/tiphide]
+  `},
+  'face-enemy': {
     sig: 'SS', args: ['who', 'face'], desc: `
     Set an enemy's facial expression.
     [tiphide]The argument will be added to the ANM script index of the enemy's first face graphic.[/tiphide]
   `},
-  'modern-text-1': {sig: 'm', args: ['text'], desc: `Set the first line of text.  Unused.`},
-  'modern-text-2': {sig: 'm', args: ['text'], desc: `Set the second line of text.  Unused.`},
-  'modern-text-add-nofuri': {
-    sig: 'm', args: ['text'], succ: 'modern-text-add', desc: `
+  'text-1': {sig: 'm', args: ['text'], desc: `Set the first line of text.  Unused.`},
+  'text-2': {sig: 'm', args: ['text'], desc: `Set the second line of text.  Unused.`},
+  'text-add-nofuri': {
+    sig: 'm', args: ['text'], succ: 'text-add', desc: `
     Sets the next line of text.
   `},
-  'modern-text-add': {
+  'text-add': {
     sig: 'm', args: ['text'], desc: `
     Sets the next line of text.
 
@@ -229,7 +235,7 @@ Object.assign(MSG_INS_DATA, {
     [/code]
     [/tiphide]
   `},
-  'modern-text-clear': {sig: '', args: [], wip: 1, desc: `
+  'text-clear': {sig: '', args: [], wip: 1, desc: `
     Erases all text. (at least, that's what it does pre-[game=128])
 
     [tiphide]
@@ -240,49 +246,52 @@ Object.assign(MSG_INS_DATA, {
     Even though this instruction has existed since [game=10], the first game to use it is [game=13].
     [/tiphide]
   `},
-  'modern-music-boss': {sig: '', args: [], desc: `
+  'music-boss': {sig: '', args: [], desc: `
     Initiates boss music and displays its BGM title text.
   `},
-  'th10-intro': {sig: '', args: [], succ: 'modern-intro', desc: `
+  'th10-intro': {sig: '', args: [], succ: 'intro', desc: `
     Display the enemy's name and flavor text.
   `},
-  'modern-intro': {sig: 'S', args: ['who'], desc: `
+  'intro': {sig: 'S', args: ['who'], desc: `
     Display an enemy's name and flavor text.
   `},
-  'modern-stage-end': {sig: '', args: [], desc: `
+  'stage-end': {sig: '', args: [], desc: `
     Awards the stage bonus and begins the next stage.  (or ends stage practice)
   `},
-  'modern-music-fade': {sig: '', args: [], desc: `
+  'music-fade': {sig: '', args: [], desc: `
     Fades music out at the end of the stage.
 
     [tiphide]
     The duration of the fade is hardcoded based on stage number.
     [/tiphide]
   `},
-  'modern-shake-player': {sig: '', args: [], desc: `
+  'shake-player-single': {sig: '', args: [], succ: 'shake-player', desc: `
     Make the player portrait shake briefly like Nitori.
   `},
-  'th10-shake-enemy': {sig: '', args: [], succ: 'modern-shake-enemy', desc: `
+  'shake-enemy-single': {sig: '', args: [], succ: 'shake-enemy', desc: `
     Make the enemy portrait shake briefly (used by Nitori).
   `},
-  'modern-shake-enemy': {sig: '', args: [], desc: `
+  'shake-player': {sig: '', args: [], desc: `
+    Make all player portraits shake briefly like Nitori.
+  `},
+  'shake-enemy': {sig: '', args: [], desc: `
     Make all of the enemy portraits shake briefly like Nitori.
   `},
-  'modern-y-offset': {sig: 'S', args: ['dy'], desc: `
+  'y-offset': {sig: 'S', args: ['dy'], desc: `
     Adds a vertical offset to the position of all text.
 
     [tiphide]
     This sets the y-component of [\`pos_2\`](#anm/concepts&a=position).
     [/tiphide]
   `},
-  'modern-flag-2': {sig: '', args: [], wip: 2, desc: `
+  'modern-26': {sig: '', args: [], wip: 2, desc: `
     Sets an unknown bitflag to 1.
   `},
-  'modern-music-fade-custom': {
+  'music-fade-custom': {
     sig: 'f', args: ['duration'], desc: `
     Fades music out over a user-supplied time interval.
   `},
-  'modern-callout-pos': {
+  'callout-pos': {
     sig: 'ff', args: ['x', 'y'], desc: `
     Sets the position of the callout.
 
@@ -290,7 +299,7 @@ Object.assign(MSG_INS_DATA, {
     [wip]What anchor point (presumably center)?  What coordinate system (presumably arcade-region coords)?[/wip]
     [/tiphide]
   `},
-  'modern-callout-type': {
+  'callout-type': {
     sig: 'S', args: ['value'], desc: `
     Sets the callout type.
 
@@ -323,18 +332,18 @@ Object.assign(MSG_INS_DATA, {
     [wip=2]Unknown. Only used in [game=14] Extra.[/wip]
 
     [tiphide]
-    [wip=2]The argument sets the current speaker, similar to [ref=msg:modern-focus-player] and [ref=msg:modern-focus-boss][/wip]
+    [wip=2]The argument sets the current speaker, similar to [ref=msg:focus-player] and [ref=msg:focus-boss][/wip]
     [/tiphide]
   `},
-  'modern-tutorial': {
+  'tutorial': {
     sig: 'S', args: ['id'], desc: `
     Initiates a tutorial in scene games.
 
     [tiphide]
-    Note this is a **completely different instruction** from the \`ins_33\` found in [game=16] (which is [ref=msg:modern-darken-portrait]).
+    Note this is a **completely different instruction** from the \`ins_33\` found in [game=16] (which is [ref=msg:darken-portrait]).
     [/tiphide]
   `},
-  'modern-darken-portrait': {
+  'darken-portrait': {
     sig: 'SS', args: ['side', 'who'], desc: `
     Darkens a single portrait without changing the active speaker.
 
@@ -343,11 +352,11 @@ Object.assign(MSG_INS_DATA, {
     [/tiphide]
 
     [tiphide]
-    Note this is a **completely different instruction** from the \`ins_33\` found in [game=143] and [game=165] (which is [ref=msg:modern-tutorial]),
+    Note this is a **completely different instruction** from the \`ins_33\` found in [game=143] and [game=165] (which is [ref=msg:tutorial]),
     and on top of that it is entirely unused!
     [/tiphide]
   `},
-  'modern-highlight-portrait': {
+  'highlight-portrait': {
     sig: 'SS', args: ['side', 'who'], desc: `
     Highlight a single portrait as if they are speaking (but without changing the active speaker).
 
@@ -359,13 +368,17 @@ Object.assign(MSG_INS_DATA, {
     This is used in [game=16] Cirno Stage 1 to make Cirno and Eternity shout in unison at each other.
     [/tiphide]
   `},
-  'modern-lights-out': {
+  'lights-out': {
     sig: '', args: [], desc: `
     Covers the stage background and enemies in black.
 
     [tiphide]
     Used at the end of [game=16] Cirno stage 4.
     [/tiphide]
+  `},
+  'store': {
+    sig: '', args: [], desc: `
+    Opens the ability card store. ([game=18] only)
   `},
 });
 

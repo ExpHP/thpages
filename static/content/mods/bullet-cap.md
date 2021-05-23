@@ -4,7 +4,7 @@
 
 **Available through thcrap.**
 
-**Supports:** All STGs TH06-TH17 except TH095<br>
+**Supports:** All STGs TH06-TH18 except TH095 (which I keep forgetting to do)<br>
 **In Beta:** TH06-TH09, TH15-TH16. [Please report bugs!](https://github.com/ExpHP/thcrap-patches/issues/new) <br>
 **In Alpha:** TH165. [See disclaimer!](#vd)
 
@@ -103,11 +103,11 @@ Yes.  By default, each cap will be set to 16 times its original, vanilla value i
 <!--
 | Cap          | EoSD | PCB  | IN       | PoFV | StB  | MoF  | SA   | UFO  | DS   | GFW  | TD   | DDC  | ISC  | LoLK | HSiFS | VD  | WBaWC |
 -->
-| Cap          | [game=06] | [game=07] | [game=08] | [game=09] | [game=095] | [game=10] | [game=11] | [game=12] | [game=125] | [game=128] | [game=13] | [game=14] | [game=143] | [game=15] | [game=16] | [game=165] | [game=17] |
-| ---          | ---  | ---  | ---  | ---  | ---  | ---  | ---  | ---  | ---  | ---  | ---  | ---  | ---  | ---  | ---  | ---  | ---  |
-| `bullet-cap` | 640  | 1024 | 1536 | N/A  | 1600 | 2000 | 2000 | 2000 | 2000 | 2000 | 2000 | 2000 | 2000 | 2000 | 2000 | 2000 | 2000 |
-| `laser-cap`  | 64   | 64   | 256  | 48   | 256  | 256  | 256  | 256  | 256  | 256  | 256  | 256  | 256  | 512  | 512  | 512  | 512  |
-| `cancel-cap` | 512  | 1100 | 2096 | N/A  | 150  | 2048 | 2048 | 2048 | 200  | 100  | 2048 | 4096 | 4096 | 4096 | 4096 | 200  | 4096 |
+| Cap          | [game=06] | [game=07] | [game=08] | [game=09] | [game=095] | [game=10] | [game=11] | [game=12] | [game=125] | [game=128] | [game=13] | [game=14] | [game=143] | [game=15] | [game=16] | [game=165] | [game=17] | [game=18] |
+| ---          | ---  | ---  | ---  | ---  | ---  | ---  | ---  | ---  | ---  | ---  | ---  | ---  | ---  | ---  | ---  | ---  | ---  | ---  |
+| `bullet-cap` | 640  | 1024 | 1536 | N/A  | 1600 | 2000 | 2000 | 2000 | 2000 | 2000 | 2000 | 2000 | 2000 | 2000 | 2000 | 2000 | 2000 | 2000 |
+| `laser-cap`  | 64   | 64   | 256  | 48   | 256  | 256  | 256  | 256  | 256  | 256  | 256  | 256  | 256  | 512  | 512  | 512  | 512  | 512  |
+| `cancel-cap` | 512  | 1100 | 2096 | N/A  | 150  | 2048 | 2048 | 2048 | 200  | 100  | 2048 | 4096 | 4096 | 4096 | 4096 | 200  | 4096 | 4096 |
 
 And for PoFV:
 * `fairy-bullet-cap` is 175.

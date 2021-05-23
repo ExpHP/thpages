@@ -36,14 +36,14 @@ export function initStats() {
   globalTips.registerPrefix('stats', STATS_TIPS);
 }
 
-export async function buildInsStatsTable<D extends CommonData>(handlers: TableHandlers<D>, $elem: HTMLElement) {
+export async function buildStatsTable<D extends CommonData>(dataSubkey: 'ins' | 'var', handlers: TableHandlers<D>, $elem: HTMLElement) {
   const statsRaw = await statsJson;
-  const stats = getStatsRows(statsRaw.ins, handlers);
-  buildStatsTable($elem, stats, handlers);
+  const stats = getStatsRows(statsRaw[dataSubkey], handlers);
+  buildStatsTable_($elem, stats, handlers);
   registerStatsTips(statsRaw, stats, handlers);
 }
 
-function buildStatsTable<D>($elem: HTMLElement, dataByRow: StatsByNameKey, tableHandlers: TableHandlers<D>) {
+function buildStatsTable_<D>($elem: HTMLElement, dataByRow: StatsByNameKey, tableHandlers: TableHandlers<D>) {
   const freezeHeaders = getConfig()['freeze-stats-headers'];
 
   let tableBody = '';
@@ -51,7 +51,7 @@ function buildStatsTable<D>($elem: HTMLElement, dataByRow: StatsByNameKey, table
   tableBody += '<tr class="GridViewScrollHeader">';
   tableBody += `<th>ANM stats</th>`;
   for (const game of allGames()) {
-    tableBody += `<th style="color: ${gameData(game).color};">${gameData(game).thname}</th>`;
+    tableBody += `<th class="gamecolor gamecolor-${game}">${gameData(game).thname}</th>`;
     // headerRow += `<td style="color: ${gameData(game).color};">&mdash;</td>`;
   }
   tableBody += '</tr>';

@@ -4,7 +4,7 @@
 
 **Available through thcrap.**
 
-**Supports:** TH06-TH17 all danmaku games (incl. point titles).
+**Supports:** TH06-TH18 all danmaku games (incl. point titles).
 
 Adds debug counters so you can see how much your dank memes are tormenting the game
 

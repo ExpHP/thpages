@@ -23,7 +23,7 @@ export function initAnm() {
   (window as any).setupGameSelector = <D extends CommonData>(handlers: TableHandlers<D>, $e: HTMLElement) => setupGameSelector(handlers, $e);
   (window as any).buildInsTable = <D extends CommonData>(handlers: TableHandlers<D>) => generateTablePageHtml(handlers);
   (window as any).buildVarTable = <D extends CommonData>(handlers: TableHandlers<D>) => generateTablePageHtml(handlers);
-  (window as any).buildStatsTable = <D extends CommonData>(handlers: TableHandlers<D>, $elem: HTMLElement) => buildStatsTable(handlers, $elem);
+  (window as any).buildStatsTable = <D extends CommonData>(dataKey: 'ins' | 'var', handlers: TableHandlers<D>, $elem: HTMLElement) => buildStatsTable(dataKey, handlers, $elem);
 
   initInsNames(ANM_INS_HANDLERS); // "anm:th06:25" names
   initInsNames(STD_HANDLERS);
