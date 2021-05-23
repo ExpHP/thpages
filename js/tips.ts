@@ -90,12 +90,13 @@ function getAncestorTip($targ: HTMLElement, context: Context): [Tip, HTMLElement
 
 function getAncestorElementData($elem: HTMLElement, key: string): [string, HTMLElement | null] {
   let $cur: HTMLElement | null = $elem;
-  while ($cur) {
+  for (let depth=0; depth<1000; depth++) {
+    if (!$cur) return ["", null];
     const value = $cur.dataset[key];
     if (value !== undefined) {
       return [value, $cur];
     }
     $cur = $cur.parentElement;
   }
-  return ["", null];
+  throw new Error('getAncestorElementData: Iteration limit exceeded!');
 }

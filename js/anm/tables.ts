@@ -622,10 +622,11 @@ function getUrlByRef<D>(ref: string, context: Context, tableHandlers: TableHandl
  * latest ref.
  */
 export function makeRefGameIndependent<D extends CommonData>(ref: string, tableHandlers: TableHandlers<D>) {
-  while (true) {
+  for (let attempt=0; attempt < 100; attempt++) {
     const {succ} = getDataByRef(ref, tableHandlers)!;
     if (!succ) return ref;
 
     ref = `${tableHandlers.mainPrefix}:${succ}`;
   }
+  throw new Error(`could not make ref ${ref} game-independent; may be a cycle in successors`);
 }

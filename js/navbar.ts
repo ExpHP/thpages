@@ -15,7 +15,7 @@ export const NAVBAR: Entry[] = [
   },
 
   {
-    label: "ANM",
+    label: "Reference",
     children: [
       {
         label: "General documentation",
@@ -26,10 +26,10 @@ export const NAVBAR: Entry[] = [
           {url: "#/anm/ontick-ondraw", label: "on_tick and on_draw"},
         ],
       },
-      {url: "#/anm/ins", label: "Instruction reference"},
-      {url: "#/anm/var", label: "Variable reference"},
-      {url: "#/std/ins", label: "STD instruction reference"},
-      {url: "#/msg/ins", label: "MSG instruction reference"},
+      {url: "#/anm/ins", label: "ANM instructions"},
+      {url: "#/anm/var", label: "ANM variables"},
+      {url: "#/std/ins", label: "STD instructions"},
+      {url: "#/msg/ins", label: "MSG instructions"},
       {
         label: "Tools",
         children: [

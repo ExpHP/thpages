@@ -16,17 +16,17 @@ type CellData = {
 type OpcodeStr = string;
 type NameKey = string;
 type StatsByOpcode = Record<Game, Record<OpcodeStr, Omit<CellData, 'opcode'>>>;
-type Stats = {
-  numFiles: Record<Game, number>,
+type NumFiles = Record<Game, number>;
+type Stats = Record<string, FmtStats>;
+type FmtStats = {
+  'num-files': NumFiles,
   ins: StatsByOpcode,
   var: StatsByOpcode,
 };
 type StatsByNameKey = Map<NameKey, Map<Game, CellData>>;
 
 const statsJson: Promise<Stats> = fetch('content/anm/anm-stats.json').then(async (text) => {
-  const out: any = await text.json();
-  out.numFiles = out['num-files'];
-  delete out['num-files'];
+  const out: Stats = await text.json();
   return out;
 });
 
@@ -36,23 +36,25 @@ export function initStats() {
   globalTips.registerPrefix('stats', STATS_TIPS);
 }
 
-export async function buildStatsTable<D extends CommonData>(dataSubkey: 'ins' | 'var', handlers: TableHandlers<D>, $elem: HTMLElement) {
+export async function buildStatsTable<D extends CommonData>(dataSubkey: [string, 'ins' | 'var'], handlers: TableHandlers<D>, $elem: HTMLElement) {
   const statsRaw = await statsJson;
-  const stats = getStatsRows(statsRaw[dataSubkey], handlers);
-  buildStatsTable_($elem, stats, handlers);
-  registerStatsTips(statsRaw, stats, handlers);
+  const stats = getStatsRows(statsRaw[dataSubkey[0]][dataSubkey[1]], handlers);
+  const numFiles = statsRaw[dataSubkey[0]]['num-files'];
+  buildStatsTable_($elem, numFiles, stats, handlers);
+  registerStatsTips(numFiles, stats, handlers);
 }
 
-function buildStatsTable_<D>($elem: HTMLElement, dataByRow: StatsByNameKey, tableHandlers: TableHandlers<D>) {
+function buildStatsTable_<D>($elem: HTMLElement, numFiles: NumFiles, dataByRow: StatsByNameKey, tableHandlers: TableHandlers<D>) {
   const freezeHeaders = getConfig()['freeze-stats-headers'];
 
   let tableBody = '';
 
+  const games = [...allGames()].filter((game) => numFiles[game] > 0);
+
   tableBody += '<tr class="GridViewScrollHeader">';
   tableBody += `<th>ANM stats</th>`;
-  for (const game of allGames()) {
+  for (const game of games) {
     tableBody += `<th class="gamecolor gamecolor-${game}">${gameData(game).thname}</th>`;
-    // headerRow += `<td style="color: ${gameData(game).color};">&mdash;</td>`;
   }
   tableBody += '</tr>';
 
@@ -62,7 +64,7 @@ function buildStatsTable_<D>($elem: HTMLElement, dataByRow: StatsByNameKey, tabl
     } else {
       tableBody += /* html */ `<tr class="GridViewScrollItem"><th><code>${globalNames.getHtml(nameKey)}</code></th>`;
     }
-    for (const game of allGames()) {
+    for (const game of games) {
       const tipId = `stats:${tableHandlers.mainPrefix}:${game}:${nameKey}`;
       const cellData = rowData.get(game);
       if (cellData && cellData.total === undefined) console.error(cellData);
@@ -162,7 +164,7 @@ function getStatsRows<D extends CommonData>(statsByOpcode: StatsByOpcode, tableH
   return new Map(out);
 }
 
-function registerStatsTips<D>(statsRaw: Stats, table: StatsByNameKey, tableHandlers: TableHandlers<D>) {
+function registerStatsTips<D>(numFiles: NumFiles, table: StatsByNameKey, tableHandlers: TableHandlers<D>) {
   const tipPrefix: string = tableHandlers.mainPrefix;
 
   STATS_TIPS.registerPrefix(tipPrefix, (suffix) => {
@@ -171,7 +173,7 @@ function registerStatsTips<D>(statsRaw: Stats, table: StatsByNameKey, tableHandl
     const cellData = table.get(nameKey)!.get(game);
     if (!cellData) return null;
 
-    let tipMd = `Used in ${cellData.breakdown.length} of ${statsRaw.numFiles[game]} files. (as id ${cellData.opcode})\n\n`;
+    let tipMd = `Used in ${cellData.breakdown.length} of ${numFiles[game]} files. (as id ${cellData.opcode})\n\n`;
     for (const [filename, uses] of cellData.breakdown.slice(0, 5)) {
       tipMd += `* ${uses} uses in <code>${filename}</code>\n`;
     }

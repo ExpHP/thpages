@@ -126,7 +126,7 @@ Object.assign(MSG_INS_DATA, {
   // and thus gave these two dummy arguments in MoF.  All of the other instructions related to portraits did NOT start
   // out with these arguments, and they had to be added in by later games.
   'show-player': {
-    sig: 'S', args: ['who'], succ: 'show-player', desc: `
+    sig: 'S', args: ['who'], desc: `
     Show the player portrait.
 
     [tiphide]
