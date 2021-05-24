@@ -1,7 +1,7 @@
 import dedent from '../lib/dedent';
 import {readUploadedFile} from '../util';
 import {parseGame, Game} from '../game-names';
-import {ANM_INS_HANDLERS} from './tables';
+import {getAnmInsHandlers} from './tables';
 import {globalTips, Tip} from '../tips';
 import * as events from 'events';
 import {PrefixResolver} from '../resolver';
@@ -195,7 +195,7 @@ function parseAnmSpec(text: string, game: Game, filename?: string): AnmSpec {
   type NoState = {state: null};
   let state: EntryState | ScriptState | NoState = {state: null};
 
-  const layerOpcode = ANM_INS_HANDLERS.reverseTable[game]?.['anm:layer'];
+  const layerOpcode = getAnmInsHandlers().reverseTable[game]?.['anm:layer'];
   if (layerOpcode == null) {
     throw new Error(`game ${game} does not have layers, you silly billy`);
   }
@@ -235,15 +235,18 @@ function parseAnmSpec(text: string, game: Game, filename?: string): AnmSpec {
           state = {state: null};
           break;
         }
-        case 'script':
+        case 'script': {
           // end of script
+          const unnullify = (a: number | null) => a == null ? -1 : a;
+
           state.sprites = [...new Set(state.sprites)];
-          state.sprites.sort();
+          state.sprites.sort((a, b) => unnullify(a) - unnullify(b));
           state.layers = [...new Set(state.layers)];
-          state.layers.sort();
+          state.layers.sort((a, b) => unnullify(a) - unnullify(b));
           out.scripts.push({indexInFile: out.scripts.length, sprites: state.sprites, layers: state.layers});
           state = {state: null};
           break;
+        }
       }
 
     } else if (state.state === 'entry') {

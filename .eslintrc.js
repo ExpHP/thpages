@@ -29,6 +29,8 @@ module.exports = {
     // allow `let a, b;` but not `let a = 2, b = 3;`
     "one-var": ["error", {"initialized": "never"}],
     "no-constant-condition": ["error", {'checkLoops': false}],
+    "brace-style": ["error", "1tbs", {"allowSingleLine": true}],
+    "block-spacing": ["error", "always"],
   },
   "ignorePatterns": ["js/lib/*"],
 

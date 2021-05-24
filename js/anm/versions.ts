@@ -10,7 +10,7 @@ export const GAME_ANM_VERSIONS: {[k in Game]: AnmVersion} = {
   "095": 'v4', "10": 'v4', "11": 'v4',
   "12": 'v4', "125": 'v4', "128": 'v4',
   "13": 'v8', "14": 'v8', "143": 'v8', "15": 'v8',
-  "16": 'v8', "165": 'v8', "17": 'v8',
+  "16": 'v8', "165": 'v8', "17": 'v8', "18": 'v8',
 };
 
 export type StdVersion = 'eosd' | 'classic' | 'modern';
@@ -21,7 +21,19 @@ export const GAME_STD_VERSIONS: {[k in Game]: StdVersion} = {
   "095": 'modern', "10": 'modern', "11": 'modern',
   "12": 'modern', "125": 'modern', "128": 'modern',
   "13": 'modern', "14": 'modern', "143": 'modern', "15": 'modern',
-  "16": 'modern', "165": 'modern', "17": 'modern',
+  "16": 'modern', "165": 'modern', "17": 'modern', "18": 'modern',
+};
+
+// FIXME temp; MSG should not have versions.
+export type MsgVersion = Game;
+export const SUPPORTED_MSG_VERSIONS: MsgVersion[] = [...allGames()];
+export const GAME_MSG_VERSIONS: {[k in Game]: MsgVersion} = {
+  "06": '06',
+  "07": '07', "08": '08', "09": '09',
+  "095": '095', "10": '10', "11": '11',
+  "12": '12', "125": '125', "128": '128',
+  "13": '13', "14": '14', "143": '143', "15": '15',
+  "16": '16', "165": '165', "17": '17', "18": '18',
 };
 
 export type VersionData = {
@@ -45,4 +57,13 @@ for (const game of allGames()) {
     STD_VERSION_DATA[version] = {minGame: game, maxGame: game};
   }
   STD_VERSION_DATA[version].maxGame = game;
+}
+
+export const MSG_VERSION_DATA: {[k in MsgVersion]: VersionData} = {} as any;
+for (const game of allGames()) {
+  const version = GAME_MSG_VERSIONS[game];
+  if (MSG_VERSION_DATA[version] === undefined) {
+    MSG_VERSION_DATA[version] = {minGame: game, maxGame: game};
+  }
+  MSG_VERSION_DATA[version].maxGame = game;
 }

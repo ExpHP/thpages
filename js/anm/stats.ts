@@ -1,5 +1,4 @@
 import {Game, allGames, gameData} from '../game-names';
-import {GAME_ANM_VERSIONS} from './versions';
 import {TableHandlers, makeRefGameIndependent, CommonData} from './tables';
 import {globalNames, globalLinks, PrefixResolver} from '../resolver';
 import {GridViewScroll} from '../lib/gridviewscroll';
@@ -136,15 +135,14 @@ function getStatsRows<D extends CommonData>(statsByOpcode: StatsByOpcode, tableH
   for (const [gameStr, innerByOpcode] of reversed<[string, any]>(tableByOpcode.entries())) {
     const game = gameStr as Game;
     const srcInner = statsByOpcode[game];
-    const version = GAME_ANM_VERSIONS[game];
     const opcodes = Array.from(Object.keys(innerByOpcode as object)).map((opcodeStr) => parseInt(opcodeStr));
-    opcodes.sort();
+    opcodes.sort((a, b) => a - b);
 
     for (const opcode of opcodes) {
       let {ref} = innerByOpcode[opcode];
       if (ref) ref = makeRefGameIndependent(ref, tableHandlers);
 
-      const nameKey = (ref === null) ? `${mainPrefix}:${version}:${opcode}` : `ref:${ref}`;
+      const nameKey = (ref === null) ? `${mainPrefix}:th${game}:${opcode}` : `ref:${ref}`;
       if (!keyIndices.has(nameKey)) {
         keyIndices.set(nameKey, out.length);
         out.push([nameKey, new Map()]);

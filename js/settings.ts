@@ -1,17 +1,37 @@
 import {MD} from './markdown';
 import {Eclmap} from './anm/eclmap';
 import dedent from './lib/dedent';
-import {globalNames, Resolver} from './resolver';
+import {globalNames, PrefixResolver, Context} from './resolver';
 import {
-  SupportedAnmVersion, StdVersion, VersionData,
+  SupportedAnmVersion, StdVersion, MsgVersion, VersionData as OldVersionData,
   SUPPORTED_ANM_VERSIONS, ANM_VERSION_DATA, SUPPORTED_STD_VERSIONS, STD_VERSION_DATA,
+  GAME_ANM_VERSIONS, SUPPORTED_MSG_VERSIONS, MSG_VERSION_DATA, GAME_MSG_VERSIONS, GAME_STD_VERSIONS,
 } from './anm/versions';
+import {queryGame} from './url-format';
+import {Game, allGames} from './game-names';
 import {readFileSync} from 'fs';
+import {TableHandlers, QualifiedOpcode, getAnmInsHandlers, getAnmVarHandlers, getStdHandlers, getMsgHandlers, InsData, VarData} from './anm/tables';
 import {readUploadedFile, cached, StrMap} from './util';
 
-const LOCAL_STORAGE_KEY_ANMMAP = 'anmmap';
-const LOCAL_STORAGE_KEY_STDMAP = 'stdmap';
-const LOCAL_STORAGE_KEY_OTHER_CONFIG = 'config';
+// It occurs to me that this site shares localStorage with everything else under the same domain,
+// so we should use prefixed keys.
+const LOCAL_STORAGE_KEY_ANMMAP = 'thpages-anmmap';
+const LOCAL_STORAGE_KEY_STDMAP = 'thpages-stdmap';
+const LOCAL_STORAGE_KEY_OTHER_CONFIG = 'thpages-config';
+const LOCAL_STORAGE_KEY_UNUSED_DUMMY = 'thpages-__unused_dummy_key';
+
+// The old keys will be backwards-compatibly supported for probably at least a year.
+function moveDeprecatedLocalStorageKey(oldKey: string, newKey: string) {
+  const oldValue = localStorage.getItem(oldKey);
+  if (oldValue != null) {
+    localStorage.setItem(newKey, oldValue);
+    localStorage.removeItem(oldKey);
+  }
+}
+moveDeprecatedLocalStorageKey('anmmap', LOCAL_STORAGE_KEY_ANMMAP);
+moveDeprecatedLocalStorageKey('stdmap', LOCAL_STORAGE_KEY_STDMAP);
+moveDeprecatedLocalStorageKey('config', LOCAL_STORAGE_KEY_OTHER_CONFIG);
+localStorage.removeItem(LOCAL_STORAGE_KEY_UNUSED_DUMMY); // nothing should ever be here
 
 export type Config = {
   /**
@@ -25,27 +45,24 @@ const DEFAULT_CONFIG: Config = {
   'freeze-stats-headers': true,
 };
 
-export const globalConfigNames: Resolver<string> = {
-  getNow: (s, ctx) => null, // FIXME
-};
+export const globalConfigNames = new PrefixResolver<string>();
 globalNames.registerPrefix('cfg', globalConfigNames);
 
 // --------------------------------------------------------------
 // API for loading settings so they can be used from javascript code.
 
 /** A cache so that getCurrentAnmmaps can be called even in reasonably tight loops. */
-const currentAnmmaps = cached(() => storageLoadMaps(anmmapSet));
-const currentStdmaps = cached(() => storageLoadMaps(stdmapSet));
+const currentVersionAnmmaps = cached(() => storageLoadMaps(anmmapSet));
+const currentVersionStdmaps = cached(() => storageLoadMaps(stdmapSet));
+const currentMapNamesDone = cached(() => convertOldVersionConfigToNewConfig());
 const currentConfig = cached(() => storageLoadConfigOrDefault());
 
-/** Get objects with all info from the user's configured anmmaps. */
-export function getCurrentAnmmaps() {
-  return currentAnmmaps.get();
-}
+function getCurrentVersionAnmmaps() { return currentVersionAnmmaps.get(); }
+function getCurrentVersionStdmaps() { return currentVersionStdmaps.get(); }
 
-/** Get objects with all info from the user's configured stdmaps. */
-export function getCurrentStdmaps() {
-  return currentStdmaps.get();
+/** Can be called at any point in time to ensure that 'cfg:' names are up to date. */
+export function requireMaps() {
+  currentMapNamesDone.get();
 }
 
 /** Get additional Config. */
@@ -55,27 +72,35 @@ export function getConfig() {
 
 /** Clear caches for all `getCurrent__` functions. Suitable for use whenever a page is loaded. */
 export function clearSettingsCache() {
-  currentAnmmaps.reset();
-  currentStdmaps.reset();
+  currentVersionAnmmaps.reset();
+  currentVersionStdmaps.reset();
+  currentMapNamesDone.reset();
   currentConfig.reset();
 }
 
 // --------------------------------------------------------------
 // Functions that implement the settings page.
 
+/** Old abstraction for a group of map-related options on the settings page. */
 type MapSet<V extends string> = {
   /** ID of section on settings page. */
   controlId: string,
   /** Get all supported versions. */
   supportedVersions: V[],
   /** Get data about a version. */
-  versionData: {[k in V]: VersionData},
+  versionData: {[k in V]: OldVersionData},
   /** Prefix of some controls. */
   mapType: string,
   /** Where do we store settings for these maps in localStorage? */
-  localStorageKey: string,
+  localStorageKey: string | null,
   /** Default map file contents for each version. */
   defaultMapText: {[v in V]: string},
+  /** Function that loads the maps, possibly from cache. */
+  getMaps: () => LoadedMaps<V>,
+  getHandlers: {
+    ins: () => TableHandlers<InsData>,
+    vars?: () => TableHandlers<VarData>,
+  },
 }
 
 const anmmapSet: MapSet<SupportedAnmVersion> = {
@@ -91,6 +116,11 @@ const anmmapSet: MapSet<SupportedAnmVersion> = {
     'v4': readFileSync(__dirname + '/../static/eclmap/anmmap/v4.anmm', 'utf8'),
     'v8': readFileSync(__dirname + '/../static/eclmap/anmmap/v8.anmm', 'utf8'),
   },
+  getMaps: getCurrentVersionAnmmaps,
+  getHandlers: {
+    ins: getAnmInsHandlers,
+    vars: getAnmVarHandlers,
+  },
 };
 
 const stdmapSet: MapSet<StdVersion> = {
@@ -104,6 +134,20 @@ const stdmapSet: MapSet<StdVersion> = {
     'classic': readFileSync(__dirname + '/../static/stdmap/std-09.stdm', 'utf8'),
     'modern': readFileSync(__dirname + '/../static/stdmap/std-14.stdm', 'utf8'),
   },
+  getMaps: getCurrentVersionStdmaps,
+  getHandlers: {'ins': getStdHandlers},
+};
+
+const fakeMsgMaps = new Proxy({}, {get: () => ({ins: {}, var: {}})}) as {[v in MsgVersion]: LoadedMap};
+const msgmapSet: MapSet<MsgVersion> = {
+  controlId: 'upload-stdmaps',
+  supportedVersions: SUPPORTED_MSG_VERSIONS,
+  versionData: MSG_VERSION_DATA,
+  mapType: 'msgmap',
+  localStorageKey: null,
+  defaultMapText: new Proxy({}, {get: () => ''}) as {[v in MsgVersion]: string},
+  getMaps: () => fakeMsgMaps,
+  getHandlers: {'ins': getMsgHandlers},
 };
 
 export function initSettings() {
@@ -252,6 +296,10 @@ function getMapSettingsRowStuff($row: HTMLElement) {
 async function saveNewMapSettingsFromPage<V extends string>(mapSet: MapSet<V>) {
   const {controlId, localStorageKey} = mapSet;
 
+  if (localStorageKey == null) {
+    return;
+  }
+
   const $maps = document.querySelector(`#${controlId}`);
   if (!$maps) throw new Error('not on settings page!');
 
@@ -373,7 +421,7 @@ function storageLoadMaps<V extends string>(mapSet: MapSet<V>): LoadedMaps<V> {
 function storageReadMapsOrThrow<V extends string>(mapSet: MapSet<V>): MapSettings<V> {
   const {localStorageKey} = mapSet;
 
-  const text = localStorage.getItem(localStorageKey) || '{}';
+  const text = localStorage.getItem(localStorageKey || LOCAL_STORAGE_KEY_UNUSED_DUMMY) || '{}';
   const json = JSON.parse(text);
   return parseSettingMapJson(json, mapSet);
 }
@@ -381,7 +429,7 @@ function storageReadMapsOrThrow<V extends string>(mapSet: MapSet<V>): MapSetting
 function storageReadMapsOrDefault<V extends string>(mapSet: MapSet<V>): MapSettings<V> {
   const {localStorageKey, mapType} = mapSet;
 
-  const text = localStorage.getItem(localStorageKey) || '{}';
+  const text = localStorage.getItem(localStorageKey || LOCAL_STORAGE_KEY_UNUSED_DUMMY) || '{}';
   const json = JSON.parse(text);
   try {
     return parseSettingMapJson(json, mapSet);
@@ -455,4 +503,72 @@ function parseIntegerIndex(str: string) {
   if (Math.abs(n) === Infinity || n !== n || n < 0) throw new Error(`not a non-negative integer: ${str}`);
   if (String(n) !== str) throw new Error(`non-canonical form of number: ${str}`);
   return n;
+}
+
+// --------------------------------------------------------------
+// Converting old version-based config system to new config system.
+
+function convertOldVersionConfigToNewConfig() {
+  convertSingleOldVersionConfigToNewConfig(anmmapSet, 'ins');
+  convertSingleOldVersionConfigToNewConfig(anmmapSet, 'vars');
+  convertSingleOldVersionConfigToNewConfig(stdmapSet, 'ins');
+  convertSingleOldVersionConfigToNewConfig(msgmapSet, 'ins');
+}
+function convertSingleOldVersionConfigToNewConfig<V extends string>(mapset: MapSet<V>, subkey: 'ins' | 'vars') {
+  const {supportedVersions, versionData, getHandlers, getMaps} = mapset;
+  const tableHandlers = getHandlers[subkey]!();
+  const {mainPrefix, tableByOpcode} = tableHandlers;
+  const loadedMaps = getMaps();
+
+  // For each version in the old config, we may or may not have a mapfile.
+  // If we do have a mapfile, apply the names inside to the refs for the corresponding instructions.
+  //
+  // Names from newer versions will overwrite names from older versions for the same ref.
+  const nameMap: Record<string, string> = {};
+  for (const version of supportedVersions) {
+    const table = tableByOpcode.get(versionData[version].maxGame);
+    if (table == null) continue; // can't lookup refs; skip this one
+
+    for (const [opcodeStr, name] of Object.entries(loadedMaps[version][subkey])) {
+      const opcode = parseInt(opcodeStr, 10);
+      const entry = table[opcode];
+      if (entry == null) continue;
+      nameMap[entry.ref] = name;
+    }
+  }
+
+  globalConfigNames.registerPrefix(mainPrefix, (id, ctx) => {
+    const ref = `${mainPrefix}:${id}`;
+    const qualOpcode = opcodeForNamingRef(tableHandlers, ref, ctx);
+    if (qualOpcode == null) return null;
+
+    const currentGame = queryGame(ctx);
+    let name = nameMap[ref];
+    if (name == null) {
+      name = `ins_${qualOpcode.opcode}`;
+    }
+    if (currentGame != qualOpcode.game) {
+      name = `th${qualOpcode.game}:${name}`;
+    }
+    return name;
+  });
+}
+
+function opcodeForNamingRef(tableHandlers: TableHandlers<any>, ref: string, ctx: Context): QualifiedOpcode | null {
+  const {reverseTable, latestGameTable} = tableHandlers;
+
+  // prefer displaying the name from the current game if it exists there
+  const currentGame = queryGame(ctx);
+  const table = reverseTable[currentGame];
+  if (table) {
+    const opcode = table[ref];
+    if (opcode != null) {
+      return {game: currentGame, opcode};
+    }
+  }
+
+  // else find the latest game that has it
+  const qualOpcode = latestGameTable[ref];
+  if (!qualOpcode) return null;
+  return qualOpcode;
 }

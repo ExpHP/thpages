@@ -145,3 +145,7 @@ class LinkResolver extends PrefixResolver<string> {
 
 export const globalNames = new NameResolver();
 export const globalLinks = new LinkResolver();
+
+// for console debugging
+(<any>window).globalNames = globalNames;
+(<any>window).globalLinks = globalLinks;
