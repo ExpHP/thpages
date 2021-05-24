@@ -1,5 +1,64 @@
 import dedent from "../lib/dedent.ts";
 
+export function getMsgTableText(game) {
+  const common = `
+      * Start with a string encoded in Shift-JIS.
+      * Append a null terminator, then zero-pad up to a multiple of 4 bytes.
+  `;
+
+  let notEnd = '';
+  if ('10' <= game && game != '125' && game != '143' && game != '165') {
+    notEnd = `
+      > **Important:** This page is for **stage MSG** files!!
+      Ending MSG and staff MSG files use a different set of instructions
+      (to be documented), and \`mission.msg\` files are a completely different
+      format entirely.
+    `;
+  }
+
+  if ('06' <= game && game <= '07') {
+    return dedent(`
+      In [game=06] and [game=07], strings are null-terminated and null-padded
+      up to a multiple of 4 bytes, and are encoded in Shift-JIS.
+    `);
+  } else if (game == '08') {
+    return dedent(`
+      ${notEnd}
+
+      In [game=08], strings are encrypted via the following process:
+
+      ${common}
+      * Now XOR every byte with \`0x77\`, *including the null padding.*
+    `);
+  } else if ('09' <= game) {
+    const furiTip = `
+      After an instruction that contains furigana, the string argument in the NEXT instruction
+      will contain extra garbage.  Basically, after applying the XOR mask to the data,
+      you will find a copy of the encrypted bytes from the furigana string after
+      the null terminator.  This is likely a bug in ZUN&#39;s compiler.
+      `;
+
+    let furibug = '';
+    if ('12' <= game) {
+      furibug = `[game=12] and onwards additionally have [tip=${furiTip}]an unusual quirk[/tip] near furigana strings.`;
+    }
+    return dedent(`
+      ${notEnd}
+
+      Beginning in [game=09], strings are encrypted via the following process:
+
+      ${common}
+      * Now all of the bytes (including the null padding) are XORed with an accelerating bitmask
+        with initial value \`0x77\`, intial velocity \`0x07\`, and constant acceleration \`0x10\`.
+        Specifically, the first byte is XORed with \`0x77\`, the second byte is XORed with
+        \`0x7e (= 0x77 + 0x07)\`, the third byte is XORed with \`0x95 (= 0x77 + 0x07 + 0x17)\`,
+        the fourth byte is XORed with \`0x27 (= 0x77 + 0x07 + 0x17 + 0x27)\`, and so on...
+
+      ${furibug}
+    `);
+  }
+}
+
 // ==========================================================================
 // ==========================================================================
 // ===================    LOOKUP TABLE BY OPCODE    =========================

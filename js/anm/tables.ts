@@ -13,7 +13,7 @@ import './layer-viewer';
 import {ANM_INS_DATA, ANM_BY_OPCODE, ANM_GROUPS_V8} from './ins-table.js';
 import {ANM_VAR_DATA, ANM_VARS_BY_NUMBER} from './var-table.js';
 import {STD_INS_DATA, STD_BY_OPCODE} from './std-table.js';
-import {MSG_INS_DATA, MSG_BY_OPCODE} from './msg-table.js';
+import {MSG_INS_DATA, MSG_BY_OPCODE, getMsgTableText} from './msg-table.js';
 
 export function initAnm() {
   (window as any).ANM_INS_HANDLERS = ANM_INS_HANDLERS;
@@ -219,7 +219,7 @@ const MSG_HANDLERS: TableHandlers<InsData> = makeTableHandlers({
   generateTipHeader: generateInsSiggy,
   getGroups: () => [{min: 0, max: 1000, title: null}],
   generateTableRowHtml: generateInsTableRowHtml,
-  textBeforeTable: () => null,
+  textBeforeTable: (c: Context) => getMsgTableText(queryGame(c)),
 });
 
 // These have to be 'function' due to cyclic imports.
@@ -285,20 +285,6 @@ function setupGameSelector<D>({tableByOpcode}: TableHandlers<D>, $select: HTMLEl
     delete query.a;
     window.location.href = queryUrl(query);
   });
-}
-
-// Adds e.g. a 'th095:' prefix to a name that isn't available on the current page.
-function possiblyAddGamePrefix<D>(handlers: TableHandlers<D>, ref: Ref, s: string, ctx: Context) {
-  const {reverseTable, latestGameTable} = handlers;
-  if (ref == null) return s;
-
-  if (reverseTable[queryGame(ctx)]?.[ref] == null) {
-    const qualOpcode = latestGameTable[ref];
-    if (qualOpcode) {
-      return `th${qualOpcode.game}:${s}`;
-    }
-  }
-  return s;
 }
 
 // init names for keys like `anm:th06:pos` and `std:th13:pos`
