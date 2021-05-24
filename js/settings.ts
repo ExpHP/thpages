@@ -5,12 +5,14 @@ import {globalNames, PrefixResolver, Context} from './resolver';
 import {
   SupportedAnmVersion, StdVersion, MsgVersion, VersionData as OldVersionData,
   SUPPORTED_ANM_VERSIONS, ANM_VERSION_DATA, SUPPORTED_STD_VERSIONS, STD_VERSION_DATA,
-  GAME_ANM_VERSIONS, SUPPORTED_MSG_VERSIONS, MSG_VERSION_DATA, GAME_MSG_VERSIONS, GAME_STD_VERSIONS,
+  SUPPORTED_MSG_VERSIONS, MSG_VERSION_DATA,
 } from './anm/versions';
 import {queryGame} from './url-format';
-import {Game, allGames} from './game-names';
 import {readFileSync} from 'fs';
-import {TableHandlers, QualifiedOpcode, getAnmInsHandlers, getAnmVarHandlers, getStdHandlers, getMsgHandlers, InsData, VarData} from './anm/tables';
+import {
+  TableHandlers, QualifiedOpcode, InsData, VarData, getDataByRef,
+  getAnmInsHandlers, getAnmVarHandlers, getStdHandlers, getMsgHandlers,
+} from './anm/tables';
 import {readUploadedFile, cached, StrMap} from './util';
 
 // It occurs to me that this site shares localStorage with everything else under the same domain,
@@ -514,10 +516,11 @@ function convertOldVersionConfigToNewConfig() {
   convertSingleOldVersionConfigToNewConfig(stdmapSet, 'ins');
   convertSingleOldVersionConfigToNewConfig(msgmapSet, 'ins');
 }
+
 function convertSingleOldVersionConfigToNewConfig<V extends string>(mapset: MapSet<V>, subkey: 'ins' | 'vars') {
   const {supportedVersions, versionData, getHandlers, getMaps} = mapset;
   const tableHandlers = getHandlers[subkey]!();
-  const {mainPrefix, tableByOpcode} = tableHandlers;
+  const {mainPrefix, tableByOpcode, getDefaultName, addTypeSigilIfNeeded} = tableHandlers;
   const loadedMaps = getMaps();
 
   // For each version in the old config, we may or may not have a mapfile.
@@ -543,10 +546,12 @@ function convertSingleOldVersionConfigToNewConfig<V extends string>(mapset: MapS
     if (qualOpcode == null) return null;
 
     const currentGame = queryGame(ctx);
-    let name = nameMap[ref];
-    if (name == null) {
-      name = `ins_${qualOpcode.opcode}`;
-    }
+    const data = getDataByRef(ref, tableHandlers as TableHandlers<unknown>);
+    if (data == null) return null;
+
+    let name = nameMap[ref] || getDefaultName(qualOpcode.opcode, data as any);
+
+    name = addTypeSigilIfNeeded(name, data as any);
     if (currentGame != qualOpcode.game) {
       name = `th${qualOpcode.game}:${name}`;
     }
@@ -554,7 +559,7 @@ function convertSingleOldVersionConfigToNewConfig<V extends string>(mapset: MapS
   });
 }
 
-function opcodeForNamingRef(tableHandlers: TableHandlers<any>, ref: string, ctx: Context): QualifiedOpcode | null {
+function opcodeForNamingRef(tableHandlers: TableHandlers<unknown>, ref: string, ctx: Context): QualifiedOpcode | null {
   const {reverseTable, latestGameTable} = tableHandlers;
 
   // prefer displaying the name from the current game if it exists there
