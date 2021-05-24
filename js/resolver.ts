@@ -100,7 +100,13 @@ class NameResolver extends PrefixResolver<string> {
 
   private getInnerText(key: string, context: Context) {
     const name = this.getNow(key, context);
-    return name ? name : `NAME_ERROR(${key})`;
+    if (name) {
+      return name;
+    } else {
+      const errorName = `NAME_ERROR(${key})`;
+      console.error(errorName);
+      return errorName;
+    }
   }
 }
 

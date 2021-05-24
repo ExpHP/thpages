@@ -37,7 +37,7 @@ MSG_BY_OPCODE.set('10', {
   16: {ref: 'msg:text-add-nofuri'},
   17: {ref: 'msg:text-clear'},
   18: {ref: 'msg:music-boss'},
-  19: {ref: 'msg:th10-intro'},
+  19: {ref: 'msg:intro-single'},
   20: {ref: 'msg:stage-end'},
   21: {ref: 'msg:music-fade'},
   22: {ref: 'msg:shake-player-single'},
@@ -55,6 +55,7 @@ function insertSpaceInNumericObject(obj, insertedIndex) {
 MSG_BY_OPCODE.set('11', {
   ...insertSpaceInNumericObject(MSG_BY_OPCODE.get('10'), 9),
   9: {ref: 'msg:focus-none'},
+  17: {ref: 'msg:text-add'},
   25: {ref: 'msg:y-offset'},
   26: {ref: 'msg:modern-26'},
 });
@@ -148,7 +149,7 @@ Object.assign(MSG_INS_DATA, {
     Show the text box.
 
     [tiphide]
-    In [game=13] this becomes a nop as callouts are used instead.  (see [ref=msg:th10-callout-type])
+    In [game=13] this becomes a nop as callouts are used instead.  (see [ref=msg:callout-type])
     [/tiphide]
   `},
   'hide-player-single': {sig: '', args: [], succ: 'hide-player', desc: `Hide the player portrait.`},
@@ -230,8 +231,8 @@ Object.assign(MSG_INS_DATA, {
     [tiphide]
     [wip]The format of furigana includes some offset information.  The meaning of these numbers is not known.[/wip]
     [code]
-    [ref=msg:th10-text-add]("|0,11,シーフ");
-    [ref=msg:th10-text-add]("盗賊だからなぁ");
+    [ref=msg:text-add]("|0,11,シーフ");
+    [ref=msg:text-add]("盗賊だからなぁ");
     [/code]
     [/tiphide]
   `},
@@ -239,7 +240,7 @@ Object.assign(MSG_INS_DATA, {
     Erases all text. (at least, that's what it does pre-[game=128])
 
     [tiphide]
-    [wip]Beginning with [game=128] it also does something to the callout, so I'm not sure how to differentiate it from [ref=msg:th10-hide-textbox].[/wip]
+    [wip]Beginning with [game=128] it also does something to the callout, so I'm not sure how to differentiate it from [ref=msg:hide-textbox].[/wip]
     [/tiphide]
 
     [tiphide]
@@ -249,7 +250,7 @@ Object.assign(MSG_INS_DATA, {
   'music-boss': {sig: '', args: [], desc: `
     Initiates boss music and displays its BGM title text.
   `},
-  'th10-intro': {sig: '', args: [], succ: 'intro', desc: `
+  'intro-single': {sig: '', args: [], succ: 'intro', desc: `
     Display the enemy's name and flavor text.
   `},
   'intro': {sig: 'S', args: ['who'], desc: `
@@ -285,7 +286,7 @@ Object.assign(MSG_INS_DATA, {
     [/tiphide]
   `},
   'modern-26': {sig: '', args: [], wip: 2, desc: `
-    Sets an unknown bitflag to 1.
+    [wip=2]Sets an unknown bitflag to 1.[/wip]
   `},
   'music-fade-custom': {
     sig: 'f', args: ['duration'], desc: `
@@ -332,7 +333,7 @@ Object.assign(MSG_INS_DATA, {
     [wip=2]Unknown. Only used in [game=14] Extra.[/wip]
 
     [tiphide]
-    [wip=2]The argument sets the current speaker, similar to [ref=msg:focus-player] and [ref=msg:focus-boss][/wip]
+    [wip=2]The argument sets the current speaker, similar to [ref=msg:focus-player] and [ref=msg:focus-enemy][/wip]
     [/tiphide]
   `},
   'tutorial': {

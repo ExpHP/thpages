@@ -158,7 +158,7 @@ Object.assign(STD_INS_DATA, {
     [/tiphide]
   `},
   'eosd-facing': {
-    sig: 'fff', args: ['x', 'y', 'z'], desc: `
+    sig: 'fff', args: ['x', 'y', 'z'], succ: 'v0-facing', desc: `
     Set the direction the camera is facing.
     [tiphide]
     The vector does not need to be normalized.
@@ -168,7 +168,7 @@ Object.assign(STD_INS_DATA, {
     [/tiphide]
   `},
   'eosd-facing-time': {
-    sig: 'S__', args: ['t', '_', '_'], desc: `
+    sig: 'S__', args: ['t', '_', '_'], succ: 'v0-facing-time', desc: `
     Causes the final [ref=std:eosd-facing] instruction on this same frame to be interpolated linearly over
     the next \`t\` frames rather than occuring instantly.
 
@@ -181,7 +181,7 @@ Object.assign(STD_INS_DATA, {
     [/tiphide]
   `},
   'v0-skyfog': {
-    sig: 'Sff', args: ['color', 'near', 'far'], desc: `
+    sig: 'Sff', args: ['color', 'near', 'far'], succ: 'skyfog', desc: `
     Set the color, near plane, and far plane of the distance fog.
     [tiphide]
     Color is \`0xAARRGGBB\`. \`thstd\` also supports \`#RRGGBBAA\` notation.
@@ -192,7 +192,7 @@ Object.assign(STD_INS_DATA, {
   `},
   'v0-skyfog-time': {
     sig: 'S__', args: ['t', '_', '_'], desc: `
-    Cause the next [ref=std:v0-skyfog-time] to be linearly interpolated over the next \`t\` frames.
+    Cause the next [ref=std:v0-skyfog] to be linearly interpolated over the next \`t\` frames.
 
     [tiphide]
     More precisely:
@@ -208,7 +208,7 @@ Object.assign(STD_INS_DATA, {
     Stops executing the script until unpaused by ECL \`ins_125()\`.
   `},
   'v0-stop': {
-    sig: '___', args: ['_', '_', '_'], desc: `
+    sig: '___', args: ['_', '_', '_'], succ: 'stop', desc: `
     Stops executing the script.
 
     [tiphide]
@@ -218,7 +218,7 @@ Object.assign(STD_INS_DATA, {
   `},
 
   'v0-case': {
-    sig: 'S__', args: ['number', '_', '_'], wip: 1, desc: `
+    sig: 'S__', args: ['number', '_', '_'], wip: 1, succ: 'case', desc: `
     A label for an interrupt.
 
     [tiphide]
@@ -232,7 +232,7 @@ Object.assign(STD_INS_DATA, {
   `},
 
   'v0-clear-color': {
-    sig: 'S__', args: ['color', '_', '_'], wip: 1, desc: `
+    sig: 'S__', args: ['color', '_', '_'], wip: 1, succ: 'clear-color', desc: `
     Sets a color that gets used at some point in a call to \`IDirect3DDevice8::Clear\`.
     [tiphide]
     I'm not sure when and where this color would ever be visible in-game...
@@ -242,7 +242,7 @@ Object.assign(STD_INS_DATA, {
   `},
 
   'v0-jmp': {
-    sig: 'SS_', args: ['instr', 'time', '_'], wip: 1, desc: `
+    sig: 'SS_', args: ['instr', 'time', '_'], wip: 1, succ: 'pos', desc: `
     Jumps to the instruction with index \`instr\` and sets the current time to \`time\`.
 
     [tiphide]
@@ -255,7 +255,7 @@ Object.assign(STD_INS_DATA, {
   `},
 
   'v0-pos': {
-    sig: 'fff', args: ['x', 'y', 'z'], desc: `
+    sig: 'fff', args: ['x', 'y', 'z'], succ: 'pos', desc: `
     Set the position of the camera.
 
     [tiphide]
@@ -281,9 +281,9 @@ Object.assign(STD_INS_DATA, {
     [/tiphide]
   `},
 
-  'v0-facing': {sig: 'fff', args: ['x', 'y', 'z'], desc: `Set the direction the camera is facing.  The vector does not need to be normalized.`},
-  'v0-up': {sig: 'fff', args: ['x', 'y', 'z'], desc: `Set the up direction of the camera.  The vector does not need to be normalized.`},
-  'v0-fov': {sig: 'f__', args: ['fovy', '_', '_'], desc: `Set the vertical field-of-view of the camera.`},
+  'v0-facing': {sig: 'fff', args: ['x', 'y', 'z'], succ: 'facing', desc: `Set the direction the camera is facing.  The vector does not need to be normalized.`},
+  'v0-up': {sig: 'fff', args: ['x', 'y', 'z'], succ: 'up', desc: `Set the up direction of the camera.  The vector does not need to be normalized.`},
+  'v0-fov': {sig: 'f__', args: ['fovy', '_', '_'], succ: 'fov', desc: `Set the vertical field-of-view of the camera.`},
 
   'v0-pos-initial': {
     sig: 'fff', args: ['x', 'y', 'z'], desc: `
@@ -337,7 +337,7 @@ Object.assign(STD_INS_DATA, {
   `},
 
   'v0-rock': {
-    sig: 'S__', args: ['mode', '_', '_'], wip: 1, desc: `
+    sig: 'S__', args: ['mode', '_', '_'], wip: 1, succ: 'rock', desc: `
     Sets the rocking mode and resets the rocking timer to 0.
     [tiphide]
     Different games have different modes. 0 disables rocking.
@@ -502,7 +502,7 @@ Object.assign(STD_INS_DATA, {
   `},
 
   'sprite-2arg': {
-    sig: 'SS', args: ['slot', 'script'], desc: `
+    sig: 'SS', args: ['slot', 'script'], succ: 'sprite-3arg', desc: `
     Load a 2d sprite, used for skyboxes and stuff.
 
     In [game=095]&ndash;[game=17] there are 8 slots.  Prior to [game=14] this has no \`layer\` argument.
