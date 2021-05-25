@@ -72,9 +72,51 @@ export function getMsgTableText(game) {
  */
 export const MSG_BY_OPCODE = new Map(); // has to be a map because 'integer' keys defy insertion order
 
-// MSG_BY_OPCODE.set('06', {
-//   // TODO
-// });
+MSG_BY_OPCODE.set('06', {
+  0: {ref: 'msg:end'},
+  1: {ref: 'msg:eosd-anm-script'},
+  2: {ref: 'msg:eosd-face'},
+  3: {ref: 'msg:eosd-set-text'},
+  4: {ref: 'msg:pause'},
+  5: {ref: 'msg:eosd-anm-interrupt'},
+  6: {ref: 'msg:ecl-resume'},
+  7: {ref: 'msg:eosd-music'},
+  8: {ref: 'msg:eosd-intro'},
+  9: {ref: 'msg:eosd-stage-results'},
+  10: {ref: 'msg:eosd-stop'},
+  11: {ref: 'msg:stage-end'},
+  12: {ref: 'msg:music-fade'},
+  13: {ref: 'msg:skippable'},
+});
+
+MSG_BY_OPCODE.set('07', {...MSG_BY_OPCODE.get('06'),
+  14: {ref: 'msg:screen-fade'},
+});
+
+MSG_BY_OPCODE.set('08', {...MSG_BY_OPCODE.get('07'),
+  8: {ref: 'msg:in-intro'},
+  15: {ref: 'msg:in-focus-set-ex'},
+  16: {ref: 'msg:text-add-nofuri'},
+  17: {ref: 'msg:in-focus-set'},
+  18: {ref: 'msg:in-18'},
+  19: {ref: 'msg:in-option-a'},
+  20: {ref: 'msg:in-option-b'},
+  21: {ref: 'msg:in-option-pause'},
+  22: {ref: 'msg:in-option-22'},
+});
+
+MSG_BY_OPCODE.set('09', {...MSG_BY_OPCODE.get('08'),
+  1: {ref: 'msg:pofv-anm-script'},
+  8: {ref: 'msg:intro-single'},
+  9: {ref: 'msg:pofv-stage-results'},
+  15: {ref: 'msg:pofv-focus-set-ex'},
+  23: {ref: 'msg:pofv-23'},
+  24: {ref: 'msg:pofv-24'},
+  25: {ref: 'msg:pofv-25'},
+  26: {ref: 'msg:pofv-26'},
+  27: {ref: 'msg:pofv-27'},
+  28: {ref: 'msg:pofv-28'},
+});
 
 MSG_BY_OPCODE.set('10', {
   0: {ref: 'msg:end'},
@@ -179,8 +221,194 @@ export const MSG_INS_DATA = {};
 
 // EoSD
 Object.assign(MSG_INS_DATA, {
+  'eosd-anm-script': {
+    sig: 'ss', args: ['who', 'script'], wip: 1, succ: 'pofv-anm-script', desc: `
+    Loads a script into one of the portrait VMs.
+  `},
+  'pofv-anm-script': {
+    sig: 'ss', args: ['who', '??'], wip: 1, desc: `
+    Loads a script into one of the portrait VMs.
+
+    [tiphide]
+    [wip]I'm not sure if [game=09] ever even reads the second argument.
+    The script number is stored elsewhere.[/wip]
+
+    [wip]There is special behavior if \`who >= 2\`.  In this case, it creates two VMs:
+    one with script \`who\` and one with script \`who + 4\`.
+    Only \`pl06.msg\` does this, in a single script.  Idfk, man[/wip]
+    [/tiphide]
+  `},
+  'eosd-face': {
+    sig: 'ss', args: ['who', 'sprite'], wip: 1, desc: `
+    Loads a sprite directly into one of the portrait VMs.
+
+    [tiphide]Probably used to change the facial expression.[/tiphide]
+  `},
+  'eosd-set-text': {
+    sig: 'ss', args: ['who', 'line'], wip: 1, desc: `
+    Sets a line of text.
+
+    [tiphide]The text color will be correspond to the speaker indicated by \`who\`,
+    and \`line\` selects one of the two lines of text to write.[/tiphide]
+  `},
+  'eosd-anm-interrupt': {
+    sig: 'ss', args: ['who', 'interrupt'], wip: 1, desc: `
+    Triggers an ANM interrupt on the given speaker portrait.
+
+    [tiphide]
+    Some common values:
+    * Interrupt 1 seems to make a portrait appear.  (this is the complete opposite of what interrupt 1 normally does for 99% of anm scripts!)
+    * [wip]Interrupt 2 is only used once, in PCB stage 4. (for which character? no clue)[/wip]
+    * Interrupt 3 seems to highlight a speaker as active.
+    * Interrupt 4 is used to darken a portrait as inactive.
+    * Interrupt 5 makes a portrait disappear.
+    [/tiphide]
+  `},
+  'eosd-music': {
+    sig: 'S', args: ['arg'], wip: 1, desc: `
+    Changes the BGM and displays the new song name.
+  `},
+  'eosd-intro': {
+    sig: 'ssm', args: ['who', 'line', 'text'], wip: 1, succ: 'in-intro', desc: `
+    Used to display the enemy name and flavor text.
+
+    [tiphide]
+    [wip]Oddly enough, the \`who\` argument **is** read, but I can't imagine what it uses it for.[/wip]
+    [/tiphide]
+  `},
+  'in-intro': {
+    sig: 'ssm', args: ['un', 'us', 'ed'], desc: `
+    Used to display the enemy name and flavor text.
+
+    [tiphide]
+    In [game=08], the arguments are completely ignored, and an animation is played instead.
+    [/tiphide]
+  `},
+  'eosd-stage-results': {
+    sig: 'S', args: ['unused'], succ: 'pofv-stage-results', desc: `
+    Triggers the Stage Results screen.
+
+    [tiphide]The argument looks unused.[/tiphide]
+  `},
+  'pofv-stage-results': {
+    sig: 'S', args: ['thing'], desc: `
+    Triggers the Stage Results screen.
+
+    [tiphide]
+    [wip]There's frequently an argument of 500 here but I'm not sure if it's ever read?  There's a lot of code.[/wip]
+    [/tiphide]
+
+    [tiphide]
+    It also falls through into the body of [ref=msg:music-fade], so the music will fade as well.
+    [/tiphide]
+  `},
+  'eosd-stop': {
+    sig: '', args: [], wip: 1, desc: `
+    Permanently halts script execution, without killing the script engine.
+
+    [tiphide]
+    No more instructions will run.  Presumably, because the script engine is still alive,
+    the player will remain unable to shoot (contrast with [ref=msg:end])
+    ([wip]I haven't tested this[/wip]).
+    As far as I can tell, it's only ever used at the very end of a stage.
+    [/tiphide]
+  `},
+  'screen-fade': {
+    sig: '', args: [], wip: 1, desc: `
+    Fade the screen.
+  `},
+  'in-focus-set-ex': {
+    sig: 'SSSSS', args: ['who', 'sprite0', 'sprite1', 'sprite2', 'sprite3'], wip: 1, desc: `
+    Sets the active speaker and all four faces.
+
+    [tiphide]
+    As far as I can tell, this is equivalent to
+    [code]
+    [ref=msg:in-focus-set](who, -1);
+    if (sprite0 >= 0) { [ref=msg:eosd-face](0, sprite0); }
+    if (sprite1 >= 0) { [ref=msg:eosd-face](1, sprite1); }
+    if (sprite2 >= 0) { [ref=msg:eosd-face](2, sprite2); }
+    if (sprite3 >= 0) { [ref=msg:eosd-face](3, sprite3); }
+    [/code]
+
+    In the files, sprites of \`-1\` are supplied for faces that don't exist,
+    and \`-2\` is used for faces that don't change, but I think both have the same effect.
+
+    [wip]I have not tested any of this.[/wip]
+    [/tiphide]
+  `},
+  'pofv-focus-set-ex': {
+    sig: 'SSS', args: ['who', 'sprite0', 'sprite1'], wip: 1, desc: `
+    Sets the active speaker and both faces.
+
+    [tiphide]
+    As far as I can tell, this is equivalent to
+    [code]
+    [ref=msg:in-focus-set](who, -1);
+    if (sprite0 >= 0) { [ref=msg:eosd-face](0, sprite0); }
+    if (sprite1 >= 0) { [ref=msg:eosd-face](1, sprite1); }
+    [/code]
+
+    If \`who\` is \`-1\` it darkens everyone.
+
+    [wip]I have not tested any of this.[/wip]
+    [/tiphide]
+  `},
+  'in-focus-set': {
+    sig: 'SS', args: ['who', 'sprite'], wip: 1, desc: `
+    Sets the active speaker and their face.
+
+    [tiphide]
+    This replaces usage of [ref=msg:eosd-anm-interrupt]\`(n, 3)\`, [ref=msg:eosd-anm-interrupt]\`(n, 4)\`,
+    and [ref=msg:eosd-face] in earlier games.  (in [game=08], it also uses interrupt 6 on the old speaker
+    sometimes depending on whether the new and old speakers are on the same side).
+    [/tiphide]
+  `},
+  'in-18': {
+    sig: 'S', args: ['enabled'], wip: 1, desc: `
+    [wip=2]Sets a bitflag that enables the rendering of something.[/wip]
+
+    [tiphide]
+    [wip=2]Might be the textbox?  Only \`msg4dm.dat\` uses it.[/wip]
+    [/tiphide]
+  `},
+  'in-option-a': {
+    sig: 'm', args: ['text'], desc: `
+    Sets the text for the stage 6A option.
+    [tiphide]
+    Is a nop in [game=09].
+    [/tiphide]
+  `},
+  'in-option-b': {
+    sig: 'm', args: ['text'], desc: `
+    Sets the text for the stage 6B option.
+    [tiphide]
+    Is a nop in [game=09].
+    [/tiphide]
+  `},
+  'in-option-pause': {
+    sig: 'S', args: ['time'], desc: `
+    Sets how long to wait before the route select will auto-advance.
+    [tiphide]
+    Is a nop in [game=09].
+    [/tiphide]
+  `},
+  'in-option-22': {
+    sig: '', args: [], wip: 1, desc: `
+    [wip]Probably closes the route option dialog.[/wip]
+    [tiphide]
+    Is a nop in [game=09]
+    [/tiphide]
+  `},
+  'pofv-23': {sig: 'S', args: ['unknown'], wip: 2, desc: `[wip=2]Unknown[/wip]`},
+  'pofv-24': {sig: '', args: [], wip: 2, desc: `[wip=2]Unknown[/wip]`},
+  'pofv-25': {sig: '', args: [], wip: 2, desc: `[wip=2]Unknown[/wip]`},
+  'pofv-26': {sig: '', args: [], wip: 2, desc: `[wip=2]Unknown and unused[/wip]`},
+  'pofv-27': {sig: '', args: [], desc: `Unused nop.`},
+  'pofv-28': {sig: 'S', args: ['unknown'], wip: 2, desc: `[wip=2]Unknown[/wip]`},
+
   'end': {
-    sig: '', args: [], desc: `End the script.`,
+    sig: '', args: [], desc: `Completely kills the script engine.`,
   },
   // These two are funny; clearly, ZUN anticipated eventually having multiple portraits on the same side of the screen,
   // and thus gave these two dummy arguments in MoF.  All of the other instructions related to portraits did NOT start
@@ -377,10 +605,10 @@ Object.assign(MSG_INS_DATA, {
   `},
   '128-route-select': {
     sig: '', args: [], desc: `
-    Used in the first stage of GFW to let the player pick the second stage.
+    Used in the first stage of [game=128] to let the player pick the second stage.
 
     [tiphide]
-    In games after GFW, this is a no-op.
+    In games after [game=128], this is a no-op.  (though [game=13] and [game=14] do "use" it...)
     [/tiphide]
   `},
   'modern-31': {

@@ -242,7 +242,7 @@ Object.assign(STD_INS_DATA, {
   `},
 
   'v0-jmp': {
-    sig: 'SS_', args: ['instr', 'time', '_'], wip: 1, succ: 'pos', desc: `
+    sig: 'SS_', args: ['instr', 'time', '_'], wip: 1, succ: 'jmp', desc: `
     Jumps to the instruction with index \`instr\` and sets the current time to \`time\`.
 
     [tiphide]
@@ -530,7 +530,7 @@ Object.assign(STD_INS_DATA, {
     STD interrupts are similar to [ANM interrupts](#/anm/concepts&a=interrupt). They can occur
     at any time the script is waiting (due to e.g. an increased [time label](#/anm/concepts&a=time)
     or a [ref=std:stop]), and there is an ECL instruction to trigger them.
-    [/wiphide]
+    [/tiphide]
   `},
 
   'distortion': {
