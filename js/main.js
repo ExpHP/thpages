@@ -1,8 +1,8 @@
 import {MD, postprocessConvertedMarkdown} from "./markdown.ts";
-import {initAnm} from "./anm/tables.ts";
-import {initTips} from "./tips.ts";
+import {initAnm} from "./anm/tables.tsx";
+import {initTips} from "./tips.tsx";
 import {initSettings, clearSettingsCache} from "./settings.ts";
-import {globalNames, globalLinks} from "./resolver.ts";
+import {globalNames, globalLinks} from "./resolver.tsx";
 import {parseQuery, queryEqualsUptoAnchor, queryPageEquals} from "./url-format.ts";
 import {buildNavbar, highlightCurrentPageInNavbar} from "./navbar.ts";
 

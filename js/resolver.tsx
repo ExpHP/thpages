@@ -1,3 +1,4 @@
+import * as React from 'react';
 import {Query} from './url-format';
 
 /** Information describing what page we are currently on, which may impact resolution. */
@@ -84,6 +85,13 @@ class NameResolver extends PrefixResolver<string> {
     return /* html */`<span data-name="${key}">${key}</span>`;
   }
 
+  /** FIXME this shouldn't exist. We need to get rid of data-name entirely and pass down
+   *        names via proprties as per React's unidirectional data flow model.
+   */
+  getReact(key: string): JSX.Element {
+    return <span data-name={key}>{key}</span>;
+  }
+
   /**
    * Finds every node in the DOM created by getHtml and replaces its textual
    * content with the name assigned to that key.  This is used to implement
@@ -103,7 +111,7 @@ class NameResolver extends PrefixResolver<string> {
     if (name) {
       return name;
     } else {
-      const errorName = `NAME_ERROR(${key})`;
+      const errorName = `NAME_ERROR(${key})`; // FIXME use Err component
       console.error(errorName);
       return errorName;
     }
@@ -153,5 +161,5 @@ export const globalNames = new NameResolver();
 export const globalLinks = new LinkResolver();
 
 // for console debugging
-(<any>window).globalNames = globalNames;
-(<any>window).globalLinks = globalLinks;
+(window as any).globalNames = globalNames;
+(window as any).globalLinks = globalLinks;

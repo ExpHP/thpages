@@ -1,6 +1,7 @@
 {
   "defaultExtension": "ts",
   "compilerOptions": {
+    "jsx": "react",
     "allowUnreachableCode": false,
     "allowUnusedLabels": false,
     "declaration": true,

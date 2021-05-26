@@ -1,10 +1,11 @@
+import * as React from 'react';
 
 import {PrefixResolver, globalNames, globalLinks, Context} from './resolver';
 import {parseQuery} from './url-format';
 
 /** Metadata necessary to generate a fancy tooltip about a crossref. */
 export type Tip = {
-  heading?: string, // tip header inner HTML
+  heading?: JSX.Element, // tip header inner HTML
   contents: string, // tip body inner HTML
   omittedInfo: boolean,
 };
@@ -20,13 +21,13 @@ export function initTips() {
 }
 
 function tipIn(e: MouseEvent) {
-  const context = parseQuery(window.location.hash);
-  const tuple = getAncestorTip(e.target as HTMLElement, context);
-  if (tuple) {
-    const [tip, $targ] = tuple;
-    showTip(tip, $targ, e.target as HTMLElement, context);
-    e.stopImmediatePropagation();
-  }
+  // const context = parseQuery(window.location.hash);
+  // const tuple = getAncestorTip(e.target as HTMLElement, context);
+  // if (tuple) {
+  //   const [tip, $targ] = tuple;
+  //   showTip(tip, $targ, e.target as HTMLElement, context);
+  //   e.stopImmediatePropagation();
+  // }
 }
 
 function showTip(tip: Tip, $targ: HTMLElement, $realTarg: HTMLElement, context: Context) {
@@ -36,7 +37,7 @@ function showTip(tip: Tip, $targ: HTMLElement, $realTarg: HTMLElement, context: 
   $activeTipTarget = $realTarg;
   $tip.style.display = "block";
 
-  let tipHtml = `<div class="contents">${tip.contents}</div>`;
+  let tipHtml = <div className="contents" dangerouslySetInnerHTML={{__html: tip.contents}} />;
   if (tip.heading) {
     tipHtml = `<div class="heading">${tip.heading}</div>` + tipHtml;
   }
