@@ -25,6 +25,9 @@ a {
   }
 }
 
+// workaround for things using onclick instead of href
+a.clickable { cursor: pointer; }
+
 .isref,
 a code {
   color: mix(@text-color, @link-color, 65%);
@@ -253,17 +256,6 @@ tfoot {
   font-family: @monospace;
   font-weight: bold;
   font-size: 1.1em;
-}
-
-.show-more {
-  &.expanded {
-    &::after { content: "Show less"; }
-    & + * { display: initial; }
-  }
-  &:not(.expanded) {
-    &::after { content: "Show more"; }
-    & + * { display: none; }
-  }
 }
 
 [data-wip="1"] {

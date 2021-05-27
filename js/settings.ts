@@ -1,4 +1,4 @@
-import {MD} from './markdown';
+import {Markdown} from './markdown';
 import {Eclmap} from './anm/eclmap';
 import dedent from './lib/dedent';
 import {globalNames, PrefixResolver, Context} from './resolver';
@@ -10,8 +10,7 @@ import {
 import {queryGame} from './url-format';
 import {readFileSync} from 'fs';
 import {
-  TableHandlers, QualifiedOpcode, InsData, VarData, getDataByRef,
-  getAnmInsHandlers, getAnmVarHandlers, getStdHandlers, getMsgHandlers,
+  TableHandlers, QualifiedOpcode, InsData, VarData, getDataByRef, getHandlers,
 } from './anm/tables';
 import {readUploadedFile, cached, StrMap} from './util';
 
@@ -120,8 +119,8 @@ const anmmapSet: MapSet<SupportedAnmVersion> = {
   },
   getMaps: getCurrentVersionAnmmaps,
   getHandlers: {
-    ins: getAnmInsHandlers,
-    vars: getAnmVarHandlers,
+    ins: () => getHandlers('anm'),
+    vars: () => getHandlers('anmvar'),
   },
 };
 
@@ -137,7 +136,7 @@ const stdmapSet: MapSet<StdVersion> = {
     'modern': readFileSync(__dirname + '/../static/stdmap/std-14.stdm', 'utf8'),
   },
   getMaps: getCurrentVersionStdmaps,
-  getHandlers: {'ins': getStdHandlers},
+  getHandlers: {'ins': () => getHandlers('std')},
 };
 
 const fakeMsgMaps = new Proxy({}, {get: () => ({ins: {}, var: {}})}) as {[v in MsgVersion]: LoadedMap};
@@ -149,7 +148,7 @@ const msgmapSet: MapSet<MsgVersion> = {
   localStorageKey: null,
   defaultMapText: new Proxy({}, {get: () => ''}) as {[v in MsgVersion]: string},
   getMaps: () => fakeMsgMaps,
-  getHandlers: {'ins': getMsgHandlers},
+  getHandlers: {'ins': () => getHandlers('msg')},
 };
 
 export function initSettings() {
@@ -189,9 +188,9 @@ function buildMapSelector<V extends string>($div: HTMLElement, mapSet: MapSet<V>
 
     let gameRangeStr;
     if (minGame === maxGame) {
-      gameRangeStr = `TH[game-num=${minGame}]`;
+      gameRangeStr = `TH:game-num[${minGame}]`;
     } else {
-      gameRangeStr = `TH[game-num=${minGame}]&ndash;[game-num=${maxGame}]`;
+      gameRangeStr = `TH:game-num[${minGame}]&ndash;:game-num[${maxGame}]`;
     }
     rowsHtml += dedent(/* html */`
       <div class="row ${version}">

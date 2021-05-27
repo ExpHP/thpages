@@ -1,3 +1,5 @@
+import * as React from 'react';
+
 import {globalNames, globalLinks, PrefixResolver} from './resolver';
 import {globalTips, Tip} from './tips';
 
@@ -26,18 +28,17 @@ export function getRefLinkKey(ref: Ref) {
 }
 
 /** Get HTML string to substitute in for a `[ref=...]` markdown tag. */
-export function getRefHtml({ref, tip, url}: {ref: Ref, tip: boolean, url: boolean}) {
-  let out = globalNames.getHtml(getRefNameKey(ref));
-  out = `<span class="isref">${out}</span>`;
+export function getRefJsx({ref, tip, url}: {ref: Ref, tip: boolean, url: boolean}) {
+  let out = globalNames.getJsx(getRefNameKey(ref));
+  out = <span className="isref">{out}</span>;
   if (url) {
-    out = globalLinks.wrapHtml(getRefLinkKey(ref), out);
+    out = globalLinks.wrapJsx(getRefLinkKey(ref), out);
   }
 
-  // using <instr> instead of <code> due to https://github.com/showdownjs/showdown/issues/819
   if (tip) {
-    out = `<instr data-tip-id="${getRefTipKey(ref)}">${out}</instr>`;
+    out = <code data-tip-id={getRefTipKey(ref)}>{out}</code>;
   } else {
-    out = `<instr>${out}</instr>`;
+    out = <code>{out}</code>;
   }
   return out;
 }

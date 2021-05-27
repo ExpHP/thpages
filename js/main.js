@@ -1,4 +1,7 @@
-import {MD, postprocessConvertedMarkdown} from "./markdown.ts";
+import * as React from "react";
+import ReactDOM from "react-dom";
+import ReactDOMServer from "react-dom/server";
+import {TrustedMarkdown, postprocessConvertedMarkdown} from "./markdown.tsx";
 import {initAnm} from "./anm/tables.tsx";
 import {initTips} from "./tips.tsx";
 import {initSettings, clearSettingsCache} from "./settings.ts";
@@ -93,15 +96,8 @@ function loadMd(txt) {
   setWindowTitle(null);
 
   $scriptContent.innerHTML = "";
-  const html = MD.makeHtml(txt);
-  $content.innerHTML = "<div class='content'>" + html + "</div>";
-  postprocessConvertedMarkdown($content);
-
-  highlightCurrentPageInNavbar();
-
-  const context = parseQuery(window.location.hash);
-  globalNames.transformHtml($content, context);
-  globalLinks.transformHtml($content, context);
+  const jsx = React.createElement(TrustedMarkdown, {className: 'content'}, txt);
+  ReactDOM.render(jsx, $content);
   contentLoaded();
 }
 

@@ -1,12 +1,14 @@
 import * as React from 'react';
 import ReactDOMServer from 'react-dom/server';
+import Markdown from "react-markdown";
+import RemarkDirective from "remark-directive";
 
 import dedent from '../lib/dedent';
 import {globalRefNames, globalRefTips, globalRefLinks, getRefNameKey, Ref} from '../ref';
-import {MD, postprocessConvertedMarkdown} from '../markdown';
+import {TrustedMarkdown} from '../markdown';
 import {globalNames, globalLinks, PrefixResolver, Context} from '../resolver';
 import {parseQuery, queryUrl, queryGame, queryPageEquals, queryFilterCommonProps, Query, currentUrlWithProps} from '../url-format';
-import {gameData, Game} from '../game-names';
+import {gameData, Game, parseGame, validateGame} from '../game-names';
 import {globalConfigNames, requireMaps} from '../settings';
 import {initStats, buildStatsTable} from './stats';
 import {StrMap, NumMap} from "../util";
@@ -223,7 +225,7 @@ const STD_HANDLERS: TableHandlers<InsData> = makeTableHandlers({
   mainPrefix: 'std',
   getGroups: () => [{min: 0, max: 100, title: null}],
   textBeforeTable: (c: Context) => (queryGame(c) > '09') ? null : dedent(`
-    In games prior to [game=095], all STD instructions are the same size, with room for three arguments.
+    In games prior to :game[095], all STD instructions are the same size, with room for three arguments.
     An argument of \`__\` below indicates a padding argument whose value is unused. \`thstd\` requires
     you to always supply three arguments, while [\`trustd\`](https://github.com/ExpHP/truth#readme) allows
     these padding arguments to be omitted.
@@ -242,7 +244,17 @@ const MSG_HANDLERS: TableHandlers<InsData> = makeTableHandlers({
 });
 
 // These have to be 'function' due to cyclic imports.
-export function getAnmInsHandlers() { return ANM_INS_HANDLERS; }
+export function getHandlers(name: 'anm' | 'msg' | 'std'): TableHandlers<InsData>;
+export function getHandlers(name: 'anmvar'): TableHandlers<VarData>;
+export function getHandlers(name: string): never;
+export function getHandlers(name: string) {
+  if (name === 'anm') return ANM_INS_HANDLERS;
+  if (name === 'anmvar') return ANM_VAR_HANDLERS;
+  if (name === 'msg') return MSG_HANDLERS;
+  if (name === 'std') return STD_HANDLERS;
+  throw new Error(`no table with ID: ${name}`);
+}
+export function getAnmInsHandlers() { return ANM_VAR_HANDLERS; }
 export function getAnmVarHandlers() { return ANM_VAR_HANDLERS; }
 export function getStdHandlers() { return STD_HANDLERS; }
 export function getMsgHandlers() { return MSG_HANDLERS; }
@@ -270,28 +282,32 @@ type Without<T, K> = {
   [L in Exclude<keyof T, K>]: T[L]
 };
 
-function setupGameSelector<D>({tableByOpcode}: TableHandlers<D>, $select: HTMLElement) {
+export function GameSelector<D>({handlers}: {handlers: TableHandlers<D>}) {
+  const {tableByOpcode} = handlers;
   const supportedGames = tableByOpcode.keys();
   const currentQuery = parseQuery(window.location.hash);
   const currentGame = queryGame(currentQuery);
-  for (const game of supportedGames) {
-    const $option = document.createElement('option');
-    $option.value = game;
-    $option.text = `${gameData(game).thname} ~ ${gameData(game).long}`;
-    if (game == currentGame) {
-      $option.selected = true;
-    }
-    $select.appendChild($option);
-  }
+  const [currentChoice, setCurrentChoice] = React.useState(currentGame);
 
-  $select.addEventListener('change', (ev: any) => {
+  function onChange(ev: any) {
+    // FIXME Do we even need this, considering the page reload?
+    //       Can we avoid the page reload?
+    setCurrentChoice(ev.target.value);
+
     // to switch games, just set g= in the url
     const query = Object.assign({}, currentQuery, {g: ev.target.value});
     // clear the anchor; if the user is changing the dropbox, they're at the top of the page,
     // and we don't need it suddenly scrolling back to the last clicked opcode.
     delete query.a;
     window.location.href = queryUrl(query);
-  });
+  }
+
+  return <select value={currentChoice} onChange={onChange}>
+    {[...supportedGames].map((game) => {
+      const text = `${gameData(game).thname} ~ ${gameData(game).long}`;
+      return <option key={game} value={game}>{text}</option>;
+    })}
+  </select>;
 }
 
 // init names for keys like `anm:th18:431` and `std:th13:23`
@@ -336,7 +352,7 @@ function range(start: number, end: number) {
   return [...new Array(end - start).keys()].map((x) => x + start);
 }
 
-function generateTablePageHtml<D extends CommonData>(tableHandlers: TableHandlers<D>) {
+export function TablePage<D extends CommonData>({handlers: tableHandlers}: {handlers: TableHandlers<D>}) {
   const {getGroups, mainPrefix, textBeforeTable, TableRowHtml} = tableHandlers;
 
   const currentQuery = parseQuery(window.location.hash);
@@ -381,7 +397,7 @@ function generateTablePageHtml<D extends CommonData>(tableHandlers: TableHandler
 
     return <Fragment key={group.min}>
       {possibleHeader}
-      <table className='ins-table'>{rows}</table>
+      <table className='ins-table'><tbody>{rows}</tbody></table>
     </Fragment>;
   });
   const content = <Fragment>{contentSections}</Fragment>;
@@ -399,11 +415,11 @@ function generateTablePageHtml<D extends CommonData>(tableHandlers: TableHandler
   // Even though this is right next to the dropdown, the current game is displayed here for the sake of pages like the var-table
   // that can refresh so quickly that it can be hard to realize that the page did in fact respond to changing the dropdown selection.
   let baseMd = "";
-  baseMd += `Now showing: [game-thlong=${game}]<br>`;
+  baseMd += `Now showing: :game-thlong[${game}]<br>`;
 
   if (total > 0) {
     baseMd += `Documented rate: ${documented}/${total} (${(documented/total*100).toFixed(2)}%)<br>`;
-    baseMd += "[wip=1]Items marked like this are not fully understood.[/wip]<br>[wip=2]Items like this are complete mysteries.[/wip]";
+    baseMd += ":wip[Items marked like this are not fully understood.]<br>:wip2[Items like this are complete mysteries.]";
   }
 
   let textAbove;
@@ -411,32 +427,11 @@ function generateTablePageHtml<D extends CommonData>(tableHandlers: TableHandler
     baseMd = `${baseMd}<br><br>${textAbove}`;
   }
 
-  const out = <div>
-    <div dangerouslySetInnerHTML={{__html: MD.makeHtml(baseMd)}} />  {/* FIXME BAD */}
+  return <div>
+    <TrustedMarkdown>{baseMd}</TrustedMarkdown>
     {toc}
     {content}
   </div>;
-
-  // FIXME BAD BAD BAD this entirely defeats the purpose of React but we have to do it
-  //                   until I exorcise showdown and all of our ugly hacks around it
-  const $out = jsxToHtmlElement(out);
-
-  postprocessConvertedMarkdown($out);
-  globalNames.transformHtml($out, currentQuery);
-  globalLinks.transformHtml($out, currentQuery);
-  return $out;
-}
-
-function parseHtmlElement(html: string) {
-  const $tmp = document.createElement('div');
-  $tmp.innerHTML = html;
-  return $tmp.firstElementChild! as HTMLElement;
-}
-
-// FIXME: Every place that calls this function is BAD BAD BAD
-//        and this is only a workaround until we fix other things
-function jsxToHtmlElement(react: JSX.Element) {
-  return parseHtmlElement(ReactDOMServer.renderToString(react));
 }
 
 /* eslint-disable react/display-name */
@@ -454,27 +449,26 @@ const INS_PARAMETER_TABLE: {[s: string]: (name: string) => JSX.Element} = {
 /* eslint-enable */
 
 function InsParameter({type, name}: {type: string, name: string}) {
-  const err = () => <Err kind="BAD_TYPE" args={`'${type}', '${name}'`} />;
+  const err = () => <Err>{`BAD_TYPE('${type}', '${name}')`}</Err>;
   const body = (INS_PARAMETER_TABLE[type] || err)(name);
   return <span className="ins-params">{body}</span>;
 }
 
 function InsParameters({ins}: {ins: InsData}) {
-  const comma = <span className="punct">${", "}</span>;
   const ret = [];
   for (let i=0; i<ins.args.length; ++i) {
     switch (i) {
       // Allow breaking after the opening parenthesis
-      case 0: ret.push(<wbr />); break;
-      default: ret.push(comma); break;
+      case 0: ret.push(<wbr key={`w-${i}`} />); break;
+      default: ret.push(<span key={`c-${i}`} className="punct">{", "}</span>); break;
     }
-    ret.push(<InsParameter type={ins.sig[i]} name={ins.args[i]} />);
+    ret.push(<InsParameter key={`p-${i}`} type={ins.sig[i]} name={ins.args[i]} />);
   }
   return <React.Fragment>{ret}</React.Fragment>;
 }
 
 function InsSiggy({data, nameKey}: {data: InsData, nameKey: string}) {
-  const name = globalNames.getReact(nameKey);
+  const name = globalNames.getJsx(nameKey);
   return <div className="ins-siggy-wrapper">
     <span className="ins-name" data-wip={data.wip}>{name}</span>
     <span className="punct">(</span>
@@ -484,30 +478,30 @@ function InsSiggy({data, nameKey}: {data: InsData, nameKey: string}) {
 }
 
 function VarHeader({data, nameKey}: {data: VarData, nameKey: string}) {
-  const name = globalNames.getReact(nameKey);
+  const name = globalNames.getJsx(nameKey);
   return <span className="var-header" data-wip={data.wip}>{name}</span>;
 }
 
 function InsTableRowHtml(props: {handlers: TableHandlers<InsData>, game: Game, data: InsData, opcode: number}) {
   const {handlers, game, data, opcode} = props;
   const nameKey = getOpcodeNameKey(handlers, game, opcode);
-  let [desc] = handleTipHide(data.desc, false);
-  desc = postprocessAnmDesc(desc, false);
+  const [descMd] = handleTipHide(data.desc, false);
+  const desc = postprocessAnmDesc(descMd, false);
 
   const anchor = handlers.formatAnchor(opcode);
   const selfLinkTarget = currentUrlWithProps({a: anchor});
   return <tr className="ins-table-entry" id={anchor}>
     <td className="col-id"><a className="self-link" href={selfLinkTarget}>{opcode}</a></td>
     <td className="col-name"><InsSiggy data={data} nameKey={nameKey} /></td>
-    <td className="col-desc" dangerouslySetInnerHTML={{__html: desc}} />  {/* FIXME BAD */}
+    <td className="col-desc">{desc}</td>
   </tr>;
 }
 
 function VarTableRowHtml(props: {handlers: TableHandlers<VarData>, game: Game, data: VarData, opcode: number}) {
   const {handlers, game, data, opcode} = props;
   const nameKey = getOpcodeNameKey(handlers, game, opcode);
-  let [desc] = handleTipHide(data.desc, false);
-  desc = postprocessAnmDesc(desc, false);
+  const [descMd] = handleTipHide(data.desc, false);
+  const desc = postprocessAnmDesc(descMd, false);
 
   const anchor = handlers.formatAnchor(opcode);
   const selfLinkTarget = currentUrlWithProps({a: anchor});
@@ -515,7 +509,7 @@ function VarTableRowHtml(props: {handlers: TableHandlers<VarData>, game: Game, d
   return <tr className="ins-table-entry" id={anchor}>
     <td className="col-id"><a className="self-link" href={selfLinkTarget}>{opcode}</a></td>
     <td className="col-name"><VarHeader data={data} nameKey={nameKey} /></td>
-    <td className="col-desc" dangerouslySetInnerHTML={{__html: desc}} />  {/* FIXME BAD */}
+    <td className="col-desc">{desc}</td>
   </tr>;
 }
 
@@ -536,15 +530,20 @@ function handleTipHide(desc: string, isTip: boolean): [string, boolean] {
 }
 
 function postprocessAnmDesc(desc: string, isTip: boolean) {
-  let ret = desc;
   if (isTip) {
-    ret = disableTooltips(ret);
-  }
-  return MD.makeHtml(ret);
-}
+    const colons = '::::::::::::';
+    if (desc.match(colons)) {
+      console.error(desc);
+      throw new Error("tip body is a bit too intense");
+    }
 
-function disableTooltips(desc: string) {
-  return desc.replace(/\[ref=/g, "[ref-notip=");
+    desc = dedent(`
+      ${colons}is-tip
+      ${desc}
+      ${colons}
+    `);
+  }
+  return <TrustedMarkdown>{desc}</TrustedMarkdown>;
 }
 
 function getRefByOpcode<D>(game: Game, opcode: number, tableHandlers: TableHandlers<D>) {

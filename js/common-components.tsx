@@ -1,7 +1,7 @@
 import * as React from 'react';
+import type {ReactNode} from 'react';
 
-export function Err({kind, args}: {kind: string, args: string}) {
-  const err = `${kind}(${args}})`;
-  console.error(err);
-  return <span className="error">err</span>;
+export function Err({children}: {children: ReactNode}) {
+  console.error(children);
+  return <span className="error">{children}</span>;
 }

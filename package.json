@@ -4,13 +4,13 @@
   "description": "touhou anm site",
   "main": "js/init.js",
   "dependencies": {
-    "highlight.js": "^10.1.2",
-    "showdown": "^1.9.1"
+    "highlight.js": "^10.1.2"
   },
   "browserslist": [
     "since 2017-06"
   ],
   "devDependencies": {
+    "@types/mdast": "^3.0.3",
     "@types/node": "^14.6.0",
     "@types/react": "^17.0.7",
     "@types/react-dom": "^17.0.5",
@@ -22,6 +22,7 @@
     "eslint-plugin-import": "^2.22.0",
     "eslint-plugin-react": "^7.23.2",
     "events": "^3.2.0",
+    "hastscript": "^7.0.1",
     "jszip": "^3.5.0",
     "less": "^3.12.2",
     "packery": "^2.1.2",
@@ -29,7 +30,14 @@
     "parcel-plugin-static-files-copy": "^2.5.0",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
-    "typescript": "^3.9.7"
+    "react-markdown": "^6.0.2",
+    "rehype-raw": "^5.1.0",
+    "remark-directive": "^1.0.1",
+    "remark-gfm": "^1.0.0",
+    "remark-heading-id": "^1.0.0",
+    "typescript": "^3.9.7",
+    "unist-util-visit": "^3.1.0",
+    "unist-util-filter": "^3.0.0"
   },
   "scripts": {
     "start": "parcel index.html -d dev",

@@ -1,4 +1,6 @@
 import * as React from 'react';
+import type {ReactNode} from 'react';
+
 import {Query} from './url-format';
 
 /** Information describing what page we are currently on, which may impact resolution. */
@@ -88,7 +90,7 @@ class NameResolver extends PrefixResolver<string> {
   /** FIXME this shouldn't exist. We need to get rid of data-name entirely and pass down
    *        names via proprties as per React's unidirectional data flow model.
    */
-  getReact(key: string): JSX.Element {
+  getJsx(key: string): JSX.Element {
     return <span data-name={key}>{key}</span>;
   }
 
@@ -130,11 +132,14 @@ class NameResolver extends PrefixResolver<string> {
  */
 class LinkResolver extends PrefixResolver<string> {
   /**
-   * Wraps HTML text in an anchor element that transformHtml can later update
+   * Wraps JSX in an anchor element that transformHtml can later update
    * to potentially link somewhere.
+   *
+   * FIXME: That's dumb, this whole thing is dumb now that we've switched to React,
+   *        we should propagate links down from the top and get rid of data-link.
    */
-  wrapHtml(key: string, html: string): string {
-    return /* html */`<a data-link="${key}" class="nolink">${html}</a>`;
+  wrapJsx(key: string, html: ReactNode): JSX.Element {
+    return <a data-link={key} className="nolink">{html}</a>;
   }
   /**
    * Recursively finds every node in the DOM that was created by wrapHtml
