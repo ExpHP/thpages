@@ -66,14 +66,15 @@ const pageMarkdownCache: {[s: string]: string | undefined} = {};
 
 function Content({currentQuery}: {currentQuery: Query}) {
   const [prevQuery, setPrevQuery] = React.useState<Query | null>(null);
+  const [pageMarkdown, setPageMarkdown] = React.useState<string | null>(null);
+
   React.useEffect(() => {
     if (prevQuery && !queryEqualsUptoAnchor(prevQuery, currentQuery)) {
       resetScroll();
     }
     setPrevQuery(currentQuery);
-  });
+  }, [prevQuery, currentQuery]);
 
-  const [pageMarkdown, setPageMarkdown] = React.useState<string | null>(null);
   let displayedMarkdown = pageMarkdown;
   if (prevQuery?.s !== currentQuery.s) {
     // This is to prevent an accidental, brief display of the current table for a different game

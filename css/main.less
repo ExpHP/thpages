@@ -47,7 +47,7 @@ body {
   overflow-y: scroll;
 }
 
-code, instr {
+code {
   background: @code-block-bg;
   font-family: @monospace;
   border-radius: 5px;
@@ -57,6 +57,18 @@ code, instr {
   padding: 4px 2px;
   margin-left: 0px;
   margin-right: 0px;
+
+  // don't have double backgrounds for nested <code> (typically crossrefs in code)
+  code {
+    background: initial;
+    font-family: @monospace;
+    border-radius: initial;
+  
+    color: initial;
+    padding: initial;
+    margin-left: initial;
+    margin-right: initial;
+  }
 }
 
 li {

@@ -34,7 +34,7 @@ On this site you'll see lots of words used that sound like they have similar mea
 - **script** &mdash; a script is a sequence of instructions encoded in an ANM file that determines what sprites a graphic should use, how it should move and etc. Much like ECL scripts for enemies, ANM scripts have an internal concept of "time" and pause when they encounter instructions that aren't supposed to run yet. Scripts are not tied down to a single sprite or even to a single texture; but they can only use sprites defined in the same ANM file. (`script` blocks in thanm syntax)
 - **virtual machine (VM)** &mdash; a VM is a specific instance of a script running in the game.  It contains all of the data necessary to describe the current state of the animation, as well as the current state of the script (including an instruction pointer, time value, and values of all registers).
 - **graphic** &mdash; I use this to refer to *the output* of a single VM (i.e. the graphical content it draws).  Or I try, at least. Out of habit I tend to use the terms "graphic" and "VM" interchangeably.
-- **surface** &mdash; Much like how a texture is a thing you draw *from,* a surface is a thing you draw *to.* TH14-17 have three different surfaces, as will be explained in [stages of rendering](#anm/stages-of-rendering).  The destination surface of a graphic is determined by its layer (the :ref[anm:layer] instruction).
+- **surface** &mdash; Much like how a texture is a thing you draw *from,* a surface is a thing you draw *to.* TH14-17 have three different surfaces, as will be explained in [stages of rendering](#anm/stages-of-rendering).  The destination surface of a graphic is determined by its layer (the :ref{r=anm:layer} instruction).
 
 # Versions {#versions}
 
@@ -90,14 +90,14 @@ Beginning in :game[13], whenever it loads an ANM file, for every script, it will
 [code]
 script script1 {
 -1:
-    :ref[anm:rand](:ref[anmvar:i0], 0, 5);
+    :ref{r=anm:rand}(:ref{r=anmvar:i0}, 0, 5);
 0:
-    :ref[anm:rand](:ref[anmvar:i1], 0, 5);
+    :ref{r=anm:rand}(:ref{r=anmvar:i1}, 0, 5);
     ...
 }
 [/code]
 
-In the above example, every script created using `script1` will have the same value for :ref[anmvar:i0], but different values for :ref[anmvar:i1].  This is of course a contrived example to help exaggerate the effect; typically this initial frame is used to set the script's layer and a few other important properties.
+In the above example, every script created using `script1` will have the same value for :ref{r=anmvar:i0}, but different values for :ref{r=anmvar:i1}.  This is of course a contrived example to help exaggerate the effect; typically this initial frame is used to set the script's layer and a few other important properties.
 
 # Position vectors {#position}
 
@@ -105,9 +105,9 @@ In the above example, every script created using `script1` will have the same va
 
 The position of a graphic is ironically one of the least understood aspects of how ANM works.
 
-Each VM has an **origin.**  For child scripts, the origin is the location of the parent, so that they move with the parent.  For scripts with no parent, the origin is determined by :ref[anm:originMode], which should be chosen appropriately for its [stage of rendering](#anm/stages-of-rendering).  *That's the easy part.*
+Each VM has an **origin.**  For child scripts, the origin is the location of the parent, so that they move with the parent.  For scripts with no parent, the origin is determined by :ref{r=anm:originMode}, which should be chosen appropriately for its [stage of rendering](#anm/stages-of-rendering).  *That's the easy part.*
 
-So how about the position relative to that origin?  Well, as you might imagine, each VM holds a position vector which can be modified using :ref[anm:pos]... but there are also two other vectors!!  The true position of the graphic relative to its origin *is the sum of all three of these vectors.*  These other two vectors are used in all sorts of different, weird places for weird things, and nobody has been able to make any real sense of them yet, so for now I'll just call them `pos_2` and `pos_3` until their purpose is better understood.
+So how about the position relative to that origin?  Well, as you might imagine, each VM holds a position vector which can be modified using :ref{r=anm:pos}... but there are also two other vectors!!  The true position of the graphic relative to its origin *is the sum of all three of these vectors.*  These other two vectors are used in all sorts of different, weird places for weird things, and nobody has been able to make any real sense of them yet, so for now I'll just call them `pos_2` and `pos_3` until their purpose is better understood.
 
 # RNGs {#rng}
 
@@ -121,16 +121,16 @@ Different ANM versions access these RNGs in different ways:
 * **:game-th[09] and earlier:** Everything uses the replay RNG. (animation RNG doesn't exist)
 * **:game-th[095]&ndash;:game-th[128]:**
     - :wip[Not sure, but the general design seems to be: Root VMs for game entities use the replay RNG, children use the animation RNG.]
-    - A VM can change its current RNG using :ref[anm:v4-randMode].
-    - :ref[anm:spriteRand] always uses the replay RNG.
+    - A VM can change its current RNG using :ref{r=anm:v4-randMode}.
+    - :ref{r=anm:spriteRand} always uses the replay RNG.
 * **:game-th[13] and later:**
-    - Almost everything uses the animation RNG. (incl. :ref[anm:rand] and :ref[anm:spriteRand])
-    - There are dedicated vars for the replay RNG. (e.g. :ref[anmvar:randf-01-replay])
-    - :ref[anm:v8-randMode] still exists but has no effect.
+    - Almost everything uses the animation RNG. (incl. :ref{r=anm:rand} and :ref{r=anm:spriteRand})
+    - There are dedicated vars for the replay RNG. (e.g. :ref{r=anmvar:randf-01-replay})
+    - :ref{r=anm:v8-randMode} still exists but has no effect.
 
 # Parent-child relationships {#children}
 
-In :game[10] onwards, ANM VMs can create children using :ref[anm:createChild].  Parents affect children in some of the following ways:
+In :game[10] onwards, ANM VMs can create children using :ref{r=anm:createChild}.  Parents affect children in some of the following ways:
 
 * A child's position is always relative to the parent (it moves with the parent).
 * A child's scale is relative to its parent. (i.e. scaling a parent scales its children).
@@ -144,9 +144,9 @@ In :game[10] onwards, ANM VMs can create children using :ref[anm:createChild].  
 
 Some broad advice: **Don't let child VMs create children.**  The way that children is implemented is pretty janky in most games and, again, changes quite freuquently from game to game.  Though I haven't tested it much, there are many, many things that just look plain "off" to me in the code.  Early games are clearly not meant to have grandchildren, and the latest games have grandchild support that looks buggy and seems unused.
 
-Some examples: The implementation of :ref[anm:createChildPos] is clearly not meant to be used on children.
+Some examples: The implementation of :ref{r=anm:createChildPos} is clearly not meant to be used on children.
 Many places in early games only look at the first parent.
-Even in :game-th[17], :ref[anmvar:rot-z-effective] only cares about the first parent.
+Even in :game-th[17], :ref{r=anmvar:rot-z-effective} only cares about the first parent.
 While the latest games store two linked-list nodes as required for proper grandchild support, early games only have one.
 VMs in :game-th[16] frequently call recursive functions that *appear* like they are designed to e.g. recursively account for the parent's scale, then the grandparent's scale, and etc...
 but the "parent" pointer that these functions use actually appears to store the *root* VM of any ancestral tree, not the direct parent, so the recursive part is never used.
@@ -162,12 +162,12 @@ Oftentimes, graphics have special animations associated with certain events.  Fo
 
 * A field on the ANM VM is set to some number representing the type of event.
 * The next time the VM is [ticked](#anm/ontick-ondraw),
-  it will check this field, and search the script for a matching :ref[anm:case] instruction if it is nonzero.
+  it will check this field, and search the script for a matching :ref{r=anm:case} instruction if it is nonzero.
 * When it finds one:
     + It will jump to the matching label and set the current time to its [time label](#anm/concepts&a=time).
     + Right before doing so, it will save the current time and instruction pointer
-      so that they can be potentially restored with :ref[anm:caseReturn].
-    + It will enable the "visible" bitflag if not already (see :ref[anm:visible]).
+      so that they can be potentially restored with :ref{r=anm:caseReturn}.
+    + It will enable the "visible" bitflag if not already (see :ref{r=anm:visible}).
 
 ### An example
 
@@ -176,29 +176,29 @@ For a detailed example, here's one of the scripts for the season gauge.  (this o
 [code]
 script script114 {
     // ... ignoring the boring stuff at the beginning ...
-    :ref[anm:pos](-344.0f, 884.0f, 0.0f);
+    :ref{r=anm:pos}(-344.0f, 884.0f, 0.0f);
 
-    :ref[anm:case](3);
-    :ref[anm:alpha](0);
-    :ref[anm:stop]();
+    :ref{r=anm:case}(3);
+    :ref{r=anm:alpha}(0);
+    :ref{r=anm:stop}();
 
-    :ref[anm:case](2);
-    :ref[anm:alphaTime](4, 0, 255);
+    :ref{r=anm:case}(2);
+    :ref{r=anm:alphaTime}(4, 0, 255);
 offset144:
-    :ref[anm:rgb](255, 255, 255);
+    :ref{r=anm:rgb}(255, 255, 255);
 +20: // 20
-    :ref[anm:rgb](255, 224, 224);
+    :ref{r=anm:rgb}(255, 224, 224);
 +20: // 40
-    :ref[anm:jmp](offset144, 0);
-    :ref[anm:stop]();
+    :ref{r=anm:jmp}(offset144, 0);
+    :ref{r=anm:stop}();
 
-    :ref[anm:case](4);
-    :ref[anm:alphaTime](5, 0, 255);
-    :ref[anm:caseReturn]();
+    :ref{r=anm:case}(4);
+    :ref{r=anm:alphaTime}(5, 0, 255);
+    :ref{r=anm:caseReturn}();
 
-    :ref[anm:case](5);
-    :ref[anm:alphaTime](5, 0, 64);
-    :ref[anm:caseReturn]();
+    :ref{r=anm:case}(5);
+    :ref{r=anm:alphaTime}(5, 0, 64);
+    :ref{r=anm:caseReturn}();
 }
 [/code]
 
@@ -217,52 +217,52 @@ and other parts of the gauge also have interrupts with the same meaning.
 (e.g. the "filled" part of the bar uses labels 2 and 3 to toggle between blue at level 0 and yellow-white at levels 1+).
 That said, there is one interrupt that has a nearly universal meaning:
 Interrupt `1` pretty much always means "disappear forever". I.e. label 1, if it exists, will always be some kind of exit animation like fade-out,
-shrinking, or flyout, and will end in :ref[anm:delete].
+shrinking, or flyout, and will end in :ref{r=anm:delete}.
 
-The vast majority of interrupts are used by hardcoded code in the game, but notably, ECL scripts can invoke :ref[anm:case] labels
+The vast majority of interrupts are used by hardcoded code in the game, but notably, ECL scripts can invoke :ref{r=anm:case} labels
 on their own sprites by using the `anmSwitch` ECL instruction.
 The games seldom use this but it is pretty hecking useful for modders!
 
-### :ref[anm:caseReturn] versus :ref[anm:stop]
+### :ref{r=anm:caseReturn} versus :ref{r=anm:stop}
 
-Notice that labels 4 and 5 end in :ref[anm:caseReturn] while labels 2 and 3 do not.  The reason for this is because **interrupts can occur at any point where the VM is waiting.**  Oftentimes, this is at a :ref[anm:stop] (since that basically means "wait forever"), but it can also occur at any :ref[anm:wait] instruction, or whenever the time label increases.
+Notice that labels 4 and 5 end in :ref{r=anm:caseReturn} while labels 2 and 3 do not.  The reason for this is because **interrupts can occur at any point where the VM is waiting.**  Oftentimes, this is at a :ref{r=anm:stop} (since that basically means "wait forever"), but it can also occur at any :ref{r=anm:wait} instruction, or whenever the time label increases.
 
 So how do we know which one we should use?  Well, think about it this way: The code for label 2 is a loop to make it blink:
 
 <img src="content/anm/img/releasable-blonk.gif" alt="*blonk*">
 
-Even as the player moves around and triggers interrupts 4 and 5, we want it to continue blinking as long as the player has season power.  Therefore, labels 4 and 5 end in :ref[anm:caseReturn] so that the VM can seemlessly return back to the blinking loop.  However, we do *not* want it to continue blinking when the player has season level 0.  Therefore, label 2 ends in a :ref[anm:stop]. [weak](okay, technically it doesn't matter if it keeps blinking since alpha would be 0, but finding examples is hard okay?)[/weak]
+Even as the player moves around and triggers interrupts 4 and 5, we want it to continue blinking as long as the player has season power.  Therefore, labels 4 and 5 end in :ref{r=anm:caseReturn} so that the VM can seemlessly return back to the blinking loop.  However, we do *not* want it to continue blinking when the player has season level 0.  Therefore, label 2 ends in a :ref{r=anm:stop}. [weak](okay, technically it doesn't matter if it keeps blinking since alpha would be 0, but finding examples is hard okay?)[/weak]
 
-There is an important caveat to :ref[anm:caseReturn], which is that only a single return address is stored&mdash;not a stack!  Therefore, **whenever you use :ref[anm:caseReturn], you should avoid any waiting inside that :ref[anm:case] block,** because if the VM receives another interrupt during this time, the script may unexpectedly end up in an infinite loop where :ref[anm:caseReturn] keeps sending it back to a point shortly before the :ref[anm:caseReturn].
+There is an important caveat to :ref{r=anm:caseReturn}, which is that only a single return address is stored&mdash;not a stack!  Therefore, **whenever you use :ref{r=anm:caseReturn}, you should avoid any waiting inside that :ref{r=anm:case} block,** because if the VM receives another interrupt during this time, the script may unexpectedly end up in an infinite loop where :ref{r=anm:caseReturn} keeps sending it back to a point shortly before the :ref{r=anm:caseReturn}.
 
 ### Other miscellaneous notes on interrupts
 
-* The game always searches for :ref[anm:case] labels starting from the *beginning* of the function. (not from the current instruction)
+* The game always searches for :ref{r=anm:case} labels starting from the *beginning* of the function. (not from the current instruction)
 * It is impossible to invoke multiple interrupts on a single frame.
-* :wip2[:ref[anm:case](-1) appears to work differently from the others?
+* :wip2[:ref{r=anm:case}(-1) appears to work differently from the others?
   Could it be a default interrupt?
   According to 32th System it is ignored...]
-* :wip2[:ref[anm:case](0) also has a special meaning, and is only used once in both :game[125] and :game[165].]
+* :wip2[:ref{r=anm:case}(0) also has a special meaning, and is only used once in both :game[125] and :game[165].]
 
 ---
 
 # <span id="uv-coords">Texture coordinates</span>
 
-Numerous instructions change the region of coordinates in the texture image file that a sprite's image is pulled from.  These include :ref[anm:uVel], :ref[anm:uvScale], and :ref[anm:textureCircle]. To fully understand how these instructions work, you must have a basic understanding of texure addressing.
+Numerous instructions change the region of coordinates in the texture image file that a sprite's image is pulled from.  These include :ref{r=anm:uVel}, :ref{r=anm:uvScale}, and :ref{r=anm:textureCircle}. To fully understand how these instructions work, you must have a basic understanding of texure addressing.
 
 These instructions operate on uv coordinates.  These are fractional coordinates into the sprite's original image file.  `(u, v) = (0, 0)` lies at the very top left corner of the top left pixel.  `(u, v) = (1, 1)` lies at the very bottom right corner of the bottom right pixel.  In the image below, the little F item occupies the rectangle from `(3/4, 2/3)` to `(1, 1)` in uv-space.
 
 <img src="./content/anm/img/concept-uv-corners.png">
 
-Now let's say we start with this little F as our sprite, and then use :ref[anm:uVel] with a negative argument.  This will subtract something from u every frame, causing other images in the texture to be displayed.
+Now let's say we start with this little F as our sprite, and then use :ref{r=anm:uVel} with a negative argument.  This will subtract something from u every frame, causing other images in the texture to be displayed.
 
 [code]
-:ref[anm:sprite](littleF);
-:ref[anm:uVel](-0.008333333333);  // 1/120
+:ref{r=anm:sprite}(littleF);
+:ref{r=anm:uVel}(-0.008333333333);  // 1/120
 [/code]
 
 <img src="./content/anm/img/concept-uv-scroll-x.gif">
 
-Observe how, at the left end of the image, it *wraps back* to the F.  This is because **the default behavior of scrolling is to assume that the texture repeats infinitely.**  This has many uses, such as making color gradients move along Marisa's laser.  You can also pull from a large region in uv space using :ref[anm:uvScale]; similar behavior is provided by :ref[anm:textureCircle] which can pull from a large vertical region in uv space that includes many copies of the image. This is used for e.g. those circles of the "Spell attack" text.
+Observe how, at the left end of the image, it *wraps back* to the F.  This is because **the default behavior of scrolling is to assume that the texture repeats infinitely.**  This has many uses, such as making color gradients move along Marisa's laser.  You can also pull from a large region in uv space using :ref{r=anm:uvScale}; similar behavior is provided by :ref{r=anm:textureCircle} which can pull from a large vertical region in uv space that includes many copies of the image. This is used for e.g. those circles of the "Spell attack" text.
 
-Notice how I said "default behavior."  Using :ref[anm:scrollMode], you can configure this.  In particular, you can choose to have every other periodic copy be mirrored.
+Notice how I said "default behavior."  Using :ref{r=anm:scrollMode}, you can configure this.  In particular, you can choose to have every other periodic copy be mirrored.

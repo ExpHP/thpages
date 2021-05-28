@@ -10,7 +10,7 @@ The following describes the rendering stages as they exist in :game[14]. Future 
 * Some things are always drawn at 640x480. (the *early* stages in the rendering pipeline)
 * Some things are drawn at the current resolution. (the *late* stages)
 
-Understanding this may help you understand at least *some* of the funky business going on behind :ref[anm:layer], :ref[anm:originMode], and :ref[anm:resolutionMode] (though certainly, not all of it!).
+Understanding this may help you understand at least *some* of the funky business going on behind :ref{r=anm:layer}, :ref{r=anm:originMode}, and :ref{r=anm:resolutionMode} (though certainly, not all of it!).
 
 ## The three surfaces
 
@@ -61,13 +61,13 @@ First, surface 0 is cleared to white, and then **the 3D stage background is rend
 
 ~~~anm
 script script61 {
-    :ref[anm:sprite](sprite82);
-    :ref[anm:blendMode](3);
-    :ref[anm:layer](32);
-    :ref[anm:resampleMode](1);
-    :ref[anm:anchor](0, 0);
-    :ref[anm:pos](640.0f, 480.0f, 0.0f);
-    :ref[anm:stop]();
+    :ref{r=anm:sprite}(sprite82);
+    :ref{r=anm:blendMode}(3);
+    :ref{r=anm:layer}(32);
+    :ref{r=anm:resampleMode}(1);
+    :ref{r=anm:anchor}(0, 0);
+    :ref{r=anm:pos}(640.0f, 480.0f, 0.0f);
+    :ref{r=anm:stop}();
 }
 ~~~
 
@@ -85,17 +85,17 @@ Remember! Right now **we're still only working with that tiny 408x472 region in 
 
 Once again, at the end of this stage, a similar script is used to **copy that 408x472 region back to surface 0.**
 
-[code]
+~~~anm
 script script67 {
-    :ref[anm:sprite](sprite85);
-    :ref[anm:blendMode](3);
-    :ref[anm:layer](33);
-    :ref[anm:resampleMode](1);
-    :ref[anm:anchor](0, 0);
-    :ref[anm:pos](640.0f, 480.0f, 0.0f);
-    :ref[anm:stop]();
+    :ref{r=anm:sprite}(sprite85);
+    :ref{r=anm:blendMode}(3);
+    :ref{r=anm:layer}(33);
+    :ref{r=anm:resampleMode}(1);
+    :ref{r=anm:anchor}(0, 0);
+    :ref{r=anm:pos}(640.0f, 480.0f, 0.0f);
+    :ref{r=anm:stop}();
 }
-[/code]
+~~~
 
 ### Stage 3: Other game elements {#stage-3}
 
@@ -107,18 +107,18 @@ After this, much like in the first stage, we use sprite82 to copy that 408x472 r
 
 ~~~anm
 script script64 {
-    :ref[anm:sprite](sprite82);
-    :ref[anm:blendMode](3);
-    :ref[anm:layer](33);
-    :ref[anm:resampleMode](1);
-    :ref[anm:scale](2.0f, 2.0f);  // <-- !!!!!!!
-    :ref[anm:anchor](0, 0);
-    :ref[anm:pos](640.0f, 480.0f, 0.0f);
-    :ref[anm:stop]();
+    :ref{r=anm:sprite}(sprite82);
+    :ref{r=anm:blendMode}(3);
+    :ref{r=anm:layer}(33);
+    :ref{r=anm:resampleMode}(1);
+    :ref{r=anm:scale}(2.0f, 2.0f);  // <-- !!!!!!!
+    :ref{r=anm:anchor}(0, 0);
+    :ref{r=anm:pos}(640.0f, 480.0f, 0.0f);
+    :ref{r=anm:stop}();
 }
 ~~~
 
-This script has a very important addition compared to before:  **It scales the image up by 2x** (1.5x for 960x720, 1x for 640x480)!!  That's right, this script handles the upscaling to 1280x960!  Because it also uses :ref[anm:resampleMode]`(1)`, we get a nice pixely effect.
+This script has a very important addition compared to before:  **It scales the image up by 2x** (1.5x for 960x720, 1x for 640x480)!!  That's right, this script handles the upscaling to 1280x960!  Because it also uses `:ref{r=anm:resampleMode}(1)`, we get a nice pixely effect.
 
 ### Stage 4: In-game UI {#stage-4}
 
@@ -130,9 +130,9 @@ Notice that because the image is larger now, we have to use a different sprite t
 
 ~~~anm
 script script70 {
-    :ref[anm:sprite](sprite88);
-    :ref[anm:blendMode](3);
-    :ref[anm:layer](33);
+    :ref{r=anm:sprite}(sprite88);
+    :ref{r=anm:blendMode}(3);
+    :ref{r=anm:layer}(33);
     // ...
     // ...
     // ...74 more lines of code...
@@ -192,38 +192,38 @@ entry entry3 {
 }
 ~~~
 
-Looking at these, you can see that, unlike in :game-th[14], **the game is always being drawn to the same region of the window in these games.**  Thus, the game origin is *always* located at `(32+192, 16)` and there is no need for an instruction like :ref[anm:originMode].  Here are the scripts that use these sprites:
+Looking at these, you can see that, unlike in :game-th[14], **the game is always being drawn to the same region of the window in these games.**  Thus, the game origin is *always* located at `(32+192, 16)` and there is no need for an instruction like :ref{r=anm:originMode}.  Here are the scripts that use these sprites:
 
 ~~~anm
 script script81 {
-    :ref[anm:sprite](sprite75);
-    :ref[anm:blendMode](3);
-    :ref[anm:anchor](1, 1);
-    :ref[anm:layer](27);
-    :ref[anm:pos](32.0f, 16.0f, 0.0f);
-    :ref[anm:stop]();
+    :ref{r=anm:sprite}(sprite75);
+    :ref{r=anm:blendMode}(3);
+    :ref{r=anm:anchor}(1, 1);
+    :ref{r=anm:layer}(27);
+    :ref{r=anm:pos}(32.0f, 16.0f, 0.0f);
+    :ref{r=anm:stop}();
 
-    :ref[anm:case](3);
-    :ref[anm:anchor](0, 0);
-    :ref[anm:pos](224.0f, 240.0f, 0.0f);
-    :ref[anm:scaleTime](120, 4, 2.0f, 0.0f);
+    :ref{r=anm:case}(3);
+    :ref{r=anm:anchor}(0, 0);
+    :ref{r=anm:pos}(224.0f, 240.0f, 0.0f);
+    :ref{r=anm:scaleTime}(120, 4, 2.0f, 0.0f);
 +120: // 120
-    :ref[anm:stop]();
-    :ref[anm:case](2);
-    :ref[anm:anchor](1, 1);
-    :ref[anm:pos](32.0f, 16.0f, 0.0f);
-    :ref[anm:scaleTime](0, 0, 1.0f, 1.0f);
-    :ref[anm:scale](1.0f, 1.0f);
-    :ref[anm:stop]();
+    :ref{r=anm:stop}();
+    :ref{r=anm:case}(2);
+    :ref{r=anm:anchor}(1, 1);
+    :ref{r=anm:pos}(32.0f, 16.0f, 0.0f);
+    :ref{r=anm:scaleTime}(0, 0, 1.0f, 1.0f);
+    :ref{r=anm:scale}(1.0f, 1.0f);
+    :ref{r=anm:stop}();
 }
 
 script script82 {
-    :ref[anm:sprite](sprite76);
-    :ref[anm:blendMode](3);
-    :ref[anm:layer](28);
-    :ref[anm:anchor](1, 1);
-    :ref[anm:pos](32.0f, 16.0f, 0.0f);
-    :ref[anm:stop]();
+    :ref{r=anm:sprite}(sprite76);
+    :ref{r=anm:blendMode}(3);
+    :ref{r=anm:layer}(28);
+    :ref{r=anm:anchor}(1, 1);
+    :ref{r=anm:pos}(32.0f, 16.0f, 0.0f);
+    :ref{r=anm:stop}();
 }
 ~~~
 
@@ -238,7 +238,7 @@ The stages are thus:
 * Switch to surface 0. Clear it.  Draw :tip[**layer 17**]{tip="also unused"}, use `script82` to copy back from surface 1, and **draw layers 28, 18&ndash;19, score popups and ascii group 1**.
 * Switch to the backbuffer. Clear it.  Use another instance of `script81` to copy back from surface 0 (Koishi doesn't touch this one).  **Draw layers 20&ndash;24 and 29, and ascii group 0**.
 
-A notable difference in the scripts between TH11 and TH14 is that, in TH11, some things like the player VM do not use the :ref[anm:layer] instruction because they are manually managed and not drawn as part of any layer.  They are still manually managed in TH14, but a call to the :ref[anm:layer] instruction was added to ensure they use the correct origin.
+A notable difference in the scripts between TH11 and TH14 is that, in TH11, some things like the player VM do not use the :ref{r=anm:layer} instruction because they are manually managed and not drawn as part of any layer.  They are still manually managed in TH14, but a call to the :ref{r=anm:layer} instruction was added to ensure they use the correct origin.
 
 ---
 

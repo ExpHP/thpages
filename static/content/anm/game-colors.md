@@ -2,7 +2,7 @@ Secret page for seeing all the game colors in this theme.
 
 ::title[SEEKRIT PAGE]
 
-See :ref[anm:rgbTime] for more details.
+See :ref{r=anm:rgbTime} for more details.
 
 :game-thlong[06]<br>
 :game-thlong[07]<br>

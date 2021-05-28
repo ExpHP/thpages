@@ -10,7 +10,7 @@ Thanks to:
 
 <a href="content/anm/img/th17modes.png"><img src="content/anm/img/th17modes.png" style="max-width: 100%;"></a>
 
-From :game-long[10] onwards, modern touhou games have a common "interpolator" struct that is used by many things to create smooth motions and transitions.  For the modding scene in particular, these are notably used to implement all of the "change over time" instructions in both ECL and ANM (e.g. :ref[anm:scaleTime]).
+From :game-long[10] onwards, modern touhou games have a common "interpolator" struct that is used by many things to create smooth motions and transitions.  For the modding scene in particular, these are notably used to implement all of the "change over time" instructions in both ECL and ANM (e.g. :ref{r=anm:scaleTime}).
 
 ## Simple easing functions
 
@@ -107,9 +107,9 @@ struct Interp {
 }
 [/code]
 
-I wrote this as a generic type because the same layout is used for a wide variety of element types.  `T` could be `float` (for :ref[anm:uVelTime]), it could be `int` (for :ref[anm:alphaTime]), it could be a vector of 2 floats (for :ref[anm:scaleTime]), and so on.  Typically, when one of these instructions are used, the first two args are put in `end_time` and `mode`, the current value of the field is copied to `initial`, the argument is stored in `goal`.  `time`, `extra_1`, and `extra_2` are all reset to 0.
+I wrote this as a generic type because the same layout is used for a wide variety of element types.  `T` could be `float` (for :ref{r=anm:uVelTime}), it could be `int` (for :ref{r=anm:alphaTime}), it could be a vector of 2 floats (for :ref{r=anm:scaleTime}), and so on.  Typically, when one of these instructions are used, the first two args are put in `end_time` and `mode`, the current value of the field is copied to `initial`, the argument is stored in `goal`.  `time`, `extra_1`, and `extra_2` are all reset to 0.
 
-What are `extra_1` and `extra_2`?  They're just extra fields that are only used by modes 8 and 17.  To partially demonstrate this, here's the pseudocode for :ref[anm:posBezier] (`pos_interp` here is the same interpolator used by :ref[anm:posTime]):
+What are `extra_1` and `extra_2`?  They're just extra fields that are only used by modes 8 and 17.  To partially demonstrate this, here's the pseudocode for :ref{r=anm:posBezier} (`pos_interp` here is the same interpolator used by :ref{r=anm:posTime}):
 
 [code]
 // pseudocode for posBezier(t, x1,y1,z1, x2,y2,z2, x3,y3,z3)
@@ -124,7 +124,7 @@ pos_interp.extra_2 = {x3, y3, z3};
 
 Take a close look at the line labeled with the arrow.  It turns out that **mode 8 is actually the Bezier mode!**  The smoothstep function obtained when using it in other time instructions is simply because that's what you end up with when the extra points are zero.  (i.e. smoothstep is the unique third-order polynomial that satisfies `f(0) = f'(0) = f'(1) = 0; f(1) = 1`.)
 
-So that's cool and all, but how can we actually take advantage of this?  I.e. could we theoretically have :ref[anm:scaleTime] use an arbitrary Bezier?  Well, there's good and bad news:
+So that's cool and all, but how can we actually take advantage of this?  I.e. could we theoretically have :ref{r=anm:scaleTime} use an arbitrary Bezier?  Well, there's good and bad news:
 
 * There are currently no instructions in ANM that would enable you to use a Bezier for arbitrary things.
 * There **is** an instruction in ECL: `ins_92(slot, &dest, t, mode, init, goal, extra_1, extra_2)` (an extended version of `ins_91` "`floatTime`") which lets you supply `extra_1` and `extra_2` while interpolating a single float.

@@ -2,6 +2,7 @@
 import * as React from 'react';
 import type {ReactNode} from 'react';
 import ReactMarkdown from 'react-markdown';
+import type {ReactMarkdownOptions} from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkHeadingId from 'remark-heading-id';
 import remarkDirective from 'remark-directive';
@@ -20,6 +21,7 @@ import {gameData, validateGame, GameData, Game} from './game-names';
 import {Query, urlWithProps} from './url-format';
 import {GameSelector, TablePage, getHandlers} from './anm/tables';
 import dedent from "./lib/dedent";
+import { exitCode } from 'process';
 
 // React libraries do not all agree on how to supply a single child.
 type OneChild<T> = T | [T];
@@ -66,13 +68,12 @@ function GameNum({children}: {children: OneChild<string>}) { return makeGc(child
 function GameThLong({children}: {children: OneChild<string>}) { return makeGc(children, (g) => g.long); }
 
 type RefProps = {tip?: string, url?: string};
-function Ref({children, ...props}: {children: OneChild<string>} & RefProps) {
+function Ref({r, ...props}: {r: string} & RefProps) {
   const {currentQuery} = React.useContext(MarkdownContext);
   const allProps = {tip: "1", url: "1", ...props};
   const tip = allProps.tip === "1";
   const url = allProps.url === "1";
-  const ref = getSingleChild(children);
-  return getRefJsx({ref, tip, url, currentQuery});
+  return getRefJsx({ref: r, tip, url, currentQuery});
 }
 
 function More({children}: {children: ReactNode}) {
@@ -197,11 +198,45 @@ function directivesToHtml() {
   }
 }
 
+// Ugly HACK to make :ref{} work inside inline-code and code fences.
+//
+// Currently this is implemented as a component that does substring searches on <code>.
+function Code({children}: {children: OneChild<string>}) {
+  const {currentQuery} = React.useContext(MarkdownContext);
+  const s = getSingleChild(children);
+  if (typeof s !== 'string') {
+    console.error(s);
+    return <Err>CODE_ERR</Err>;
+  }
+
+  const regexp = /:ref\{[^}]+\}/g;
+  const pieces = []; // we will generate an array of alternating strings and <Ref>s
+  let match;
+  let textBegin = 0;
+  while ((match = regexp.exec(s)) !== null) {
+    pieces.push(s.substring(textBegin, match.index));
+    // Parse the text for a single :ref{} directive into a <Ref>
+    pieces.push(<TrustedMarkdown
+      key={textBegin} currentQuery={currentQuery}
+      // there's no way to tell the markdown parser to assume it's parsing PhrasingContent, so it will wrap
+      // the output <Ref> in a <p>, which we can destroy by setting these options.
+      disallowedElements={['p']} unwrapDisallowed={true}
+    >
+      {match[0]}
+    </TrustedMarkdown>);
+
+    textBegin = match.index + match[0].length;
+  }
+  pieces.push(s.substring(textBegin, s.length));
+  return <code>{pieces}</code>;
+}
+
 const MARKDOWN_PROPS = {
   remarkPlugins: [remarkDirective, unwrapCodeDirectives, directivesToHtml, remarkHeadingId, remarkGfm],
   rehypePlugins: [rehypeRaw],
   skipHtml: false,
   components: {
+    // custom components
     'exp-c': C, 'exp-gc': Gc, 'exp-wip': Wip, 'exp-wip2': Wip2, 'exp-weak': Weak, 'exp-dl': Dl,
     'exp-game': GameShort, 'exp-game-th': GameTh, 'exp-game-num': GameNum, 'exp-game-thlong': GameThLong,
     'exp-more': More, 'exp-title': Title,
@@ -209,17 +244,14 @@ const MARKDOWN_PROPS = {
     'exp-ref': Ref, 'exp-tip': Tip, 'exp-tip-nodeco': TipNodeco,
     'exp-foot-ref': FootRef, 'exp-foot-def': FootDef,
     'exp-reference-table': ReferenceTable,
+    // standard HTML elements with modified behavior
+    'code': Code,
   },
 };
 
-function preventOverzealousTextDirectives(s: string) {
-  return s.replace(/(:ref\[[^\]:]+):/g, "$1\\:");
-}
-
-export function TrustedMarkdown({children, currentQuery, ...props}: {children: string, currentQuery: Query} & React.HTMLAttributes<HTMLElement>) {
-  const input = preventOverzealousTextDirectives(children);
+export function TrustedMarkdown({children, currentQuery, ...props}: {children: string, currentQuery: Query} & ReactMarkdownOptions) {
   return <MarkdownContext.Provider value={{currentQuery}}>
-    <ReactMarkdown {...Object.assign({}, MARKDOWN_PROPS, props)}>{input}</ReactMarkdown>
+    <ReactMarkdown {...Object.assign({}, MARKDOWN_PROPS, props)}>{children}</ReactMarkdown>
   </MarkdownContext.Provider>;
 }
 
