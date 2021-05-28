@@ -74,14 +74,14 @@ As an aside, on so-called "FORTRAN order:" FORTRAN matrices are also vector-majo
 
 Whenever Touhou games use a single DWORD to store a color, it is always a `D3DCOLOR`.  This is a type defined as follows:
 
-[code]
+```C++
 struct D3DCOLOR {
     unsigned char blue;
     unsigned char green;
     unsigned char red;
     unsigned char alpha;
 }
-[/code]
+```
 
 x86 is a little-endian, so when written as a single integer this is `0xAARRGGBB`, in contrast to the alpha-last `#RRGGBBAA` notation that is common outside of Direct3D.
 

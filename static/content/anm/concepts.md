@@ -55,7 +55,7 @@ Much like ECL and STD, every instruction in an ANM script is labeled with a `tim
 
 Most of the time, large swathes of code in an ANM script will have equal time labels, so `thtk` doesn't label every line.  It labels the lines where the time changes; and it does so by writing an integer followed by a colon (like code labels, but integers instead of identifiers):
 
-[code]
+~~~anm
 script script1 {
     foo(0);   // has time label 0
     bar(4);   // has time label 0
@@ -64,11 +64,11 @@ script script1 {
 50:
     quux(3, 50f);   // has time label 50
 }
-[/code]
+~~~
 
 It also supports relative time labels, which begin with `+`, indicating that the label increases by this amount.
 
-[code]
+~~~anm
 script script1 {
     foo(0);   // has time label 0
     bar(4);   // has time label 0
@@ -79,7 +79,7 @@ script script1 {
 10:
     fazbear(20);  // has time label 10
 }
-[/code]
+~~~
 
 Notice with the last label that time labels are also allowed to decrease.  When this happens it must be written as an absolute label, not as `-40:`, which would instead be interpreted as an absolute time label for the time `-40`.  *Speaking of negative time labels...*
 
@@ -87,7 +87,7 @@ Notice with the last label that time labels are also allowed to decrease.  When 
 
 Beginning in :game[13], whenever it loads an ANM file, for every script, it will create a VM and run that VM once with time set to `-1`.  Then it saves the resulting VM as a *template* for that script, and copies it each time an instance of that script is created. Basically what this means is that scripts can now have a "minus 1st" frame that only runs once when the file is loaded:
 
-[code]
+~~~anm
 script script1 {
 -1:
     :ref{r=anm:rand}(:ref{r=anmvar:i0}, 0, 5);
@@ -95,7 +95,7 @@ script script1 {
     :ref{r=anm:rand}(:ref{r=anmvar:i1}, 0, 5);
     ...
 }
-[/code]
+~~~
 
 In the above example, every script created using `script1` will have the same value for :ref{r=anmvar:i0}, but different values for :ref{r=anmvar:i1}.  This is of course a contrived example to help exaggerate the effect; typically this initial frame is used to set the script's layer and a few other important properties.
 
@@ -173,7 +173,7 @@ Oftentimes, graphics have special animations associated with certain events.  Fo
 
 For a detailed example, here's one of the scripts for the season gauge.  (this one draws the "Releasable" icon)
 
-[code]
+~~~anm
 script script114 {
     // ... ignoring the boring stuff at the beginning ...
     :ref{r=anm:pos}(-344.0f, 884.0f, 0.0f);
@@ -200,7 +200,7 @@ offset144:
     :ref{r=anm:alphaTime}(5, 0, 64);
     :ref{r=anm:caseReturn}();
 }
-[/code]
+~~~
 
 This script has four interrupts, which are manually triggered by code in the GUI that watches for the following conditions:
 
@@ -256,10 +256,10 @@ These instructions operate on uv coordinates.  These are fractional coordinates 
 
 Now let's say we start with this little F as our sprite, and then use :ref{r=anm:uVel} with a negative argument.  This will subtract something from u every frame, causing other images in the texture to be displayed.
 
-[code]
+~~~anm
 :ref{r=anm:sprite}(littleF);
 :ref{r=anm:uVel}(-0.008333333333);  // 1/120
-[/code]
+~~~
 
 <img src="./content/anm/img/concept-uv-scroll-x.gif">
 

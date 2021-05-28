@@ -16,15 +16,16 @@ From :game-long[10] onwards, modern touhou games have a common "interpolator" st
 
 The following are fairly simple easing functions.
 
+:::table-footnotes
 | Mode  | Function                                   | Description |
 |:---:  | ---                                        | ---         |
-| 0 (:game[07][foot-ref=1]&ndash;) | `linear(x) = x`                 | linear      |
-| 1 (:game[07][foot-ref=1]&ndash;) | `easeIn2(x) = x^2`              | ease in  |
-| 2 (:game[07][foot-ref=1]&ndash;) | `easeIn3(x) = x^3`              | ease in (cubic) |
-| 3 (:game[07][foot-ref=1]&ndash;) | `easeIn4(x) = x^4`              | ease in (quartic) |
-| 4 (:game[07][foot-ref=1]&ndash;) | `easeOut2(x) = flip(easeIn2)`   | ease out |
-| 5 (:game[07][foot-ref=1]&ndash;) | `easeOut3(x) = flip(easeIn3)`   | ease out (cubic) |
-| 6 (:game[07][foot-ref=1]&ndash;) | `easeOut4(x) = flip(easeIn4)`   | ease out (quartic) |
+| 0 (:game[07]:foot-ref[1]&ndash;) | `linear(x) = x`                 | linear      |
+| 1 (:game[07]:foot-ref[1]&ndash;) | `easeIn2(x) = x^2`              | ease in  |
+| 2 (:game[07]:foot-ref[1]&ndash;) | `easeIn3(x) = x^3`              | ease in (cubic) |
+| 3 (:game[07]:foot-ref[1]&ndash;) | `easeIn4(x) = x^4`              | ease in (quartic) |
+| 4 (:game[07]:foot-ref[1]&ndash;) | `easeOut2(x) = flip(easeIn2)`   | ease out |
+| 5 (:game[07]:foot-ref[1]&ndash;) | `easeOut3(x) = flip(easeIn3)`   | ease out (cubic) |
+| 6 (:game[07]:foot-ref[1]&ndash;) | `easeOut4(x) = flip(easeIn4)`   | ease out (quartic) |
 | 7  (:game[10]&ndash;) | Discussed below                            | constant velocity |
 | 8  (:game[10]&ndash;) | `smoothstep(x) = 3x^2 - 2x^3`              | [smoothstep](https://en.wikipedia.org/wiki/Smoothstep); (technically Bezier; see below) |
 | 9  (:game[10]&ndash;) | `easeInOut2(x) = split(easeIn2, easeOut2)` | ease in then ease out |
@@ -40,9 +41,9 @@ The following are fairly simple easing functions.
 | 19 (:game[13]&ndash;) | `easeInSin(x) = flip(easeOutSin)`          | ease in (sine) |
 | 20 (:game[13]&ndash;) | `easeOutInSin(x) = split(easeOutSin, easeInSin)` | ease out then ease in (sine) |
 | 21 (:game[13]&ndash;) | `easeInOutSin(x) = split(easeInSin, easeOutSin)` | ease in then ease out (sine) |
-[table-footnotes,ncols=3]
-[foot-def=1] STD and ECL are different in pre-:game[10] games; [see below](#anm/interpolation&a=early-games).
-[/table-footnotes]
+
+:foot-def[1] STD and ECL are different in pre-:game[10] games; [see below](#anm/interpolation&a=early-games).
+:::
 
 The table above has used two helper functions:
 
@@ -55,20 +56,20 @@ Modes 7 and 17 are impossible to describe as dimensionless easing functions, but
 
 In mode 7, the `goal` argument is used as a **constant velocity**:
 
-[code]
+~~~C++
 // Mode 7, each frame:
 initial += goal;
 return initial;
-[/code]
+~~~
 
 And in mode 17, the `goal` argument is used as a **constant acceleration**:
 
-[code]
+~~~c++
 // Mode 17, each frame
 initial += extra_2;
 extra_2 += goal;
 return initial;
-[/code]
+~~~
 
 What's `extra_2`?  It's just another field of the interpolator struct, which happens to be used to store velocity by mode 17.  For now you can assume it starts at 0.  (We'll come back to this later.)
 
@@ -93,7 +94,7 @@ ZUN chose to constrain the extremal time (i.e. what fraction of the total time i
 ## The **true** mode 8
 
 Before we go any further, let's talk a bit about what this interpolator struct actually looks like.  It basically looks like this: (at least in :game[13]&ndash;:game[17])
-[code]
+~~~c++
 template <typename T>
 struct Interp {
     T initial;
@@ -105,13 +106,13 @@ struct Interp {
     int32_t end_time;
     int32_t mode;
 }
-[/code]
+~~~
 
 I wrote this as a generic type because the same layout is used for a wide variety of element types.  `T` could be `float` (for :ref{r=anm:uVelTime}), it could be `int` (for :ref{r=anm:alphaTime}), it could be a vector of 2 floats (for :ref{r=anm:scaleTime}), and so on.  Typically, when one of these instructions are used, the first two args are put in `end_time` and `mode`, the current value of the field is copied to `initial`, the argument is stored in `goal`.  `time`, `extra_1`, and `extra_2` are all reset to 0.
 
 What are `extra_1` and `extra_2`?  They're just extra fields that are only used by modes 8 and 17.  To partially demonstrate this, here's the pseudocode for :ref{r=anm:posBezier} (`pos_interp` here is the same interpolator used by :ref{r=anm:posTime}):
 
-[code]
+~~~c++
 // pseudocode for posBezier(t, x1,y1,z1, x2,y2,z2, x3,y3,z3)
 pos_interp.time.set_current(0);
 pos_interp.end_time = t;
@@ -120,7 +121,7 @@ pos_interp.initial = this->pos;
 pos_interp.extra_1 = {x1, y1, z1};
 pos_interp.goal = {x2, y2, z2};
 pos_interp.extra_2 = {x3, y3, z3};
-[/code]
+~~~
 
 Take a close look at the line labeled with the arrow.  It turns out that **mode 8 is actually the Bezier mode!**  The smoothstep function obtained when using it in other time instructions is simply because that's what you end up with when the extra points are zero.  (i.e. smoothstep is the unique third-order polynomial that satisfies `f(0) = f'(0) = f'(1) = 0; f(1) = 1`.)
 
@@ -131,7 +132,7 @@ So that's cool and all, but how can we actually take advantage of this?  I.e. co
 
 So if you're making an enemy, here's a way you *could technically* scale its graphic by a Bezier:
 
-[code]
+~~~anm
 // ECL:
 float tmp;
 int duration = 20;
@@ -144,7 +145,7 @@ times(duration) {
     anmScale(0, tmp, tmp);
     wait(1);
 }
-[/code]
+~~~
 
 Do with this insane knowledge whatever you will.
 
@@ -176,7 +177,7 @@ Interpolation modes in PCB STD files are different from the numbers in ANM and E
 
 ## Javascript definitions for all easing modes
 
-[code=js]
+~~~js
 const modes = [];
 function addMode(f) {
     modes.push(f);
@@ -242,4 +243,4 @@ easeOutBackE = addMode(flip(easeInBackE));
 
 // at this point, `modes` is an array containing 32 functions;
 // or you can call them by name
-[/code]
+~~~

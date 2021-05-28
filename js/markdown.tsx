@@ -10,6 +10,8 @@ import type {Directive, TextDirective, LeafDirective, ContainerDirective} from '
 import rehypeRaw from "rehype-raw";
 import {visit as unistVisit} from "unist-util-visit";
 import {filter as unistFilter} from "unist-util-filter";
+import {select as hastSelect} from "hast-util-select";
+import {map as unistMap} from "unist-util-map";
 import type {Node} from "unist-util-visit";
 import {h} from "hastscript";
 
@@ -122,7 +124,9 @@ function FootDef({children}: {children: string | [string]}) {
   return <sup className="footnote def" id={`footnote-${id}`}>{id}</sup>;
 }
 
-function TableFootnotes() {
+function TableFootnotes({children}: {children: ReactNode[]}) {
+  console.error(children);
+
   return <Err>FIXME_TABLE_FOOTNOTES</Err>;
   // return `<div class="tfoot" data-ncols="${ncolsStr}">${MD.makeHtml(content!)}</div>`;
 }
@@ -231,16 +235,36 @@ function Code({children}: {children: OneChild<string>}) {
   return <code>{pieces}</code>;
 }
 
+function rehypeTableFootnotes() {
+  return (tree: any) => unistMap(tree, (node: any) => {
+    return (node.tagName === 'exp-table-footnotes') ? modify(node) : node;
+  });
+
+  function modify(node: any) {
+    if (node.children.length !== 2 || node.children[0].tagName !== 'table' || node.children[1].tagName !== 'p') {
+      console.error(`bad table-footnotes children`, node.children);
+      return node;
+    }
+    // Take the content from the <p> and put it in a <tfoot><td> with a colspan equal to the number of table columns.
+    const [table, footP] = node.children;
+    const firstRow = hastSelect('tr', table)!;
+    const ncols = (firstRow.children as any).map((node: any) => node.properties?.colspan != null ? node.properties.colspan : 1).reduce((a: number, b: number) => a + b, 0);
+
+    table.children.push(h('tfoot', {}, h('td', {colspan: ncols}, ...footP.children)));
+    return table;
+  }
+}
+
 const MARKDOWN_PROPS = {
   remarkPlugins: [remarkDirective, unwrapCodeDirectives, directivesToHtml, remarkHeadingId, remarkGfm],
-  rehypePlugins: [rehypeRaw],
+  rehypePlugins: [rehypeTableFootnotes, rehypeRaw],
   skipHtml: false,
   components: {
     // custom components
     'exp-c': C, 'exp-gc': Gc, 'exp-wip': Wip, 'exp-wip2': Wip2, 'exp-weak': Weak, 'exp-dl': Dl,
     'exp-game': GameShort, 'exp-game-th': GameTh, 'exp-game-num': GameNum, 'exp-game-thlong': GameThLong,
     'exp-more': More, 'exp-title': Title,
-    'exp-headless-table': HeadlessTable, 'exp-table-footnotes': TableFootnotes,
+    'exp-headless-table': HeadlessTable,
     'exp-ref': Ref, 'exp-tip': Tip, 'exp-tip-nodeco': TipNodeco,
     'exp-foot-ref': FootRef, 'exp-foot-def': FootDef,
     'exp-reference-table': ReferenceTable,
