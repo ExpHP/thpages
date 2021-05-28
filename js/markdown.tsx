@@ -14,7 +14,7 @@ import {h} from "hastscript";
 
 import {Err} from './common-components';
 import {Converter, ShowdownExtension} from 'showdown';
-import {setWindowTitle, highlightCode, $scriptContent} from "./main";
+import {setWindowTitle, highlightCode} from "./main";
 import {getRefJsx} from "./ref";
 import {gameData, validateGame, GameData, Game} from './game-names';
 import {parseQuery, currentUrlWithProps} from './url-format';
@@ -144,7 +144,6 @@ function unwrapCodeDirectives() {
 
   function ondirective(node: ContainerDirective) {
     if (node.name === 'script' || node.name === 'code') {
-      console.log(node);
       if (node.children.length == 0) {
         console.error(`Empty ${node.name} directive`);
         return;
@@ -207,7 +206,7 @@ function preventOverzealousTextDirectives(s: string) {
   return s.replace(/(:ref\[[^\]:]+):/g, "$1\\:");
 }
 
-export function TrustedMarkdown({children, ...props}: {children: string}) {
+export function TrustedMarkdown({children, ...props}: {children: string} & React.HTMLAttributes<HTMLElement>) {
   const input = preventOverzealousTextDirectives(children);
   return <ReactMarkdown
     {...Object.assign({}, MARKDOWN_PROPS, props)}

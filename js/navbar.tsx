@@ -1,4 +1,5 @@
-import {parseQuery, queryPageEquals} from "./url-format";
+import * as React from 'react';
+import {parseQuery, queryPageEquals, Query} from "./url-format";
 
 export type Entry = {
   label: string,
@@ -93,66 +94,61 @@ export const NAVBAR: Entry[] = [
   },
 ];
 
-export function buildNavbar($root: HTMLElement) {
-  let html = '';
-  for (const entry of NAVBAR) {
-    html += generateNavbarEntryHtml(entry, {inner: false});
-  }
-  $root.innerHTML = html;
+export function Navbar({currentQuery}: {currentQuery: Query}) {
+  const activeEntries = findActiveEntries(NAVBAR, currentQuery);
+  return <div className="header-navigation">
+    {NAVBAR.map((entry) => <NavbarEntry key={entry.label} entry={entry} inner={false} activeEntries={activeEntries} />)}
+  </div>;
 }
 
-function generateNavbarEntryHtml(entry: Entry, {inner}: {inner: boolean}) {
-  // two key pieces: a name and an inner list
-  let html = `<div class='navigation-entry-name'>${entry.label}</div>`;
-  if (entry.children) {
-    html += `<div class='navigation-entry-list'>`;
-    for (const child of entry.children) {
-      html += generateNavbarEntryHtml(child, {inner: true});
-    }
-    html += `</div>`;
-  }
+function NavbarEntry(props: {entry: Entry, inner: boolean, activeEntries: ActiveEntries | null}) {
+  const {entry, inner, activeEntries} = props;
 
-  // outer div to hold them
   const otherClasses = [
     inner ? 'inner' : 'outermost',
     ...(entry.cssClasses || []),
   ];
   if (entry.children) otherClasses.push('has-children');
+  if (activeEntries) {
+    if (activeEntries.active === entry) otherClasses.push('active');
+    if (activeEntries.ancestors.includes(entry)) otherClasses.push('active-child');
+  }
 
-  // data-navurl is only for highlighting the entry for the current page
-  const divUrl = entry.url ? `data-navurl="${entry.url}"` : '';
-  html = `<div class='navigation-entry ${otherClasses.join(" ")}' ${divUrl}>${html}</div>`;
+  let innerList = null;
+  if (entry.children) {
+    innerList = <div className='navigation-entry-list'>
+      {entry.children.map((child) => <NavbarEntry key={child.label} entry={child} inner={true} activeEntries={activeEntries}/>)}
+    </div>;
+  }
+
+  let jsx = <div className={`navigation-entry ${otherClasses.join(" ")}`}>
+    <div className='navigation-entry-name'>{entry.label}</div>
+    {innerList}
+  </div>;
 
   // optionally wrap in link
   if (entry.url) {
-    let attr = `href="${entry.url}"`;
-    attr += (entry.newTab) ? ' target="_blank"' : '';
-    html = `<a ${attr}>${html}</a>`;
+    const target = entry.newTab ? "_blank" : undefined;
+    const rel = entry.newTab ? "noopener noreferrer" : undefined;
+    jsx = <a href={entry.url} target={target} rel={rel}>{jsx}</a>;
   }
-  return html;
+  return jsx;
 }
 
-export function highlightCurrentPageInNavbar() {
-  for (const $old of document.querySelectorAll('.navigation-entry')) {
-    $old.classList.remove('active');
-    $old.classList.remove('active-child');
-  }
-
-  const currentQuery = parseQuery(window.location.hash);
-  for (const $elem of document.querySelectorAll<HTMLElement>('.navigation-entry')) {
-    let navurl;
-    if (!(navurl = $elem.dataset.navurl)) continue;
+type ActiveEntries = {active: Entry, ancestors: Entry[]};
+function findActiveEntries(entries: Entry[], currentQuery: Query): ActiveEntries | null {
+  for (const entry of entries) {
+    const navurl = entry.url;
+    if (!navurl) continue; // probably header of a group
     if (navurl[0] !== '#') continue; // external link
     if (queryPageEquals(parseQuery(navurl), currentQuery)) {
-      $elem.classList.add('active');
-
-      let $parent: HTMLElement | null = $elem;
-      while ($parent = $parent.parentElement) {
-        if ($parent.classList.contains('navigation-entry')) {
-          $parent.classList.add('active-child');
-        }
-      }
-      break;
+      return {active: entry, ancestors: []}; // active page
+    }
+    const activeEntries = entry.children && findActiveEntries(entry.children, currentQuery);
+    if (activeEntries) {
+      activeEntries.ancestors.push(entry);
+      return activeEntries;
     }
   }
+  return null;
 }

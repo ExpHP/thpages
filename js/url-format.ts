@@ -66,6 +66,7 @@ export function parseQuery(s: string): Query {
 
   // don't distinguish between an empty page versus none being provided
   if (ret.s === null) ret.s = '';
+  if (queryPageEquals(ret as any, {s: ''})) ret.s = '/index';
   return ret as Query;
 }
 
@@ -158,10 +159,10 @@ const TESTS: ['2way' | 'encode' | 'decode', Query, string][] = [
   // missing s (could happen in non-typescript code, and we want to still be robust to it)
   [ENCODE, {x: 'lol', a: 'dummy', b: 'true'} as unknown as Query, '#&x=lol&b=true&a=dummy'],
   [ENCODE, {a: 'dummy'} as Query, '#&a=dummy'],
-  [DECODE, {s: '', x: 'lol', a: 'dummy', b: 'true'}, '#&x=lol&b=true&a=dummy'],
-  [DECODE, {s: '', a: 'dummy'}, '#&a=dummy'],
-  [DECODE, {s: '', x: 'lol', a: 'dummy', b: 'true'}, '#x=lol&b=true&a=dummy'],
-  [DECODE, {s: '', a: 'dummy'}, '#a=dummy'],
+  [DECODE, {s: '/index', x: 'lol', a: 'dummy', b: 'true'}, '#&x=lol&b=true&a=dummy'],
+  [DECODE, {s: '/index', a: 'dummy'}, '#&a=dummy'],
+  [DECODE, {s: '/index', x: 'lol', a: 'dummy', b: 'true'}, '#x=lol&b=true&a=dummy'],
+  [DECODE, {s: '/index', a: 'dummy'}, '#a=dummy'],
   // optional s=
   [DECODE, {s: 'anm/ins', a: 'dummy'}, '#a=dummy&s=anm/ins'],
   [DECODE, {s: 'anm/ins'}, '#s=anm/ins'],
