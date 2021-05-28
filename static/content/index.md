@@ -1,5 +1,6 @@
-[title=]
 # ExpHP's Touhou pages
+
+::title[]
 
 On this site you'll find some resources for modding Touhou, most notably for ANM scripting.
 
@@ -22,7 +23,7 @@ Be sure to check out [Priw8's site](https://priw8.github.io) as a companion for 
 
 ## Updates
 
-[wip]**Current focus:** Busy with work, but in my free time I'm working on _something big..._[/wip]
+:wip[**Current focus:** Busy with work, but in my free time I'm working on _something big..._]
 
 * 2020-12-29 &mdash; STD table supports all games now, and uses stdmaps.
 * 2020-10-04 &mdash; this site now hosts info on some of my bigger patches, in no small part because I wanted shorter URLs to share.

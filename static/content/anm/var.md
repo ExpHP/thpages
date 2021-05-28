@@ -1,18 +1,5 @@
-[title=ANM variable reference]
 # ANM variable reference
 
-Select game version:
-<select id='anm-table-game-select'></select>
+::title[ANM variable reference]
 
-<div class='ecl-table-wrapper'></div>
-
-[script]
-onContentLoad(async function() {
-    setupGameSelector(ANM_VAR_HANDLERS, document.getElementById('anm-table-game-select'));
-    window.setTimeout(function() {
-        const target = document.querySelector(".ecl-table-wrapper");
-        target.innerHTML = '';
-        target.appendChild(buildVarTable(ANM_VAR_HANDLERS));
-    }, 1)
-});
-[/script]
+::reference-table[anmvar]

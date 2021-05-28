@@ -1,5 +1,6 @@
-[title=Interpolation modes]
 # Interpolation modes
+
+::title[Interpolation modes]
 
 Thanks to:
 
@@ -9,7 +10,7 @@ Thanks to:
 
 <a href="content/anm/img/th17modes.png"><img src="content/anm/img/th17modes.png" style="max-width: 100%;"></a>
 
-From [game-long=10] onwards, modern touhou games have a common "interpolator" struct that is used by many things to create smooth motions and transitions.  For the modding scene in particular, these are notably used to implement all of the "change over time" instructions in both ECL and ANM (e.g. [ref=anm:scaleTime]).
+From :game-long[10] onwards, modern touhou games have a common "interpolator" struct that is used by many things to create smooth motions and transitions.  For the modding scene in particular, these are notably used to implement all of the "change over time" instructions in both ECL and ANM (e.g. :ref[anm:scaleTime]).
 
 ## Simple easing functions
 
@@ -17,30 +18,30 @@ The following are fairly simple easing functions.
 
 | Mode  | Function                                   | Description |
 |:---:  | ---                                        | ---         |
-| 0 ([game=07][foot-ref=1]&ndash;) | `linear(x) = x`                 | linear      |
-| 1 ([game=07][foot-ref=1]&ndash;) | `easeIn2(x) = x^2`              | ease in  |
-| 2 ([game=07][foot-ref=1]&ndash;) | `easeIn3(x) = x^3`              | ease in (cubic) |
-| 3 ([game=07][foot-ref=1]&ndash;) | `easeIn4(x) = x^4`              | ease in (quartic) |
-| 4 ([game=07][foot-ref=1]&ndash;) | `easeOut2(x) = flip(easeIn2)`   | ease out |
-| 5 ([game=07][foot-ref=1]&ndash;) | `easeOut3(x) = flip(easeIn3)`   | ease out (cubic) |
-| 6 ([game=07][foot-ref=1]&ndash;) | `easeOut4(x) = flip(easeIn4)`   | ease out (quartic) |
-| 7  ([game=10]&ndash;) | Discussed below                            | constant velocity |
-| 8  ([game=10]&ndash;) | `smoothstep(x) = 3x^2 - 2x^3`              | [smoothstep](https://en.wikipedia.org/wiki/Smoothstep); (technically Bezier; see below) |
-| 9  ([game=10]&ndash;) | `easeInOut2(x) = split(easeIn2, easeOut2)` | ease in then ease out |
-| 10 ([game=10]&ndash;) | `easeInOut3(x) = split(easeIn3, easeOut3)` | ease in then ease out (cubic) |
-| 11 ([game=10]&ndash;) | `easeInOut4(x) = split(easeIn4, easeOut4)` | ease in then ease out (quartic) |
-| 12 ([game=10]&ndash;) | `easeOutIn2(x) = split(easeOut2, easeIn2)` | ease out then ease in |
-| 13 ([game=10]&ndash;) | `easeOutIn3(x) = split(easeOut3, easeIn3)` | ease out then ease in (cubic) |
-| 14 ([game=10]&ndash;) | `easeOutIn4(x) = split(easeOut4, easeIn4)` | ease out then ease in (quartic) |
-| 15 ([game=10]&ndash;) | `delayed(x) =  0  if x < 1`<br>`delayed(x) =  1  if x == 1` | suddenly change after a delay |
-| 16 ([game=10]&ndash;) | `instant(x) = flip(delayed)`               | changes immediately (x is never 0).  (why interpolate then?) |
-| 17 ([game=10]&ndash;) | Discussed below                            | constant acceleration |
-| 18 ([game=13]&ndash;) | `easeOutSin(x) = sin(x * pi/2)`            | ease out (sine) |
-| 19 ([game=13]&ndash;) | `easeInSin(x) = flip(easeOutSin)`          | ease in (sine) |
-| 20 ([game=13]&ndash;) | `easeOutInSin(x) = split(easeOutSin, easeInSin)` | ease out then ease in (sine) |
-| 21 ([game=13]&ndash;) | `easeInOutSin(x) = split(easeInSin, easeOutSin)` | ease in then ease out (sine) |
+| 0 (:game[07][foot-ref=1]&ndash;) | `linear(x) = x`                 | linear      |
+| 1 (:game[07][foot-ref=1]&ndash;) | `easeIn2(x) = x^2`              | ease in  |
+| 2 (:game[07][foot-ref=1]&ndash;) | `easeIn3(x) = x^3`              | ease in (cubic) |
+| 3 (:game[07][foot-ref=1]&ndash;) | `easeIn4(x) = x^4`              | ease in (quartic) |
+| 4 (:game[07][foot-ref=1]&ndash;) | `easeOut2(x) = flip(easeIn2)`   | ease out |
+| 5 (:game[07][foot-ref=1]&ndash;) | `easeOut3(x) = flip(easeIn3)`   | ease out (cubic) |
+| 6 (:game[07][foot-ref=1]&ndash;) | `easeOut4(x) = flip(easeIn4)`   | ease out (quartic) |
+| 7  (:game[10]&ndash;) | Discussed below                            | constant velocity |
+| 8  (:game[10]&ndash;) | `smoothstep(x) = 3x^2 - 2x^3`              | [smoothstep](https://en.wikipedia.org/wiki/Smoothstep); (technically Bezier; see below) |
+| 9  (:game[10]&ndash;) | `easeInOut2(x) = split(easeIn2, easeOut2)` | ease in then ease out |
+| 10 (:game[10]&ndash;) | `easeInOut3(x) = split(easeIn3, easeOut3)` | ease in then ease out (cubic) |
+| 11 (:game[10]&ndash;) | `easeInOut4(x) = split(easeIn4, easeOut4)` | ease in then ease out (quartic) |
+| 12 (:game[10]&ndash;) | `easeOutIn2(x) = split(easeOut2, easeIn2)` | ease out then ease in |
+| 13 (:game[10]&ndash;) | `easeOutIn3(x) = split(easeOut3, easeIn3)` | ease out then ease in (cubic) |
+| 14 (:game[10]&ndash;) | `easeOutIn4(x) = split(easeOut4, easeIn4)` | ease out then ease in (quartic) |
+| 15 (:game[10]&ndash;) | `delayed(x) =  0  if x < 1`<br>`delayed(x) =  1  if x == 1` | suddenly change after a delay |
+| 16 (:game[10]&ndash;) | `instant(x) = flip(delayed)`               | changes immediately (x is never 0).  (why interpolate then?) |
+| 17 (:game[10]&ndash;) | Discussed below                            | constant acceleration |
+| 18 (:game[13]&ndash;) | `easeOutSin(x) = sin(x * pi/2)`            | ease out (sine) |
+| 19 (:game[13]&ndash;) | `easeInSin(x) = flip(easeOutSin)`          | ease in (sine) |
+| 20 (:game[13]&ndash;) | `easeOutInSin(x) = split(easeOutSin, easeInSin)` | ease out then ease in (sine) |
+| 21 (:game[13]&ndash;) | `easeInOutSin(x) = split(easeInSin, easeOutSin)` | ease in then ease out (sine) |
 [table-footnotes,ncols=3]
-[foot-def=1] STD and ECL are different in pre-[game=10] games; [see below](#anm/interpolation&a=early-games).
+[foot-def=1] STD and ECL are different in pre-:game[10] games; [see below](#anm/interpolation&a=early-games).
 [/table-footnotes]
 
 The table above has used two helper functions:
@@ -78,20 +79,20 @@ ZUN chose to constrain the extremal time (i.e. what fraction of the total time i
 
 | Mode | Function  | Extremum |
 | ---  | ---       | --- |
-| 22 ([game=13]&ndash;) | `easeInBackA(x) = ((pow(x - 0.25, 2) / 0.5625) - 0.111111) / 0.888889` | `f(0.25) = -0.125` |
-| 23 ([game=13]&ndash;) | `easeInBackB(x) = ((pow(x - 0.3, 2) / 0.49) - 0.183673) / 0.816326`    | `f(0.30) = -0.225` |
-| 24 ([game=13]&ndash;) | `easeInBackC(x) = ((pow(x - 0.35, 2) / 0.4225) - 0.289941) / 0.710059` | `f(0.35) = -0.40833333` |
-| 25 ([game=13]&ndash;) | `easeInBackD(x) = ((pow(x - 0.38, 2) / 0.3844) - 0.37565) / 0.62435`   | `f(0.38) = -0.60166667` |
-| 26 ([game=13]&ndash;) | `easeInBackE(x) = ((pow(x - 0.4, 2) / 0.36) - 0.444444) / 0.555556`    | `f(0.40) = -0.8` |
-| 27 ([game=13]&ndash;) | `easeOutBackA = flip(easeInBackA)` | `f(0.75) = 1.125` |
-| 28 ([game=13]&ndash;) | `easeOutBackB = flip(easeInBackB)` | `f(0.70) = 1.225` |
-| 29 ([game=13]&ndash;) | `easeOutBackC = flip(easeInBackC)` | `f(0.65) = 1.40833333` |
-| 30 ([game=13]&ndash;) | `easeOutBackD = flip(easeInBackD)` | `f(0.62) = 1.60166667` |
-| 31 ([game=13]&ndash;) | `easeOutBackE = flip(easeInBackE)` | `f(0.60) = 1.8` |
+| 22 (:game[13]&ndash;) | `easeInBackA(x) = ((pow(x - 0.25, 2) / 0.5625) - 0.111111) / 0.888889` | `f(0.25) = -0.125` |
+| 23 (:game[13]&ndash;) | `easeInBackB(x) = ((pow(x - 0.3, 2) / 0.49) - 0.183673) / 0.816326`    | `f(0.30) = -0.225` |
+| 24 (:game[13]&ndash;) | `easeInBackC(x) = ((pow(x - 0.35, 2) / 0.4225) - 0.289941) / 0.710059` | `f(0.35) = -0.40833333` |
+| 25 (:game[13]&ndash;) | `easeInBackD(x) = ((pow(x - 0.38, 2) / 0.3844) - 0.37565) / 0.62435`   | `f(0.38) = -0.60166667` |
+| 26 (:game[13]&ndash;) | `easeInBackE(x) = ((pow(x - 0.4, 2) / 0.36) - 0.444444) / 0.555556`    | `f(0.40) = -0.8` |
+| 27 (:game[13]&ndash;) | `easeOutBackA = flip(easeInBackA)` | `f(0.75) = 1.125` |
+| 28 (:game[13]&ndash;) | `easeOutBackB = flip(easeInBackB)` | `f(0.70) = 1.225` |
+| 29 (:game[13]&ndash;) | `easeOutBackC = flip(easeInBackC)` | `f(0.65) = 1.40833333` |
+| 30 (:game[13]&ndash;) | `easeOutBackD = flip(easeInBackD)` | `f(0.62) = 1.60166667` |
+| 31 (:game[13]&ndash;) | `easeOutBackE = flip(easeInBackE)` | `f(0.60) = 1.8` |
 
 ## The **true** mode 8
 
-Before we go any further, let's talk a bit about what this interpolator struct actually looks like.  It basically looks like this: (at least in [game=13]&ndash;[game=17])
+Before we go any further, let's talk a bit about what this interpolator struct actually looks like.  It basically looks like this: (at least in :game[13]&ndash;:game[17])
 [code]
 template <typename T>
 struct Interp {
@@ -106,9 +107,9 @@ struct Interp {
 }
 [/code]
 
-I wrote this as a generic type because the same layout is used for a wide variety of element types.  `T` could be `float` (for [ref=anm:uVelTime]), it could be `int` (for [ref=anm:alphaTime]), it could be a vector of 2 floats (for [ref=anm:scaleTime]), and so on.  Typically, when one of these instructions are used, the first two args are put in `end_time` and `mode`, the current value of the field is copied to `initial`, the argument is stored in `goal`.  `time`, `extra_1`, and `extra_2` are all reset to 0.
+I wrote this as a generic type because the same layout is used for a wide variety of element types.  `T` could be `float` (for :ref[anm:uVelTime]), it could be `int` (for :ref[anm:alphaTime]), it could be a vector of 2 floats (for :ref[anm:scaleTime]), and so on.  Typically, when one of these instructions are used, the first two args are put in `end_time` and `mode`, the current value of the field is copied to `initial`, the argument is stored in `goal`.  `time`, `extra_1`, and `extra_2` are all reset to 0.
 
-What are `extra_1` and `extra_2`?  They're just extra fields that are only used by modes 8 and 17.  To partially demonstrate this, here's the pseudocode for [ref=anm:posBezier] (`pos_interp` here is the same interpolator used by [ref=anm:posTime]):
+What are `extra_1` and `extra_2`?  They're just extra fields that are only used by modes 8 and 17.  To partially demonstrate this, here's the pseudocode for :ref[anm:posBezier] (`pos_interp` here is the same interpolator used by :ref[anm:posTime]):
 
 [code]
 // pseudocode for posBezier(t, x1,y1,z1, x2,y2,z2, x3,y3,z3)
@@ -123,7 +124,7 @@ pos_interp.extra_2 = {x3, y3, z3};
 
 Take a close look at the line labeled with the arrow.  It turns out that **mode 8 is actually the Bezier mode!**  The smoothstep function obtained when using it in other time instructions is simply because that's what you end up with when the extra points are zero.  (i.e. smoothstep is the unique third-order polynomial that satisfies `f(0) = f'(0) = f'(1) = 0; f(1) = 1`.)
 
-So that's cool and all, but how can we actually take advantage of this?  I.e. could we theoretically have [ref=anm:scaleTime] use an arbitrary Bezier?  Well, there's good and bad news:
+So that's cool and all, but how can we actually take advantage of this?  I.e. could we theoretically have :ref[anm:scaleTime] use an arbitrary Bezier?  Well, there's good and bad news:
 
 * There are currently no instructions in ANM that would enable you to use a Bezier for arbitrary things.
 * There **is** an instruction in ECL: `ins_92(slot, &dest, t, mode, init, goal, extra_1, extra_2)` (an extended version of `ins_91` "`floatTime`") which lets you supply `extra_1` and `extra_2` while interpolating a single float.
@@ -149,9 +150,9 @@ Do with this insane knowledge whatever you will.
 
 (Oh, and since I said we'd come back to mode 17:  Yes, ECL `ins_92` also makes it possible to do constant acceleration *with an initial velocity*, by supplying the initial velocity in `extra_2`)
 
-## <span id="early-games">STD and ECL in early games</span>
+## STD and ECL in early games {#early-games}
 
-Prior to [game=10], the common interpolator struct did not exist.  In other words, ANM, ECL, and STD each had separate implementations of interpolation modes in all early Windows era games, and these three implementations were not always consistent.  The tables above are accurate for ANM, so we'll now quickly go over ECL and STD:
+Prior to :game[10], the common interpolator struct did not exist.  In other words, ANM, ECL, and STD each had separate implementations of interpolation modes in all early Windows era games, and these three implementations were not always consistent.  The tables above are accurate for ANM, so we'll now quickly go over ECL and STD:
 
 Interpolation modes in PCB STD files are different from the numbers in ANM and ECL:
 
@@ -166,9 +167,9 @@ Interpolation modes in PCB STD files are different from the numbers in ANM and E
 | 6     | ease in (quartic)  | mode 3 in PCB ANM/ECL |
 | 7     | bezier             | doesn't exist yet (??) in PCB ANM/ECL.  Mode 8 in modern games |
 
-[wip]TODO: STD in EoSD? PoFV? StB?[/wip]
+:wip[TODO: STD in EoSD? PoFV? StB?]
 
-[According to Dai](https://priw8.github.io/#s=modding/ins&table=8), IN's version of `floatTime` (ECL `ins_36`) also supports Beziers as mode 7, but [wip]I don't see where this is implemented[/wip]...
+[According to Dai](https://priw8.github.io/#s=modding/ins&table=8), IN's version of `floatTime` (ECL `ins_36`) also supports Beziers as mode 7, but :wip[I don't see where this is implemented]...
 
 
 ---

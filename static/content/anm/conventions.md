@@ -1,5 +1,6 @@
-[title=Conventions]
 # Conventions
+
+::title[Conventions]
 
 Touhou games primarily use the conventions of Direct3D for defining transformations in 3-dimensional space.
 
@@ -69,7 +70,7 @@ This alone almost fully specifies how the majority of the source code should loo
 
 As an aside, on so-called "FORTRAN order:" FORTRAN matrices are also vector-major, meaning that C code written to operate on FORTRAN matrices will tend to look similar to C code written to work on Direct3D matrices.  However, FORTRAN is thoroughly entrenched in the column-based formalism.
 
-## <span id="color">Color</span>
+## Color {#color}
 
 Whenever Touhou games use a single DWORD to store a color, it is always a `D3DCOLOR`.  This is a type defined as follows:
 

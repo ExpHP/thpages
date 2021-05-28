@@ -1,6 +1,6 @@
-[title=bullet_cap patch]
-
 # `ExpHP/bullet_cap`
+
+::title[bullet_cap patch]
 
 **Available through thcrap.**
 
@@ -103,7 +103,7 @@ Yes.  By default, each cap will be set to 16 times its original, vanilla value i
 <!--
 | Cap          | EoSD | PCB  | IN       | PoFV | StB  | MoF  | SA   | UFO  | DS   | GFW  | TD   | DDC  | ISC  | LoLK | HSiFS | VD  | WBaWC |
 -->
-| Cap          | [game=06] | [game=07] | [game=08] | [game=09] | [game=095] | [game=10] | [game=11] | [game=12] | [game=125] | [game=128] | [game=13] | [game=14] | [game=143] | [game=15] | [game=16] | [game=165] | [game=17] | [game=18] |
+| Cap          | :game[06] | :game[07] | :game[08] | :game[09] | :game[095] | :game[10] | :game[11] | :game[12] | :game[125] | :game[128] | :game[13] | :game[14] | :game[143] | :game[15] | :game[16] | :game[165] | :game[17] | :game[18] |
 | ---          | ---  | ---  | ---  | ---  | ---  | ---  | ---  | ---  | ---  | ---  | ---  | ---  | ---  | ---  | ---  | ---  | ---  | ---  |
 | `bullet-cap` | 640  | 1024 | 1536 | N/A  | 1600 | 2000 | 2000 | 2000 | 2000 | 2000 | 2000 | 2000 | 2000 | 2000 | 2000 | 2000 | 2000 | 2000 |
 | `laser-cap`  | 64   | 64   | 256  | 48   | 256  | 256  | 256  | 256  | 256  | 256  | 256  | 256  | 256  | 512  | 512  | 512  | 512  | 512  |
@@ -117,19 +117,19 @@ And for PoFV:
 
 Basically, these games may still undergo replay-breaking changes at some point in the future.  While I've tested them pretty thoroughly, they are more complicated than the other games and there may still be bugs.  So I'd like to see some other people playtesting them before I declare them as "TAS-ready."
 
-[game=15] and onwards are also difficult because of additional arrays that are related to pointdevice.
+:game[15] and onwards are also difficult because of additional arrays that are related to pointdevice.
 
-## <span id="vd"></span> And VD is in alpha?!
+## And VD is in alpha?! {#vd}
 
-I have only given [game=165] superficial playtesting and have little desire to go further.  If you use it you're basically signing up as my guinea pig.
+I have only given :game[165] superficial playtesting and have little desire to go further.  If you use it you're basically signing up as my guinea pig.
 
-In addition to still having the bullet pointdevice array, [game=165] is made even worse by its camera charge items having a cap of 200.  It is very difficult to locate all of the places where this cap appears in the code.  If I missed any, then that part of the code is likely to crash when using a reduced cap, and to produce fewer items than expected when using an increased cap.
+In addition to still having the bullet pointdevice array, :game[165] is made even worse by its camera charge items having a cap of 200.  It is very difficult to locate all of the places where this cap appears in the code.  If I missed any, then that part of the code is likely to crash when using a reduced cap, and to produce fewer items than expected when using an increased cap.
 
 ## "Cancel item cap"?
 
-In all games from [game=10] onwards, cancel items live in a separate array from normal items.  I am simply referring to the length of this array.
+In all games from :game[10] onwards, cancel items live in a separate array from normal items.  I am simply referring to the length of this array.
 
-In [game-th=06]&ndash;[game-th=08], there is only one item array.  For these games, `cancel-cap` basically acts as a general item cap then.
+In :game-th[06]&ndash;:game-th[08], there is only one item array.  For these games, `cancel-cap` basically acts as a general item cap then.
 
 ## GFW has huge lag spikes when I freeze many bullets!
 
@@ -210,7 +210,7 @@ And for some examples of what **not** to use, from the same game:
   0042f374  f3ab               rep stosd dword [edi]
   ```
 
-## <span id="finding-arrays">My patch needs to access one of the arrays or some field on `BulletManager`, but you move things all around!</span>
+## My patch needs to access one of the arrays or some field on `BulletManager`, but you move things all around! {#finding-arrays}
 
 Add [`ExpHP/base_exphp`](https://github.com/ExpHP/thcrap-patches/tree/master/patches/base_exphp#readme) as a dependency.  That patch defines a codecave named `codecave:base-exphp.adjust-field-ptr`, which you can use to find anything you need to on `BulletManager` or `ItemManager`.  Please follow the link for more information and examples on how to use it.
 

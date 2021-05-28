@@ -1,6 +1,6 @@
-[title=Wily Beast and Weakest Seasons]
-
 # `seasonize`
+
+::title[Wily Beast and Weakest Seasons]
 
 This is a standalone mod that adds season items and season releases to WBaWC.
 <!-- The generic-sounding name is sort of a promise that I plan to port it to TH18 when that comes out.  But shhhhhh!  That's a secret. -->

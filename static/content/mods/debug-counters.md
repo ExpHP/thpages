@@ -1,6 +1,6 @@
-[title=debug_counters patch]
-
 # `ExpHP/debug_counters`
+
+::title[debug_counters patch]
 
 **Available through thcrap.**
 

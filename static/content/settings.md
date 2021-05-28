@@ -1,4 +1,3 @@
-[title=Settings]
 # Settings
 
 ### anmmap
