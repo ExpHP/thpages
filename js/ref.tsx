@@ -1,5 +1,6 @@
 import * as React from 'react';
 
+import type {Query} from './url-format';
 import {globalNames, globalLinks, PrefixResolver} from './resolver';
 import {globalTips, Tip} from './tips';
 
@@ -27,12 +28,12 @@ export function getRefLinkKey(ref: Ref) {
   return 'ref:' + ref;
 }
 
-/** Get HTML string to substitute in for a `[ref=...]` markdown tag. */
-export function getRefJsx({ref, tip, url}: {ref: Ref, tip: boolean, url: boolean}) {
-  let out = globalNames.getJsx(getRefNameKey(ref));
-  out = <span className="isref">{out}</span>;
+/** Get JSX for a `[ref=...]` markdown tag. */
+export function getRefJsx({ref, tip, url, currentQuery}: {ref: Ref, tip: boolean, url: boolean, currentQuery: Query}) {
+  let out = <span className="isref">{globalNames.getNow(getRefNameKey(ref), currentQuery) || ref}</span>;
   if (url) {
-    out = globalLinks.wrapJsx(getRefLinkKey(ref), out);
+    const href = globalLinks.getNow(getRefLinkKey(ref), currentQuery);
+    out = <a href={href || undefined}>{out}</a>;
   }
 
   if (tip) {

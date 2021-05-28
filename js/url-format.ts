@@ -131,8 +131,8 @@ export function queryEqualsUptoAnchor(q1: Query, q2: Query) {
 /**
  * Get a URL for the current page, with a modified game or anchor.
  */
-export function currentUrlWithProps({g, a}: {g?: Game, a?: string}) {
-  const query = parseQuery(window.location.hash);
+export function urlWithProps(query: Query, {g, a}: {g?: Game, a?: string}) {
+  query = {...query};
   if (g !== undefined) query.g = g;
   if (a !== undefined) query.a = a;
   return queryUrl(query);

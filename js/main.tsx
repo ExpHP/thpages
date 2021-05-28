@@ -55,14 +55,10 @@ export function App() {
 /**
  * Do early initialization before page-specific scripts run.
  */
-export function oldInit() {
+export function init() {
   initSettings();
   initAnm();
   initTips();
-  buildNavbar(document.querySelector(".header-navigation"));
-
-  window.addEventListener("hashchange", buildOrScrollToContent, false);
-  buildOrScrollToContent();
 }
 
 const MAIN_TITLE = `ExpHP's Touhou Pages`;
@@ -102,7 +98,7 @@ function Content({currentQuery}: {currentQuery: Query}) {
 
   if (displayedMarkdown === null) return null;
   return <div className="content-wrapper">
-    <TrustedMarkdown className="content">{displayedMarkdown}</TrustedMarkdown>
+    <TrustedMarkdown className="content" {...{currentQuery}}>{displayedMarkdown}</TrustedMarkdown>
   </div>;
 }
 

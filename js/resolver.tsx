@@ -93,74 +93,9 @@ class NameResolver extends PrefixResolver<string> {
   getJsx(key: string): JSX.Element {
     return <span data-name={key}>{key}</span>;
   }
-
-  /**
-   * Finds every node in the DOM created by getHtml and replaces its textual
-   * content with the name assigned to that key.  This is used to implement
-   * display of names from eclmaps and etc.
-   *
-   * @return $root, modified in-place.
-   */
-  transformHtml($root: HTMLElement, context: Context): HTMLElement {
-    for (const $elem of $root.querySelectorAll<HTMLElement>('[data-name]')) {
-      $elem.textContent = this.getInnerText($elem.dataset.name!, context);
-    }
-    return $root;
-  }
-
-  private getInnerText(key: string, context: Context) {
-    const name = this.getNow(key, context);
-    if (name) {
-      return name;
-    } else {
-      const errorName = `NAME_ERROR(${key})`; // FIXME use Err component
-      console.error(errorName);
-      return errorName;
-    }
-  }
 }
 
-/**
- * Type that handles URL generation and updating.
- *
- * What do I mean by "updating URLs"?
- * For instance, copyParentVars on the ANM instruction table might want to
- * link to variable 10033. If you are currently on the table for game 15,
- * it should send you to the var table for game 15 and not 17. Similarly,
- * if you are on the table for game 13 (which does not have 10033), it should
- * send you to one of the games that do have it.
- */
-class LinkResolver extends PrefixResolver<string> {
-  /**
-   * Wraps JSX in an anchor element that transformHtml can later update
-   * to potentially link somewhere.
-   *
-   * FIXME: That's dumb, this whole thing is dumb now that we've switched to React,
-   *        we should propagate links down from the top and get rid of data-link.
-   */
-  wrapJsx(key: string, html: ReactNode): JSX.Element {
-    return <a data-link={key} className="nolink">{html}</a>;
-  }
-  /**
-   * Recursively finds every node in the DOM that was created by wrapHtml
-   * and updates (inserts, modifies, or deletes) the href attribute.
-   *
-   * @return $root, modified in-place.
-   */
-  transformHtml($root: HTMLElement, context: Context): HTMLElement {
-    for (const $elem of $root.querySelectorAll<HTMLAnchorElement>('[data-link]')) {
-      const url = this.getNow($elem.dataset.link!, context);
-      if (url != null) {
-        $elem.href = url;
-        $elem.classList.remove('nolink');
-      } else {
-        $elem.removeAttribute('href');
-        $elem.classList.add('nolink');
-      }
-    }
-    return $root;
-  }
-}
+class LinkResolver extends PrefixResolver<string> {}
 
 export const globalNames = new NameResolver();
 export const globalLinks = new LinkResolver();

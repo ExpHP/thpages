@@ -1,5 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom";
-import {App} from "./main.tsx";
+import {App, init} from "./main.tsx";
 
+init();
 ReactDOM.render(React.createElement(App), document.getElementById("root"));

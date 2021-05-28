@@ -17,7 +17,7 @@ import {Converter, ShowdownExtension} from 'showdown';
 import {setWindowTitle, highlightCode} from "./main";
 import {getRefJsx} from "./ref";
 import {gameData, validateGame, GameData, Game} from './game-names';
-import {parseQuery, currentUrlWithProps} from './url-format';
+import {Query, urlWithProps} from './url-format';
 import {GameSelector, TablePage, getHandlers} from './anm/tables';
 import dedent from "./lib/dedent";
 
@@ -29,6 +29,11 @@ function getSingleChild<T>(s: OneChild<T>): T {
   }
   return s;
 }
+
+type MarkdownContextAttrs = {
+  currentQuery: Query,
+};
+const MarkdownContext = React.createContext<MarkdownContextAttrs>({currentQuery: {s: '/index'}});
 
 function Title({children}: {children: OneChild<string>}) {
   const title = getSingleChild(children);
@@ -62,11 +67,12 @@ function GameThLong({children}: {children: OneChild<string>}) { return makeGc(ch
 
 type RefProps = {tip?: string, url?: string};
 function Ref({children, ...props}: {children: OneChild<string>} & RefProps) {
+  const {currentQuery} = React.useContext(MarkdownContext);
   const allProps = {tip: "1", url: "1", ...props};
   const tip = allProps.tip === "1";
   const url = allProps.url === "1";
   const ref = getSingleChild(children);
-  return getRefJsx({ref, tip, url});
+  return getRefJsx({ref, tip, url, currentQuery});
 }
 
 function More({children}: {children: ReactNode}) {
@@ -104,8 +110,9 @@ function Weak({children}: {children: ReactNode}) {
 }
 
 function FootRef({children}: {children: string | [string]}) {
+  const {currentQuery} = React.useContext(MarkdownContext);
   const id = getSingleChild(children);
-  const target = currentUrlWithProps({a: `footnote-${id}`});
+  const target = urlWithProps(currentQuery, {a: `footnote-${id}`});
   return <sup className="footnote link"><a href={target}>{id}</a></sup>;
 }
 
@@ -125,13 +132,16 @@ function Dl({href, children}: {href: string, children: string | [string]}) {
 }
 
 function ReferenceTable({children}: {children: OneChild<string>}) {
+  const {currentQuery} = React.useContext(MarkdownContext);
   const id = getSingleChild(children);
   const handlers = getHandlers(id);
   return <React.Fragment>
-    Select game version:
-    <GameSelector handlers={handlers}></GameSelector>
+    <p>
+      {"Select game version: "}
+      <GameSelector handlers={handlers} currentQuery={currentQuery}></GameSelector>
+    </p>
 
-    <TablePage handlers={handlers}></TablePage>
+    <TablePage handlers={handlers} currentQuery={currentQuery}></TablePage>
   </React.Fragment>;
 }
 
@@ -206,11 +216,11 @@ function preventOverzealousTextDirectives(s: string) {
   return s.replace(/(:ref\[[^\]:]+):/g, "$1\\:");
 }
 
-export function TrustedMarkdown({children, ...props}: {children: string} & React.HTMLAttributes<HTMLElement>) {
+export function TrustedMarkdown({children, currentQuery, ...props}: {children: string, currentQuery: Query} & React.HTMLAttributes<HTMLElement>) {
   const input = preventOverzealousTextDirectives(children);
-  return <ReactMarkdown
-    {...Object.assign({}, MARKDOWN_PROPS, props)}
-  >{input}</ReactMarkdown>;
+  return <MarkdownContext.Provider value={{currentQuery}}>
+    <ReactMarkdown {...Object.assign({}, MARKDOWN_PROPS, props)}>{input}</ReactMarkdown>
+  </MarkdownContext.Provider>;
 }
 
 /**

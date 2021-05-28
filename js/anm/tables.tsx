@@ -7,7 +7,7 @@ import dedent from '../lib/dedent';
 import {globalRefNames, globalRefTips, globalRefLinks, getRefNameKey, Ref} from '../ref';
 import {TrustedMarkdown} from '../markdown';
 import {globalNames, globalLinks, PrefixResolver, Context} from '../resolver';
-import {parseQuery, queryUrl, queryGame, queryPageEquals, queryFilterCommonProps, Query, currentUrlWithProps} from '../url-format';
+import {queryUrl, queryGame, queryPageEquals, queryFilterCommonProps, Query, urlWithProps} from '../url-format';
 import {gameData, Game, parseGame, validateGame} from '../game-names';
 import {globalConfigNames, requireMaps} from '../settings';
 import {initStats, buildStatsTable} from './stats';
@@ -23,15 +23,6 @@ import {MSG_INS_DATA, MSG_BY_OPCODE, getMsgTableText} from './msg-table.js';
 const {Fragment} = React;
 
 export function initAnm() {
-  (window as any).ANM_INS_HANDLERS = ANM_INS_HANDLERS;
-  (window as any).ANM_VAR_HANDLERS = ANM_VAR_HANDLERS;
-  (window as any).STD_HANDLERS = STD_HANDLERS;
-  (window as any).MSG_HANDLERS = MSG_HANDLERS;
-  (window as any).setupGameSelector = <D extends CommonData>(handlers: TableHandlers<D>, $e: HTMLElement) => setupGameSelector(handlers, $e);
-  (window as any).buildInsTable = <D extends InsData>(handlers: TableHandlers<D>) => generateTablePageHtml(handlers);
-  (window as any).buildVarTable = <D extends VarData>(handlers: TableHandlers<D>) => generateTablePageHtml(handlers);
-  (window as any).buildStatsTable = <D extends CommonData>(dataKey: [string, 'ins' | 'var'], handlers: TableHandlers<D>, $elem: HTMLElement) => buildStatsTable(dataKey, handlers, $elem);
-
   initNames(ANM_INS_HANDLERS); // "anm:th06:25" names
   initNames(STD_HANDLERS);
   initNames(MSG_HANDLERS);
@@ -151,7 +142,7 @@ export type TableHandlers<Data> = {
   TipHeader(props: {data: Data, nameKey: string}): JSX.Element,
 
   /** Generate a row of the table. */
-  TableRowHtml(props: {handlers: TableHandlers<Data>, game: Game, data: Data, opcode: number}): JSX.Element,
+  TableRowHtml(props: {handlers: TableHandlers<Data>, game: Game, data: Data, opcode: number, currentQuery: Query}): JSX.Element,
 
   /** Markdown content to place after summary and before Toc or Table. */
   textBeforeTable(c: Context): string | null,
@@ -162,7 +153,6 @@ export type TableHandlers<Data> = {
   /** Will turn `IO` into `$IO` for vars. (but is not applied to `[10002]`) */
   addTypeSigilIfNeeded(name: string, data: Data): string,
 }
-type GenerateTableRowHtml<Data> = (this: TableHandlers<Data>, game: Game, data: Data, opcode: number) => string;
 
 /** Resolves names from the suffix of 'anm:' namekeys. */
 const ANM_INS_NAMES = new PrefixResolver<string>();
@@ -282,10 +272,9 @@ type Without<T, K> = {
   [L in Exclude<keyof T, K>]: T[L]
 };
 
-export function GameSelector<D>({handlers}: {handlers: TableHandlers<D>}) {
+export function GameSelector<D>({handlers, currentQuery}: {handlers: TableHandlers<D>, currentQuery: Query}) {
   const {tableByOpcode} = handlers;
   const supportedGames = tableByOpcode.keys();
-  const currentQuery = parseQuery(window.location.hash);
   const currentGame = queryGame(currentQuery);
   const [currentChoice, setCurrentChoice] = React.useState(currentGame);
 
@@ -352,10 +341,8 @@ function range(start: number, end: number) {
   return [...new Array(end - start).keys()].map((x) => x + start);
 }
 
-export function TablePage<D extends CommonData>({handlers: tableHandlers}: {handlers: TableHandlers<D>}) {
+export function TablePage<D extends CommonData>({handlers: tableHandlers, currentQuery}: {handlers: TableHandlers<D>, currentQuery: Query}) {
   const {getGroups, mainPrefix, textBeforeTable, TableRowHtml} = tableHandlers;
-
-  const currentQuery = parseQuery(window.location.hash);
   const game = queryGame(currentQuery);
 
   let total = 0;
@@ -369,8 +356,7 @@ export function TablePage<D extends CommonData>({handlers: tableHandlers}: {hand
     let possibleHeader = null;
     if (shouldHaveToc) {
       const groupAnchor = `group-${group.min}`;
-      const navQuery = Object.assign({}, currentQuery, {a: groupAnchor});
-      const navDest = queryUrl(navQuery);
+      const navDest = urlWithProps(currentQuery, {a: groupAnchor});
       tocData.push({group, navDest});
       possibleHeader = <h2 id={groupAnchor}><a className="self-link" href={navDest}>{group.min}-{group.max}: {group.title}</a></h2>;
     }
@@ -392,7 +378,7 @@ export function TablePage<D extends CommonData>({handlers: tableHandlers}: {hand
         documented += 1;
       }
       total += 1;
-      return <TableRowHtml key={opcode} {...{handlers: tableHandlers, game, data, opcode}} />;
+      return <TableRowHtml key={opcode} {...{handlers: tableHandlers, game, data, opcode, currentQuery}} />;
     }).filter((x) => x);
 
     return <Fragment key={group.min}>
@@ -428,7 +414,7 @@ export function TablePage<D extends CommonData>({handlers: tableHandlers}: {hand
   }
 
   return <div>
-    <TrustedMarkdown>{baseMd}</TrustedMarkdown>
+    <TrustedMarkdown currentQuery={currentQuery}>{baseMd}</TrustedMarkdown>
     {toc}
     {content}
   </div>;
@@ -482,14 +468,14 @@ function VarHeader({data, nameKey}: {data: VarData, nameKey: string}) {
   return <span className="var-header" data-wip={data.wip}>{name}</span>;
 }
 
-function InsTableRowHtml(props: {handlers: TableHandlers<InsData>, game: Game, data: InsData, opcode: number}) {
-  const {handlers, game, data, opcode} = props;
+function InsTableRowHtml(props: {handlers: TableHandlers<InsData>, game: Game, data: InsData, opcode: number, currentQuery: Query}) {
+  const {handlers, game, data, opcode, currentQuery} = props;
   const nameKey = getOpcodeNameKey(handlers, game, opcode);
   const [descMd] = handleTipHide(data.desc, false);
-  const desc = postprocessAnmDesc(descMd, false);
+  const desc = postprocessAnmDesc(descMd, false, currentQuery);
 
   const anchor = handlers.formatAnchor(opcode);
-  const selfLinkTarget = currentUrlWithProps({a: anchor});
+  const selfLinkTarget = urlWithProps(currentQuery, {a: anchor});
   return <tr className="ins-table-entry" id={anchor}>
     <td className="col-id"><a className="self-link" href={selfLinkTarget}>{opcode}</a></td>
     <td className="col-name"><InsSiggy data={data} nameKey={nameKey} /></td>
@@ -497,14 +483,14 @@ function InsTableRowHtml(props: {handlers: TableHandlers<InsData>, game: Game, d
   </tr>;
 }
 
-function VarTableRowHtml(props: {handlers: TableHandlers<VarData>, game: Game, data: VarData, opcode: number}) {
-  const {handlers, game, data, opcode} = props;
+function VarTableRowHtml(props: {handlers: TableHandlers<VarData>, game: Game, data: VarData, opcode: number, currentQuery: Query}) {
+  const {handlers, game, data, opcode, currentQuery} = props;
   const nameKey = getOpcodeNameKey(handlers, game, opcode);
   const [descMd] = handleTipHide(data.desc, false);
-  const desc = postprocessAnmDesc(descMd, false);
+  const desc = postprocessAnmDesc(descMd, false, currentQuery);
 
   const anchor = handlers.formatAnchor(opcode);
-  const selfLinkTarget = currentUrlWithProps({a: anchor});
+  const selfLinkTarget = urlWithProps(currentQuery, {a: anchor});
   // FIXME: add a mutability column.
   return <tr className="ins-table-entry" id={anchor}>
     <td className="col-id"><a className="self-link" href={selfLinkTarget}>{opcode}</a></td>
@@ -529,7 +515,7 @@ function handleTipHide(desc: string, isTip: boolean): [string, boolean] {
   return [desc, hasHidden];
 }
 
-function postprocessAnmDesc(desc: string, isTip: boolean) {
+function postprocessAnmDesc(desc: string, isTip: boolean, currentQuery: Query) {
   if (isTip) {
     const colons = '::::::::::::';
     if (desc.match(colons)) {
@@ -543,7 +529,7 @@ function postprocessAnmDesc(desc: string, isTip: boolean) {
       ${colons}
     `);
   }
-  return <TrustedMarkdown>{desc}</TrustedMarkdown>;
+  return <TrustedMarkdown currentQuery={currentQuery}>{desc}</TrustedMarkdown>;
 }
 
 function getRefByOpcode<D>(game: Game, opcode: number, tableHandlers: TableHandlers<D>) {
@@ -579,7 +565,7 @@ export function getDataByRef<D>(ref: string, {mainPrefix, dataTable}: TableHandl
 function generateTip<D extends CommonData>(data: D, ref: Ref, context: Context, tableHandlers: TableHandlers<D>) {
   const {TipHeader} = tableHandlers;
   const [desc, omittedInfo] = handleTipHide(data.desc, true);
-  const contents = postprocessAnmDesc(desc, true);
+  const contents = postprocessAnmDesc(desc, true, context);
   const heading = <TipHeader data={data} nameKey={getRefNameKey(ref)} />;
   return {heading, contents, omittedInfo};
 }
