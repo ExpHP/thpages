@@ -1,9 +1,8 @@
 import * as React from 'react';
 import type {ReactElement} from 'react';
 
-import {PrefixResolver, globalNames, globalLinks, Context} from './resolver';
-import {parseQuery, Query} from './url-format';
-import {makeStyles, createMuiTheme} from '@material-ui/core/styles';
+import {PrefixResolver} from './resolver';
+import {Query} from './url-format';
 import Tooltip from '@material-ui/core/Tooltip';
 import {Err} from './common-components';
 
@@ -19,7 +18,6 @@ export function registerRefTipPrefix(prefix: string, Component: React.FunctionCo
 }
 
 export function WithTip({tip, children}: {tip: ReactElement, children: ReactElement}): ReactElement | null {
-  // const [currentTipKey, _setCurrentTipKey] = React.useContext(CurrentTipContext);
   const isTip = React.useContext(IsTipContext);
   if (isTip) return children; // no nested tips!
 

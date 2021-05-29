@@ -1424,7 +1424,7 @@ Object.assign(ANM_INS_DATA, {
     :tipshow[Creates a new root VM. (i.e. the new VM will have no parent)]
 
     Pseudocode:
-    ~~~C++
+    ~~~clike
     new_vm.rotation = this.rotation;
     new_vm.pos = {0f, 0f, 0f};
     new_vm.pos_2 = this.pos;
@@ -1439,7 +1439,7 @@ Object.assign(ANM_INS_DATA, {
     :tipshow[Creates a child at an offset from this graphic.]
 
     The child's [three position variables](#anm/concepts&a=position) will be:
-    ~~~C++
+    ~~~clike
     child.pos = {0f, 0f, 0f};
     child.pos_2 = {x, y, 0f};
     child.pos_3 = {0f, 0f, 0f};

@@ -1,27 +1,11 @@
 import * as React from "react";
-import ReactDOM from "react-dom";
-import ReactDOMServer from "react-dom/server";
-import {TrustedMarkdown, postprocessConvertedMarkdown} from "./markdown";
+import {TrustedMarkdown} from "./markdown";
 import {initAnm} from "./anm/tables";
-import {initTips} from "./tips";
-import {initSettings, clearSettingsCache} from "./settings";
-import {globalNames, globalLinks} from "./resolver";
+import {initSettings} from "./settings";
 import {ErrorBoundary} from "./common-components";
-import {parseQuery, queryEqualsUptoAnchor, queryPageEquals, Query} from "./url-format";
+import {parseQuery, queryEqualsUptoAnchor, Query} from "./url-format";
 import {Navbar} from "./navbar";
 import {StylesProvider} from '@material-ui/core/styles';
-import {MuiThemeProvider, makeStyles, createMuiTheme} from '@material-ui/core/styles';
-
-import hljs from "highlight.js/lib/core";
-import hljsCLike from "highlight.js/lib/languages/c-like";
-import hljsCpp from "highlight.js/lib/languages/cpp";
-import hljsJs from "highlight.js/lib/languages/javascript";
-import hljsJson from "highlight.js/lib/languages/json";
-
-hljs.registerLanguage('c-like', hljsCLike);
-hljs.registerLanguage('cpp', hljsCpp);
-hljs.registerLanguage('js', hljsJs);
-hljs.registerLanguage('json', hljsJson);
 
 export function App() {
   const [currentHash, setCurrentHash] = React.useState(window.location.hash);
@@ -171,9 +155,4 @@ function scrollToAnchor(id: string) {
     return true;
   }
   return false;
-}
-
-export function highlightCode(content, lang) {
-  lang = lang || "cpp";
-  return hljs.fixMarkup(hljs.highlight(lang, content, true, false).value);
 }

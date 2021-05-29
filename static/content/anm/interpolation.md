@@ -56,7 +56,7 @@ Modes 7 and 17 are impossible to describe as dimensionless easing functions, but
 
 In mode 7, the `goal` argument is used as a **constant velocity**:
 
-~~~C++
+~~~clike
 // Mode 7, each frame:
 initial += goal;
 return initial;
@@ -64,7 +64,7 @@ return initial;
 
 And in mode 17, the `goal` argument is used as a **constant acceleration**:
 
-~~~c++
+~~~clike
 // Mode 17, each frame
 initial += extra_2;
 extra_2 += goal;
@@ -94,7 +94,7 @@ ZUN chose to constrain the extremal time (i.e. what fraction of the total time i
 ## The **true** mode 8
 
 Before we go any further, let's talk a bit about what this interpolator struct actually looks like.  It basically looks like this: (at least in :game[13]&ndash;:game[17])
-~~~c++
+~~~clike
 template <typename T>
 struct Interp {
     T initial;
@@ -112,7 +112,7 @@ I wrote this as a generic type because the same layout is used for a wide variet
 
 What are `extra_1` and `extra_2`?  They're just extra fields that are only used by modes 8 and 17.  To partially demonstrate this, here's the pseudocode for :ref{r=anm:posBezier} (`pos_interp` here is the same interpolator used by :ref{r=anm:posTime}):
 
-~~~c++
+~~~clike
 // pseudocode for posBezier(t, x1,y1,z1, x2,y2,z2, x3,y3,z3)
 pos_interp.time.set_current(0);
 pos_interp.end_time = t;

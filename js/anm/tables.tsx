@@ -4,7 +4,8 @@ import Markdown from "react-markdown";
 import RemarkDirective from "remark-directive";
 
 import dedent from '../lib/dedent';
-import {globalRefNames, globalRefTips, globalRefLinks, getRefNameKey, Ref} from '../ref';
+import {globalRefNames, globalRefLinks, getRefNameKey, Ref} from '../ref';
+import {registerRefTipPrefix} from '../tips';
 import {TrustedMarkdown} from '../markdown';
 import {globalNames, globalLinks, PrefixResolver, Context} from '../resolver';
 import {queryUrl, queryGame, queryPageEquals, queryFilterCommonProps, Query, urlWithProps} from '../url-format';
@@ -319,12 +320,12 @@ function initNames<D extends CommonData>(handlers: TableHandlers<D>) {
 
 function registerRefTipsForTable<D extends CommonData>(tableHandlers: TableHandlers<D>) {
   const {mainPrefix, dataTable} = tableHandlers;
-  globalRefTips.registerPrefix(mainPrefix, (id, ctx) => {
-    const ins = dataTable[id];
-    if (!ins) return null;
+  registerRefTipPrefix(mainPrefix, ({id, currentQuery}) => {
+    const data = dataTable[id];
+    if (!data) return null;
 
     const ref = `${mainPrefix}:${id}`;
-    return generateTip(ins, ref, ctx, tableHandlers);
+    return <TipBody data={data} refKey={ref} currentQuery={currentQuery} tableHandlers={tableHandlers} />;
   });
 }
 
@@ -386,7 +387,6 @@ export function TablePage<D extends CommonData>({handlers: tableHandlers, curren
       <table className='ins-table'><tbody>{rows}</tbody></table>
     </Fragment>;
   });
-  const content = <Fragment>{contentSections}</Fragment>;
 
   let toc = null;
   if (shouldHaveToc) {
@@ -416,21 +416,21 @@ export function TablePage<D extends CommonData>({handlers: tableHandlers, curren
   return <div>
     <TrustedMarkdown currentQuery={currentQuery}>{baseMd}</TrustedMarkdown>
     {toc}
-    {content}
+    {contentSections}
   </div>;
 }
 
 /* eslint-disable react/display-name */
 const INS_PARAMETER_TABLE: {[s: string]: (name: string) => JSX.Element} = {
-  "S": (name: string) => <Fragment><span className="type int">int</span>&nbsp;{name}</Fragment>,
-  "s": (name: string) => <Fragment><span className="type int">short</span>&nbsp;{name}</Fragment>,
-  "b": (name: string) => <Fragment><span className="type int">byte</span>&nbsp;{name}</Fragment>,
-  "$": (name: string) => <Fragment><span className="type int mut">{"int&"}</span>&nbsp;{name}</Fragment>,
-  "f": (name: string) => <Fragment><span className="type float">float</span>&nbsp;{name}</Fragment>,
-  "%": (name: string) => <Fragment><span className="type float mut">{"float&"}</span>&nbsp;{name}</Fragment>,
-  "m": (name: string) => <Fragment><span className="type string">string</span>&nbsp;{name}</Fragment>,
-  "_": () => <Fragment><span className="type unused">__</span></Fragment>,
-  "?": () => <Fragment><span className="type unknown">???...</span></Fragment>,
+  "S": (name: string) => <><span className="type int">int</span>&nbsp;{name}</>,
+  "s": (name: string) => <><span className="type int">short</span>&nbsp;{name}</>,
+  "b": (name: string) => <><span className="type int">byte</span>&nbsp;{name}</>,
+  "$": (name: string) => <><span className="type int mut">{"int&"}</span>&nbsp;{name}</>,
+  "f": (name: string) => <><span className="type float">float</span>&nbsp;{name}</>,
+  "%": (name: string) => <><span className="type float mut">{"float&"}</span>&nbsp;{name}</>,
+  "m": (name: string) => <><span className="type string">string</span>&nbsp;{name}</>,
+  "_": () => <><span className="type unused">__</span></>,
+  "?": () => <><span className="type unknown">???...</span></>,
 };
 /* eslint-enable */
 
@@ -450,7 +450,7 @@ function InsParameters({ins}: {ins: InsData}) {
     }
     ret.push(<InsParameter key={`p-${i}`} type={ins.sig[i]} name={ins.args[i]} />);
   }
-  return <React.Fragment>{ret}</React.Fragment>;
+  return <>{ret}</>;
 }
 
 function InsSiggy({data, nameKey}: {data: InsData, nameKey: string}) {
@@ -523,11 +523,7 @@ function postprocessAnmDesc(desc: string, isTip: boolean, currentQuery: Query) {
       throw new Error("tip body is a bit too intense");
     }
 
-    desc = dedent(`
-      ${colons}is-tip
-      ${desc}
-      ${colons}
-    `);
+    desc = `${colons}is-tip\n${dedent(desc)}\n${colons}`;
   }
   return <TrustedMarkdown currentQuery={currentQuery}>{desc}</TrustedMarkdown>;
 }
@@ -562,12 +558,16 @@ export function getDataByRef<D>(ref: string, {mainPrefix, dataTable}: TableHandl
   return out;
 }
 
-function generateTip<D extends CommonData>(data: D, ref: Ref, context: Context, tableHandlers: TableHandlers<D>) {
+function TipBody<D extends CommonData>(props: {data: D, refKey: Ref, currentQuery: Query, tableHandlers: TableHandlers<D>}) {
+  const {data, refKey, currentQuery, tableHandlers} = props;
   const {TipHeader} = tableHandlers;
   const [desc, omittedInfo] = handleTipHide(data.desc, true);
-  const contents = postprocessAnmDesc(desc, true, context);
-  const heading = <TipHeader data={data} nameKey={getRefNameKey(ref)} />;
-  return {heading, contents, omittedInfo};
+  const contents = postprocessAnmDesc(desc, true, currentQuery);
+  return <>
+    <div className="heading"><TipHeader data={data} nameKey={getRefNameKey(refKey)} /></div>
+    <div className="contents">{contents}</div>
+    {omittedInfo ? <div className="omitted-info"></div> : null}
+  </>;
 }
 
 function getUrlByRef<D>(ref: string, context: Context, tableHandlers: TableHandlers<D>) {

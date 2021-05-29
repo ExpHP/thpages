@@ -1,3 +1,4 @@
+code .keyword,
 .hljs-keyword,
 .hljs-selector-tag,
 .hljs-literal,
@@ -7,6 +8,7 @@
   color: #ff5b80;
 }
 
+code .string,
 .hljs-string,
 .hljs-meta-string,
 .hljs-name,
@@ -26,12 +28,21 @@
   color: #a4ff6d;
 }
 
+code .comment,
 .hljs-comment,
 .hljs-quote,
 .hljs-deletion {
   color: #999999;
 }
 
+code .label,
+.hljs-comment,
+.hljs-quote,
+.hljs-deletion {
+  color: #8ec8ff;
+}
+
+code .keyword,
 .hljs-keyword,
 .hljs-selector-tag,
 .hljs-literal,
@@ -48,6 +59,7 @@
   font-style: italic;
 }
 
+code .number,
 .hljs-number {
   color: #ab87ff;
 }

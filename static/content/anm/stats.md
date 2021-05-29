@@ -1,6 +1,5 @@
+[title=ANM stats]
 # ANM usage stats
-
-::title[ANM stats]
 
 <!--
     The frozen table looks misaligned in some mobile browsers, and I don't have/know the right tools

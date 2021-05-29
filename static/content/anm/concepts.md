@@ -173,7 +173,7 @@ Oftentimes, graphics have special animations associated with certain events.  Fo
 
 For a detailed example, here's one of the scripts for the season gauge.  (this one draws the "Releasable" icon)
 
-~~~anm
+~~~clike
 script script114 {
     // ... ignoring the boring stuff at the beginning ...
     :ref{r=anm:pos}(-344.0f, 884.0f, 0.0f);
@@ -246,7 +246,7 @@ There is an important caveat to :ref{r=anm:caseReturn}, which is that only a sin
 
 ---
 
-# <span id="uv-coords">Texture coordinates</span>
+# Texture coordinates {#uv-coords}
 
 Numerous instructions change the region of coordinates in the texture image file that a sprite's image is pulled from.  These include :ref{r=anm:uVel}, :ref{r=anm:uvScale}, and :ref{r=anm:textureCircle}. To fully understand how these instructions work, you must have a basic understanding of texure addressing.
 

@@ -6,25 +6,20 @@ import type {ReactMarkdownOptions} from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkHeadingId from 'remark-heading-id';
 import remarkDirective from 'remark-directive';
-import type {Directive, TextDirective, LeafDirective, ContainerDirective} from 'remark-directive';
 import rehypeRaw from "rehype-raw";
 import {visit as unistVisit} from "unist-util-visit";
-import {filter as unistFilter} from "unist-util-filter";
 import {select as hastSelect} from "hast-util-select";
 import {map as unistMap} from "unist-util-map";
-import type {Node, Parent} from "unist-util-visit";
 import {h} from "hastscript";
 
 import {Err} from './common-components';
-import {Converter, ShowdownExtension} from 'showdown';
-import {setWindowTitle, highlightCode} from "./main";
+import {setWindowTitle} from "./main";
 import {getRefJsx} from "./ref";
 import {WithTip} from "./tips";
 import {gameData, validateGame, GameData, Game} from './game-names';
 import {Query, urlWithProps} from './url-format';
 import {GameSelector, TablePage, getHandlers} from './anm/tables';
-import dedent from "./lib/dedent";
-import { exitCode } from 'process';
+import {rehypeHighlight} from "./highlight";
 
 // React libraries do not all agree on how to supply a single child.
 type OneChild<T> = T | [T];
@@ -198,37 +193,37 @@ function directivesToHtml() {
   }
 }
 
-// Ugly HACK to make :ref{} work inside inline-code and code fences.
-//
-// Currently this is implemented as a component that does substring searches on <code>.
-function Code({children}: {children: OneChild<string>}) {
-  const {currentQuery} = React.useContext(MarkdownContext);
-  const s = getSingleChild(children);
-  if (typeof s !== 'string') {
-    console.error(s);
-    return <Err>CODE_ERR</Err>;
-  }
+function rehypeCodeRef() {
+  return (tree: any) => {
+    unistVisit(tree, (node: any) => node.tagName === 'code', modify);
+  };
 
-  const regexp = /:ref\{[^}]+\}/g;
-  const pieces = []; // we will generate an array of alternating strings and <Ref>s
-  let match;
-  let textBegin = 0;
-  while ((match = regexp.exec(s)) !== null) {
-    pieces.push(s.substring(textBegin, match.index));
-    // Parse the text for a single :ref{} directive into a <Ref>
-    pieces.push(<TrustedMarkdown
-      key={textBegin} currentQuery={currentQuery}
-      // there's no way to tell the markdown parser to assume it's parsing PhrasingContent, so it will wrap
-      // the output <Ref> in a <p>, which we can destroy by setting these options.
-      disallowedElements={['p']} unwrapDisallowed={true}
-    >
-      {match[0]}
-    </TrustedMarkdown>);
+  function modify(node: any) {
+    if (node.children.length > 1 || node.children[0].type !== 'text') {
+      console.error(node);
+      return <Err>CODE_ERR</Err>;
+    }
+    const originalText = node.children[0].value;
 
-    textBegin = match.index + match[0].length;
+    const regexpBroad = /:ref\{[^}]+\}/g;
+    const regexpGetRef = /:ref\{r=([^}\s]+)\}/;
+
+    const pieces = []; // we will generate an array of alternating strings and <Ref>s
+    let match;
+    let textBegin = 0;
+    while ((match = regexpBroad.exec(originalText)) !== null) {
+      const detailedMatch = match[0].match(regexpGetRef);
+      if (detailedMatch == null) {
+        console.error("couldn't parse ref", match[0]);
+        return node;
+      }
+      pieces.push({type: 'text', value: originalText.substring(textBegin, match.index)});
+      pieces.push(h('exp-ref', {r: detailedMatch[1]}));
+      textBegin = match.index + match[0].length;
+    }
+    pieces.push({type: 'text', value: originalText.substring(textBegin, originalText.length)});
+    node.children = pieces;
   }
-  pieces.push(s.substring(textBegin, s.length));
-  return <code>{pieces}</code>;
 }
 
 function rehypeTableFootnotes() {
@@ -253,10 +248,9 @@ function rehypeTableFootnotes() {
 
 const MARKDOWN_PROPS = {
   remarkPlugins: [remarkDirective, remarkExtractTipContents, directivesToHtml, remarkHeadingId, remarkGfm],
-  rehypePlugins: [rehypeTableFootnotes, rehypeRaw],
+  rehypePlugins: [rehypeTableFootnotes, rehypeCodeRef, rehypeHighlight, rehypeRaw],
   skipHtml: false,
   components: {
-    // custom components
     'exp-c': C, 'exp-gc': Gc, 'exp-wip': Wip, 'exp-wip2': Wip2, 'exp-weak': Weak, 'exp-dl': Dl,
     'exp-game': GameShort, 'exp-game-th': GameTh, 'exp-game-num': GameNum, 'exp-game-thlong': GameThLong,
     'exp-more': More, 'exp-title': Title,
@@ -264,8 +258,6 @@ const MARKDOWN_PROPS = {
     'exp-ref': Ref, 'exp-tip': Tip,
     'exp-foot-ref': FootRef, 'exp-foot-def': FootDef,
     'exp-reference-table': ReferenceTable,
-    // standard HTML elements with modified behavior
-    'code': Code,
   },
 };
 

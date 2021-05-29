@@ -32,7 +32,7 @@ const statsJson: Promise<Stats> = fetch('content/anm/anm-stats.json').then(async
 const STATS_TIPS = new PrefixResolver<Tip>();
 
 export function initStats() {
-  globalTips.registerPrefix('stats', STATS_TIPS);
+  // globalTips.registerPrefix('stats', STATS_TIPS);
 }
 
 export async function buildStatsTable<D extends CommonData>(dataSubkey: [string, 'ins' | 'var'], handlers: TableHandlers<D>, $elem: HTMLElement) {

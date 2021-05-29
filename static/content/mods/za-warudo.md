@@ -4,7 +4,7 @@
 
 **Available through thcrap:**
 
-* **Main mod:** `ExpHP/nopause_enm`  (supports [tip=but you can&#39;t see anything]TH10[/tip], TH11-TH17 and DS)
+* **Main mod:** `ExpHP/nopause_enm`  (supports :tip[TH10]{tip="but you can&#39;t see anything"}, TH11-TH17 and DS)
 * **Recommended addition:** `ExpHP/nopauseblur`  (supports TH15-TH17 and VD)
 
 [Gameplay video](https://youtu.be/pekM4K793Tg)
