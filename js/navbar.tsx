@@ -1,8 +1,9 @@
 import * as React from 'react';
+import type {ReactElement} from 'react';
 import {parseQuery, queryPageEquals, Query} from "./url-format";
 
 export type Entry = {
-  label: string,
+  label: string | ReactElement,
   url?: string,
   newTab?: true,
   children?: Entry[],
@@ -88,7 +89,7 @@ export const NAVBAR: Entry[] = [
   },
 
   {
-    label: `<div class="gear"></div>`,
+    label: <div className="gear"></div>,
     url: "#/settings",
     cssClasses: ['settings'],
   },
