@@ -63,7 +63,7 @@ code {
     background: initial;
     font-family: @monospace;
     border-radius: initial;
-  
+
     color: initial;
     padding: initial;
     margin-left: initial;
@@ -77,7 +77,7 @@ li {
 }
 
 .toc li, // compress table of contents lists
-#tip li // tip is smol, let lists fit better
+.tip li // tip is smol, let lists fit better
 {
   margin-bottom: 0px;
   margin-top: 0px;
@@ -149,9 +149,23 @@ tfoot {
   td { transform: translate(0, 3px); }
 }
 
-#tip {
-  position: absolute;
-  display: none;
+// Reset all styling done by MuiTooltip-tooltip (Material UI)
+.tip {
+  color: inherit;
+  padding: inherit;
+  font-size: inherit;
+  max-width: inherit;
+  word-wrap: inherit;
+  font-family: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  border-radius: inherit;
+  background-color: inherit;
+}
+
+.tip {
+  // position: absolute;
+  // display: none;
   padding-left: 7px;
   padding-right: 7px;
   border: 1px gray solid;

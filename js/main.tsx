@@ -9,6 +9,8 @@ import {globalNames, globalLinks} from "./resolver";
 import {ErrorBoundary} from "./common-components";
 import {parseQuery, queryEqualsUptoAnchor, queryPageEquals, Query} from "./url-format";
 import {Navbar} from "./navbar";
+import {StylesProvider} from '@material-ui/core/styles';
+import {MuiThemeProvider, makeStyles, createMuiTheme} from '@material-ui/core/styles';
 
 import hljs from "highlight.js/lib/core";
 import hljsCLike from "highlight.js/lib/languages/c-like";
@@ -20,7 +22,6 @@ hljs.registerLanguage('c-like', hljsCLike);
 hljs.registerLanguage('cpp', hljsCpp);
 hljs.registerLanguage('js', hljsJs);
 hljs.registerLanguage('json', hljsJson);
-
 
 export function App() {
   const [currentHash, setCurrentHash] = React.useState(window.location.hash);
@@ -37,14 +38,16 @@ export function App() {
   const currentQuery = parseQuery(currentHash);
   try {
     return <div>
-      <div id="tip"></div>
-      <div className="body-container">
-        <div className="header-wrapper">
-          <div className="header-text">{"ExpHP's Touhou pages"}</div>
+      <StylesProvider injectFirst>
+        <div id="tip"></div>
+        <div className="body-container">
+          <div className="header-wrapper">
+            <div className="header-text">{"ExpHP's Touhou pages"}</div>
+          </div>
+          <ErrorBoundary><Navbar currentQuery={currentQuery} /></ErrorBoundary>
+          <ErrorBoundary><Content currentQuery={currentQuery} /></ErrorBoundary>
         </div>
-        <ErrorBoundary><Navbar currentQuery={currentQuery} /></ErrorBoundary>
-        <ErrorBoundary><Content currentQuery={currentQuery} /></ErrorBoundary>
-      </div>
+      </StylesProvider>
     </div>;
   } catch (e) {
     return `${e}`;
@@ -58,7 +61,6 @@ export function App() {
 export function init() {
   initSettings();
   initAnm();
-  initTips();
 }
 
 const MAIN_TITLE = `ExpHP's Touhou Pages`;

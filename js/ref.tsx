@@ -2,16 +2,14 @@ import * as React from 'react';
 
 import type {Query} from './url-format';
 import {globalNames, globalLinks, PrefixResolver} from './resolver';
-import {globalTips, Tip} from './tips';
+import {WithKeyedTip} from './tips';
 
 export type Ref = string;
 export const globalRefNames = new PrefixResolver<string>();
-export const globalRefTips = new PrefixResolver<Tip>();
 export const globalRefLinks = new PrefixResolver<string>();
 
 globalLinks.registerPrefix('ref', globalRefLinks);
 globalNames.registerPrefix('ref', globalRefNames);
-globalTips.registerPrefix('ref', globalRefTips);
 
 /** Get tooltip key of a reference. */
 export function getRefTipKey(ref: Ref) {
@@ -35,11 +33,10 @@ export function getRefJsx({ref, tip, url, currentQuery}: {ref: Ref, tip: boolean
     const href = globalLinks.getNow(getRefLinkKey(ref), currentQuery);
     out = <a href={href || undefined}>{out}</a>;
   }
+  out = <code>{out}</code>;
 
   if (tip) {
-    out = <code data-tip-id={getRefTipKey(ref)}>{out}</code>;
-  } else {
-    out = <code>{out}</code>;
+    out = <WithKeyedTip tipKey={getRefTipKey(ref)} currentQuery={currentQuery}>{out}</WithKeyedTip>;
   }
   return out;
 }

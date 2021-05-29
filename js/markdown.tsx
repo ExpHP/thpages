@@ -12,13 +12,14 @@ import {visit as unistVisit} from "unist-util-visit";
 import {filter as unistFilter} from "unist-util-filter";
 import {select as hastSelect} from "hast-util-select";
 import {map as unistMap} from "unist-util-map";
-import type {Node} from "unist-util-visit";
+import type {Node, Parent} from "unist-util-visit";
 import {h} from "hastscript";
 
 import {Err} from './common-components';
 import {Converter, ShowdownExtension} from 'showdown';
 import {setWindowTitle, highlightCode} from "./main";
 import {getRefJsx} from "./ref";
+import {WithTip} from "./tips";
 import {gameData, validateGame, GameData, Game} from './game-names';
 import {Query, urlWithProps} from './url-format';
 import {GameSelector, TablePage, getHandlers} from './anm/tables';
@@ -88,11 +89,11 @@ function More({children}: {children: ReactNode}) {
   </div>;
 }
 
-function Tip({tip, children}: {children: ReactNode, tip: string}) {
-  return <span className='tip-deco' data-tip={tip}>{children}</span>;
-}
-function TipNodeco({tip, children}: {children: ReactNode, tip: string}) {
-  return <span className='tip-nodeco' data-tip={tip}>{children}</span>;
+function Tip({tip, children, deco}: {children: ReactNode, tip: string, deco?: string}) {
+  const className = deco === "0" ? "tip-nodeco" : "tip-deco";
+  return <WithTip tip={<>{tip}</>}>
+    {<span className={className}>{children}</span>}
+  </WithTip>;
 }
 
 function HeadlessTable({children}: {children: ReactNode}) {
@@ -124,13 +125,6 @@ function FootDef({children}: {children: string | [string]}) {
   return <sup className="footnote def" id={`footnote-${id}`}>{id}</sup>;
 }
 
-function TableFootnotes({children}: {children: ReactNode[]}) {
-  console.error(children);
-
-  return <Err>FIXME_TABLE_FOOTNOTES</Err>;
-  // return `<div class="tfoot" data-ncols="${ncolsStr}">${MD.makeHtml(content!)}</div>`;
-}
-
 // download link with icon
 function Dl({href, children}: {href: string, children: string | [string]}) {
   return <a download className='download' href={href}>{children}</a>;
@@ -150,33 +144,35 @@ function ReferenceTable({children}: {children: OneChild<string>}) {
   </React.Fragment>;
 }
 
-function unwrapCodeDirectives() {
+function remarkExtractTipContents() {
   return transform;
 
-  function transform(tree: Node) {
-    unistVisit(tree, ['containerDirective'], ondirective);
+  function transform(tree: any) {
+    unistVisit(tree, (n: any) => n.type === 'containerDirective' && n.name === 'is-tip', ondirective);
   }
 
-  function ondirective(node: ContainerDirective) {
-    if (node.name === 'script' || node.name === 'code') {
-      if (node.children.length == 0) {
-        console.error(`Empty ${node.name} directive`);
-        return;
-      }
-      const [child] = node.children;
-      if (child.type !== 'code') {
-        console.error(
-            `The body of a ${node.name} directive was not a code fence; the interior whitespace has likely been lost by the Markdown parser! The offending content was:`,
-            node.children,
-        );
-        return;
-      }
-      if (node.children.length > 1) {
-        console.error(`Dropping additional content from ${node.name} directive`);
-      }
+  function ondirective(node: any) {
+    const filteredChildren = node.children.flatMap(filterFunc);
+    if (filteredChildren.length > 0) {
+      // there was at least one :tipshow[]; use the filtered content
+      node.children = filteredChildren;
+    } else {
+      // there was no :tipshow[]; keep the full content
+    }
+  }
 
-      const hastTextNode = {type: 'text', value: child.value};
-      node.children = [hastTextNode];
+  // Keep anything that is inside a :tipshow[], and any ancestor of such an element.
+  function filterFunc(node: any) {
+    if (node.children) {
+      if (node.name === 'tipshow') {
+        return node.children;
+      } else {
+        const filtered = {...node};
+        filtered.children = filtered.children.flatMap(filterFunc);
+        return filtered.children.length === 0 ? [] : [filtered];
+      }
+    } else {
+      return [];
     }
   }
 }
@@ -256,7 +252,7 @@ function rehypeTableFootnotes() {
 }
 
 const MARKDOWN_PROPS = {
-  remarkPlugins: [remarkDirective, unwrapCodeDirectives, directivesToHtml, remarkHeadingId, remarkGfm],
+  remarkPlugins: [remarkDirective, remarkExtractTipContents, directivesToHtml, remarkHeadingId, remarkGfm],
   rehypePlugins: [rehypeTableFootnotes, rehypeRaw],
   skipHtml: false,
   components: {
@@ -265,7 +261,7 @@ const MARKDOWN_PROPS = {
     'exp-game': GameShort, 'exp-game-th': GameTh, 'exp-game-num': GameNum, 'exp-game-thlong': GameThLong,
     'exp-more': More, 'exp-title': Title,
     'exp-headless-table': HeadlessTable,
-    'exp-ref': Ref, 'exp-tip': Tip, 'exp-tip-nodeco': TipNodeco,
+    'exp-ref': Ref, 'exp-tip': Tip,
     'exp-foot-ref': FootRef, 'exp-foot-def': FootDef,
     'exp-reference-table': ReferenceTable,
     // standard HTML elements with modified behavior
@@ -277,42 +273,4 @@ export function TrustedMarkdown({children, currentQuery, ...props}: {children: s
   return <MarkdownContext.Provider value={{currentQuery}}>
     <ReactMarkdown {...Object.assign({}, MARKDOWN_PROPS, props)}>{children}</ReactMarkdown>
   </MarkdownContext.Provider>;
-}
-
-/**
- * Perform postprocessing on markdown that is only feasible after conversion to HTML and
- * being parsed into a DOM tree.
- *
- * Because showdown primarily operates on strings, code that uses the markdown converter
- * will need to find a place to call this after all markdown conversion is finished and
- * the HTML has been parsed into elements.
- * */
-export function postprocessConvertedMarkdown($root: HTMLElement) {
-  // This is a bit fragile and depends on how the markdown engine handles a div on the next line
-  // after a GHFM table.  Currently, showdown leaves it undisturbed after the table.
-  for (const $div of $root.querySelectorAll<HTMLElement>('div.tfoot')) {
-    const $table = $div.previousElementSibling;
-    if ($table?.tagName !== 'TABLE') {
-      console.error("can't find table for table footer, did markdown output change?");
-      continue;
-    }
-
-    // Because Showdown didn't know this was table cell text when it converted it, it will have wrapped
-    // any non-block content in a <p> tag.  Eliminate that so we don't have to fix its spacing.
-    if ($div!.children.length === 1) {
-      let $p;
-      if ($p = $div.querySelector(':scope > p')) {
-        $div.removeChild($p);
-        $div.append(...$p.childNodes);
-      }
-    }
-
-    $div.parentElement!.removeChild($div);
-    const $tfoot = document.createElement('tfoot');
-    $tfoot.innerHTML = `<tr><td colspan='${$div.dataset.ncols}'></td></tr>`;
-    $tfoot.querySelector('td')!.append(...$div.childNodes);
-
-    // Thankfully, in HTML 5, tfoot goes at the end, unlike in HTML 4 where this would be much more complicated...
-    $table.appendChild($tfoot);
-  }
 }
