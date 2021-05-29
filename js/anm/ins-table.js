@@ -511,47 +511,41 @@ export const ANM_INS_DATA = {};
 Object.assign(ANM_INS_DATA, {
   'nop': {sig: '', args: [], desc: "Does nothing."},
   'delete': {sig: '', args: [], desc: `
-    Destroys the graphic.
+    :tipshow[Destroys the graphic.]
 
-    [tiphide]
-    * **[game=06]:** this instruction and [ref=anm:static] may only appear as the final instruction of a script,
-      and one of these **must** appear.  thstd and trustd will implicitly insert a [ref=anm:delete] at the closing brace if there isn't one.
+    * **:game[06]:** this instruction and :ref{r=anm:static} may only appear as the final instruction of a script,
+      and one of these **must** appear.  thstd and trustd will implicitly insert a :ref{r=anm:delete} at the closing brace if there isn't one.
       <!-- TH06 has no markers in-between scripts.  The way that interrupt labels know when to stop searching in this
            game is that they stop once they encounter ins_0 or ins_15. -->
-    * **[game=07]&ndash;:** this instruction may appear anywhere.  Additionally, a VM that reaches the end of the script
+    * **:game[07]&ndash;:** this instruction may appear anywhere.  Additionally, a VM that reaches the end of the script
       will be automatically deleted *as if* it encountered this instruction.
-    [/tiphide]
   `},
   'static': {
     sig: '', args: [], desc: `
-    Freezes the graphic until it is destroyed externally.
+    :tipshow[Freezes the graphic until it is destroyed externally.]
 
-    [tiphide]
-    Any interpolation instructions like [ref=anm:posTime] will no longer advance,
+    Any interpolation instructions like :ref{r=anm:posTime} will no longer advance,
     and [interrupts](#anm/concepts&a=interrupt) are disabled.
 
-    **In [game=06] only,** this instruction and [ref=anm:delete] may only appear as the final instruction of a script.
-    [/tiphide]
+    **In :game[06] only,** this instruction and :ref{r=anm:delete} may only appear as the final instruction of a script.
   `},
   'stop': {sig: '', args: [], desc: `
-    Stops executing the script (at least for now), but keeps the graphic alive.
+    :tipshow[Stops executing the script (at least for now), but keeps the graphic alive.]
 
-    [tiphide]
-    Interpolation instructions like [ref=anm:posTime] will continue to advance,
+    Interpolation instructions like :ref{r=anm:posTime} will continue to advance,
     and [interrupts](#anm/concepts&a=interrupt) can be triggered at any time.
-    You could say this essentially behaves like an infinitely long [ref=anm:wait].
-    [/tiphide]
+    You could say this essentially behaves like an infinitely long :ref{r=anm:wait}.
   `},
   'stop2': {
     sig: '', args: [], wip: 2, desc: `
-    This is like [ref=anm:stop] except that it also hides the graphic by clearing
-    the visibility flag (see [ref=anm:visible]).
+    :::tipshow
+    This is like :ref{r=anm:stop} except that it also hides the graphic by clearing
+    the visibility flag (see :ref{r=anm:visible}).
+    :::
 
-    [tiphide]
-    Interpolation instructions like [ref=anm:posTime] will continue to advance,
+    Interpolation instructions like :ref{r=anm:posTime} will continue to advance,
     and [interrupts](#anm/concepts&a=interrupt) can be triggered at any time.
     Successful interrupts will automatically re-enable the visibility flag.
-    [/tiphide]
   `},
   'case': {
     sig: 'S', args: ['n'], desc: `
@@ -559,49 +553,47 @@ Object.assign(ANM_INS_DATA, {
   `},
   'wait': {
     sig: 'S', args: ['t'], desc: `
-    Wait \`t\` frames.
+    :tipshow[Wait \`t\` frames.]
 
-    [tiphide]
     An extremely similar effect can be achieved using [time labels](#anm/concepts&a=time):
-    [code]
+    ~~~anm
     // Option 1: increasing the time label between instructions (+n: syntax)
-      [ref=anm:posTime](6, 0, 1f, 0f, 0f);
+      :ref{r=anm:posTime}(6, 0, 1f, 0f, 0f);
     +6:
-      [ref=anm:alpha](0);
+      :ref{r=anm:alpha}(0);
 
     // Option 2: using wait
-      [ref=anm:posTime](6, 0, 1f, 0f, 0f);
-      [ref=anm:wait](6);
-      [ref=anm:alpha](0);
-    [/code]
+      :ref{r=anm:posTime}(6, 0, 1f, 0f, 0f);
+      :ref{r=anm:wait}(6);
+      :ref{r=anm:alpha}(0);
+    ~~~
     The difference between the two is subtle, and depends on the game:
 
-    * **[game=095] and earlier:**
-      [ref=anm:wait] is implemented using a dedicated timer. [wip]This has not been tested[/wip],
+    * **:game[095] and earlier:**
+      :ref{r=anm:wait} is implemented using a dedicated timer. :wip[This has not been tested],
       but it seems this may cause the two snippets to behave differently in cases where the
-      current time is greater than the time label (which is possible through [ref=anm:jmp]);
-      in essence, [wip]it seems that [ref=anm:wait] will *always* wait the specified number of frames
-      regardless of the current time in these early games.[/wip]
-    * **[game=10] and later:** This now works by actually subtracting \`t\` from the current time
+      current time is greater than the time label (which is possible through :ref{r=anm:jmp});
+      in essence, :wip[it seems that :ref{r=anm:wait} will *always* wait the specified number of frames
+      regardless of the current time in these early games.]
+    * **:game[10] and later:** This now works by actually subtracting \`t\` from the current time
       before executing the next instruction.  Thus, the only difference between the two snippets
-      is that [ref=anm:wait] produces simpler time labels.
+      is that :ref{r=anm:wait} produces simpler time labels.
       (notice that \`thanm\` has \`timeof(label)\` syntax to make option 1 less painful anyways)
-    [/tiphide]
   `},
   'caseReturn': {
     sig: '', args: [], desc: `
-    Can be used at the end of a [ref=anm:case] block to return back
+    :::tipshow
+    Can be used at the end of a :ref{r=anm:case} block to return back
     to the moment just before the VM received the [interrupt](#anm/concepts&a=interrupt).
+    :::
 
-    [tiphide]
-    This is not the only way to end a [ref=anm:case] block; oftentimes the game may use a [ref=anm:stop] instead.
+    This is not the only way to end a :ref{r=anm:case} block; oftentimes the game may use a :ref{r=anm:stop} instead.
     You can read a more detailed discussion in the link above on interrupts, but the broad recommendation is:
 
-    * [ref=anm:caseReturn] is required if you want to allow your VM to return to a longer running part of
+    * :ref{r=anm:caseReturn} is required if you want to allow your VM to return to a longer running part of
       the script after being interrupted.
-    * If [ref=anm:caseReturn] is used, you should avoid any form of waiting inside that particular
-      [ref=anm:case] block. (else risk creating an infinite loop...)
-    [/tiphide]
+    * If :ref{r=anm:caseReturn} is used, you should avoid any form of waiting inside that particular
+      :ref{r=anm:case} block. (else risk creating an infinite loop...)
   `},
 });
 
@@ -616,27 +608,25 @@ Object.assign(ANM_INS_DATA, {
   `},
   'jmp': {
     sig: 'SS', args: ['dest', 't'], desc: `
+    :::tipshow
     Jumps to byte offset \`dest\` from the script's beginning and sets the time to \`t\`.
     \`thanm\` accepts a label name for \`dest\`.
+    :::
 
-    [tiphide]
-    [wip=2]Chinese wiki says some confusing recommendation about setting a=0, can someone explain to me?[/wip]
-    [/tiphide]
+    :wip2[Chinese wiki says some confusing recommendation about setting a=0, can someone explain to me?]
   `},
   'jmpDec': {
     sig: '$SS', args: ['x', 'dest', 't'], desc: `
-    Decrement \`x\` and then jump if \`x > 0\`.  You can use this to repeat a loop a fixed number of times.
+    :tipshow[Decrement \`x\` and then jump if \`x > 0\`.  You can use this to repeat a loop a fixed number of times.]
 
-    [tiphide]
-    [code]
-      [ref=anm:set]([ref=anmvar:i0], 3);
+    ~~~anm
+      :ref{r=anm:set}(:ref{r=anmvar:i0}, 3);
     loop:
       // ...
       // anything in this block will be done 3 times
       // ...
-      [ref=anm:jmpDec]([ref=anmvar:i0], loop);
-    [/code]
-    [/tiphide]
+      :ref{r=anm:jmpDec}(:ref{r=anmvar:i0}, loop);
+    ~~~
   `},
 });
 
@@ -676,36 +666,32 @@ for (const [mnemonic, operator] of Object.entries(OPERATOR_3_DATA)) {
 Object.assign(ANM_INS_DATA, {
   'v3-rand': {sig: '$S', args: ['x', 'n'], succ: 'v4-rand', desc: 'Draw a random integer `0 <= x < n` using the global RNG.'},
   'v3-randF': {sig: '%f', args: ['x', 'r'], succ: 'v4-randF', desc: 'Draw a random float `0 <= x <= r` using the global RNG.'},
-  'v4-rand': {sig: '$S', args: ['x', 'n'], succ: 'rand', desc: 'Draw a random integer `0 <= x < n` using the selected RNG (see [ref=anm:v4-randMode]).'},
-  'v4-randF': {sig: '%f', args: ['x', 'r'], succ: 'randF', desc: 'Draw a random float `0 <= x <= r` using the selected RNG (see [ref=anm:v4-randMode]).'},
+  'v4-rand': {sig: '$S', args: ['x', 'n'], succ: 'rand', desc: 'Draw a random integer `0 <= x < n` using the selected RNG (see :ref{r=anm:v4-randMode}).'},
+  'v4-randF': {sig: '%f', args: ['x', 'r'], succ: 'randF', desc: 'Draw a random float `0 <= x <= r` using the selected RNG (see :ref{r=anm:v4-randMode}).'},
 
   'v4-randMode': {
     sig: 'S', args: ['mode'], succ: 'v8-randMode', desc: `
-    Selects the RNG used by this VM.
+    :tipshow[Selects the RNG used by this VM.]
 
-    [tiphide]
     | Mode | Effect |
     | :---: | --- |
     | 0 | Uses the [replay RNG](#anm/concepts&a=rng) |
     | 1 | Uses the [animation RNG](#anm/concepts&a=rng) |
 
-    It seems that 0, the replay RNG, is the default. This is in stark contrast to [game=13] onwards.
-    ([wip]this seems surprising... can somebody conclusively verify this?[/wip])
+    It seems that 0, the replay RNG, is the default. This is in stark contrast to :game[13] onwards.
+    (:wip[this seems surprising... can somebody conclusively verify this?])
 
     This flag will be enabled on any scripts created using any of the ANM instructions that create new VMs.
-    [/tiphide]
   `},
 
   'v8-randMode': {
     sig: 'S', args: ['mode'], wip: 1, desc: `
-    A ([wip=1]completely ineffectual?[/wip]) leftover of [ref=anm:v4-randMode].
+    :tipshow[A (:wip[completely ineffectual?]) leftover of :ref{r=anm:v4-randMode}.]
 
-    [tiphide]
     Scripts in modern games still use this exactly as they did back in ANM V4/V7, and
-    [tip=though some of it is plain bugged in later games due to a memcpy added in TD after the flag is set in some
-    instructions]all of the code that manipulates this bitflag on child creation is still present[/tip],
+    :tip[all of the code that manipulates this bitflag on child creation is still present]{tip="though some of it is plain bugged in later games due to a memcpy added in TD after the flag is set in some
+    instructions"},
     but all of the code that _uses_ the bitflag appears to be gone.
-    [/tiphide]
   `},
 
   'rand': {sig: '$S', args: ['x', 'n'], desc: 'Draw a random integer `0 <= x < n` using the [animation RNG](#anm/concepts&a=rng).'},
@@ -720,9 +706,11 @@ Object.assign(ANM_INS_DATA, {
   'mathCirclePos': {sig: '%%ff', args: ['x', 'y', 'θ', 'r'], desc: '`x = r*cos(θ);`<br>`y = r*sin(θ);`'},
   'mathCirclePosRand': {
     sig: '%%ff', args: ['x', 'y', 'rmin', 'rmax'], desc: `
+    :::tipshow
     Uniformly draws a random radius \`r\` in the interval given by \`rmin\` and \`rmax\`, and picks a random angle
     (both using the [animation RNG](#anm/concepts&a=rng)).
-    Then basically computes [ref=anm:mathCirclePos] on those.
+    Then basically computes :ref{r=anm:mathCirclePos} on those.
+    :::
 
     This isn't the right way to uniformly draw points on a ring shape, but I don't think that's what it's used for anyways.
     (it's more like for just making a random vector with a random magnitude)
@@ -735,22 +723,20 @@ Object.assign(ANM_INS_DATA, {
 Object.assign(ANM_INS_DATA, {
   'sprite': {
     sig: 'S', args: ['id'], desc: `
-    Sets the image used by this VM to one of the sprites defined in the ANM file.
-    [tiphide]
+    :tipshow[Sets the image used by this VM to one of the sprites defined in the ANM file.]
     A value of \`-1\` means to not use an image (this is frequently used with [special drawing instructions](#anm/ins&a=group-600)).
     thanm also lets you use the sprite's name instead of an index.
 
-    [wip=2]Under some unknown conditions, these sprite indices are transformed by a "sprite-mapping"
+    :wip2[Under some unknown conditions, these sprite indices are transformed by a "sprite-mapping"
     function; e.g. many bullet scripts use false indices, presumably to avoid repeating the same script
-    for 16 different colors.  The precise mechanism of this is not yet fully understood.[/wip]
-    [/tiphide]
+    for 16 different colors.  The precise mechanism of this is not yet fully understood.]
   `},
   'spriteRand': {
     sig: 'SS', args: ['a', 'b'], desc: `
-    Selects a random sprite from \`a\` (inclusive) to \`a + b\` (exclusive).
+    :tipshow[Selects a random sprite from \`a\` (inclusive) to \`a + b\` (exclusive).]
 
-    * (&ndash;[game=128]): uses the [replay RNG](#anm/concepts&a=rng), regardless of [ref=anm:v4-randMode].
-    * ([game=13]&ndash;): uses the [animation RNG](#anm/concepts&a=rng).
+    * (&ndash;:game[128]): uses the [replay RNG](#anm/concepts&a=rng), regardless of :ref{r=anm:v4-randMode}.
+    * (:game[13]&ndash;): uses the [animation RNG](#anm/concepts&a=rng).
   `},
   'blendAdditive': {sig: '', args: [], desc: `Enables additive blending by setting \`D3DRS_DESTBLEND\` to \`D3DBLEND_ONE\`.`},
   'blendAlpha': {sig: '', args: [], desc: `Disables additive blending by setting \`D3DRS_DESTBLEND\` to \`D3DBLEND_INVSRCALPHA\`. (the default)`},
@@ -758,22 +744,21 @@ Object.assign(ANM_INS_DATA, {
     sig: 'S', args: ['enable'],
     succ: undefined, // one could say blendMode is a successor to this, but unfortunately the two instructions coexist in TH08 and TH09
     desc: `
-    Enables or disables additive blending.
+    :tipshow[Enables or disables additive blending.]
 
-    [tiphide]
-    Note: in [game=08], the more general [ref=anm:blendMode] is added, and this instruction becomes identical to
-    [code]
-      [ref=anm:blendMode](enable & 1);
-    [/code]
-    [/tiphide]
+    Note: in :game[08], the more general :ref{r=anm:blendMode} is added, and this instruction becomes identical to
+
+    ~~~anm
+      :ref{r=anm:blendMode}(enable & 1);
+    ~~~
   `},
   'blendMode': {
     sig: 'S', args: ['mode'], desc: `
-    Set color blending mode.
+    :tipshow[Set color blending mode.]
 
-    [tiphide]
-    Modes for [game=14]: (other games may be different)
+    Modes for :game[14]: (other games may be different)
 
+    :::table-footnotes
     | Mode | \`SRCBLEND\` | \`DESTBLEND\` | \`BLENDOP\` | Meaning |
     | :---: | ---           | --- | --- | --- |
     | 0 | \`SRCALPHA\` | \`INVSRCALPHA\` | \`ADD\` | Normal |
@@ -786,37 +771,34 @@ Object.assign(ANM_INS_DATA, {
     | 7 | \`DESTALPHA\` | \`INVDESTALPHA\` | \`ADD\` | Normal but src is drawn *behind* dest |
     | 8 | \`SRCALPHA\` | \`ONE\` | \`MIN\` | Darken only? |
     | 9 | \`SRCALPHA\` | \`ONE\` | \`MAX\` | Lighten only? |
-    [table-footnotes,ncols=5]
+
     <sup>†</sup> Weird because it seems this would also subtract alpha. (so if the thing you're drawing is fully opaque,
     the result will be fully transparent, deleting even the background...?)
-    [/table-footnotes]
+    :::
 
-    [wip]These are all untested, I only looked at assembly.[/wip]
-    [/tiphide]
+    :wip[These are all untested, I only looked at assembly.]
   `},
   // TODO: Maybe link to RenderType enum.
   'renderMode': {
     sig: 'S', args: ['mode'], desc: `
-    Determines how the ANM is rendered.
+    :tipshow[Determines how the ANM is rendered.]
 
-    [tiphide]
     Mode numbers can change between games, but the most popular modes have pretty stable numbers:
 
     * Mode 0 is for 2D sprites that do not require rotation.
     * Mode 1 is for 2D sprites that require rotation around the z-axis. <br>
-      [wip]When you activate mode 1, things may suddenly become a bit blurry.  Visually it looks identical to
-      mode 2 at zero rotation, but the cause seems different based on the code?[/wip]
+      :wip[When you activate mode 1, things may suddenly become a bit blurry.  Visually it looks identical to
+      mode 2 at zero rotation, but the cause seems different based on the code?]
     * Mode 8 is for sprites that need to rotate in 3D space.
-    * [wip]Mode 2 is like mode 0, but shifts the position by (-0.5, -0.5) pixels, making it appear ever-so-slightly
-        larger and blurrier.[/wip]
-    * [wip]Any other modes used in scripts are a total mystery at this time.[/wip]
+    * :wip[Mode 2 is like mode 0, but shifts the position by (-0.5, -0.5) pixels, making it appear ever-so-slightly
+        larger and blurrier.]
+    * :wip[Any other modes used in scripts are a total mystery at this time.]
     * Many mode numbers are not intended for use by ANM scripts, and are instead reserved for instructions
-      like [ref=anm:textureCircle] and [ref=anm:drawRect] (each one has its own mode).
-    [/tiphide]
+      like :ref{r=anm:textureCircle} and :ref{r=anm:drawRect} (each one has its own mode).
   `},
   'playerBulletMode2': {
     sig: 'S', args: ['mode'], wip: 2, desc: `
-    Some weird kind of proto-[ref=anm:renderMode] used strictly for player bullet hit animations **and nothing else**.
+    :tipshow[Some weird kind of proto-:ref{r=anm:renderMode} used strictly for player bullet hit animations **and nothing else**.]
 
     The hit animation for a player bullet that has hit an enemy uses one of 6 different possible functions to
     render itself based on this value.  Based on experimentation, these appear to be
@@ -829,63 +811,56 @@ Object.assign(ANM_INS_DATA, {
   `},
   'layer': {
     sig: 'S', args: ['n'], desc: `
-    Sets the layer of the ANM.  [tiphide][wip]This may or may not affect z-ordering? It's weird...[/wip][/tiphide]
+    :tipshow[Sets the layer of the ANM.]  :wip[This may or may not affect z-ordering? It's weird...]
 
-    [tiphide]
     **Different layer numbers may behave differently!** Each game only has a finite number of layers,
     and certain groups of these layers are drawn at different stages [in the rendering pipeline](#anm/stages-of-rendering).
     Be especially careful when porting something from one game to another, as the layer groupings may have changed.
-    [/tiphide]
   `},
   'flipX': {
     sig: '', args: [], desc: `
-    Toggles mirroring on the x axis.
-    [tiphide]
-    This very simply [tip=It also sets a bitflag but I think only EoSD uses it to keep the sign flipped during interpolation of scale.]just[/tip]
-    flips the sign of \`sx\` in [ref=anm:scale].  Future calls to [ref=anm:scale] will thus basically undo it.
-    [/tiphide]
+    :tipshow[Toggles mirroring on the x axis.]
+
+    This very simply :tip[just]{tip="It also sets a bitflag but I think only EoSD uses it to keep the sign flipped during interpolation of scale."}
+    flips the sign of \`sx\` in :ref{r=anm:scale}.  Future calls to :ref{r=anm:scale} will thus basically undo it.
   `},
   'flipY': {
     sig: '', args: [], desc: `
-    Toggles mirroring on the y axis.
-    [tiphide]
-    This very simply [tip=It also sets a bitflag but I think only EoSD uses it to keep the sign flipped during interpolation of scale.]just[/tip]
-    flips the sign of \`sy\` in [ref=anm:scale].  Future calls to [ref=anm:scale] will thus basically undo it.
-    [/tiphide]
+    :tipshow[Toggles mirroring on the y axis.]
+
+    This very simply :tip[just]{tip="It also sets a bitflag but I think only EoSD uses it to keep the sign flipped during interpolation of scale."}
+    flips the sign of \`sy\` in :ref{r=anm:scale}.  Future calls to :ref{r=anm:scale} will thus basically undo it.
   `},
   'resampleMode': {
     sig: 'S', args: ['n'], desc: `
-    Determines how a sprite is resampled when scale is greater or less than 1f.
+    :tipshow[Determines how a sprite is resampled when scale is greater or less than 1f.]
 
-    [tiphide]
     | Mode | D3D constant | Meaning | Layman's terms |
     | :---: | --- | --- | --- |
     | 0    | \`D3DTEXF_LINE\` | linear interpolation | blurry |
     | 1    | \`D3DTEXF_POINT\` | nearest-point sampling | big pixels |
 
-    As an example, Reimu's sprite in [game=14] uses [ref-notip=anm:resampleMode]\`(1)\`, while her hitbox animation does not.
+    As an example, Reimu's sprite in :game[14] uses \`:ref{r=anm:resampleMode tip=0}(1)\`, while her hitbox animation does not.
     Here you can see the effect of enabling it on the hitbox during Shinmyoumaru's survival spell.<br>
     <img src="./content/anm/img/ins-v8-311.png" height="200px">
-    [/tiphide]
   `},
   'scrollMode': {
     sig: 'SS', args: ['xmode', 'ymode'], desc: `
-    Determines how a sprite pulls image data when an instruction like [ref=anm:uvScale], [ref=anm:uVel],
-    or [ref=anm:textureCircle] causes it to pull from [uv coords](#anm/concepts&a=uv-coords) outside the \`(0,0)-(1,1)\` rectangle.
+    :::tipshow
+    Determines how a sprite pulls image data when an instruction like :ref{r=anm:uvScale}, :ref{r=anm:uVel},
+    or :ref{r=anm:textureCircle} causes it to pull from [uv coords](#anm/concepts&a=uv-coords) outside the \`(0,0)-(1,1)\` rectangle.
+    :::
 
-    [tiphide]
     | Mode | D3D constant | Meaning |
     | :---: | --- | --- |
     | 0    | \`D3DTADDRESS_WRAP\` | texture repeats infinitely |
     | 1    | \`D3DTADDRESS_CLAMP\` | pixels at the edge extend to infinity |
     | 2    | \`D3DTADDRESS_MIRROR\` | like 0 but every other image is mirrored |
-    [/tiphide]
   `},
   'originMode': {
     sig: 'S', args: ['mode'], wip: 1, desc: `
-    Determines the origin used by the sprite.
+    :tipshow[Determines the origin used by the sprite.]
 
-    [tiphide]
     | Value | Origin | Appropriate for |
     | :---: | ---    | --- |
     | 0     | Top left of target surface. | Border around the game. |
@@ -893,29 +868,24 @@ Object.assign(ANM_INS_DATA, {
     | 2     | Location of ECL's (0, 0) in [rendering stage 4](#anm/stages-of-rendering&a=stage-4) | Game elements drawn at full res (e.g. boss HP). |
 
     **If your sprite is correctly positioned at 640x480 resolution but not at larger resolutions,
-    you may want to check this setting.** (as well as [ref=anm:resolutionMode])
-    [/tiphide]
+    you may want to check this setting.** (as well as :ref{r=anm:resolutionMode})
 
-    Typically, [ref=anm:layer] will automatically set this to a good default.
-    [wip]Clear guidelines are not yet known for when you are required to override that default.[/wip]
+    :tipshow[Typically, :ref{r=anm:layer} will automatically set this to a good default.]
+    :wip[Clear guidelines are not yet known for when you are required to override that default.]
 
-    [tiphide]
     This only has an effect on root graphics. (for child graphics, the origin is always the parent's position)
-    [/tiphide]
   `},
   'resolutionMode': {
     sig: 'S', args: ['n'], wip: 1, desc: `
-    Determines how certain aspects of the game are scaled to the current resolution.
+    :tipshow[Determines how certain aspects of the game are scaled to the current resolution.]
 
-    [c=red]TODO: details[/c]
+    :wip[TODO: details]
 
-    Typically, [ref=anm:layer] will automatically set this to a good default.
-    [wip]Clear guidelines are not yet known for when you are required to override that default.[/wip]
+    Typically, :ref{r=anm:layer} will automatically set this to a good default.
+    :wip[Clear guidelines are not yet known for when you are required to override that default.]
 
-    [tiphide]
     **If your sprite is correctly positioned at 640x480 resolution but not at larger resolutions,
-    you may want to check this setting.** (as well as [ref=anm:originMode])
-    [/tiphide]
+    you may want to check this setting.** (as well as :ref{r=anm:originMode})
   `},
 });
 
@@ -925,71 +895,67 @@ Object.assign(ANM_INS_DATA, {
 Object.assign(ANM_INS_DATA, {
   'pos': {
     sig: 'fff', args: ['x', 'y', 'z'], desc: `
-    Sets the position of the graphic.
+    :tipshow[Sets the position of the graphic.]
 
-    [tiphide]
-    If you look in the code, you'll see that if a certain bitflag is set, this will write to a different variable.  This is part of the implementation of [ref=anm:posMode] in earlier games, and is, to my knowledge, entirely dead code in every game since [game=095].
-    [/tiphide]
+    If you look in the code, you'll see that if a certain bitflag is set, this will write to a different variable.
+    This is part of the implementation of :ref{r=anm:posMode} in earlier games, and is, to my knowledge, entirely dead code in every game since :game[095].
   `},
   'rotate': {
     sig: 'fff', args: ['rx', 'ry', 'rz'], desc: `
-    Set the graphic's rotation.  For 2D objects, only the z rotation matters.
-    [tiphide]
+    :tipshow[Set the graphic's rotation.  For 2D objects, only the z rotation matters.]
+
     In some rare cases, x rotation has a special meaning for [special drawing instructions](#anm/ins&a=group-600).
-    Graphics rotate around their anchor point (see [ref=anm:anchor]).
+    Graphics rotate around their anchor point (see :ref{r=anm:anchor}).
 
     A positive angle around the z-axis goes **clockwise** from the +x direction towards the +y direction (defined to point down).
     3D rotations are performed as follows: (see the [conventions](#anm/conventions) page for more info)
 
-    * ([game=06]) Rotate first around x, then around y, then around z.
-    * ([game=07]&ndash;[game=128]) [wip]Haven't checked. Probably the same?[/wip]
-    * ([game=13]&ndash;) You can choose the rotation system with [ref=anm:rotationSystem]. [wip](what's the default? probably the same?)[/wip]
+    * (:game[06]) Rotate first around x, then around y, then around z.
+    * (:game[07]&ndash;:game[128]) :wip[Haven't checked. Probably the same?]
+    * (:game[13]&ndash;) You can choose the rotation system with :ref{r=anm:rotationSystem}. :wip[(what's the default? probably the same?)]
 
-    *If nothing seems to be happening when you call this, check your [ref=anm:renderMode] setting!*
-    [/tiphide]
+    *If nothing seems to be happening when you call this, check your :ref{r=anm:renderMode} setting!*
   `},
   'rotateAuto': {
     sig: 'b', args: ['mode'], desc: `
-    Sets the auto-rotate flag, which causes a graphic to rotate to face its direction of motion.
+    :tipshow[Sets the auto-rotate flag, which causes a graphic to rotate to face its direction of motion.]
 
-    [wip]
+    :::wip
     You can't just put this in any arbitrary script and expect it to work; the script must be used somewhere
     specifically designed to support it, such as an enemy bullet, a player bullet.
-    A predecessor to this instruction [ref=anm:v0-26] also enabled auto rotation on secondary VMs on an enemy;
+    A predecessor to this instruction :ref{r=anm:v0-26} also enabled auto rotation on secondary VMs on an enemy;
     not sure if that is still true here.
     <!-- there is something for enemies at th125.exe+0x41191b though -->
-    [/wip]
+    :::
   `},
   'rotationSystem': {
     sig: 'S', args: ['mode'], desc: `
     Sets the conventions for 3D rotation (e.g. XYZ, ZYX, etc.).
-    [wip]TODO: Define the modes.[/wip]
+    :wip[TODO: Define the modes.]
   `},
   'scale': {
     sig: 'ff', args: ['sx', 'sy'], desc: `
     Scales the ANM independently along the x and y axis.
-    Graphics grow around their anchor point (see [ref=anm:anchor]).
+    Graphics grow around their anchor point (see :ref{r=anm:anchor}).
     Some [special drawing instructions](#anm/ins&a=group-600) give the x and y scales special meaning.
   `},
   'scale2': {
     sig: 'ff', args: ['sx', 'sy'], desc: `
-    *As far as we know,* this is just an extra set of scale factors that apply separately (multiplicatively)
-    to [ref=anm:scale].
+    :tipshow[*As far as we know,* this is just an extra set of scale factors that apply separately (multiplicatively) to :ref{r=anm:scale}.]
 
-    [tiphide]
     All [special drawing instructions](#anm/ins&a=group-600) ignore this (which is a shame, because it means you still can't
     draw ellipses...).
-    [/tiphide]
   `},
   'rgb-dword': {
     sig: 'S', args: ['rgb'], succ: 'rgb', desc: `
-    Set a color which gets blended with this sprite.
+    :tipshow[Set a color which gets blended with this sprite.]
+    Blend operation is [multiply](https://en.wikipedia.org/wiki/Blend_modes#Multiply), so setting white (\`0xFFFFFF\`) eliminates the effect.
 
     This version takes a single dword in the form \`0x00RRGGBB\`.  Variables are not supported.
   `},
   'rgb': {
     sig: 'SSS', args: ['r', 'g', 'b'], desc: `
-    Set a color which gets blended with this sprite.
+    :tipshow[Set a color which gets blended with this sprite.]
     Blend operation is [multiply](https://en.wikipedia.org/wiki/Blend_modes#Multiply), so setting white (255, 255, 255) eliminates the effect.
   `},
   'alpha': {
@@ -999,40 +965,37 @@ Object.assign(ANM_INS_DATA, {
   'rgb2': {
     sig: 'SSS', args: ['r', 'g', 'b'], desc: `
     Set a second color for gradients.  Gradients are used by certain [special drawing instructions](#anm/ins&a=group-600), and can be enabled
-    on regular sprites using [ref=anm:colorMode].
+    on regular sprites using :ref{r=anm:colorMode}.
   `},
   'alpha2': {
     sig: 'S', args: ['alpha'], desc: `
     Set a second alpha for gradients.  Gradients are used by certain [special drawing instructions](#anm/ins&a=group-600), and can be enabled
-    on regular sprites using [ref=anm:colorMode].
+    on regular sprites using :ref{r=anm:colorMode}.
   `},
   'colorMode': {
     sig: 'S', args: ['mode'], desc: `
-    Lets you enable gradients on regular sprites.
+    :tipshow[Lets you enable gradients on regular sprites.]
 
-    [tiphide]
     | Value | Effect |
     | :---: |   ---  |
-    |   0   | Only use the color set by [ref=anm:rgb] and [ref=anm:alpha]. |
-    |   1   | Only use the color set by [ref=anm:rgb2] and [ref=anm:alpha2]. |
-    |   2   | ([game=125]&ndash;) Horizontal gradient. |
-    |   3   | ([game=125]&ndash;) Vertical gradient. |
+    |   0   | Only use the color set by :ref{r=anm:rgb} and :ref{r=anm:alpha}. |
+    |   1   | Only use the color set by :ref{r=anm:rgb2} and :ref{r=anm:alpha2}. |
+    |   2   | (:game[125]&ndash;) Horizontal gradient. |
+    |   3   | (:game[125]&ndash;) Vertical gradient. |
 
     This has no effect on [special drawing instructions](#anm/ins&a=group-600).
 
-    For some strange reason, from [game=14] onwards,
-    [ref=anm:rgb2Time] and [ref=anm:alpha2Time] automatically do [ref-notip=anm:colorMode](1).
+    For some strange reason, from :game[14] onwards,
+    :ref{r=anm:rgb2Time} and :ref{r=anm:alpha2Time} automatically do :ref{r=anm:colorMode tip=0}(1).
     Therefore, if you use those instructions, you must call this *afterwards,* not before.
 
-    **ECL modders beware:** The game may interfere with the use of [ref=anm:rgb2], [ref=anm:alpha2] and [ref=anm:colorMode]
+    **ECL modders beware:** The game may interfere with the use of :ref{r=anm:rgb2}, :ref{r=anm:alpha2} and :ref{r=anm:colorMode}
     on the VM in slot 0 of an enemy, because it uses them to make enemies blink when they take damage.
-    [/tiphide]
   `},
   'colorizeChildren': {
     sig: 'b', args: ['enable'], desc: `
-    Sets a bitflag that causes colorization (see [ref=anm:rgb]) to affect children as well.
+    :tipshow[Sets a bitflag that causes colorization (see :ref{r=anm:rgb}) to affect children as well.]
 
-    [tiphide]
     The game uses this on yin-yang orb enemies to ensure that their satellites also flash on damage taken.
     In the following image, the damage flash was significantly exaggerated to make the difference easy to see.
 
@@ -1041,218 +1004,189 @@ Object.assign(ANM_INS_DATA, {
     Notes:
     * Must be called *before* the children are created. (the bitflag is copied on child creation)
     * Not supported by [special drawing instructions](#anm/ins&a=group-600).
-    * Both parent and child must not be using gradients (i.e. they must have [ref=anm:colorMode] 0 or 1).
-    [/tiphide]
+    * Both parent and child must not be using gradients (i.e. they must have :ref{r=anm:colorMode} 0 or 1).
   `},
   'angleVel': {sig: 'fff', args: ['ωx', 'ωy', 'ωz'], desc: `Set a constant angular velocity, in radians per frame.`},
   'scaleGrowth': {sig: 'ff', args: ['gx', 'gy'], desc: `
-    Every frame, it increases the values of [ref=anm:scale] as \`sx -> sx + gx\` and \`sy -> sy + gy\`.
-    Basically, [ref-notip=anm:scaleGrowth] is to [ref=anm:scale] as [ref=anm:angleVel] is to [ref=anm:rotate].
+    Every frame, it increases the values of :ref{r=anm:scale} as \`sx -> sx + gx\` and \`sy -> sy + gy\`.
+    Basically, :ref{r=anm:scaleGrowth tip=0} is to :ref{r=anm:scale} as :ref{r=anm:angleVel} is to :ref{r=anm:rotate}.
     (they even share implemenation details...)
   `},
   'uAdd': {sig: 'f', args: ['du'], desc: `
-    Adds \`du\` to the [texture u coordinate](#anm/concepts&a=uv-coords).
+    :tipshow[Adds \`du\` to the [texture u coordinate](#anm/concepts&a=uv-coords).]
 
-    [tiphide]
-    Later versions remove this entirely in favor of [ref=anm:uVel].
-    [/tiphide]
+    Later versions remove this entirely in favor of :ref{r=anm:uVel}.
   `},
   'vAdd': {sig: 'f', args: ['dv'], desc: `
-    Adds \`dv\` to the [texture v coordinate](#anm/concepts&a=uv-coords).
+    :tipshow[Adds \`dv\` to the [texture v coordinate](#anm/concepts&a=uv-coords).]
 
-    [tiphide]
-    Later versions remove this entirely in favor of [ref=anm:vVel].
-    [/tiphide]
+    Later versions remove this entirely in favor of :ref{r=anm:vVel}.
   `},
   'uVel': {sig: 'f', args: ['vel'], desc: `
+    :::tipshow
     Add \`vel\` to the [texture u coordinate](#anm/concepts&a=uv-coords) every frame (in units of \`1 / total_image_width\`),
     causing the displayed sprite to scroll horizontally through the image file.
+    :::
 
-    [tiphide]
-    This image shows [ref=anm:uVel] used with a negative argument:
+    This image shows :ref{r=anm:uVel} used with a negative argument:
 
     <img src="content/anm/img/ins-u-vel.gif">
-    [/tiphide]
   `},
   'vVel': {sig: 'f', args: ['vel'], desc: `
+    :::tipshow
     Add \`vel\` to the [texture v coordinate](#anm/concepts&a=uv-coords) every frame (in units of \`1 / total_image_height\`),
     causing the displayed sprite to scroll vertically through the image file.
+    :::
   `},
   'uvScale': {sig: 'ff', args: ['uscale', 'vscale'], desc: `
-    Scales [texture uv coordinates](#anm/concepts&a=uv-coords).  [tiphide]Values greater than 1 means that a larger
+    :tipshow[Scales [texture uv coordinates](#anm/concepts&a=uv-coords).]  Values greater than 1 means that a larger
     region of the texture (spritesheet) is shown.  Typically used to make a texture repeat multiple times, but you
-    can also use [ref=anm:scrollMode] to change what happens.
-    [/tiphide]
+    can also use :ref{r=anm:scrollMode} to change what happens.
 
-    [tiphide]
-    Here is a demonstration using [ref=anm:uvScaleTime] to change \`uscale\` to 3 on the left,
+    Here is a demonstration using :ref{r=anm:uvScaleTime} to change \`uscale\` to 3 on the left,
     and \`vscale\` to 3 on the right.  (in this case, the sprite occupies the full texture)
 
     <img src="content/anm/img/ins-uv-scale.gif" height="200px">
-    [/tiphide]
   `},
   'anchorTopLeft': {sig: '', args: [], desc: `
-    Changes the anchor point to the top left. (default is center)
+    :tipshow[Changes the anchor point to the top left. (default is center)]
 
-    [tiphide]
-    [wip]UNTESTED:[/wip]
-    This is not entirely the same as [ref=anm:anchor] in future games.  In particular, judging from the code,
+    :wip[UNTESTED:]
+    This is not entirely the same as :ref{r=anm:anchor} in future games.  In particular, judging from the code,
     I do not believe it changes the center of rotation or scaling, but rather merely translates the sprite
     by \`(+sx*w/2, +sy*h/2)\` *after* scaling and rotating it. (where \`w,h\` are sprite dimensions
-    and \`sx,sy\` come from [ref=anm:scale]).
-    [/tiphide]
+    and \`sx,sy\` come from :ref{r=anm:scale}).
   `},
   'anchor': {sig: 'ss', args: ['h', 'v'], desc: `
+    :::tipshow
     Set the horizontal and vertical anchoring of the sprite.  Notice the args are each two bytes.
-    For further fine-tuning see [ref=anm:anchorOffset].
+    For further fine-tuning see :ref{r=anm:anchorOffset}.
+    :::
 
-    [tiphide]
     | Args  |  0     |  1   | 2      |
     | :---:  | ---    | ---  | ---    |
     | \`h\` | Center | Left | Right  |
     | \`v\` | Center | Top  | Bottom |
-    [/tiphide]
   `},
   'anchorOffset': {sig: 'ff', args: ['dx', 'dy'], desc: `
+    :::tipshow
     Nudge the anchor point of the sprite right by \`dx\` pixels and down by \`dy\` pixels in the source image.
     Important for asymmetric bullet sprites because the anchor position is the center point for rotation and scaling.
+    :::
 
-    [tiphide]
-    [wip=1]
+    :wip[
     Surprisingly, UFO did not have this.
     At this time, it is unclear how rotated bullets were correctly positioned in those earlier games.
-    [/wip]
+    ]
 
-    In the image below, both hearts are rotating using [ref=anm:angleVel]\`(0f, 0f, rad(3))\`,
+    In the image below, both hearts are rotating using :ref{r=anm:angleVel}\`(0f, 0f, rad(3))\`,
     but the pink heart additionally has:
 
-    [code]
-      [ref=anm:anchor](1, 1);
-      [ref=anm:anchorOffset](9.5f, 25f);
-    [/code]
+    ~~~anm
+      :ref{r=anm:anchor}(1, 1);
+      :ref{r=anm:anchorOffset}(9.5f, 25f);
+    ~~~
 
     ![anchorOffset demo](./content/anm/img/ins-v8-436.gif)
-
-    [/tiphide]
   `},
 });
 
 // more timely basics
 Object.assign(ANM_INS_DATA, {
-  'posTime': {sig: 'SSfff', args: ['t', 'mode', 'x', 'y', 'z'], desc: `Over the next \`t\` frames, changes [ref=anm:pos] to the given values using [interpolation mode](#anm/interpolation) \`mode\`.`},
-  'rotateTime': {sig: 'SSfff', args: ['t', 'mode', 'rx', 'ry', 'rz'], desc: `Over the next \`t\` frames, changes [ref=anm:rotate] to the given values using [interpolation mode](#anm/interpolation) \`mode\`.`},
-  'scaleTime': {sig: 'SSff', args: ['t', 'mode', 'sx', 'sy'], desc: `Over the next \`t\` frames, changes [ref=anm:scale] to the given values using [interpolation mode](#anm/interpolation) \`mode\`.`},
-  'scale2Time': {sig: 'SSff', args: ['t', 'mode', 'sx', 'sy'], desc: `Over the next \`t\` frames, changes [ref=anm:scale2] to the given values using [interpolation mode](#anm/interpolation) \`mode\`.`},
-  'uvScaleTime': {sig: 'SSff', args: ['t', 'mode', 'uscale', 'vscale'], desc: `Over the next \`t\` frames, changes [ref=anm:uvScale] to the given values using [interpolation mode](#anm/interpolation) \`mode\`.`},
-  'alphaTime': {sig: 'SSS', args: ['t', 'mode', 'alpha'], desc: `Over the next \`t\` frames, changes [ref=anm:alpha] to the given values using [interpolation mode](#anm/interpolation) \`mode\`.`},
+  'posTime': {sig: 'SSfff', args: ['t', 'mode', 'x', 'y', 'z'], desc: `Over the next \`t\` frames, changes :ref{r=anm:pos} to the given values using [interpolation mode](#anm/interpolation) \`mode\`.`},
+  'rotateTime': {sig: 'SSfff', args: ['t', 'mode', 'rx', 'ry', 'rz'], desc: `Over the next \`t\` frames, changes :ref{r=anm:rotate} to the given values using [interpolation mode](#anm/interpolation) \`mode\`.`},
+  'scaleTime': {sig: 'SSff', args: ['t', 'mode', 'sx', 'sy'], desc: `Over the next \`t\` frames, changes :ref{r=anm:scale} to the given values using [interpolation mode](#anm/interpolation) \`mode\`.`},
+  'scale2Time': {sig: 'SSff', args: ['t', 'mode', 'sx', 'sy'], desc: `Over the next \`t\` frames, changes :ref{r=anm:scale2} to the given values using [interpolation mode](#anm/interpolation) \`mode\`.`},
+  'uvScaleTime': {sig: 'SSff', args: ['t', 'mode', 'uscale', 'vscale'], desc: `Over the next \`t\` frames, changes :ref{r=anm:uvScale} to the given values using [interpolation mode](#anm/interpolation) \`mode\`.`},
+  'alphaTime': {sig: 'SSS', args: ['t', 'mode', 'alpha'], desc: `Over the next \`t\` frames, changes :ref{r=anm:alpha} to the given values using [interpolation mode](#anm/interpolation) \`mode\`.`},
   'alpha2Time': {sig: 'SSS', args: ['t', 'mode', 'alpha'], desc: `
-    Over the next \`t\` frames, changes [ref=anm:alpha2] to the given value using [interpolation mode](#anm/interpolation) \`mode\`.
+    :tipshow[Over the next \`t\` frames, changes :ref{r=anm:alpha2} to the given value using [interpolation mode](#anm/interpolation) \`mode\`.]
 
-    [tiphide]For some reason, in [game=14] onwards, this also sets [ref=anm:colorMode] to 1, which can be a mild inconvenience.[/tiphide]
+    For some reason, in :game[14] onwards, this also sets :ref{r=anm:colorMode} to 1, which can be a mild inconvenience.
   `},
   'rgbTime-dword': {
     sig: 'SSS', args: ['t', 'mode', 'rgb'], succ: 'rgbTime', desc: `
-    Over the next \`t\` frames, changes [ref=anm:rgb-dword] to the given value using [interpolation mode](#anm/interpolation) \`mode\`.
+    Over the next \`t\` frames, changes :ref{r=anm:rgb-dword} to the given value using [interpolation mode](#anm/interpolation) \`mode\`.
 
     This version takes a single dword in the form \`0x00RRGGBB\`.  Variables are not supported.
   `},
-  'rgbTime': {sig: 'SSSSS', args: ['t', 'mode', 'r', 'g', 'b'], desc: `Over the next \`t\` frames, changes [ref=anm:rgb] to the given value using [interpolation mode](#anm/interpolation) \`mode\`.`},
+  'rgbTime': {sig: 'SSSSS', args: ['t', 'mode', 'r', 'g', 'b'], desc: `Over the next \`t\` frames, changes :ref{r=anm:rgb} to the given value using [interpolation mode](#anm/interpolation) \`mode\`.`},
   'rgb2Time': {sig: 'SSSSS', args: ['t', 'mode', 'r', 'g', 'b'], desc: `
-    Over the next \`t\` frames, changes [ref=anm:rgb2] to the given value using [interpolation mode](#anm/interpolation) \`mode\`.
+    :tipshow[Over the next \`t\` frames, changes :ref{r=anm:rgb2} to the given value using [interpolation mode](#anm/interpolation) \`mode\`.]
 
-    [tiphide]For some reason, in [game=14] onwards, this also sets [ref=anm:colorMode] to 1, which can be a mild inconvenience.[/tiphide]
+    For some reason, in :game[14] onwards, this also sets :ref{r=anm:colorMode} to 1, which can be a mild inconvenience.
   `},
   'uVelTime': {sig: 'SSf', args: ['t', 'mode', 'vel'], desc: `
-    Over the next \`t\` frames, changes [ref=anm:uVel] to the given value using [interpolation mode](#anm/interpolation) \`mode\`.
+    :tipshow[Over the next \`t\` frames, changes :ref{r=anm:uVel} to the given value using [interpolation mode](#anm/interpolation) \`mode\`.]
 
-    [tiphide]
-    Remember that [ref=anm:uVel] is scroll *velocity,* not position.
-    [/tiphide]
+    Remember that :ref{r=anm:uVel} is scroll *velocity,* not position.
   `},
   'vVelTime': {sig: 'SSf', args: ['t', 'mode', 'vel'], desc: `
-    Over the next \`t\` frames, changes [ref=anm:vVel] to the given value using [interpolation mode](#anm/interpolation) \`mode\`.
+    :tipshow[Over the next \`t\` frames, changes :ref{r=anm:vVel} to the given value using [interpolation mode](#anm/interpolation) \`mode\`.]
 
-    [tiphide]
-    Remember that [ref=anm:vVel] is scroll *velocity,* not position.
-    [/tiphide]
+    Remember that :ref{r=anm:vVel} is scroll *velocity,* not position.
   `},
   'rotateTime2D': {
     sig: 'SSf', args: ['t', 'mode', 'rz'], desc: `
-    A compact version of [ref=anm:rotateTime] that only interpolates the z rotation.
-    [tiphide]
-    Only used by [game=128] in the main menu.
+    :tipshow[A compact version of :ref{r=anm:rotateTime} that only interpolates the z rotation.]
+    Only used by :game[128] in the main menu.
 
-    (note: [ref=anm:rotateTime2D] and [ref=anm:rotateTime] are tracked separately, but judging from the code, they **are not** meant
+    (note: :ref{r=anm:rotateTime2D} and :ref{r=anm:rotateTime} are tracked separately, but judging from the code, they **are not** meant
     to be used together and their effects do not stack properly)
-    [/tiphide]
   `},
   'alphaTimeLinear': {
     sig: 'SS', args: ['alpha', 't'], desc: `
-    [tiphide]**Obsolete.** Use [ref=anm:alphaTime] instead.[/tiphide]
+    **Obsolete.** Use :ref{r=anm:alphaTime} instead.
 
-    [wip]UNTESTED:[/wip]
-    Linearly changes alpha to \`alpha\` over the next \`t\` frames.
-    [tiphide]
-    Identical to calling [ref=anm:alphaTime]\`(t, 0, alpha)\`.
-    [/tiphide]
+    :tipshow[:wip[UNTESTED:] Linearly changes alpha to \`alpha\` over the next \`t\` frames.]
+    Identical to calling :ref{r=anm:alphaTime}\`(t, 0, alpha)\`.
   `},
   'posTimeLinear': {
     sig: 'fffS', args: ['x', 'y', 'z', 't'], wip: 1, desc: `
-    [tiphide]**Obsolete.** Use [ref=anm:posTime] instead.[/tiphide]
+    **Obsolete.** Use :ref{r=anm:posTime} instead.
 
-    [wip]UNTESTED:[/wip]
-    Linearly changes position to \`(x, y, z)\` over the next \`t\` frames.
-    [tiphide]
-    Identical to calling [ref=anm:posTime]\`(t, 0, x, y, z)\`.
-    [/tiphide]
+    :tipshow[:wip[UNTESTED:] Linearly changes position to \`(x, y, z)\` over the next \`t\` frames.]
+    Identical to calling :ref{r=anm:posTime}\`(t, 0, x, y, z)\`.
   `},
   'posTimeEaseout': {
     sig: 'fffS', args: ['x', 'y', 'z', 't'], wip: 1, desc: `
-    [tiphide]**Obsolete.** Use [ref=anm:posTime] instead.[/tiphide]
+    **Obsolete.** Use :ref{r=anm:posTime} instead.
 
-    [wip]UNTESTED:[/wip]
+    :tipshow[:wip[UNTESTED:]
     Changes position to \`(x, y, z)\` over the next \`t\` frames with a sudden burst
-    of speed that decelerates over time.
-    [tiphide]
-    Identical to calling [ref=anm:posTime]\`(t, 4, x, y, z)\`.
-    [/tiphide]
+    of speed that decelerates over time.]
+    Identical to calling :ref{r=anm:posTime}\`(t, 4, x, y, z)\`.
   `},
   'posTimeEaseout4': {
     sig: 'fffS', args: ['x', 'y', 'z', 't'], wip: 1, desc: `
-    [tiphide]**Obsolete.** Use [ref=anm:posTime] instead.[/tiphide]
+    **Obsolete.** Use :ref{r=anm:posTime} instead.
 
-    [wip]UNTESTED:[/wip]
+    :tipshow[:wip[UNTESTED:]
     Changes position to \`(x, y, z)\` over the next \`t\` frames with a sudden burst
-    of speed that sharply decelerates as \`t^4\`.
-    [tiphide]
-    Identical to calling [ref=anm:posTime]\`(t, 6, x, y, z)\`.
-    [/tiphide]
+    of speed that sharply decelerates as \`t^4\`.]
+    Identical to calling :ref{r=anm:posTime}\`(t, 6, x, y, z)\`.
   `},
   'scaleTimeLinear': {
     sig: 'ffS', args: ['sx', 'sy', 't'], wip: 1, desc: `
-    [tiphide]**Obsolete.** Use [ref=anm:scaleTime] instead.[/tiphide]
+    **Obsolete.** Use :ref{r=anm:scaleTime} instead.
 
-    [wip]UNTESTED:[/wip]
-    Linearly changes scale to \`(sx, sy)\` over the next \`t\` frames.
-    [tiphide]
-    Identical to calling [ref=anm:scaleTime]\`(t, 0, sx, sy)\`.
-    [/tiphide]
+    :tipshow[:wip[UNTESTED:]
+    Linearly changes scale to \`(sx, sy)\` over the next \`t\` frames.]
+    Identical to calling :ref{r=anm:scaleTime}\`(t, 0, sx, sy)\`.
   `},
   'posBezier': {
     sig: 'Sfffffffff', args: ['t', 'x1', 'y1', 'z1', 'x2', 'y2', 'z2', 'x3', 'y3', 'z3'],
     desc: `
-    In \`t\` frames, moves to \`(x2, y2, z2)\` using Bezier interpolation.
+    :tipshow[In \`t\` frames, moves to \`(x2, y2, z2)\` using Bezier interpolation.]
 
-    [tiphide]
     * The graphic starts at its current position.
     * \`(x1/t, y1/t, z1/t)\` is the **initial velocity.**
     * \`(x2, y2, z2)\` is the **final position.**
     * \`(x3/t, y3/t, z3/t)\` is the **final velocity.**
-    [/tiphide]
   `},
   'posTime2D': {
     sig: 'SSff', args: ['t', 'mode', 'x', 'y'], wip: 1, desc: `
-    Looks like a 2D version of [ref=anm:posTime]?  ([wip]Is that all? Seems pointless[/wip])
+    Looks like a 2D version of :ref{r=anm:posTime}?  (:wip[Is that all? Seems pointless])
   `},
 });
 
@@ -1264,95 +1198,91 @@ Object.assign(ANM_INS_DATA, {
 Object.assign(ANM_INS_DATA, {
   'textureCircle': {
     sig: 'S', args: ['nmax'], desc: `
-    Wraps a texture into a thin ring (annulus).  The argument determines the size of an internal buffer.
+    :tipshow[Wraps a texture into a thin ring (annulus).  The argument determines the size of an internal buffer.]
 
-    [tiphide]
     First, the texture is repeated an integer number of times along the y axis.
     Then, it is stretched and wrapped into an annular shape as follows:
 
-    * The x-scale from [ref=anm:scale] is the **width** of the annulus (R2-R1).
+    * The x-scale from :ref{r=anm:scale} is the **width** of the annulus (R2-R1).
     * The y-scale is the **radius** of the "middle" of the texture. (0.5*(R1+R2))
-    * [ref=anmvar:i0] is the **number of points** to create along this arc section.
-    * [ref=anmvar:i1] is the **number of times the texture is repeated**.
+    * :ref{r=anmvar:i0} is the **number of points** to create along this arc section.
+    * :ref{r=anmvar:i1} is the **number of times the texture is repeated**.
 
     After calling this command you can **change these parameters in real-time** simply by
-    modifying [ref=anm:scale], [ref=anmvar:i0] and [ref=anmvar:i1]. Further notes:
+    modifying :ref{r=anm:scale}, :ref{r=anmvar:i0} and :ref{r=anmvar:i1}. Further notes:
 
-    * **[ref=anmvar:i0] MUST be \`<= nmax\` at all times!**
+    * **:ref{r=anmvar:i0} MUST be \`<= nmax\` at all times!**
     * For this command, the last point is equal to the first point, so n points makes an (n-1)gon.
-    * The repeating of the texture is done in a manner affected by [ref=anm:scrollMode],
+    * The repeating of the texture is done in a manner affected by :ref{r=anm:scrollMode},
       and the sprite is assumed to span the full height of its image file.
     * The image is reversed; use a negative x-scale to make it normal.
 
-    [wip]Out of all five 600-series instructions that contort textures, this instruction is unique in that it
-    appears to support gradients whenever [ref=anm:colorMode] is nonzero, but I haven't tested this.[/wip]
+    :wip[Out of all five 600-series instructions that contort textures, this instruction is unique in that it
+    appears to support gradients whenever :ref{r=anm:colorMode} is nonzero, but I haven't tested this.]
 
     Comparison image of the two-dimensional texture circle instructions in TH17:<br>
     ![600, 601, 602 comparison](./content/anm/img/ins-v8-texCircle.png)
-    [/tiphide]
   `},
   'textureArc': {
     sig: 'S', args: ['nmax'], desc: `
-    Similar to [ref=anm:textureCircle], but creates an arc segment beginning from an angle of zero and running clockwise.
-    [tiphide]
-    In addition to all of the settings [ref=anm:textureCircle], this has one additional parameter:
-    * The x rotation from [ref=anm:rotate] defines **the angle subtended by the arc.**
+    :tipshow[Similar to :ref{r=anm:textureCircle}, but creates an arc segment beginning from an angle of zero and running clockwise.]
+    In addition to all of the settings :ref{r=anm:textureCircle}, this has one additional parameter:
+    * The x rotation from :ref{r=anm:rotate} defines **the angle subtended by the arc.**
 
-    Note that the shape will always contain [ref=anmvar:i1] full copies of the image. (they stretch and shrink with
+    Note that the shape will always contain :ref{r=anmvar:i1} full copies of the image. (they stretch and shrink with
     \`rotx\` rather than being cut off).
-    [/tiphide]
   `},
   'textureArcEven': {
     sig: 'S', args: ['nmax'], desc: `
-    Identical to [ref=anm:textureArc] but awkwardly centered around angle 0 rather than starting at 0.
+    Identical to :ref{r=anm:textureArc} but awkwardly centered around angle 0 rather than starting at 0.
   `},
   'textureCylinder3D': {
     sig: 'S', args: ['nmax'], desc: `
+    :::tipshow
     Wraps a texture into the 3D surface of a cylindrical section.
     The argument determines the size of an internal buffer.
+    :::
 
-    [tiphide]
     First, the texture is repeated an integer number of times along the y axis.
-    (this is done in a manner affected by [ref=anm:scrollMode],
+    (this is done in a manner affected by :ref{r=anm:scrollMode},
     and the sprite is assumed to span the full height of its image file).
     Then, it is turned on its side in 3D space, stretched and wrapped into a section
     of a cylinder as follows:
 
-    * [ref=anmvar:f0] is the **total angle** subtended by the arc section.  (\`2PI\` = a full cylinder)
-    * [ref=anmvar:f1] is the **height**.
-    * [ref=anmvar:f2] is the **radius**.
-    * [ref=anmvar:f3] is the **center angle** of the arc section, measured towards +z from the x-axis (see image).
-    * [ref=anmvar:i0] is the **number of points** to create along this arc section.  (this MUST be \`<= nmax\` at all times!)
-    * [ref=anmvar:i1] is the **number of times the texture is repeated**.
+    * :ref{r=anmvar:f0} is the **total angle** subtended by the arc section.  (\`2PI\` = a full cylinder)
+    * :ref{r=anmvar:f1} is the **height**.
+    * :ref{r=anmvar:f2} is the **radius**.
+    * :ref{r=anmvar:f3} is the **center angle** of the arc section, measured towards +z from the x-axis (see image).
+    * :ref{r=anmvar:i0} is the **number of points** to create along this arc section.  (this MUST be \`<= nmax\` at all times!)
+    * :ref{r=anmvar:i1} is the **number of times the texture is repeated**.
 
     After calling this command you can modify these variables to change the shape in real-time.
 
     <img src="./content/anm/img/ins-v8-609.png" height="250px">
-    [/tiphide]
   `},
   'textureRing3D': {
     sig: 'S', args: ['nmax'], desc: `
+    :::tipshow
     Wraps a texture into a thin ring (annulus) positioned in 3D space (i.e. the stage background).
     The argument determines the size of an internal buffer.
+    :::
 
-    [tiphide]
     First, the texture is repeated an integer number of times along the y axis.
-    (this is done in a manner affected by [ref=anm:scrollMode],
+    (this is done in a manner affected by :ref{r=anm:scrollMode},
     and the sprite is assumed to span the full height of its image file).
     Then, it is laid flat on the xz-plane in 3D space, and then
     stretched and wrapped into an annular shape as follows:
 
-    * [ref=anmvar:f0] is the **total angle** subtended by the arc section.  (\`2PI\` = a full cylinder)
-    * [ref=anmvar:f1] is the **width** of the annulus. (R2 - R1)
-    * [ref=anmvar:f2] is the **radius of the "middle"** of the texture.  (1/2 * (R1 + R2))
-    * [ref=anmvar:f3] is the **center angle** of the arc section, measured towards +z from the x-axis (see image).
-    * [ref=anmvar:i0] is the **number of points** to create along this arc section.  (this MUST be \`<= nmax\` at all times!)
-    * [ref=anmvar:i1] is the **number of times the texture is repeated**.
+    * :ref{r=anmvar:f0} is the **total angle** subtended by the arc section.  (\`2PI\` = a full cylinder)
+    * :ref{r=anmvar:f1} is the **width** of the annulus. (R2 - R1)
+    * :ref{r=anmvar:f2} is the **radius of the "middle"** of the texture.  (1/2 * (R1 + R2))
+    * :ref{r=anmvar:f3} is the **center angle** of the arc section, measured towards +z from the x-axis (see image).
+    * :ref{r=anmvar:i0} is the **number of points** to create along this arc section.  (this MUST be \`<= nmax\` at all times!)
+    * :ref{r=anmvar:i1} is the **number of times the texture is repeated**.
 
     After calling this command you can modify these variables to change the shape in real-time.
 
     <img src="./content/anm/img/ins-v8-610.png" height="250px">
-    [/tiphide]
   `},
 });
 
@@ -1360,27 +1290,23 @@ Object.assign(ANM_INS_DATA, {
 Object.assign(ANM_INS_DATA, {
   'drawPoly': {
     sig: 'fS', args: ['radius', 'nInit'], desc: `
-    Draws a filled regular n-gon with a gradient going from center to edge.
-    [tiphide]
-    \`nInit\` will be stored in the integer variable [ref=anmvar:i0], where you can change it at any time.
-    If you want to change the radius in real-time or from ECL, you can adjust the x-scale from [ref=anm:scale]
+    :tipshow[Draws a filled regular n-gon with a gradient going from center to edge.]
+    \`nInit\` will be stored in the integer variable :ref{r=anmvar:i0}, where you can change it at any time.
+    If you want to change the radius in real-time or from ECL, you can adjust the x-scale from :ref{r=anm:scale}
     (which gets multiplied into the \`radius\` argument).
-    [/tiphide]
   `},
   'drawPolyBorder': {
     sig: 'fS', args: ['radius', 'nInit'], desc: `
-    Like [ref=anm:drawPoly] but draws a 1-pixel border. No gradients.
+    Like :ref{r=anm:drawPoly} but draws a 1-pixel border. No gradients.
   `},
   'drawRing': {
     sig: 'ffS', args: ['radius', 'thickness', 'nInit'], desc: `
-    Draws a filled ring (annulus) with n sides.  No gradients.
-    [tiphide]
-    \`nInit\` is stored in $I0 like [ref=anm:drawPoly] and [ref=anm:drawPolyBorder].
+    :tipshow[Draws a filled ring (annulus) with n sides.  No gradients.]
+    \`nInit\` is stored in $I0 like :ref{r=anm:drawPoly} and :ref{r=anm:drawPolyBorder}.
     \`radius\` is mean radius (0.5*(R1+R2)), \`thickness\` is (R2 - R1).
     If you want to change the parameters in real-time or from ECL,
-    use the [ref=anm:scale] instruction; x-scale is multiplied into \`radius\`,
+    use the :ref{r=anm:scale} instruction; x-scale is multiplied into \`radius\`,
     y-scale is multiplied into \`thickness\`.
-    [/tiphide]
   `},
 });
 
@@ -1388,35 +1314,35 @@ Object.assign(ANM_INS_DATA, {
 Object.assign(ANM_INS_DATA, {
   'drawRect': {
     sig: 'ff', args: ['w', 'h'], desc: `
+    :::tipshow
     Draws a filled rectangle with the given dimensions.  No gradients.
     If you want to control the dimensions from ECL, consider passing in \`1.0\` and changing the anm's scale instead.
+    :::
 
-    [tiphide]
     Image of the rectangle-drawing family of instructions in TH17:<br>
     ![Overview of rectangle-drawing instructions in TH17.](./content/anm/img/ins-v8-drawRect.png)
-    [/tiphide]
   `},
   'drawRectGrad': {
     sig: 'ff', args: ['w', 'h'], desc: `
-    Same as [ref=anm:drawRect] but supports gradients ([ref=anm:rgb2]), which go from left to right.
+    Same as :ref{r=anm:drawRect} but supports gradients (:ref{r=anm:rgb2}), which go from left to right.
   `},
   'drawRectShadow': {
     sig: 'ff', args: ['w', 'h'], desc: `
-    A variant of [ref=anm:drawRect] intended for rotated rectangles, which smooths out the edges
-    somewhat.
+    :::tipshow
+    A variant of :ref{r=anm:drawRect} intended for rotated rectangles, which smooths out the edges somewhat.
+    :::
 
-    [tiphide]
     **Be careful!** This can look ugly if your rotation is zero, *especially* if it moves!
 
-    [more]
+    :::more
     More precisely, the implementation does the following:
-    1. Draw a rectangle like [ref=anm:drawRect] but of size \`(w+1, h+1)\`, and \`0.5 * alpha\`.
-    2. Then draw a rectangle exactly like [ref=anm:drawRect].
+    1. Draw a rectangle like :ref{r=anm:drawRect} but of size \`(w+1, h+1)\`, and \`0.5 * alpha\`.
+    2. Then draw a rectangle exactly like :ref{r=anm:drawRect}.
 
     The first step is basically a sort of poor man's anti-aliasing hack, by creating something
     that's half of a pixel larger in each direction.  When the rectangle is rotated, some of the
     pixels along each edge will receive this half-alpha color, creating less jagged edges.
-    In this image, [ref=anm:drawRectShadow] is on the right:
+    In this image, :ref{r=anm:drawRectShadow} is on the right:
 
     <img src="content/anm/img/shadowgrad-rotate.gif">
 
@@ -1429,35 +1355,32 @@ Object.assign(ANM_INS_DATA, {
 
     Even if you can't quite see it, something certainly *feels* off about the square
     on the right, wouldn't you agree?
-    [/more]
-    [/tiphide]
+    :::
   `},
   'drawRectShadowGrad': {
     sig: 'ff', args: ['w', 'h'], desc: `
-    Same as [ref=anm:drawRect] but supports gradients ([ref=anm:rgb2]), which go from left to right.
+    Same as :ref{r=anm:drawRect} but supports gradients (:ref{r=anm:rgb2}), which go from left to right.
   `},
   'drawRectBorder': {
     sig: 'ff', args: ['w', 'h'], desc: `
-    Draws a 1-pixel thick outline of a rectangle.  No gradients.
+    :tipshow[Draws a 1-pixel thick outline of a rectangle.  No gradients.]
 
-    Just like [ref=anm:drawRect], you can control the dimensions externally using [ref=anm:scale].
+    Just like :ref{r=anm:drawRect}, you can control the dimensions externally using :ref{r=anm:scale}.
     (the border will remain 1 pixel thick even when scaled)
   `},
   'drawLine': {
     sig: 'ff', args: ['len', 'unused'], desc: `
-    Draws a 1-pixel thick horizontal line.  The second argument is unused.  No gradients.
+    :tipshow[Draws a 1-pixel thick horizontal line.  The second argument is unused.  No gradients.]
 
-    Just like [ref=anm:drawRect], you can change the length on demand by setting the x-scale in [ref=anm:scale];
-    the y-scale has no effect. If you want to change its direction, you must use [ref=anm:rotate].
+    Just like :ref{r=anm:drawRect}, you can change the length on demand by setting the x-scale in :ref{r=anm:scale};
+    the y-scale has no effect. If you want to change its direction, you must use :ref{r=anm:rotate}.
   `},
   'drawArc': {
     sig: 'ff', args: ['radius', 'angle'], wip: 1, desc: `
-    [wip]Draws an arc?[/wip]
+    :tipshow[:wip[Draws an arc?]]
 
-    [tiphide]
     Dai wrote the following: *the instruction is \`ins_614(float a, float b)\`, and I think it draws a single polygon from the center of the ANM object to a distance set by \`a\`, with an angle width of \`b\`.*
-    [wip]FIXME: We need an image.  Also should check if [ref=anmvar:i0] controls the number of edges like in the texture instructions.[/wip]
-    [/tiphide]
+    :wip[FIXME: We need an image.  Also should check if :ref{r=anmvar:i0} controls the number of edges like in the texture instructions.]
   `},
 });
 
@@ -1488,72 +1411,65 @@ Object.assign(ANM_INS_DATA, {
     Sets a bitflag.  When the bitflag is enabled, the graphic will move as its parent rotates.
     (picture a person holding a shield; as the person rotates, the shield moves around them)
 
-    [wip]Where is it used? Are there other effects?[/wip]
+    :wip[Where is it used? Are there other effects?]
   `},
   'createEffect': {
     sig: 'S', args: ['kind'], wip: 1, desc: `
     Creates a special child graphic that may have additional hardcoded behavior.
 
-    [tiphide]
     Different games have different effects!  Someday we'll have a table of them.
-    [/tiphide]
   `},
   'createRoot': {
     sig: 'S', args: ['script'], wip: 1, desc: `
-    Creates a new root VM. (i.e. the new VM will have no parent)
+    :tipshow[Creates a new root VM. (i.e. the new VM will have no parent)]
 
-    [tiphide]
     Pseudocode:
-    [code]
+    ~~~C++
     new_vm.rotation = this.rotation;
     new_vm.pos = {0f, 0f, 0f};
     new_vm.pos_2 = this.pos;
     new_vm.pos_3 = this.pos_3;
-    [/code]
+    ~~~
     \`pos_2\` and \`pos_3\` refer to the mysterious [extra position vectors](#anm/concepts&a=position).
-    Assuming that \`pos_2\` on the parent is initially 0, one could perhaps say that [ref=anm:pos]\`(0f, 0f)\`
+    Assuming that \`pos_2\` on the parent is initially 0, one could perhaps say that :ref{r=anm:pos}\`(0f, 0f)\`
     for the new VM corresponds to the original location of the parent when it called this instruction.
-    [/tiphide]
   `},
   'createChildPos': {
     sig: 'Sff', args: ['script', 'x', 'y'], wip: 1, desc: `
-    Creates a child at an offset from this graphic.
+    :tipshow[Creates a child at an offset from this graphic.]
 
-    [tiphide]
     The child's [three position variables](#anm/concepts&a=position) will be:
-    [code]
+    ~~~C++
     child.pos = {0f, 0f, 0f};
     child.pos_2 = {x, y, 0f};
     child.pos_3 = {0f, 0f, 0f};
-    [/code]
-    [tiphide]
+    ~~~
   `},
   'createRootPos': {
     sig: 'Sff', args: ['script', 'x', 'y'], wip: 1, desc: `
-    Combines the effects of [ref=anm:createRoot] and [ref=anm:createChildPos].
+    :tipshow[Combines the effects of :ref{r=anm:createRoot} and :ref{r=anm:createChildPos}.]
 
-    [tiphide]
     The net effect on the [three position variables](#anm/concepts&a=position) is:
-    [code]
+    ~~~anm
     new_vm.rotation = this.rotation;
     new_script.pos = {0f, 0f, 0f};
     new_script.pos_2 = {x, y, 0f};  // <-- arguments
     new_script.pos_3 = this.pos_3;
-    [/code]
-    One can almost define [ref=anm:createRoot] in terms of this: (just missing the z coordinate)
-    [code]
-    [ref=anm:createRootPos](script, [ref=anmvar:pos-x], [ref=anmvar:pos-y]);
-    [/code]
-    [/tiphide]
+    ~~~
+    One can almost define :ref{r=anm:createRoot} in terms of this: (just missing the z coordinate)
+    ~~~anm
+    :ref{r=anm:createRootPos}(script, :ref{r=anmvar:pos-x}, :ref{r=anmvar:pos-y});
+    ~~~
   `},
   'ignoreParent': {
     sig: 'S', args: ['ignore'], desc: `
+    :::tipshow
     Sets a bitflag.  If the bitflag is 1, then in many different contexts, the ANM will e.g. ignore the
-    parent's position/scale/rotation/etc. and it will be allowed to use e.g. [ref=anm:originMode] as though
+    parent's position/scale/rotation/etc. and it will be allowed to use e.g. :ref{r=anm:originMode} as though
     it were root.
+    :::
 
-    [tiphide]
-    The only game to ever make proper use this was [game=125], where it was used by some multilayered,
+    The only game to ever make proper use this was :game[125], where it was used by some multilayered,
     rotating spell backgrounds as well as the enemy names and diagonal banners on level entry
     (children of the "Shoot!" text).
 
@@ -1561,27 +1477,24 @@ Object.assign(ANM_INS_DATA, {
     probably why it's no longer used.  If you find yourself needing it, you may want to consider the
     alternative of turning the child into a sibling instead, by giving the two scripts a common parent.
     (This will probably be more reliable/less buggy in the end.)
-    [/tiphide]
   `},
   'copyParentVars': {
     sig: '', args: [], desc: `
-    When called on a child graphic, copies over a number of variables from its parent.
+    :tipshow[When called on a child graphic, copies over a number of variables from its parent.]
 
-    [tiphide]
     They are:
-    [headless-table]
+    :::headless-table
     | | | | |
     | --- | --- | --- | --- |
-    | [ref=anmvar:i0] | [ref=anmvar:f0] | [ref=anmvar:i4]             | [ref=anmvar:rand-param-int] |
-    | [ref=anmvar:i1] | [ref=anmvar:f1] | [ref=anmvar:i5]             | [ref=anmvar:mystery-angle-x]  |
-    | [ref=anmvar:i2] | [ref=anmvar:f2] | [ref=anmvar:rand-param-one] | [ref=anmvar:mystery-angle-y]  |
-    | [ref=anmvar:i3] | [ref=anmvar:f3] | [ref=anmvar:rand-param-pi]  | [ref=anmvar:mystery-angle-z]  |
-    [/headless-table]
+    | :ref{r=anmvar:i0} | :ref{r=anmvar:f0} | :ref{r=anmvar:i4}             | :ref{r=anmvar:rand-param-int} |
+    | :ref{r=anmvar:i1} | :ref{r=anmvar:f1} | :ref{r=anmvar:i5}             | :ref{r=anmvar:mystery-angle-x}  |
+    | :ref{r=anmvar:i2} | :ref{r=anmvar:f2} | :ref{r=anmvar:rand-param-one} | :ref{r=anmvar:mystery-angle-y}  |
+    | :ref{r=anmvar:i3} | :ref{r=anmvar:f3} | :ref{r=anmvar:rand-param-pi}  | :ref{r=anmvar:mystery-angle-z}  |
+    :::
 
-    [wip](example use case? the game uses it a lot...)[/wip]
+    :wip[(example use case? the game uses it a lot...)]
 
     ![copyParentVars demonstration](./content/anm/img/ins-v8-509.gif)
-    [/tiphide]
   `},
 });
 
@@ -1589,24 +1502,25 @@ Object.assign(ANM_INS_DATA, {
 // ==== WEIRD-ASS NONSENSE ====
 // ============================
 Object.assign(ANM_INS_DATA, {
-  'v1-31': {sig: 'S', args: ['a'], wip: 2, desc: `[wip=2]Sets a bitflag.[/wip]`},
-  'v4-111': {sig: 'S', args: ['a'], wip: 2, desc: `[wip=2]Sets a 2-bit bitfield.[/wip]`},
+  'v1-31': {sig: 'S', args: ['a'], wip: 2, desc: `:wip2[Sets a bitflag.]`},
+  'v4-111': {sig: 'S', args: ['a'], wip: 2, desc: `:wip2[Sets a 2-bit bitfield.]`},
   'v8-418': {
     sig: '', args: [], desc: `
+    :::tipshow
     A bizarre and **totally unused** instruction that appears to select a new sprite in the image file based on the anm's coordinates.
+    :::
 
-    [tiphide]
-    [more]
+    :::more
     The code does the following:
-    * Using the current position, scale, etc. and [ref=anm:renderMode] setting (which must be \`<= 3\`),
+    * Using the current position, scale, etc. and :ref{r=anm:renderMode} setting (which must be \`<= 3\`),
       compute the corners of the rectangle that the ANM would occupy on the surface it is being drawn to.
     * Divide each corner's coords by 640x480 (regardless of resolution or original image size).
     * Use those as fractional uv coordinates for a region to pull sprite data from.
 
     This basically lets you use any arbitrary rectangular region of a spritesheet as a sprite, even rotated ones!
 
-    Presumably, the intended use is to set [ref=anm:rotate] and [ref=anm:pos] and etc. for picking a sprite,
-    call this instruction, and then change [ref=anm:pos] and etc. again to the desired location for display.
+    Presumably, the intended use is to set :ref{r=anm:rotate} and :ref{r=anm:pos} and etc. for picking a sprite,
+    call this instruction, and then change :ref{r=anm:pos} and etc. again to the desired location for display.
     You get a pretty cool effect though if you simply let the before and after positions be the same,
     where it looks like a sort of window into another world.  (thanks to Priw8 for the video!)
 
@@ -1614,103 +1528,89 @@ Object.assign(ANM_INS_DATA, {
       <source type="video/mp4" src="content/anm/img/priw8-418.mp4">
       <a download href="content/anm/img/priw8-418.mp4">Download video (.MP4)</a>
     </video>
-    [/more]
-    [/tiphide]
+    :::
   `},
   'noZBuffer': {
     sig: 'S', args: ['disable'], wip: 1, desc: `
-    If \`disable\` is 1, writing to the z-buffer is disabled.  Otherwise, it is enabled.
+    :tipshow[If \`disable\` is 1, writing to the z-buffer is disabled.  Otherwise, it is enabled.]
     This can matter in cases where z-testing is used to filter writes.
-    ([wip]under what conditions are z-testing enabled, anyway?[/wip])
-    [wip]This seems strange. Are there other, unknown effects?[/wip]
+    (:wip[under what conditions are z-testing enabled, anyway?])
+    :wip[This seems strange. Are there other, unknown effects?]
 
-    [tiphide]
     It is extremely difficult to find examples where this has any noticeable effect,
-    but there's an example in [game=14] stage 4:
+    but there's an example in :game[14] stage 4:
 
     <a href="./content/anm/img/ins-v8-305.png" target="_blank"><img src="./content/anm/img/ins-v8-305.png" style="max-width:100%;"></a>
-    [/tiphide]
   `},
   'v8-306': {
     sig: 'S', args: ['enable'], wip: 2, desc: `
-    [wip=2]Sets the state of a bitflag.  When this flag is enabled, some unknown vector from the stage background
-    camera data is added to some poorly-understood position-related vector on the ANM, for an even more
-    unknown purpose.[/wip]
+    :::wip2
+    :tipshow[Sets the state of a STD-related bitflag.]
+    When this flag is enabled, some unknown vector from the stage background
+    camera data is added to some poorly-understood position-related vector on the ANM, for an even more unknown purpose.
+    :::
   `},
   'posAdopt': {
     sig: '', args: [], wip: 2, desc: `
-    [wip=2]Copies [\`pos_3\`](#anm/concepts&a=position) into \`pos\`, and zeros out \`pos_3\`...[/wip]
+    :wip2[Copies [\`pos_3\`](#anm/concepts&a=position) into \`pos\`, and zeros out \`pos_3\`...]
   `},
   'visible': {
     sig: 'b', args: ['visible'], desc: `
-    Set the visibility flag (1 = visible). Invisible graphics are skipped during rendering.
+    :tipshow[Set the visibility flag (1 = visible). Invisible graphics are skipped during rendering.]
 
-    [tiphide]
     Generally speaking this is not a huge deal as the most expensive parts of rendering are typically
-    skipped anyways whenever [ref=anm:alpha] and [ref=anm:alpha2] are both 0. (and the latter defaults to 0).
+    skipped anyways whenever :ref{r=anm:alpha} and :ref{r=anm:alpha2} are both 0. (and the latter defaults to 0).
 
     The visibility flag is automatically set to 1 whenever a successful [interrupt](#anm/concepts&a=interrupt) occurs.
-    [/tiphide]
   `},
   'v0-26': {
     sig: 's', args: ['arg'], wip: 2, desc: `
-    Uhhhhh. Geeze.  I dunno.  Might be a precursor to [ref=anm:renderMode]?
+    :tipshow[Uhhhhh. Geeze.  I dunno.  Might be a precursor to :ref{r=anm:renderMode}?]
 
-    [tiphide]
-    Sets a word-sized field. Only ever called with the arguments 1, 2, or ([game=08]&ndash;) 18.
-    * **1** &mdash; [wip=2]Don't know.  Used by player and bullet ANMs in all pre-[game=10] games.
-      There's something added in the IN background code at \`th08.exe+0x0a0ce\` where it does something with color...[/wip]
+    Sets a word-sized field. Only ever called with the arguments 1, 2, or (:game[08]&ndash;) 18.
+    * **1** &mdash; :wip2[Don't know.  Used by player and bullet ANMs in all pre-:game[10] games.
+      There's something added in the IN background code at \`th08.exe+0x0a0ce\` where it does something with color...]
     * **2** &mdash; enables spherical billboarding when used on 3D background sprites.
-    * **18** &mdash; [wip=2]...also enables sperical billboarding? See \`th08.exe+0x0a929\` in the background rendering code.[/wip]
+    * **18** &mdash; :wip2[...also enables sperical billboarding? See \`th08.exe+0x0a929\` in the background rendering code.]
     * Additionally, enemy rendering code at \`th08.exe+0x42e1e6\` sets the z-rotation on any *slotted VM* where this
       field is nonzero. (slotted VMs only; the primary VM looks at the flag on the enemy set by ECL \`ins_145\` instead)
-    [/tiphide]
   `},
-  'v8-flag-316': {sig: '', args: [], wip: 2, desc: `[wip=2]Enables an unknown bitflag. Clear with [ref=anm:v8-flag-317].[/wip]`},
-  'v8-flag-317': {sig: '', args: [], wip: 2, desc: `[wip=2]Clears the bitflag from [ref=anm:v8-flag-316].[/wip]`},
-  'v8-flag-419': {sig: 'S', args: ['enable'], wip: 2, desc: `[wip=2]Sets the state of an unknown bitflag.[/wip]`},
-  'v8-flag-431': {sig: 'S', args: ['enable'], wip: 2, desc: `[wip=2]Sets the state of an unknown bitflag.[/wip]`},
-  'v8-flag-432': {sig: 'S', args: ['enable'], wip: 2, desc: `[wip=2]Sets the state of an unknown bitflag. Only used by photo games.[/wip]`},
-  'v4-texCircle2': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified member of texCircle family, likely [ref=anm:textureArcEven][/wip]'},
-  'v4-texCircle3': {sig: '', args: [], wip: 2, desc: '[wip=2]unidentified member of texCircle family, likely [ref=anm:textureArc][/wip]'},
+  'v8-flag-316': {sig: '', args: [], wip: 2, desc: `:wip2[Enables an unknown bitflag. Clear with :ref{r=anm:v8-flag-317}.]`},
+  'v8-flag-317': {sig: '', args: [], wip: 2, desc: `:wip2[Clears the bitflag from :ref{r=anm:v8-flag-316}.]`},
+  'v8-flag-419': {sig: 'S', args: ['enable'], wip: 2, desc: `:wip2[Sets the state of an unknown bitflag.]`},
+  'v8-flag-431': {sig: 'S', args: ['enable'], wip: 2, desc: `:wip2[Sets the state of an unknown bitflag.]`},
+  'v8-flag-432': {sig: 'S', args: ['enable'], wip: 2, desc: `:wip2[Sets the state of an unknown bitflag. Only used by photo games.]`},
+  'v4-texCircle2': {sig: '', args: [], wip: 2, desc: ':wip2[unidentified member of texCircle family, likely :ref{r=anm:textureArcEven}]'},
+  'v4-texCircle3': {sig: '', args: [], wip: 2, desc: ':wip2[unidentified member of texCircle family, likely :ref{r=anm:textureArc}]'},
   'vd-imaginary-439': {
     sig: 'S', args: ['_'], desc: `
-    ANM \`ins_439\` does not exi[s](http://www.scpwiki.com/scp-3930)t.
-    [tiphide]
-    It is used by [game=165] in \`photo.anm\`, where it does nothing because, again, *it does not exist.*
+    :tipshow[ANM \`ins_439\` does not exi[s](http://www.scpwiki.com/scp-3930)t.]
+    It is used by :game[165] in \`photo.anm\`, where it does nothing because, again, *it does not exist.*
     We thank you for your understanding.
-    [/tiphide]
 
-    [tiphide]
-    To make matters worse, in [game=18], this ID gets reused for another instruction with a different signature!
-    [/tiphide]
+    To make matters worse, in :game[18], this ID gets reused for another instruction with a different signature!
   `},
   'posMode': {
     sig: 'S', args: ['flag'], wip: 1, desc: `
-    Sets the state of a bitflag that controls how positioning works.
+    :tipshow[Sets the state of a bitflag that controls how positioning works.]
 
-    [tiphide]
-    I'm working on a page that explains in more detail, but the short of it is: VM positioning in pre-v4 games is awkward.  [ref=anm:pos] has virtually no effect on many types of sprites (e.g. enemies) due to how position is defined in these games.  For these types of sprites, you can use [ref=anm:posMode]\`(1)\` to cause [ref=anm:pos] to define a *relative* offset instead.
-    [/tiphide]
+    I'm working on a page that explains in more detail, but the short of it is: VM positioning in pre-v4 games is awkward.  :ref{r=anm:pos} has virtually no effect on many types of sprites (e.g. enemies) due to how position is defined in these games.  For these types of sprites, you can use :ref{r=anm:posMode}\`(1)\` to cause :ref{r=anm:pos} to define a *relative* offset instead.
   `},
   'blink': {
     sig: 'S', args: ['arg'], wip: 2, desc: `
-    [wip=2]
+    :::wip2
+    :tipshow[
     **Never used.** Does some bit math and then sets what *appears* to be the color flag
-    (which picks between [ref=anm:rgb] and [ref=anm:rgb2])?
-    [/wip]
-    [tiphide]
-    [wip=2]Somebody plz test.[/wip]
+    (which picks between :ref{r=anm:rgb} and :ref{r=anm:rgb2})?
+    ] Somebody plz test.
 
-    [wip=2]
     Specifically, I think it sets the color flag equal to \`floor(arg / 256) % 2\`.  Thus, calling it with an
     increasing argument should lead to blinking.
-    [/wip]
-    [/tiphide]
+    :::
   `},
   'the-real-439': {
     sig: 'Sff', args: ['a', 'b', 'c'], wip: 2, desc: `
-    [wip=2]Unknown. Added in [game=18].[/wip]
+    :wip2[Unknown. Added in :game[18].]
   `},
 });
 
@@ -1724,7 +1624,7 @@ for (const [key, value] of Object.entries(ANM_INS_DATA)) {
   }
 
   // automatically remove tips from self-references
-  const re = new RegExp(`\\[ref=anm:${key}\\]`, 'g');
-  value.desc = value.desc.replace(re, `[tip-nodeco=YOU ARE HERE][ref-notip=anm:${key}][/tip-nodeco]`);
+  const re = new RegExp(`\\:ref\\[anm/${key}\\]`, 'g');
+  value.desc = value.desc.replace(re, `:tip[:ref{r=anm:${key}}]{tip="YOU ARE HERE" deco="0"}`);
   value.desc = dedent(value.desc);
 }
