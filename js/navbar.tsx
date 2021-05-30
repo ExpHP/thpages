@@ -139,16 +139,17 @@ function NavbarEntry(props: {entry: Entry, inner: boolean, activeEntries: Active
 type ActiveEntries = {active: Entry, ancestors: Entry[]};
 function findActiveEntries(entries: Entry[], currentQuery: Query): ActiveEntries | null {
   for (const entry of entries) {
+    const activeEntries = entry.children && findActiveEntries(entry.children, currentQuery);
+    if (activeEntries) {
+      activeEntries.ancestors.push(entry);
+      return activeEntries;
+    }
+
     const navurl = entry.url;
     if (!navurl) continue; // probably header of a group
     if (navurl[0] !== '#') continue; // external link
     if (queryPageEquals(parseQuery(navurl), currentQuery)) {
       return {active: entry, ancestors: []}; // active page
-    }
-    const activeEntries = entry.children && findActiveEntries(entry.children, currentQuery);
-    if (activeEntries) {
-      activeEntries.ancestors.push(entry);
-      return activeEntries;
     }
   }
   return null;
