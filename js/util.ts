@@ -1,5 +1,3 @@
-import { resetExtensions } from "showdown";
-
 /**
  * An object with safer typing of `obj[key]`.
  *
@@ -96,4 +94,32 @@ export function cached<T>(func: () => T): Cached<T> {
       cache = new EmptyCache();
     },
   };
+}
+
+export type Without<T, K> = {
+  [L in Exclude<keyof T, K>]: T[L]
+};
+
+/**
+ * When you have a code path with a value of type `never`, call `return unreachable(neverValue)` to accomplish several things:
+ *
+ * 1. Typescript doesn't recognize such code paths as dead code and generates spurious warnings about their return type.
+ *    This eliminates the warning.
+ * 2. This adds a type check that the code remains unreachable, so that you can't e.g. forget to add a branch to an if-chain
+ *    after adding a variant to a union type.
+ * 3. It performs logging in case the types are actually invalid at runtime.
+ */
+export function unreachable(x: never): never {
+  console.error(x); // log the value since it clearly defies our type annotations
+  throw new Error('the unpossible happened!');
+}
+
+/**
+ * Lets you annotate the type of something in a way that does type checking instead of simply casting.
+ *
+ * Useful when you need to define a literal value for a string enum in a location where TypeScript would
+ * normally have its type decay to plain old `string`.
+ */
+export function typed<T>(x: T): T {
+  return x;
 }

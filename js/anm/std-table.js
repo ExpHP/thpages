@@ -1,4 +1,5 @@
 import dedent from "../lib/dedent.ts";
+import {preprocessTrustedMarkdown} from "../markdown.tsx";
 
 // ==========================================================================
 // ==========================================================================
@@ -530,5 +531,5 @@ for (const [key, value] of Object.entries(STD_INS_DATA)) {
   const re = new RegExp(`\\:ref\\[std/${key}\\]`, 'g');
   value.desc = value.desc.replace(re, `:tip[:ref{r=std:${key}}]{tip="YOU ARE HERE" deco="0"}`);
 
-  value.desc = dedent(value.desc);
+  value.desc = preprocessTrustedMarkdown(dedent(value.desc));
 }

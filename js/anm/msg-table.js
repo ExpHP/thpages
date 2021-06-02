@@ -1,4 +1,5 @@
 import dedent from "../lib/dedent.ts";
+import {preprocessTrustedMarkdown} from "../markdown.tsx";
 
 export function getMsgTableText(game) {
   const common = `
@@ -606,5 +607,5 @@ for (const [key, value] of Object.entries(MSG_INS_DATA)) {
   // automatically remove tips from self-references
   const re = new RegExp(`\\:ref\\[anm/${key}\\]`, 'g');
   value.desc = value.desc.replace(re, `:tip[:ref{r=msg:${key}}]{tip="YOU ARE HERE" deco="0"}`);
-  value.desc = dedent(value.desc);
+  value.desc = preprocessTrustedMarkdown(dedent(value.desc));
 }

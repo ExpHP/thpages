@@ -3,6 +3,7 @@ import * as React from 'react';
 import type {Query} from './url-format';
 import {globalNames, globalLinks, PrefixResolver} from './resolver';
 import {WithKeyedTip} from './tips';
+import {NameSettingsContext} from './settings';
 
 export type Ref = string;
 export const globalRefNames = new PrefixResolver<string>();
@@ -27,7 +28,9 @@ export function getRefLinkKey(ref: Ref) {
 }
 
 /** Get JSX for a `[ref=...]` markdown tag. */
-export function getRefJsx({ref, tip, url, currentQuery}: {ref: Ref, tip: boolean, url: boolean, currentQuery: Query}) {
+export function InlineRef({ref, tip, url, currentQuery}: {ref: Ref, tip: boolean, url: boolean, currentQuery: Query}) {
+  const nameSettings = React.useContext(NameSettingsContext);
+
   let out = <span className="isref">{globalNames.getNow(getRefNameKey(ref), currentQuery) || ref}</span>;
   if (url) {
     const href = globalLinks.getNow(getRefLinkKey(ref), currentQuery);

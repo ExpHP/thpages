@@ -1,9 +1,11 @@
 
 import * as React from 'react';
-import type {ReactNode} from 'react';
-import ReactMarkdown from 'react-markdown';
-import type {ReactMarkdownOptions} from 'react-markdown';
+import type {ReactNode, ReactElement} from 'react';
+import unified from 'unified';
+import remarkParse from 'remark-parse';
+import remarkToRehype from 'remark-rehype';
 import remarkGfm from 'remark-gfm';
+import rehypeReact from 'rehype-react';
 import remarkHeadingId from 'remark-heading-id';
 import remarkDirective from 'remark-directive';
 import rehypeRaw from "rehype-raw";
@@ -14,7 +16,7 @@ import {h} from "hastscript";
 
 import {Err} from './common-components';
 import {setWindowTitle} from "./main";
-import {getRefJsx} from "./ref";
+import {InlineRef} from "./ref";
 import {WithTip} from "./tips";
 import {gameData, validateGame, GameData, Game} from './game-names';
 import {Query, urlWithProps} from './url-format';
@@ -71,7 +73,7 @@ function Ref({r, ...props}: {r: string} & RefProps) {
   const allProps = {tip: "1", url: "1", ...props};
   const tip = allProps.tip === "1";
   const url = allProps.url === "1";
-  return getRefJsx({ref: r, tip, url, currentQuery});
+  return InlineRef({ref: r, tip, url, currentQuery});
 }
 
 function More({children}: {children: ReactNode}) {
@@ -139,11 +141,11 @@ function ReferenceTable({children}: {children: OneChild<string>}) {
   </React.Fragment>;
 }
 
-function remarkExtractTipContents() {
+function rehypeExtractTipContents() {
   return transform;
 
   function transform(tree: any) {
-    unistVisit(tree, (n: any) => n.type === 'containerDirective' && n.name === 'is-tip', ondirective);
+    unistVisit(tree, (n: any) => n.tagName === 'exp-is-tip', ondirective);
   }
 
   function ondirective(node: any) {
@@ -159,7 +161,7 @@ function remarkExtractTipContents() {
   // Keep anything that is inside a :tipshow[], and any ancestor of such an element.
   function filterFunc(node: any) {
     if (node.children) {
-      if (node.name === 'tipshow') {
+      if (node.tagName === 'exp-tipshow') {
         return node.children;
       } else {
         const filtered = {...node};
@@ -172,12 +174,7 @@ function remarkExtractTipContents() {
   }
 }
 
-// We will convert directives into hast nodes so that react-markdown can convert them with its `components`.
-//
-// To guarantee that there are no collisions with standard HTML element names, we'll conform
-// to the CustomElementRegistry's requirement of using at least one hyphen in our element name.
-const DIRECTIVE_ELEMENT_PREFIX = 'exp-';
-function directivesToHtml() {
+function remarkDirectivesToHtml() {
   return transform;
 
   function transform(tree: any) {
@@ -188,7 +185,11 @@ function directivesToHtml() {
     const data = node.data || (node.data = {});
     const hast = h(node.name, node.attributes);
 
-    data.hName = `${DIRECTIVE_ELEMENT_PREFIX}${hast.tagName}`;
+    // We will convert directives into hast nodes so that react-markdown can convert them with its `components`.
+    //
+    // To guarantee that there are no collisions with standard HTML element names, we'll conform
+    // to the CustomElementRegistry's requirement of using at least one hyphen in our element name.
+    data.hName = `exp-${hast.tagName}`;
     data.hProperties = hast.properties;
   }
 }
@@ -246,23 +247,52 @@ function rehypeTableFootnotes() {
   }
 }
 
-const MARKDOWN_PROPS = {
-  remarkPlugins: [remarkDirective, remarkExtractTipContents, directivesToHtml, remarkHeadingId, remarkGfm],
-  rehypePlugins: [rehypeTableFootnotes, rehypeCodeRef, rehypeHighlight, rehypeRaw],
-  skipHtml: false,
-  components: {
-    'exp-c': C, 'exp-gc': Gc, 'exp-wip': Wip, 'exp-wip2': Wip2, 'exp-weak': Weak, 'exp-dl': Dl,
-    'exp-game': GameShort, 'exp-game-th': GameTh, 'exp-game-num': GameNum, 'exp-game-thlong': GameThLong,
-    'exp-more': More, 'exp-title': Title,
-    'exp-headless-table': HeadlessTable,
-    'exp-ref': Ref, 'exp-tip': Tip,
-    'exp-foot-ref': FootRef, 'exp-foot-def': FootDef,
-    'exp-reference-table': ReferenceTable,
-  },
-};
+export function preprocessTrustedMarkdown(source: string): Promise<any> {
+  const processor = unified()
+      .use(remarkParse)
+      .use([remarkDirective, remarkHeadingId, remarkGfm]);
 
-export function TrustedMarkdown({children, currentQuery, ...props}: {children: string, currentQuery: Query} & ReactMarkdownOptions) {
+  const tree = processor().parse(source);
+  return processor.run(tree);
+}
+
+export function TrustedMarkdown({mdast, currentQuery}: {mdast: any, currentQuery: Query}): ReactElement;
+export function TrustedMarkdown({children, currentQuery}: {children: string, currentQuery: Query}): ReactElement;
+export function TrustedMarkdown({mdast, children, currentQuery}: {mdast?: any, children?: string, currentQuery: Query}) {
+  if (children && mdast) throw new Error("cannot supply both mdast and children");
+  if (!children && !mdast) throw new Error("must supply either mdast or children");
+
+  const [reactContent, setReactContent] = React.useState<ReactElement | null>(null);
+  const setMdast = React.useCallback((mdast: any) => {
+    const processor = unified()
+        .use([remarkDirectivesToHtml])
+        .use([remarkToRehype, {allowDangerousHtml: true}])
+        .use([rehypeExtractTipContents, rehypeTableFootnotes, rehypeCodeRef, rehypeHighlight, rehypeRaw])
+        .use(rehypeReact, {
+          createElement: React.createElement,
+          Fragment: React.Fragment,
+          components: {
+            'exp-c': C, 'exp-gc': Gc, 'exp-wip': Wip, 'exp-wip2': Wip2, 'exp-weak': Weak, 'exp-dl': Dl,
+            'exp-game': GameShort, 'exp-game-th': GameTh, 'exp-game-num': GameNum, 'exp-game-thlong': GameThLong,
+            'exp-more': More, 'exp-title': Title,
+            'exp-headless-table': HeadlessTable,
+            'exp-ref': Ref, 'exp-tip': Tip,
+            'exp-foot-ref': FootRef, 'exp-foot-def': FootDef,
+            'exp-reference-table': ReferenceTable,
+          },
+        });
+
+    processor.run(mdast)
+        .then((node) => processor.stringify(node)) // compiles to React elements. ("stringify" is a misleading generic name)
+        .then((jsx) => setReactContent(jsx as any as ReactElement));
+  }, []);
+
+  React.useEffect(() => {
+    const mdastPromise = mdast ? Promise.resolve(mdast) : preprocessTrustedMarkdown(children!);
+    mdastPromise.then(setMdast);
+  }, [mdast, children, setMdast]);
+
   return <MarkdownContext.Provider value={{currentQuery}}>
-    <ReactMarkdown {...Object.assign({}, MARKDOWN_PROPS, props)}>{children}</ReactMarkdown>
+    {reactContent}
   </MarkdownContext.Provider>;
 }

@@ -1,4 +1,5 @@
 import dedent from "../lib/dedent.ts";
+import {preprocessTrustedMarkdown} from "../markdown.tsx";
 
 // ==========================================================================
 // ==========================================================================
@@ -189,5 +190,5 @@ for (const [id, value] of Object.entries(ANM_VAR_DATA)) {
   if (value.type === undefined) window.console.error(`TABLE CORRUPT: anmvar id ${id} has no 'type'`);
   if (value.mut === undefined) window.console.error(`TABLE CORRUPT: anmvar id ${id} has no 'mut'`);
 
-  value.desc = dedent(value.desc);
+  value.desc = preprocessTrustedMarkdown(dedent(value.desc));
 }

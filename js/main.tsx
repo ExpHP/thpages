@@ -1,15 +1,27 @@
 import * as React from "react";
 import {TrustedMarkdown} from "./markdown";
 import {initAnm} from "./anm/tables";
-import {initSettings} from "./settings";
+import {useSettings, SettingsPage, initSettings, NameSettingsContext, computeNameSettingsFromSettings} from "./settings";
 import {ErrorBoundary} from "./common-components";
 import {parseQuery, queryEqualsUptoAnchor, Query} from "./url-format";
 import {Navbar} from "./navbar";
-import {StylesProvider} from '@material-ui/core/styles';
+import {StylesProvider, ThemeProvider, createMuiTheme} from '@material-ui/core/styles';
+import pink from '@material-ui/core/colors/pink';
+import yellow from '@material-ui/core/colors/yellow';
+
+const theme = createMuiTheme({
+  palette: {
+    type: 'dark',
+    primary: {
+      main: pink[500],
+    },
+    secondary: {
+      main: yellow[500],
+    },
+  },
+});
 
 export function App() {
-  const [currentHash, setCurrentHash] = React.useState(window.location.hash);
-
   React.useEffect(() => {
     const eventListener = () => {
       setCurrentHash(window.location.hash);
@@ -19,19 +31,25 @@ export function App() {
     return () => window.removeEventListener("hashchange", eventListener, false);
   }, []);
 
+  const [savedSettings, setSavedSettings] = useSettings();
+  const [currentHash, setCurrentHash] = React.useState(window.location.hash);
+  const nameSettings = React.useMemo(() => computeNameSettingsFromSettings(savedSettings), [savedSettings]);
+
   const currentQuery = parseQuery(currentHash);
   try {
     return <div>
-      <StylesProvider injectFirst>
-        <div id="tip"></div>
-        <div className="body-container">
-          <div className="header-wrapper">
-            <div className="header-text">{"ExpHP's Touhou pages"}</div>
+      <ThemeProvider theme={theme}><StylesProvider injectFirst>
+        <NameSettingsContext.Provider value={nameSettings}>
+          <div className="body-container">
+            <div className="header-wrapper">
+              <div className="header-text">{"ExpHP's Touhou pages"}</div>
+            </div>
+            <ErrorBoundary><Navbar currentQuery={currentQuery} /></ErrorBoundary>
+            {/* <ErrorBoundary><div className="content-wrapper"><div className="content"><SettingsPage settings={savedSettings} onSave={setSavedSettings}/></div></div></ErrorBoundary> */}
+            <ErrorBoundary><Content currentQuery={currentQuery} /></ErrorBoundary>
           </div>
-          <ErrorBoundary><Navbar currentQuery={currentQuery} /></ErrorBoundary>
-          <ErrorBoundary><Content currentQuery={currentQuery} /></ErrorBoundary>
-        </div>
-      </StylesProvider>
+        </NameSettingsContext.Provider>
+      </StylesProvider></ThemeProvider>
     </div>;
   } catch (e) {
     return `${e}`;
@@ -43,8 +61,8 @@ export function App() {
  * Do early initialization before page-specific scripts run.
  */
 export function init() {
-  initSettings();
   initAnm();
+  initSettings();
 }
 
 const MAIN_TITLE = `ExpHP's Touhou Pages`;
@@ -84,9 +102,9 @@ function Content({currentQuery}: {currentQuery: Query}) {
   }, [currentQuery]);
 
   if (displayedMarkdown === null) return null;
-  return <div className="content-wrapper">
-    <TrustedMarkdown className="content" {...{currentQuery}}>{displayedMarkdown}</TrustedMarkdown>
-  </div>;
+  return <div className="content-wrapper"><div className="content">
+    <TrustedMarkdown {...{currentQuery}}>{displayedMarkdown}</TrustedMarkdown>
+  </div></div>;
 }
 
 // Get the text content of an `.md` file in `content/`.

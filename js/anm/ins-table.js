@@ -1,5 +1,6 @@
 import dedent from "../lib/dedent.ts";
 import {NumMap} from "../util.ts";
+import {preprocessTrustedMarkdown} from "../markdown.tsx";
 
 // ==========================================================================
 // ==========================================================================
@@ -1626,5 +1627,5 @@ for (const [key, value] of Object.entries(ANM_INS_DATA)) {
   // automatically remove tips from self-references
   const re = new RegExp(`\\:ref\\[anm/${key}\\]`, 'g');
   value.desc = value.desc.replace(re, `:tip[:ref{r=anm:${key}}]{tip="YOU ARE HERE" deco="0"}`);
-  value.desc = dedent(value.desc);
+  value.desc = preprocessTrustedMarkdown(dedent(value.desc));
 }

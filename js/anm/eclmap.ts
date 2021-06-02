@@ -1,13 +1,33 @@
-export class Eclmap {
+export interface Eclmap {
+  ins: Map<number, string>;
+  insSignature: Map<number, string>;
+  vars: Map<number, string>;
+  varType: Map<number, string>;
+  timelineIns: Map<number, string>;
+  timelineInsSignature: Map<number, string>;
+}
+
+export function parseEclmap(text: string): Eclmap {
+  const parser = new EclmapParser(text);
+  parser.parse();
+  const {ins, insSignature, vars, varType, timelineIns, timelineInsSignature} = parser;
+
+  return {ins, insSignature, vars, varType, timelineIns, timelineInsSignature};
+}
+
+// This is largely unmodified from Priw's code, which appears to be a translation of C code into JS.
+//
+// I don't want to risk changing its behavior while cleaning it up, so let's just sweep it under the rug.  - Exp
+class EclmapParser {
   constructor(txt) {
     this.kind = null;
 
     this.ins = new Map();
-    this.timeline_ins = new Map();
-    this.var = new Map();
-    this.ins_sig = new Map();
-    this.timeline_ins_sig = new Map();
-    this.var_types = new Map();
+    this.timelineIns = new Map();
+    this.vars = new Map();
+    this.insSignature = new Map();
+    this.timelineInsSignature = new Map();
+    this.varType = new Map();
 
     this.currentSeqmap = null;
     this.ident = 0;
@@ -16,21 +36,6 @@ export class Eclmap {
     this.file = txt.split("\n");
     this.strtok_tmp = "";
     this.line = 0;
-    this.parse();
-  }
-  getMnemonic(num) {
-    const ent = this.seqmapGet(this.ins, num);
-    return ent !== null ? ent : null;
-  }
-  getGlobal(num) {
-    const ent = this.seqmapGet(this.var, num);
-    return ent !== null ? ent : null;
-  }
-  opcodes() {
-    return this.ins.keys();
-  }
-  globalNums() {
-    return this.var.keys();
   }
 
   err(txt) {
@@ -76,23 +81,23 @@ export class Eclmap {
         break;
       case "!ins_signatures":
         this.ident = 0;
-        this.currentSeqmap = this.ins_sig;
+        this.currentSeqmap = this.insSignature;
         break;
       case "!gvar_names":
         this.ident = 1;
-        this.currentSeqmap = this.var;
+        this.currentSeqmap = this.vars;
         break;
       case "!gvar_types":
         this.ident = 0;
-        this.currentSeqmap = this.var_types;
+        this.currentSeqmap = this.varType;
         break;
       case "!timeline_ins_names":
         this.ident = 1;
-        this.currentSeqmap = this.timeline_ins;
+        this.currentSeqmap = this.timelineIns;
         break;
       case "!timeline_ins_signatures":
         this.ident = 0;
-        this.currentSeqmap = this.timeline_ins_sig;
+        this.currentSeqmap = this.timelineInsSignature;
         break;
       default:
         this.err(`unknown control line: ${arg}`);
@@ -154,20 +159,20 @@ export class Eclmap {
     } else {
       if (this.validateSignature(name)) return 1;
     }
-    this.seqmapSet(this.currentSeqmap, num, name);
+    this.currentSeqmap.set(num, name);
   }
 
   parseNew(magic) {
     this.control("!ins_names"); // default
-    this.seqmapLoad(this.set.bind(this), this.control.bind(this));
+    this.seqmapLoad();
   }
 
   parseNewAnm(magic) {
     this.control("!ins_names"); // default
-    this.seqmapLoad(this.set.bind(this), this.control.bind(this));
+    this.seqmapLoad();
   }
 
-  seqmapLoad(set, control) {
+  seqmapLoad() {
     let line = null;
     while ((line = this.fgets()) != null) {
       // Remove comments.
@@ -177,7 +182,7 @@ export class Eclmap {
       if (!token) continue; // 0 tokens = empty line
 
       if (token[0] === "!") {
-        control(token);
+        this.control(token);
         continue;
       }
 
@@ -195,23 +200,7 @@ export class Eclmap {
 
       if (token === "_") token = ""; // specify empty strings with _
 
-      set(num, token);
+      this.set(num, token);
     }
-  }
-
-  seqmapSet(seqmap, num, name) {
-    seqmap.set(num, name);
-  }
-
-  seqmapGet(seqmap, num) {
-    const out = seqmap.get(num) || null;
-    return out === undefined ? null : out;
-  }
-
-  seqmapFind(seqmap, name) {
-    for (const [key, value] of seqmap.entries()) {
-      if (value === name) return [key, value];
-    }
-    return null;
   }
 }
