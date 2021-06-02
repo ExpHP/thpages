@@ -1,9 +1,12 @@
+const {off} = require("process");
+
 module.exports = {
   "extends": [
     "eslint:recommended",
     "plugin:react/recommended",
     "plugin:import/errors",
     "plugin:import/warnings",
+    "plugin:react-hooks/recommended",
     "google",
   ],
   "env": {
@@ -26,6 +29,7 @@ module.exports = {
     "padded-blocks": "off",
     "no-unused-vars": "warn",
     "quotes": "off", // bit harsh for an inherited codebase
+    "quote-props": "off", // harmful to JSS
     "operator-linebreak": ["error", "before"],
     // allow `let a, b;` but not `let a = 2, b = 3;`
     "one-var": ["error", {"initialized": "never"}],

@@ -173,7 +173,7 @@ Oftentimes, graphics have special animations associated with certain events.  Fo
 
 For a detailed example, here's one of the scripts for the season gauge.  (this one draws the "Releasable" icon)
 
-~~~clike
+~~~anm
 script script114 {
     // ... ignoring the boring stuff at the beginning ...
     :ref{r=anm:pos}(-344.0f, 884.0f, 0.0f);

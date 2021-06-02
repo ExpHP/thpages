@@ -14,6 +14,59 @@ body {
   line-height: 135%;
 }
 
+body {
+  // force scrollbar so that things don't change width when navigating between
+  // pages that require one and pages that don't
+  overflow-y: scroll;
+}
+
+.page-width-controller {
+  width: 80%;
+  margin-left: 10%;
+  @media screen and (max-width: 750px) {
+    width: 100%;
+    margin-left: 0;
+  }
+}
+
+.content-pane {
+  margin-top: 10px;
+  box-sizing: border-box;
+  margin-bottom: 4em;
+}
+
+.content-pane .content-paper {
+  background: #ffffff0c;
+  margin-top: 20px;
+  border-radius: 25px;
+  padding: 20px;
+  transition: opacity .2s ease;
+  overflow-x: auto;
+}
+
+@media screen and (max-width: 400px) {
+  .header-pane {
+    display: none;
+  }
+}
+
+.header-pane {
+  margin: 0;
+  background: fade(@nav-bg-color, @nav-alpha);
+  top: 0px;
+  z-index: 9;
+}
+
+// =============================================================================
+
+.header-text {
+  line-height: 60px;
+  font-size: 30px;
+  font-family: @sans-serif;
+  margin-left: 30px;
+  font-weight: bold;
+}
+
 a {
   color: @link-color;
   text-decoration: none;
@@ -39,12 +92,6 @@ a code {
   text-decoration-style: dashed;
   -webkit-text-underline-position: under;
   text-underline-position: under;
-}
-
-body {
-  // force scrollbar so that things don't change width when navigating between
-  // pages that require one and pages that don't
-  overflow-y: scroll;
 }
 
 code {
@@ -88,36 +135,6 @@ blockquote {
   border-radius: 8px;
   background: rgba(90, 155, 90, 0.2);
   padding: 5px;
-}
-
-@media screen and (max-width: 400px) {
-  .header-wrapper {
-    display: none;
-  }
-}
-
-.body-container {
-  width: 80%;
-  margin-left: 10%;
-  @media screen and (max-width: 750px) {
-    width: 100%;
-    margin-left: 0;
-  }
-}
-
-.content-wrapper {
-  margin-top: 10px;
-  box-sizing: border-box;
-  margin-bottom: 4em;
-}
-
-.content-wrapper .content {
-  background: #ffffff0c;
-  margin-top: 20px;
-  border-radius: 25px;
-  padding: 20px;
-  transition: opacity .2s ease;
-  overflow-x: auto;
 }
 
 // MD generates <pre><code></code></pre> for GHFM code fences

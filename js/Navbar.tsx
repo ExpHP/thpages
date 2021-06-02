@@ -1,15 +1,26 @@
-import * as React from 'react';
+import React from 'react';
 import type {ReactElement} from 'react';
-import {parseQuery, queryPageEquals, Query} from "./url-format";
+import {useLocation} from 'react-router-dom';
+import type {Location as RRLocation} from 'history';
+import clsx from 'clsx';
 
-export type Entry = {
-  label: string | ReactElement,
+export type EntryCommon = {
   url?: string,
   newTab?: true,
   children?: Entry[],
   cssClasses?: string[],
 };
+type StringLabeledEntry = EntryCommon & {label: string};
+type FancyLabeledEntry = EntryCommon & {
+  label: ReactElement;
+  key: string;
+};
+export type Entry = StringLabeledEntry | FancyLabeledEntry;
 
+// Definition of navbar items.
+//
+// We can't use <NavLink> because we want to style ancestors of the active link, so we have
+// to store the list in a format that we can traverse on our own.
 export const NAVBAR: Entry[] = [
   {
     label: "Home",
@@ -90,56 +101,60 @@ export const NAVBAR: Entry[] = [
 
   {
     label: <div className="gear"></div>,
+    key: 'settings',
     url: "#/settings",
     cssClasses: ['settings'],
   },
 ];
 
-export function Navbar({currentQuery}: {currentQuery: Query}) {
-  const activeEntries = findActiveEntries(NAVBAR, currentQuery);
+function getEntryReactKey(entry: Entry): string {
+  return (entry as any).key || entry.label;
+}
+
+export function Navbar() {
+  const location = useLocation();
+  const activeEntries = findActiveEntries(NAVBAR, location);
   return <div className="header-navigation">
-    {NAVBAR.map((entry) => <NavbarEntry key={entry.label} entry={entry} inner={false} activeEntries={activeEntries} />)}
+    {NAVBAR.map((entry) => <NavbarEntry key={getEntryReactKey(entry)} entry={entry} inner={false} activeEntries={activeEntries} />)}
   </div>;
 }
 
 function NavbarEntry(props: {entry: Entry, inner: boolean, activeEntries: ActiveEntries | null}) {
   const {entry, inner, activeEntries} = props;
 
-  const otherClasses = [
-    inner ? 'inner' : 'outermost',
-    ...(entry.cssClasses || []),
-  ];
-  if (entry.children) otherClasses.push('has-children');
-  if (activeEntries) {
-    if (activeEntries.active === entry) otherClasses.push('active');
-    if (activeEntries.ancestors.includes(entry)) otherClasses.push('active-child');
-  }
+  return <MaybeLink href={entry.url} newTab={entry.newTab}>
+    <div className={clsx(
+        "navigation-entry",
+        inner ? 'inner' : 'outermost',
+        {'has-children': entry.children},
+        {'active': activeEntries && activeEntries.active === entry},
+        {'active-child': activeEntries && activeEntries.ancestors.includes(entry)},
+    )}>
+      <div className='navigation-entry-name'>{entry.label}</div>
+      {entry.children
+        ? <div className='navigation-entry-list'>
+          {entry.children.map((child) => <NavbarEntry key={getEntryReactKey(child)} entry={child} inner={true} activeEntries={activeEntries}/>)}
+        </div>
+        : null
+      }
+    </div>
+  </MaybeLink>;
+}
 
-  let innerList = null;
-  if (entry.children) {
-    innerList = <div className='navigation-entry-list'>
-      {entry.children.map((child) => <NavbarEntry key={child.label} entry={child} inner={true} activeEntries={activeEntries}/>)}
-    </div>;
-  }
-
-  let jsx = <div className={`navigation-entry ${otherClasses.join(" ")}`}>
-    <div className='navigation-entry-name'>{entry.label}</div>
-    {innerList}
-  </div>;
-
-  // optionally wrap in link
-  if (entry.url) {
-    const target = entry.newTab ? "_blank" : undefined;
-    const rel = entry.newTab ? "noopener noreferrer" : undefined;
-    jsx = <a href={entry.url} target={target} rel={rel}>{jsx}</a>;
-  }
-  return jsx;
+/** Optionally wraps things in <a>. */
+function MaybeLink({href, newTab, children, ...props}: {href?: string, newTab?: boolean, children: ReactElement}) {
+  const target = newTab ? "_blank" : undefined;
+  const rel = newTab ? "noopener noreferrer" : undefined; // for security
+  return href
+    ? <a href={href} target={target} rel={rel} {...props}>{children}</a>
+    : children;
 }
 
 type ActiveEntries = {active: Entry, ancestors: Entry[]};
-function findActiveEntries(entries: Entry[], currentQuery: Query): ActiveEntries | null {
+function findActiveEntries(entries: Entry[], currentLocation: RRLocation): ActiveEntries | null {
   for (const entry of entries) {
-    const activeEntries = entry.children && findActiveEntries(entry.children, currentQuery);
+    // active child?
+    const activeEntries = entry.children && findActiveEntries(entry.children, currentLocation);
     if (activeEntries) {
       activeEntries.ancestors.push(entry);
       return activeEntries;
@@ -148,7 +163,7 @@ function findActiveEntries(entries: Entry[], currentQuery: Query): ActiveEntries
     const navurl = entry.url;
     if (!navurl) continue; // probably header of a group
     if (navurl[0] !== '#') continue; // external link
-    if (queryPageEquals(parseQuery(navurl), currentQuery)) {
+    if (navurl.substring(1) === currentLocation.pathname) {
       return {active: entry, ancestors: []}; // active page
     }
   }
