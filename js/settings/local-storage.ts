@@ -1,5 +1,5 @@
-import {allBuiltins, defaultBuiltin, SavedSettings, SavedLangSettings, SavedRefOverride, SavedLangMap, LoadedMap} from './settings';
-import {validateGame, Game} from '../game-names';
+import {allBuiltins, defaultBuiltin, SavedSettings, SavedLangSettings, SavedLangMap, LoadedMap} from './settings';
+import {validateGame, Game} from '~/js/tables/game';
 
 // It occurs to me that this site shares localStorage with everything else under the same domain,
 // so we should use prefixed keys.
@@ -22,7 +22,7 @@ export function fixOldLocalStorageKeys() {
   moveDeprecatedLocalStorageKey('config', LOCAL_STORAGE_KEY_OTHER_CONFIG);
 }
 
-export function getNameSettingsFromLocalStorage(): SavedSettings {
+export function getSavedSettingsFromLocalStorage(): SavedSettings {
   try {
     const json = localStorage.getItem(LOCAL_STORAGE_KEY_NAMES);
     if (json) {
@@ -173,14 +173,14 @@ const latestGameForStdVersionV0: Record<VersionV0, Game> = {'eosd': '06', 'class
 const localStorageKeyForLangV0: Record<LangV0, string> = {'anm': LOCAL_STORAGE_KEY_LEGACY_ANMMAP, 'std': LOCAL_STORAGE_KEY_LEGACY_STDMAP};
 
 function allLangVersionsV0(lang: LangV0): VersionV0[] {
-  if (lang === 'anm') { return ['v0', 'v2', 'v3', 'v4', 'v8']; }
-  else if (lang === 'std') { return ['eosd', 'classic', 'modern']; }
-  else { throw new Error(`bad legacy lang ${lang}`); }
+  if (lang === 'anm') return ['v0', 'v2', 'v3', 'v4', 'v8'];
+  else if (lang === 'std') return ['eosd', 'classic', 'modern'];
+  else throw new Error(`bad legacy lang ${lang}`);
 }
 function latestGameForVersionV0(lang: LangV0, version: VersionV0): Game {
-  if (lang === 'anm') { return latestGameForAnmVersionV0[version]; }
-  else if (lang === 'std') { return latestGameForStdVersionV0[version]; }
-  else { throw new Error(`bad legacy lang ${lang}`); }
+  if (lang === 'anm') return latestGameForAnmVersionV0[version];
+  else if (lang === 'std') return latestGameForStdVersionV0[version];
+  else throw new Error(`bad legacy lang ${lang}`);
 }
 
 type SavedLangSettingsV0 = Map<string, SingleMapSettingV0>;

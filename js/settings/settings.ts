@@ -1,14 +1,13 @@
 
 
-import {parseEclmap} from '../anm/eclmap';
-import {Game} from '../game-names';
-import {Ref} from '../ref';
-import {readUploadedFile} from '../util';
+import {Game} from '~/js/tables/game';
+import {getAllTables, Ref} from '~/js/tables';
+import {readUploadedFile} from '~/js/util';
 
+import {parseEclmap} from './eclmap';
 import {fixOldLocalStorageKeys} from './local-storage';
-import {getAllTables} from '../anm/tables';
 
-export function initSettings() {
+export function settingsPreAppInit() {
   fixOldLocalStorageKeys();
 }
 
@@ -61,10 +60,6 @@ export type SavedLangSettings = {
 };
 export type SavedLangMap = {name: string, mapfile: LoadedMap, game: Game};
 
-export type SavedRefOverride = {
-  name: string;
-};
-
 export async function loadMapFromFile(file: File): Promise<LoadedMap> {
   const text = await readUploadedFile(file);
   const {ins, vars, timelineIns} = parseEclmap(text);
@@ -88,6 +83,10 @@ export function computeNameSettingsFromLangSettings(lang: Lang, savedSettings: S
   return out;
 }
 
+export function getDummyNameSettings(): NameSettings {
+  return {dataByRef: new Map()};
+}
+
 function addNameSettingsFromLangSettings(out: NameSettings, lang: Lang, savedSettings: SavedLangSettings) {
   const {builtin, mapfiles} = savedSettings;
 
@@ -102,11 +101,11 @@ function addNameSettingsFromLangSettings(out: NameSettings, lang: Lang, savedSet
   // E.g. if lang is 'anm' we should find the 'anm' table and the 'anmvar' table.
   for (const handlers of getAllTables()) {
     if (handlers.nameSettingsPath.lang !== lang) continue;
-    const {tableByOpcode, nameSettingsPath: {submap}} = handlers;
+    const {byOpcode, nameSettingsPath: {submap}} = handlers;
 
     for (const {name: source, mapfile, game} of mapfiles) {
       for (const [opcode, name] of mapfile[submap].entries()) {
-        const data = tableByOpcode.get(game)![opcode];
+        const data = byOpcode.get(game)!.get(opcode);
         if (!data) continue;
 
         out.dataByRef.set(data.ref, {name, source: {type: 'mapfile', name: source}});

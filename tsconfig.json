@@ -17,7 +17,8 @@
     "sourceMap": true,
     "baseUrl": ".",
     "paths": {
-      "*": ["./js/types/*", "*"]
+      "*": ["./js/types/*", "*"],
+      "~/*": ["./*"]
     },
     // "baseUrl": "./",
     // "paths": {"*": ["./js/types"]},

@@ -1,3 +1,4 @@
+import * as settings from '~/js/settings';
 import {Game} from './game';
 import stdTableModule from './std';
 
@@ -101,6 +102,9 @@ export class TableDef<Data extends CommonData> {
   /** Page (URL s= field) where table is hosted. */
   readonly tablePage: string;
 
+  /** Where to find user settings for naming the objects in this table. */
+  readonly nameSettingsPath: {lang: settings.Lang, submap: settings.SubmapKey};
+
   /** E.g. 'instruction', 'variable'. For debug/error messages. */
   readonly noun: string;
 
@@ -114,6 +118,7 @@ export class TableDef<Data extends CommonData> {
     tablePage: string,
     mainPrefix: string,
     dataHandlers: DataHandlers<Data>,
+    nameSettingsPath: {lang: settings.Lang, submap: settings.SubmapKey},
     module: {
       byOpcode: Map<Game, Map<number, OpcodeRefData>>;
       byRefId: Map<string, PartialData<Data>>;
@@ -124,6 +129,7 @@ export class TableDef<Data extends CommonData> {
     this.dataTable = preprocessTable(this.mainPrefix, props.module.byRefId);
     this.byOpcode = props.module.byOpcode;
     this.noun = props.dataHandlers.noun;
+    this.nameSettingsPath = props.nameSettingsPath;
     this.dataTable.forEach(props.dataHandlers.validateData);
   }
 
@@ -173,8 +179,8 @@ export const STD_TABLE = new TableDef({
   module: stdTableModule,
   tablePage: 'std/ins',
   mainPrefix: 'std',
+  nameSettingsPath: {lang: 'std', submap: 'ins'},
   dataHandlers: INS_HANDLERS,
-  // nameSettingsPath: {lang: 'std', submap: 'ins'},
   // getGroups: () => [{min: 0, max: 100, title: null}],
   // textBeforeTable: (c: Context) => (queryGame(c) > '09') ? null : dedent(`
   //   In games prior to :game[095], all STD instructions are the same size, with room for three arguments.
@@ -183,6 +189,10 @@ export const STD_TABLE = new TableDef({
   //   these padding arguments to be omitted.
   // `),
 });
+
+export function getAllTables() {
+  return [STD_TABLE];
+}
 
 // =============================================================================
 

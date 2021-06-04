@@ -1,13 +1,18 @@
 import React from 'react';
 import {StylesProvider} from '@material-ui/core/styles';
 import {HashRouter as Router, Switch, Route, Redirect, Link} from 'react-router-dom';
+
 import {ErrorBoundary} from './Error';
 import {Navbar} from './Navbar';
 import {Tip} from './Tip';
 import {StatsPage} from './Stats';
+import {useSettings, NameSettingsContext} from './settings';
 
 export function App() {
-  return <StylesProvider injectFirst> {/* Gives our CSS precedence over MUI's. */}
+  const {savedSettings, nameSettings, setSavedSettings} = useSettings();
+
+  // injectFirst gives our CSS precedence over MUI's JSS
+  return <StylesProvider injectFirst><NameSettingsContext.Provider value={nameSettings}>
     <div className='page-width-controller'>
       <div className='header-pane'>
         <div className="header-text">{"ExpHP's Touhou pages"}</div>
@@ -23,12 +28,12 @@ export function App() {
         </div>
       </Router>
     </div>
-  </StylesProvider>;
+  </NameSettingsContext.Provider></StylesProvider>;
 }
 
 function Content() {
   return <Switch>
-    <Route exact path="/">Hello.</Route>
+    <Route exact path="/">FIXME main page</Route>
     <Route exact path="/index"><Redirect to="/" /></Route>
     <Route exact path="/anm/stats">
       <StatsPage />
