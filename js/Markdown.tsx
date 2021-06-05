@@ -11,7 +11,6 @@ import remarkDirective from 'remark-directive';
 import rehypeRaw from "rehype-raw";
 import {visit as unistVisit} from "unist-util-visit";
 import {select as hastSelect} from "hast-util-select";
-import {map as unistMap} from "unist-util-map";
 import {h} from "hastscript";
 
 import {InlineRef} from "./InlineRef";
@@ -51,7 +50,7 @@ function More({children}: {children: ReactNode}) {
   const display = visible ? 'initial' : 'none';
   const text = visible ? 'Show less' : 'Show more';
   return <div>
-    <a className='show-more' onClick={() => setVisible(!visible)}>{text}</a>
+    <a className='show-more clickable' onClick={() => setVisible(!visible)}>{text}</a>
     <div style={{display: display}}>{children}</div>
   </div>;
 }
@@ -64,8 +63,7 @@ function MdTip({tip, children, deco}: {children: ReactNode, tip: string, deco?: 
 }
 
 function HeadlessTable({children}: {children: ReactNode}) {
-  return <Err>FIXME_HEADLESS_TABLE</Err>;
-  // return <div className="headless-table"><Markdown>{children}</Markdown></div>;
+  return <div className="headless-table">{children}</div>;
 }
 
 // used to de-emphasize so that I don't abuse :wip2[] for this
@@ -175,22 +173,29 @@ function rehypeCodeRef() {
 }
 
 function rehypeTableFootnotes() {
-  return (tree: any) => unistMap(tree, (node: any) => {
-    return (node.tagName === 'exp-table-footnotes') ? modify(node) : node;
-  });
+  return (tree: any) => {
+    unistVisit(tree, (node: any) => node.tagName === 'exp-table-footnotes', modify);
+  };
 
   function modify(node: any) {
+    node.children = node.children.filter((n: any) => !(n.type === 'text' && n.value.replace(/\s/g, '').length === 0));
     if (node.children.length !== 2 || node.children[0].tagName !== 'table' || node.children[1].tagName !== 'p') {
       console.error(`bad table-footnotes children`, node.children);
       return node;
     }
     // Take the content from the <p> and put it in a <tfoot><td> with a colspan equal to the number of table columns.
-    const [table, footP] = node.children;
+    const table = node.children[0];
+    const [footP] = node.children.splice(1);
     const firstRow = hastSelect('tr', table)!;
-    const ncols = (firstRow.children as any).map((node: any) => node.properties?.colspan != null ? node.properties.colspan : 1).reduce((a: number, b: number) => a + b, 0);
+    function getColspan(object: any) {
+      if (object.type === 'element' && ['th', 'td'].includes(object.tagName)) {
+        return object.properties?.colspan != null ? object.properties.colspan : 1;
+      }
+      return 0;
+    }
+    const ncols = (firstRow.children as any).map(getColspan).reduce((a: number, b: number) => a + b, 0);
 
-    table.children.push(h('tfoot', {}, h('td', {colspan: ncols}, ...footP.children)));
-    return table;
+    table.children.push(h('tfoot', {}, h('tr', h('td', {colspan: ncols}, ...footP.children))));
   }
 }
 
@@ -214,8 +219,9 @@ export function TrustedMarkdown({mdast, children}: {mdast?: object, children?: s
 
   const processor = unified()
       .use([remarkDirectivesToHtml])
-      .use([remarkToRehype, {allowDangerousHtml: true}])
-      .use([rehypeExtractTipContents, rehypeTableFootnotes, rehypeCodeRef, rehypeHighlight, rehypeRaw])
+      .use(remarkToRehype, {allowDangerousHtml: true})
+      .use([rehypeRaw])
+      .use([rehypeExtractTipContents, rehypeTableFootnotes, rehypeCodeRef, rehypeHighlight])
       .use(rehypeReact, {
         createElement: React.createElement,
         Fragment: React.Fragment,
