@@ -9,6 +9,14 @@ export type NumMap<V> = { [n in number]?: V; };
 
 type SafeRecord<K extends (string | number | symbol), V> = { [P in K]?: V };
 
+/** Append key-value pairs from an object to a map in-place. */
+export function mapAssign<T>(map: Map<string, T>, object: Record<string, T>) {
+  for (const [k, v] of Object.entries(object)) {
+    map.set(k, v);
+  }
+  return map;
+}
+
 export const StrMap = {
   entries: function* <K extends string | symbol, V>(obj: StrMap<K, V>): IterableIterator<[K, V]> {
     for (const [k, v] of Object.entries(obj)) {
@@ -96,10 +104,6 @@ export function cached<T>(func: () => T): Cached<T> {
   };
 }
 
-export type Without<T, K> = {
-  [L in Exclude<keyof T, K>]: T[L]
-};
-
 /**
  * When you have a code path with a value of type `never`, call `return unreachable(neverValue)` to accomplish several things:
  *
@@ -112,14 +116,4 @@ export type Without<T, K> = {
 export function unreachable(x: never): never {
   console.error(x); // log the value since it clearly defies our type annotations
   throw new Error('the unpossible happened!');
-}
-
-/**
- * Lets you annotate the type of something in a way that does type checking instead of simply casting.
- *
- * Useful when you need to define a literal value for a string enum in a location where TypeScript would
- * normally have its type decay to plain old `string`.
- */
-export function typed<T>(x: T): T {
-  return x;
 }

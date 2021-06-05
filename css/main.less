@@ -151,9 +151,12 @@ pre > code { display: block; }
 }
 
 table, th, td, tr {
-  border: 1px solid #ffcc0060;
-  border-collapse: collapse;
+  border: 1px solid @table-border-color;
   padding: 5px;
+}
+
+table {
+  border-collapse: collapse;
 }
 
 tfoot {

@@ -12,7 +12,7 @@ export type EntryCommon = {
 };
 type StringLabeledEntry = EntryCommon & {label: string};
 type FancyLabeledEntry = EntryCommon & {
-  label: ReactElement;
+  Label: () => ReactElement;
   key: string;
 };
 export type Entry = StringLabeledEntry | FancyLabeledEntry;
@@ -100,7 +100,7 @@ export const NAVBAR: Entry[] = [
   },
 
   {
-    label: <div className="gear"></div>,
+    Label: function SettingsGear() { return <div className="gear"></div>; },
     key: 'settings',
     url: "#/settings",
     cssClasses: ['settings'],
@@ -108,8 +108,14 @@ export const NAVBAR: Entry[] = [
 ];
 
 function getEntryReactKey(entry: Entry): string {
-  return (entry as any).key || entry.label;
+  return (entry as any).key || (entry as any).label;
 }
+
+function getEntryLabel(entry: Entry): string {
+  const Label = (entry as any).Label;
+  return (entry as any).label || <Label />;
+}
+
 
 export function Navbar() {
   const location = useLocation();
@@ -129,8 +135,9 @@ function NavbarEntry(props: {entry: Entry, inner: boolean, activeEntries: Active
         {'has-children': entry.children},
         {'active': activeEntries && activeEntries.active === entry},
         {'active-child': activeEntries && activeEntries.ancestors.includes(entry)},
+        entry.cssClasses,
     )}>
-      <div className='navigation-entry-name'>{entry.label}</div>
+      <div className='navigation-entry-name'>{getEntryLabel(entry)}</div>
       {entry.children
         ? <div className='navigation-entry-list'>
           {entry.children.map((child) => <NavbarEntry key={getEntryReactKey(child)} entry={child} inner={true} activeEntries={activeEntries}/>)}

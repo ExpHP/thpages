@@ -1,9 +1,7 @@
 @import "defs.less";
 
 .stats-table {
-  resize: vertical;
-  overflow: hidden;
-  height: 300px;
+  height: 300px; // initial height
 
   .zero span { opacity: 0.30; }
 
@@ -14,30 +12,54 @@
     opacity: 0.30;
   }
 
-  tr:nth-child(even) .frozen-col {
+  thead {
+    border-collapse: separate;
+  }
+
+  th {
+    border: 1px solid @table-border-color;
+    border-collapse: separate;
+  }
+
+  tbody th:first-child {
+    text-align: left;
+  }
+
+  tr:nth-child(odd) th {
     background-color: #221f31;
   }
 
-  tr.frozen-header,
-  tr.frozen-header .frozen-col,
-  tr:nth-child(odd) .frozen-col {
+  thead tr:first-child th, // :first-child redundant but needed for higher priority
+  tr:nth-child(even) th {
     background-color: #282639;
   }
 
-  tr:nth-child(even) {
+  tr:nth-child(odd) {
     background-color: #221f31a0;
   }
 
-  tr:nth-child(odd) {
+  tr:nth-child(even) {
     background-color: #282639a0;
   }
 
-  tr:first-child { text-align: center; }
-  tr:not(:first-child) > :first-child { text-align: left; }
-  tr:not(:first-child) td:not(:first-child) {
+  td {
     font-family: @monospace;
     text-align: right;
   }
+}
+
+.stats-table {
+  // when border-collapse: collapse, the borders of sticky elements will detatch from the cells
+  // (they basically belong to the table), so disable that.
+  table { border-collapse: separate; }
+
+  // and now we need to do a bit of damage control to eliminate any double borders
+  table { border: none; border-spacing: 0; }
+  tr { border: none;}
+  th:not(:first-child) { border-left: none; }
+  td:not(:first-child) { border-left: none; }
+  tr:not(:first-child) th,
+  tr:not(:first-child) td { border-top: none; }
 }
 
 #layer-viewer-status {

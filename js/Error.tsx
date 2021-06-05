@@ -1,4 +1,4 @@
-import * as React from 'react';
+import React from 'react';
 import type {ReactNode} from 'react';
 
 export function Err({children}: {children: ReactNode}) {

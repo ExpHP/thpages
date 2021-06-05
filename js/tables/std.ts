@@ -1,143 +1,139 @@
-import dedent from "../lib/dedent.ts";
-import {preprocessTrustedMarkdown} from "../markdown.tsx";
+import type {PartialInsData} from './tables';
+import {mapAssign} from '../util';
+
+import * as myself from './std';
+export default myself;
 
 // ==========================================================================
 // ==========================================================================
 // ===================    LOOKUP TABLE BY OPCODE    =========================
 
-/**
- * Table indexed first by game number string, then by opcode number,
- * producing the crossref associated with that opcode.
- *
- * Iterating the first table should produce games in ascending order.
- * There are NO GUARANTEES about iteration order of opcodes within a game.
- */
-export const STD_BY_OPCODE = new Map(); // has to be a map because 'integer' keys defy insertion order
+export const byOpcode = new Map(); // has to be a map because 'integer' keys defy insertion order
 
 // ---- EoSD ----
-STD_BY_OPCODE.set('06', {
-  0: {ref: 'std:v0-pos-keyframe'},
-  1: {ref: 'std:v0-skyfog'},
-  2: {ref: 'std:eosd-facing'},
-  3: {ref: 'std:eosd-facing-time'},
-  4: {ref: 'std:v0-skyfog-time'},
-  5: {ref: 'std:eosd-stop'},
-});
+byOpcode.set('06', new Map([
+  [0, {ref: 'std:v0-pos-keyframe'}],
+  [1, {ref: 'std:v0-skyfog'}],
+  [2, {ref: 'std:eosd-facing'}],
+  [3, {ref: 'std:eosd-facing-time'}],
+  [4, {ref: 'std:v0-skyfog-time'}],
+  [5, {ref: 'std:eosd-stop'}],
+]));
 
 // ---- v0 ----
-STD_BY_OPCODE.set('07', {
-  0: {ref: 'std:v0-pos-keyframe'},
-  1: {ref: 'std:v0-skyfog'},
-  2: {ref: 'std:v0-skyfog-time'},
-  3: {ref: 'std:v0-stop'},
-  4: {ref: 'std:v0-jmp'},
-  5: {ref: 'std:v0-pos'},
-  6: {ref: 'std:v0-pos-time'},
-  7: {ref: 'std:v0-facing'},
-  8: {ref: 'std:v0-facing-time'},
-  9: {ref: 'std:v0-up'},
-  10: {ref: 'std:v0-up-time'},
-  11: {ref: 'std:v0-fov'},
-  12: {ref: 'std:v0-fov-time'},
-  13: {ref: 'std:v0-clear-color'},
-  14: {ref: 'std:v0-pos-initial'},
-  15: {ref: 'std:v0-pos-final'},
-  16: {ref: 'std:v0-pos-initial-deriv'},
-  17: {ref: 'std:v0-pos-final-deriv'},
-  18: {ref: 'std:v0-pos-bezier'},
-  19: {ref: 'std:v0-facing-initial'},
-  20: {ref: 'std:v0-facing-final'},
-  21: {ref: 'std:v0-facing-initial-deriv'},
-  22: {ref: 'std:v0-facing-final-deriv'},
-  23: {ref: 'std:v0-facing-bezier'},
-  24: {ref: 'std:v0-up-initial'},
-  25: {ref: 'std:v0-up-final'},
-  26: {ref: 'std:v0-up-initial-deriv'},
-  27: {ref: 'std:v0-up-final-deriv'},
-  28: {ref: 'std:v0-up-bezier'},
-  29: {ref: 'std:v0-sprite-a'},
-  30: {ref: 'std:v0-sprite-b'},
-  31: {ref: 'std:v0-case'},
-});
+byOpcode.set('07', new Map([
+  [0, {ref: 'std:v0-pos-keyframe'}],
+  [1, {ref: 'std:v0-skyfog'}],
+  [2, {ref: 'std:v0-skyfog-time'}],
+  [3, {ref: 'std:v0-stop'}],
+  [4, {ref: 'std:v0-jmp'}],
+  [5, {ref: 'std:v0-pos'}],
+  [6, {ref: 'std:v0-pos-time'}],
+  [7, {ref: 'std:v0-facing'}],
+  [8, {ref: 'std:v0-facing-time'}],
+  [9, {ref: 'std:v0-up'}],
+  [10, {ref: 'std:v0-up-time'}],
+  [11, {ref: 'std:v0-fov'}],
+  [12, {ref: 'std:v0-fov-time'}],
+  [13, {ref: 'std:v0-clear-color'}],
+  [14, {ref: 'std:v0-pos-initial'}],
+  [15, {ref: 'std:v0-pos-final'}],
+  [16, {ref: 'std:v0-pos-initial-deriv'}],
+  [17, {ref: 'std:v0-pos-final-deriv'}],
+  [18, {ref: 'std:v0-pos-bezier'}],
+  [19, {ref: 'std:v0-facing-initial'}],
+  [20, {ref: 'std:v0-facing-final'}],
+  [21, {ref: 'std:v0-facing-initial-deriv'}],
+  [22, {ref: 'std:v0-facing-final-deriv'}],
+  [23, {ref: 'std:v0-facing-bezier'}],
+  [24, {ref: 'std:v0-up-initial'}],
+  [25, {ref: 'std:v0-up-final'}],
+  [26, {ref: 'std:v0-up-initial-deriv'}],
+  [27, {ref: 'std:v0-up-final-deriv'}],
+  [28, {ref: 'std:v0-up-bezier'}],
+  [29, {ref: 'std:v0-sprite-a'}],
+  [30, {ref: 'std:v0-sprite-b'}],
+  [31, {ref: 'std:v0-case'}],
+]));
 
-STD_BY_OPCODE.set('08', {
-  ...STD_BY_OPCODE.get('07'),
-  32: {ref: 'std:v0-rocking-vector'},
-  33: {ref: 'std:v0-rock'},
-  34: {ref: 'std:v0-sprite-c'},
-});
+byOpcode.set('08', new Map([
+  ...byOpcode.get('07').entries(),
+  [32, {ref: 'std:v0-rocking-vector'}],
+  [33, {ref: 'std:v0-rock'}],
+  [34, {ref: 'std:v0-sprite-c'}],
+]));
 
-STD_BY_OPCODE.set('09', {...STD_BY_OPCODE.get('08')});
-STD_BY_OPCODE.set('095', {
-  0: {ref: 'std:stop'},
-  1: {ref: 'std:jmp'},
-  2: {ref: 'std:pos'},
-  3: {ref: 'std:pos-time'},
-  4: {ref: 'std:facing'},
-  5: {ref: 'std:facing-time'},
-  6: {ref: 'std:up'},
-  7: {ref: 'std:fov'},
-  8: {ref: 'std:skyfog'},
-  9: {ref: 'std:skyfog-time'},
-  10: {ref: 'std:pos-bezier'},
-  11: {ref: 'std:facing-bezier'},
-  12: {ref: 'std:rock'},
-  13: {ref: 'std:clear-color'},
-  14: {ref: 'std:sprite-2arg'},
+byOpcode.set('09', new Map([...byOpcode.get('08').entries()]));
+byOpcode.set('095', new Map([
+  [0, {ref: 'std:stop'}],
+  [1, {ref: 'std:jmp'}],
+  [2, {ref: 'std:pos'}],
+  [3, {ref: 'std:pos-time'}],
+  [4, {ref: 'std:facing'}],
+  [5, {ref: 'std:facing-time'}],
+  [6, {ref: 'std:up'}],
+  [7, {ref: 'std:fov'}],
+  [8, {ref: 'std:skyfog'}],
+  [9, {ref: 'std:skyfog-time'}],
+  [10, {ref: 'std:pos-bezier'}],
+  [11, {ref: 'std:facing-bezier'}],
+  [12, {ref: 'std:rock'}],
+  [13, {ref: 'std:clear-color'}],
+  [14, {ref: 'std:sprite-2arg'}],
   // it's hard to tell whether ins_15 officially "exists" in TH095/TH10 since it would be cut out
   // of the jumptable by the compiler regardless (it's a nop at the end of the table).
   //
   // But invalid instructions are also nops, so we might as well assume it does exist
   // (assuming it is in fact a nop with no additional semantics; contrast with ins_16)
-  15: {ref: 'std:ins-15'},
+  [15, {ref: 'std:ins-15'}],
 
   // NOTE: As far as I can tell, TH095 and TH10 have no interrupt labels.
   // I say this not because they are missing from the STD jumptable (as explained for ins_15 above,
   // that much would be expected); rather, I say it because there appears to be no ECL instruction
   // to trigger an interrupt in these two games.
-});
+]));
 
-STD_BY_OPCODE.set('10', {...STD_BY_OPCODE.get('095')});
-STD_BY_OPCODE.set('11', {
-  ...STD_BY_OPCODE.get('10'),
-  16: {ref: 'std:case'},
-  17: {ref: 'std:distortion'},
-});
+byOpcode.set('10', new Map([...byOpcode.get('095').entries()]));
+byOpcode.set('11', new Map([
+  ...byOpcode.get('10').entries(),
+  [16, {ref: 'std:case'}],
+  [17, {ref: 'std:distortion'}],
+]));
 
-STD_BY_OPCODE.set('12', {
-  ...STD_BY_OPCODE.get('11'),
-  14: {ref: 'std:sprite-3arg'}, // signature change!
-  18: {ref: 'std:up-time'},
-});
+byOpcode.set('12', new Map([
+  ...byOpcode.get('11').entries(),
+  [14, {ref: 'std:sprite-3arg'}], // signature change!
+  [18, {ref: 'std:up-time'}],
+]));
 
-STD_BY_OPCODE.set('125', {...STD_BY_OPCODE.get('12')});
-STD_BY_OPCODE.set('128', {...STD_BY_OPCODE.get('125')});
-STD_BY_OPCODE.set('13', {...STD_BY_OPCODE.get('128')});
-STD_BY_OPCODE.set('14', {
-  ...STD_BY_OPCODE.get('13'),
-  19: {ref: 'std:ins-19'},
-  20: {ref: 'std:draw-distance'},
-});
+byOpcode.set('125', new Map([...byOpcode.get('12').entries()]));
+byOpcode.set('128', new Map([...byOpcode.get('125').entries()]));
+byOpcode.set('13', new Map([...byOpcode.get('128').entries()]));
+byOpcode.set('14', new Map([
+  ...byOpcode.get('13').entries(),
+  [19, {ref: 'std:ins-19'}],
+  [20, {ref: 'std:draw-distance'}],
+]));
 
-STD_BY_OPCODE.set('143', {...STD_BY_OPCODE.get('14')});
-STD_BY_OPCODE.set('15', {...STD_BY_OPCODE.get('143')});
-STD_BY_OPCODE.set('16', {...STD_BY_OPCODE.get('15')});
-STD_BY_OPCODE.set('165', {...STD_BY_OPCODE.get('16')});
-STD_BY_OPCODE.set('17', {
-  ...STD_BY_OPCODE.get('16'),
-  21: {ref: 'std:fov-time'},
-});
-STD_BY_OPCODE.set('18', {...STD_BY_OPCODE.get('17')});
+byOpcode.set('143', new Map([...byOpcode.get('14').entries()]));
+byOpcode.set('15', new Map([...byOpcode.get('143').entries()]));
+byOpcode.set('16', new Map([...byOpcode.get('15').entries()]));
+byOpcode.set('165', new Map([...byOpcode.get('16').entries()]));
+byOpcode.set('17', new Map([
+  ...byOpcode.get('16'),
+  [21, {ref: 'std:fov-time'}],
+]));
+byOpcode.set('18', new Map([...byOpcode.get('17').entries()]));
 
 // ==========================================================================
 // ==========================================================================
 // =====================    INSTRUCTION DATA    =============================
 
 // Lookup table by ref id. (game-independent, map-independent name)
-export const STD_INS_DATA = {};
+export const byRefId = new Map<string, PartialInsData>();
 
 // EoSD
-Object.assign(STD_INS_DATA, {
+mapAssign(byRefId, {
   'v0-pos-keyframe': {
     sig: 'fff', args: ['x', 'y', 'z'], desc: `
     :tipshow[Declares a keyframe for camera position at the current time label.]
@@ -329,7 +325,7 @@ Object.assign(STD_INS_DATA, {
 });
 
 for (const thing of ['facing', 'up', 'fov']) {
-  STD_INS_DATA[`v0-${thing}-time`] = {
+  byRefId.set(`v0-${thing}-time`, {
     sig: 'SS_', args: ['t', 'mode', '_'], desc: `
     :tipshow[Causes the final :ref{r=std:v0-${thing}} instruction on this same frame to be interpolated over
     the next \`t\` frames using the given [interpolation mode](#/anm/interpolation&a=old-games)
@@ -337,11 +333,11 @@ for (const thing of ['facing', 'up', 'fov']) {
     (**Note:** v0 STD has its own set of mode numbers!)
 
     Similarly to :ref{r=std:v0-pos-time}, order does not matter.
-  `};
+  `});
 }
 
 for (const thing of ['facing', 'up']) {
-  STD_INS_DATA[`v0-${thing}-time`] = {
+  byRefId.set(`v0-${thing}-time`, {
     sig: 'SS_', args: ['t', 'mode', '_'], desc: `
     :tipshow[Causes the final :ref{r=std:v0-${thing}} instruction on this same frame to be interpolated over
     the next \`t\` frames using the given [interpolation mode](#/anm/interpolation&a=old-games)
@@ -349,46 +345,46 @@ for (const thing of ['facing', 'up']) {
     (**Note:** v0 STD has its own set of mode numbers!)
 
     Similarly to :ref{r=std:v0-pos-time}, order does not matter.
-  `};
+  `});
 
-  STD_INS_DATA[`v0-${thing}-initial`] = {
+  byRefId.set(`v0-${thing}-initial`, {
     sig: 'SS_', args: ['t', 'mode', '_'], desc: `
     :tipshow[Simply writes the initial value of :ref{r=std:v0-${thing}} for time interpolation.]
     This has similar caveats to :ref{r=std:v0-pos-initial}, and the games only ever use it as part of the
     setup for :ref{r=std:v0-${thing}-bezier}.
-  `};
-  STD_INS_DATA[`v0-${thing}-final`] = {
+  `});
+  byRefId.set(`v0-${thing}-final`, {
     sig: 'SS_', args: ['t', 'mode', '_'], desc: `
     :tipshow[Simply writes the final value of :ref{r=std:v0-${thing}} for time interpolation,
     without any of the additional effects of a direct call to :ref{r=std:v0-${thing}}.]
     The games only ever use it as part of the setup for :ref{r=std:v0-${thing}-bezier}.
-  `};
+  `});
 }
 
 for (const thing of ['pos', 'facing', 'up']) {
-  STD_INS_DATA[`v0-${thing}-bezier`] = {
+  byRefId.set(`v0-${thing}-bezier`, {
     sig: 'S__', args: ['t', '_', '_'], desc: `
     :tipshow[Interpolates :ref{r=std:v0-${thing}} using a Bezier.]
     Identical to calling :ref{r=std:v0-${thing}-time}\`(t, 7, 0)\`. (7 is the Bezier mode)
-  `};
+  `});
 
-  STD_INS_DATA[`v0-${thing}-initial-deriv`] = {
+  byRefId.set(`v0-${thing}-initial-deriv`, {
     sig: 'fff', args: ['dx', 'dy', 'dz'], desc: `
     :tipshow[Sets the initial derivative for Bezier interpolation of :ref{r=std:v0-${thing}}.]
     This is the initial derivative of the normalized easing function, so the initial velocity
     will be \`(dx/t, dy/t, dz/t)\` (where \`t\` comes from :ref{r=std:v0-${thing}-bezier})
-  `};
+  `});
 
-  STD_INS_DATA[`v0-${thing}-final-deriv`] = {
+  byRefId.set(`v0-${thing}-final-deriv`, {
     sig: 'fff', args: ['dx', 'dy', 'dz'], desc: `
     :tipshow[Sets the final derivative for Bezier interpolation of :ref{r=std:v0-${thing}}.]
     This is the final derivative of the normalized easing function, so the final velocity
     will be \`(dx/t, dy/t, dz/t)\` (where \`t\` comes from :ref{r=std:v0-${thing}-bezier})
-  `};
+  `});
 }
 
 // Later games
-Object.assign(STD_INS_DATA, {
+mapAssign(byRefId, {
   'stop': {sig: '', args: [], desc: `
     :tipshow[Stops executing the script.]
 
@@ -509,27 +505,11 @@ Object.assign(STD_INS_DATA, {
 });
 
 for (const thing of ['pos', 'up', 'facing', 'fov', 'skyfog']) {
-  STD_INS_DATA[`${thing}-time`] = {
-    sig: 'SS' + STD_INS_DATA[thing].sig,
-    args: ['t', 'mode', ...STD_INS_DATA[thing].args],
+  byRefId.set(`${thing}-time`, {
+    sig: 'SS' + byRefId.get(thing)!.sig,
+    args: ['t', 'mode', ...byRefId.get(thing)!.args],
     desc: `
     Smoothly interpolates the value of :ref{r=std:${thing}} over the next \`t\` frames
     using the given [interpolation mode](#/anm/interpolation&a=old-games).
-  `};
-}
-
-for (const [key, value] of Object.entries(STD_INS_DATA)) {
-  value.wip = value.wip || 0;
-  if (value.desc === undefined) window.console.error(`TABLE CORRUPT: std ref ${key} has no 'desc'`);
-  if (value.sig === undefined) window.console.error(`TABLE CORRUPT: std ref ${key} has no 'sig'`);
-  if (value.sig != null && value.args === undefined) window.console.error(`TABLE CORRUPT: std ref ${key} has no 'args'`);
-  if (value.sig && value.sig.length !== value.args.length) {
-    window.console.error(`TABLE CORRUPT: std ref ${key} has arg count mismatch`);
-  }
-
-  // automatically remove tips from self-references
-  const re = new RegExp(`\\:ref\\[std/${key}\\]`, 'g');
-  value.desc = value.desc.replace(re, `:tip[:ref{r=std:${key}}]{tip="YOU ARE HERE" deco="0"}`);
-
-  value.desc = preprocessTrustedMarkdown(dedent(value.desc));
+  `});
 }
