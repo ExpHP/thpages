@@ -24,7 +24,6 @@
     "remark-gfm": "^1.0.0",
     "remark-heading-id": "^1.0.0",
     "unist-util-filter": "^3.0.0",
-    "unist-util-map": "^3.0.0",
     "unist-util-visit": "^3.1.0"
   },
   "browserslist": [

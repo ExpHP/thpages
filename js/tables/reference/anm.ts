@@ -822,7 +822,7 @@ mapAssign(byRefId, {
     | 0    | \`D3DTEXF_LINE\` | linear interpolation | blurry |
     | 1    | \`D3DTEXF_POINT\` | nearest-point sampling | big pixels |
 
-    As an example, Reimu's sprite in :game[14] uses \`:ref{r=anm:resampleMode tip=0}(1)\`, while her hitbox animation does not.
+    As an example, Reimu's sprite in :game[14] uses \`:ref{r=anm:resampleMode}(1)\`, while her hitbox animation does not.
     Here you can see the effect of enabling it on the hitbox during Shinmyoumaru's survival spell.<br>
     <img src="./content/anm/img/ins-v8-311.png" height="200px">
   `},
@@ -968,7 +968,7 @@ mapAssign(byRefId, {
     This has no effect on [special drawing instructions](#anm/ins&a=group-600).
 
     For some strange reason, from :game[14] onwards,
-    :ref{r=anm:rgb2Time} and :ref{r=anm:alpha2Time} automatically do :ref{r=anm:colorMode tip=0}(1).
+    :ref{r=anm:rgb2Time} and :ref{r=anm:alpha2Time} automatically do \`:ref{r=anm:colorMode}(1)\`.
     Therefore, if you use those instructions, you must call this *afterwards,* not before.
 
     **ECL modders beware:** The game may interfere with the use of :ref{r=anm:rgb2}, :ref{r=anm:alpha2} and :ref{r=anm:colorMode}
@@ -991,7 +991,7 @@ mapAssign(byRefId, {
   'angleVel': {sig: 'fff', args: ['ωx', 'ωy', 'ωz'], md: `Set a constant angular velocity, in radians per frame.`},
   'scaleGrowth': {sig: 'ff', args: ['gx', 'gy'], md: `
     Every frame, it increases the values of :ref{r=anm:scale} as \`sx -> sx + gx\` and \`sy -> sy + gy\`.
-    Basically, :ref{r=anm:scaleGrowth tip=0} is to :ref{r=anm:scale} as :ref{r=anm:angleVel} is to :ref{r=anm:rotate}.
+    Basically, :ref{r=anm:scaleGrowth} is to :ref{r=anm:scale} as :ref{r=anm:angleVel} is to :ref{r=anm:rotate}.
     (they even share implemenation details...)
   `},
   'uAdd': {sig: 'f', args: ['du'], md: `

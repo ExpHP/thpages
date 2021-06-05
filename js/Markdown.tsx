@@ -178,7 +178,9 @@ function rehypeTableFootnotes() {
   };
 
   function modify(node: any) {
+    // don't get tripped up by inter-element whitespace
     node.children = node.children.filter((n: any) => !(n.type === 'text' && n.value.replace(/\s/g, '').length === 0));
+
     if (node.children.length !== 2 || node.children[0].tagName !== 'table' || node.children[1].tagName !== 'p') {
       console.error(`bad table-footnotes children`, node.children);
       return node;

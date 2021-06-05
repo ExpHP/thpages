@@ -18,9 +18,9 @@ export function getMsgTableText(game: Game) {
   if ('10' <= game && game != '125' && game != '143' && game != '165') {
     notEnd = `
       > **Important:** This page is for **stage MSG** files!!
-      Ending MSG and staff MSG files use a different set of instructions
-      (to be documented), and \`mission.msg\` files are a completely different
-      format entirely.
+      > Ending MSG and staff MSG files use a different set of instructions
+      > (to be documented), and \`mission.msg\` files are a completely different
+      > format entirely.
     `;
   }
 
