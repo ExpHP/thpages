@@ -55,13 +55,14 @@ export type Group = {
 // Types of tables that exist.
 
 type DataHandlers<D extends CommonData> = {
-  /** Turns opcode into the anchor (URL a= field) for that item on the table's page. */
-  formatAnchor(num: number): string;
-
-  noun: string; // documented on TableDef
-
   /** Throws an exception if data is bad.  Used to check for common mistakes in the table on load. */
   validateData(data: D, refId: string): void;
+
+  // The rest are fields that we assign directly to TableDef.
+  noun: TableDef<D>['noun'];
+  formatAnchor: TableDef<D>['formatAnchor'];
+  getDefaultName: TableDef<D>['getDefaultName'];
+  addTypeSigilIfNeeded: TableDef<D>['addTypeSigilIfNeeded'];
 };
 
 export type InsData = {
@@ -82,15 +83,24 @@ const INS_HANDLERS: DataHandlers<InsData> = {
       window.console.error(`TABLE CORRUPT: std ref ${refId} has arg count mismatch`);
     }
   },
+  getDefaultName: (opcode: number) => `ins_${opcode}`,
+  addTypeSigilIfNeeded: (name: string) => name,
 } as const;
 
 const VAR_HANDLERS: DataHandlers<VarData> = {
   noun: 'variable',
   formatAnchor: (opcode: number) => `var-${opcode}`,
   validateData: (_data: VarData, _refId: string) => {},
+  getDefaultName: (opcode: number, {type}: VarData) => `[${opcode}${type === '%' ? '.0f' : ''}]`,
+  addTypeSigilIfNeeded: (name: string, {type}: VarData) => name[0] == '[' ? name : type + name,
 } as const;
 
 // =============================================================================
+
+export type ReverseTable = Map<Game, Map<Ref, number>>;
+export type RefByOpcode = Map<Game, Map<number, OpcodeRefData>>;
+export type LatestGameTable = Map<Ref, QualifiedOpcode>;
+export type QualifiedOpcode = {game: Game, opcode: number};
 
 /**
  * Wraps a table-defining module with useful methods.
@@ -99,7 +109,7 @@ export class TableDef<Data extends CommonData> {
   /** Prefix (e.g. `"anm"`) of crossrefs (e.g. `"anm:pos"`). */
   readonly mainPrefix: string;
 
-  /** Page (URL s= field) where table is hosted. */
+  /** Page where table is hosted. */
   readonly tablePage: string;
 
   /** Where to find user settings for naming the objects in this table. */
@@ -112,7 +122,26 @@ export class TableDef<Data extends CommonData> {
   readonly dataTable: Map<string, Data>;
 
   /** Table that maps a game and opcode to a reference. */
-  readonly byOpcode: Map<Game, Map<number, OpcodeRefData>>;
+  readonly byOpcode: RefByOpcode;
+
+  /** Finds the opcode from a crossref. */
+  readonly reverseTable: ReverseTable;
+
+  /**
+   * Gives the latest game containing each instruction, and its opcode in that game.
+   *
+   * Used as a fallback when referring to instructions that don't exist in the current page's game.
+   */
+  readonly latestGameTable: LatestGameTable;
+
+  /** Generate a default name. (e.g. `ins_32`, `[10002]`...) */
+  readonly getDefaultName: (opcode: number, data: Data) => string;
+
+  /** Will turn `IO` into `$IO` for vars. (but is not applied to `[10002]`) */
+  readonly addTypeSigilIfNeeded: (name: string, data: Data) => string;
+
+  /** Turns opcode into the anchor (URL a= field) for that item on the table's page. */
+  readonly formatAnchor: (num: number) => string;
 
   constructor(props: {
     tablePage: string,
@@ -120,16 +149,23 @@ export class TableDef<Data extends CommonData> {
     dataHandlers: DataHandlers<Data>,
     nameSettingsPath: {lang: settings.Lang, submap: settings.SubmapKey},
     module: {
-      byOpcode: Map<Game, Map<number, OpcodeRefData>>;
+      byOpcode: RefByOpcode;
       byRefId: Map<string, PartialData<Data>>;
     },
   }) {
+    const {reverseTable, latestGameTable} = computeReverseTable(props.module.byOpcode);
     this.mainPrefix = props.mainPrefix;
     this.tablePage = props.tablePage;
     this.dataTable = preprocessTable(this.mainPrefix, props.module.byRefId);
     this.byOpcode = props.module.byOpcode;
+    this.reverseTable = reverseTable;
+    this.latestGameTable = latestGameTable;
     this.noun = props.dataHandlers.noun;
     this.nameSettingsPath = props.nameSettingsPath;
+    this.getDefaultName = props.dataHandlers.getDefaultName;
+    this.addTypeSigilIfNeeded = props.dataHandlers.addTypeSigilIfNeeded;
+    this.formatAnchor = props.dataHandlers.formatAnchor;
+
     this.dataTable.forEach(props.dataHandlers.validateData);
   }
 
@@ -173,11 +209,29 @@ export class TableDef<Data extends CommonData> {
   }
 }
 
+function computeReverseTable(tableByOpcode: RefByOpcode) {
+  const latestGameTable: LatestGameTable = new Map();
+  const reverseTable: ReverseTable = new Map();
+
+  for (const [game, tableInner] of tableByOpcode.entries()) {
+    const reverseInner = new Map<Ref, number>();
+
+    for (const [opcode, {ref}] of tableInner.entries()) {
+      if (ref === null) continue;
+
+      latestGameTable.set(ref, {game, opcode});
+      reverseInner.set(ref, opcode);
+    }
+    reverseTable.set(game, reverseInner);
+  }
+  return {latestGameTable, reverseTable};
+}
+
 // =============================================================================
 
 export const STD_TABLE = new TableDef({
   module: stdTableModule,
-  tablePage: 'std/ins',
+  tablePage: '/std/ins',
   mainPrefix: 'std',
   nameSettingsPath: {lang: 'std', submap: 'ins'},
   dataHandlers: INS_HANDLERS,
@@ -192,6 +246,15 @@ export const STD_TABLE = new TableDef({
 
 export function getAllTables() {
   return [STD_TABLE];
+}
+
+export function getTableByPrefix(prefix: string): TableDef<InsData> | TableDef<VarData> | null {
+  for (const table of getAllTables()) {
+    if (table.mainPrefix === prefix) {
+      return table;
+    }
+  }
+  return null;
 }
 
 // =============================================================================

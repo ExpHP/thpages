@@ -5,7 +5,7 @@
  * Because they look like stringified integers, do not use them as object keys if you care about iteration order (use Maps).
  */
 export type Game = '06' | '07' | '08' | '09' | '095' | '10' | '11' | '12' | '125' | '128' | '13' | '14' | '143' | '15' | '16' | '165' | '17' | '18';
-
+export const latestGame: Game = '18';
 export type GameData = {
   thname: string,
   long: string,
