@@ -2,7 +2,7 @@ import React from 'react';
 import {StylesProvider} from '@material-ui/core/styles';
 import {HashRouter as Router, Switch, Route, Redirect, Link} from 'react-router-dom';
 
-import {STD_TABLE} from './tables';
+import {ANM_INS_TABLE, ANM_VAR_TABLE, STD_TABLE, MSG_TABLE} from './tables';
 import {ErrorBoundary} from './Error';
 import {Navbar} from './Navbar';
 import {Tip} from './Tip';
@@ -40,10 +40,10 @@ function Content() {
     <Route exact path="/">FIXME main page</Route>
     <Route exact path="/index"><Redirect to="/" /></Route>
     <Route exact path="/settings">FIXME</Route>
-    <Route exact path="/anm/ins">FIXME</Route>
-    <Route exact path="/anm/var">FIXME</Route>
+    <Route exact path="/anm/ins"><ReferenceTablePage table={ANM_INS_TABLE} /></Route>
+    <Route exact path="/anm/var"><ReferenceTablePage table={ANM_VAR_TABLE} /></Route>
     <Route exact path="/std/ins"><ReferenceTablePage table={STD_TABLE} /></Route>
-    <Route exact path="/msg/ins">FIXME</Route>
+    <Route exact path="/msg/ins"><ReferenceTablePage table={MSG_TABLE} /></Route>
     <Route exact path="/anm/stats"><StatsPage /></Route>
     {/* FIXME what to do about all of these markdown pages?  Should the NotFound route look for md files? */}
     <Route exact path="/anm/concepts">FIXME</Route>

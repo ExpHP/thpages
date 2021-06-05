@@ -1,16 +1,16 @@
 import {mapAssign} from '~/js/util';
 
-import type {PartialInsData, PartialOpcodeRefData} from './tables';
-import {Game} from './game';
+import type {PartialInsData, PartialOpcodeRefData} from '../tables';
+import {Game} from '../game';
 
 // ==========================================================================
 // ==========================================================================
 // ===================    LOOKUP TABLE BY OPCODE    =========================
 
-export const byOpcode = new Map<Game, Map<number, PartialOpcodeRefData>>(); // has to be a map because 'integer' keys defy insertion order
+export const refByOpcode = new Map<Game, Map<number, PartialOpcodeRefData>>();
 
 // ---- EoSD ----
-byOpcode.set('06', new Map([
+refByOpcode.set('06', new Map([
   [0, {ref: 'std:v0-pos-keyframe'}],
   [1, {ref: 'std:v0-skyfog'}],
   [2, {ref: 'std:eosd-facing'}],
@@ -20,7 +20,7 @@ byOpcode.set('06', new Map([
 ]));
 
 // ---- v0 ----
-byOpcode.set('07', new Map([
+refByOpcode.set('07', new Map([
   [0, {ref: 'std:v0-pos-keyframe'}],
   [1, {ref: 'std:v0-skyfog'}],
   [2, {ref: 'std:v0-skyfog-time'}],
@@ -55,15 +55,14 @@ byOpcode.set('07', new Map([
   [31, {ref: 'std:v0-case'}],
 ]));
 
-byOpcode.set('08', new Map([
-  ...byOpcode.get('07')!.entries(),
+refByOpcode.set('08', new Map([...refByOpcode.get('07')!.entries(),
   [32, {ref: 'std:v0-rocking-vector'}],
   [33, {ref: 'std:v0-rock'}],
   [34, {ref: 'std:v0-sprite-c'}],
 ]));
 
-byOpcode.set('09', new Map([...byOpcode.get('08')!.entries()]));
-byOpcode.set('095', new Map([
+refByOpcode.set('09', new Map([...refByOpcode.get('08')!.entries()]));
+refByOpcode.set('095', new Map([
   [0, {ref: 'std:stop'}],
   [1, {ref: 'std:jmp'}],
   [2, {ref: 'std:pos'}],
@@ -92,37 +91,33 @@ byOpcode.set('095', new Map([
   // to trigger an interrupt in these two games.
 ]));
 
-byOpcode.set('10', new Map([...byOpcode.get('095')!.entries()]));
-byOpcode.set('11', new Map([
-  ...byOpcode.get('10')!.entries(),
+refByOpcode.set('10', new Map([...refByOpcode.get('095')!.entries()]));
+refByOpcode.set('11', new Map([...refByOpcode.get('10')!.entries(),
   [16, {ref: 'std:case'}],
   [17, {ref: 'std:distortion'}],
 ]));
 
-byOpcode.set('12', new Map([
-  ...byOpcode.get('11')!.entries(),
+refByOpcode.set('12', new Map([...refByOpcode.get('11')!.entries(),
   [14, {ref: 'std:sprite-3arg'}], // signature change!
   [18, {ref: 'std:up-time'}],
 ]));
 
-byOpcode.set('125', new Map([...byOpcode.get('12')!.entries()]));
-byOpcode.set('128', new Map([...byOpcode.get('125')!.entries()]));
-byOpcode.set('13', new Map([...byOpcode.get('128')!.entries()]));
-byOpcode.set('14', new Map([
-  ...byOpcode.get('13')!.entries(),
+refByOpcode.set('125', new Map([...refByOpcode.get('12')!.entries()]));
+refByOpcode.set('128', new Map([...refByOpcode.get('125')!.entries()]));
+refByOpcode.set('13', new Map([...refByOpcode.get('128')!.entries()]));
+refByOpcode.set('14', new Map([...refByOpcode.get('13')!.entries(),
   [19, {ref: 'std:ins-19'}],
   [20, {ref: 'std:draw-distance'}],
 ]));
 
-byOpcode.set('143', new Map([...byOpcode.get('14')!.entries()]));
-byOpcode.set('15', new Map([...byOpcode.get('143')!.entries()]));
-byOpcode.set('16', new Map([...byOpcode.get('15')!.entries()]));
-byOpcode.set('165', new Map([...byOpcode.get('16')!.entries()]));
-byOpcode.set('17', new Map([
-  ...byOpcode.get('16')!,
+refByOpcode.set('143', new Map([...refByOpcode.get('14')!.entries()]));
+refByOpcode.set('15', new Map([...refByOpcode.get('143')!.entries()]));
+refByOpcode.set('16', new Map([...refByOpcode.get('15')!.entries()]));
+refByOpcode.set('165', new Map([...refByOpcode.get('16')!.entries()]));
+refByOpcode.set('17', new Map([...refByOpcode.get('16')!,
   [21, {ref: 'std:fov-time'}],
 ]));
-byOpcode.set('18', new Map([...byOpcode.get('17')!.entries()]));
+refByOpcode.set('18', new Map([...refByOpcode.get('17')!.entries()]));
 
 // ==========================================================================
 // ==========================================================================

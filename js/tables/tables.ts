@@ -3,10 +3,14 @@ import type {ReactElement} from 'react';
 import * as settings from '~/js/settings';
 import dedent from '~/js/lib/dedent';
 import {Game} from './game';
-import * as stdTableModule from './std';
 import {InsSiggy, VarHeader} from '../InsAndVar';
 import {InsTableRow, VarTableRow} from '../ReferenceTable';
 import {preprocessTrustedMarkdown} from '../Markdown';
+
+import * as anmTableModule from './reference/anm';
+import * as anmvarTableModule from './reference/anmvar';
+import * as stdTableModule from './reference/std';
+import * as msgTableModule from './reference/msg';
 
 export type Ref = string;
 
@@ -135,8 +139,8 @@ export class TableDef<Data extends CommonData> {
   /** Table that maps an item id (portion of crossref after mainPrefix) to data about that item. */
   private readonly dataTable: Map<string, Data>;
 
-  /** Table that maps a game and opcode to a reference. */
-  private readonly byOpcode: RefByOpcode;
+  /** Table that maps a game and opcode to a reference.  Games are sorted ascendingly. */
+  readonly refByOpcode: RefByOpcode;
 
   /** Finds the opcode from a crossref. */
   readonly reverseTable: ReverseTable;
@@ -181,15 +185,15 @@ export class TableDef<Data extends CommonData> {
     getGroups: TableDef<Data>['getGroups'],
     textBeforeTable: TableDef<Data>['textBeforeTable'],
     module: {
-      byOpcode: RefByOpcode;
+      refByOpcode: RefByOpcode;
       byRefId: Map<string, PartialData<Data>>;
     },
   }) {
-    const {reverseTable, latestGameTable} = computeReverseTable(props.module.byOpcode);
+    const {reverseTable, latestGameTable} = computeReverseTable(props.module.refByOpcode);
     this.mainPrefix = props.mainPrefix;
     this.tablePage = props.tablePage;
     this.dataTable = preprocessTable(props.module.byRefId);
-    this.byOpcode = props.module.byOpcode;
+    this.refByOpcode = props.module.refByOpcode;
     this.reverseTable = reverseTable;
     this.latestGameTable = latestGameTable;
     this.noun = props.dataHandlers.noun;
@@ -219,7 +223,7 @@ export class TableDef<Data extends CommonData> {
   }
 
   getRefByOpcode(game: Game, opcode: number): OpcodeRefData | null {
-    const entry = this.byOpcode.get(game)?.get(opcode);
+    const entry = this.refByOpcode.get(game)?.get(opcode);
     if (entry === undefined) return null; // opcode doesn't exist in game
 
     return {...entry, wip: entry.wip || 0};
@@ -244,16 +248,17 @@ export class TableDef<Data extends CommonData> {
     throw new Error(`could not make ref ${ref} game-independent; may be a cycle in successors`);
   }
 
+  /** Games with data for this table, in ascending order. */
   supportedGames(): Game[] {
-    return [...this.byOpcode.keys()];
+    return [...this.refByOpcode.keys()];
   }
 }
 
-function computeReverseTable(tableByOpcode: RefByOpcode) {
+function computeReverseTable(refByOpcode: RefByOpcode) {
   const latestGameTable: LatestGameTable = new Map();
   const reverseTable: ReverseTable = new Map();
 
-  for (const [game, tableInner] of tableByOpcode.entries()) {
+  for (const [game, tableInner] of refByOpcode.entries()) {
     const reverseInner = new Map<Ref, number>();
 
     for (const [opcode, {ref}] of tableInner.entries()) {
@@ -269,29 +274,25 @@ function computeReverseTable(tableByOpcode: RefByOpcode) {
 
 // =============================================================================
 
-// const ANM_INS_HANDLERS: TableHandlers<InsData> = makeTableHandlers({
-//   ...COMMON_INS_HANDLERS,
-//   tablePage: 'anm/ins',
-//   dataTable: ANM_INS_DATA,
-//   tableByOpcode: ANM_BY_OPCODE,
-//   insNames: ANM_INS_NAMES,
-//   mainPrefix: 'anm',
-//   nameSettingsPath: {lang: 'anm', submap: 'ins'},
-//   getGroups: (game) => '13' <= game ? ANM_GROUPS_V8 : [{min: 0, max: 1300, title: null}],
-//   textBeforeTable: () => null,
-// });
+export const ANM_INS_TABLE = new TableDef({
+  module: anmTableModule,
+  tablePage: '/anm/ins',
+  mainPrefix: 'anm',
+  nameSettingsPath: {lang: 'anm', submap: 'ins'},
+  dataHandlers: INS_HANDLERS,
+  getGroups: (game) => '13' <= game ? anmTableModule.ANM_GROUPS_V8 : [{min: 0, max: 1300, title: null}],
+  textBeforeTable: () => null,
+});
 
-// const ANM_VAR_HANDLERS: TableHandlers<VarData> = makeTableHandlers({
-//   ...COMMON_VAR_HANDLERS,
-//   tablePage: 'anm/var',
-//   dataTable: ANM_VAR_DATA,
-//   tableByOpcode: ANM_VARS_BY_NUMBER,
-//   insNames: ANM_VAR_NAMES,
-//   mainPrefix: 'anmvar',
-//   nameSettingsPath: {lang: 'anm', submap: 'vars'},
-//   getGroups: () => [{min: 10000, max: 11000, title: null}],
-//   textBeforeTable: (game: Game) => (game === '06') ? '**EoSD ANM has no variables, _nerrrrd._**' : null,
-// });
+export const ANM_VAR_TABLE = new TableDef({
+  module: anmvarTableModule,
+  tablePage: '/anm/var',
+  mainPrefix: 'anmvar',
+  nameSettingsPath: {lang: 'anm', submap: 'vars'},
+  dataHandlers: VAR_HANDLERS,
+  getGroups: () => [{min: 10000, max: 11000, title: null}],
+  textBeforeTable: (game: Game) => (game === '06') ? '**EoSD ANM has no variables, _nerrrrd._**' : null,
+});
 
 export const STD_TABLE = new TableDef({
   module: stdTableModule,
@@ -308,20 +309,18 @@ export const STD_TABLE = new TableDef({
   `),
 });
 
-// const MSG_HANDLERS: TableHandlers<InsData> = makeTableHandlers({
-//   ...COMMON_INS_HANDLERS,
-//   tablePage: 'msg/ins',
-//   dataTable: MSG_INS_DATA,
-//   tableByOpcode: MSG_BY_OPCODE,
-//   insNames: MSG_INS_NAMES,
-//   mainPrefix: 'msg',
-//   nameSettingsPath: {lang: 'msg', submap: 'ins'},
-//   getGroups: () => [{min: 0, max: 1000, title: null}],
-//   textBeforeTable: (game: Game) => getMsgTableText(game),
-// });
+export const MSG_TABLE = new TableDef({
+  module: msgTableModule,
+  tablePage: '/msg/ins',
+  mainPrefix: 'msg',
+  nameSettingsPath: {lang: 'msg', submap: 'ins'},
+  dataHandlers: INS_HANDLERS,
+  getGroups: () => [{min: 0, max: 1000, title: null}],
+  textBeforeTable: (game: Game) => msgTableModule.getMsgTableText(game),
+});
 
 export function getAllTables() {
-  return [STD_TABLE];
+  return [ANM_INS_TABLE, ANM_VAR_TABLE, STD_TABLE, MSG_TABLE];
 }
 
 export function getTableByPrefix(prefix: string): TableDef<InsData> | TableDef<VarData> | null {

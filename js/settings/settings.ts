@@ -99,13 +99,13 @@ function addNameSettingsFromLangSettings(out: NameSettings, lang: Lang, savedSet
   //
   // Use table handlers to connect submaps (e.g. ins, vars, timeline) to ref tables.
   // E.g. if lang is 'anm' we should find the 'anm' table and the 'anmvar' table.
-  for (const handlers of getAllTables()) {
-    if (handlers.nameSettingsPath.lang !== lang) continue;
-    const {byOpcode, nameSettingsPath: {submap}} = handlers;
+  for (const table of getAllTables()) {
+    if (table.nameSettingsPath.lang !== lang) continue;
+    const {nameSettingsPath: {submap}} = table;
 
     for (const {name: source, mapfile, game} of mapfiles) {
       for (const [opcode, name] of mapfile[submap].entries()) {
-        const data = byOpcode.get(game)!.get(opcode);
+        const data = table.getRefByOpcode(game, opcode);
         if (!data) continue;
 
         out.dataByRef.set(data.ref, {name, source: {type: 'mapfile', name: source}});

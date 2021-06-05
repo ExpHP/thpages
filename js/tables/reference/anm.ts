@@ -1,12 +1,14 @@
-import dedent from "../lib/dedent.ts";
-import {NumMap} from "../util.ts";
-import {preprocessTrustedMarkdown} from "../markdown.tsx";
+import {mapAssign} from '~/js/util';
+
+import type {PartialInsData, PartialOpcodeRefData} from '../tables';
+import {Game} from '../game';
 
 // ==========================================================================
 // ==========================================================================
 // ===================    LOOKUP TABLE BY OPCODE    =========================
 
-export const ANM_BY_OPCODE = new Map();
+export const refByOpcode = new Map<Game, Map<number, PartialOpcodeRefData>>();
+
 export const ANM_GROUPS_V8 = [
   {min: 0, max: 99, title: 'System'},
   {min: 100, max: 199, title: 'Math'},
@@ -18,500 +20,474 @@ export const ANM_GROUPS_V8 = [
 ];
 
 // ---- V0 ----
-ANM_BY_OPCODE.set('06', {
-  0: {ref: 'anm:delete'},
-  1: {ref: 'anm:sprite'},
-  2: {ref: 'anm:scale'},
-  3: {ref: 'anm:alpha'},
-  4: {ref: 'anm:rgb-dword'},
-  5: {ref: 'anm:v0-jmp'},
-  6: {ref: 'anm:nop'},
-  7: {ref: 'anm:flipX'},
-  8: {ref: 'anm:flipY'},
-  9: {ref: 'anm:rotate'},
-  10: {ref: 'anm:angleVel'},
-  11: {ref: 'anm:scaleGrowth'},
-  12: {ref: 'anm:alphaTimeLinear'},
-  13: {ref: 'anm:blendAdditive'},
-  14: {ref: 'anm:blendAlpha'},
-  15: {ref: 'anm:static'},
-  16: {ref: 'anm:spriteRand'},
-  17: {ref: 'anm:pos'},
-  18: {ref: 'anm:posTimeLinear'}, // seets 0b00
-  19: {ref: 'anm:posTimeEaseout'}, // posTimeDecel // sets 0b01
-  20: {ref: 'anm:posTimeEaseout4'}, // posTimeAccel // sets 0b10
-  21: {ref: 'anm:stop'},
-  22: {ref: 'anm:case'},
-  23: {ref: 'anm:anchorTopLeft'},
-  24: {ref: 'anm:stop2'},
-  25: {ref: 'anm:posMode'}, // set_allow_dest_offset (alternate_pos_flag)
-  26: {ref: 'anm:v0-26'}, // set_automatic_angle
-  27: {ref: 'anm:uAdd'},
-  28: {ref: 'anm:vAdd'},
-  29: {ref: 'anm:visible'}, // set_visible
-  30: {ref: 'anm:scaleTimeLinear'}, //
-  31: {ref: 'anm:noZBuffer', wip: 1}, // bitflag 12
-});
+refByOpcode.set('06', new Map([
+  [0, {ref: 'anm:delete'}],
+  [1, {ref: 'anm:sprite'}],
+  [2, {ref: 'anm:scale'}],
+  [3, {ref: 'anm:alpha'}],
+  [4, {ref: 'anm:rgb-dword'}],
+  [5, {ref: 'anm:v0-jmp'}],
+  [6, {ref: 'anm:nop'}],
+  [7, {ref: 'anm:flipX'}],
+  [8, {ref: 'anm:flipY'}],
+  [9, {ref: 'anm:rotate'}],
+  [10, {ref: 'anm:angleVel'}],
+  [11, {ref: 'anm:scaleGrowth'}],
+  [12, {ref: 'anm:alphaTimeLinear'}],
+  [13, {ref: 'anm:blendAdditive'}],
+  [14, {ref: 'anm:blendAlpha'}],
+  [15, {ref: 'anm:static'}],
+  [16, {ref: 'anm:spriteRand'}],
+  [17, {ref: 'anm:pos'}],
+  [18, {ref: 'anm:posTimeLinear'}], // seets 0b00
+  [19, {ref: 'anm:posTimeEaseout'}], // posTimeDecel // sets 0b01
+  [20, {ref: 'anm:posTimeEaseout4'}], // posTimeAccel // sets 0b10
+  [21, {ref: 'anm:stop'}],
+  [22, {ref: 'anm:case'}],
+  [23, {ref: 'anm:anchorTopLeft'}],
+  [24, {ref: 'anm:stop2'}],
+  [25, {ref: 'anm:posMode'}], // set_allow_dest_offset (alternate_pos_flag)
+  [26, {ref: 'anm:v0-26'}], // set_automatic_angle
+  [27, {ref: 'anm:uAdd'}],
+  [28, {ref: 'anm:vAdd'}],
+  [29, {ref: 'anm:visible'}], // set_visible
+  [30, {ref: 'anm:scaleTimeLinear'}], //
+  [31, {ref: 'anm:noZBuffer', wip: 1}], // bitflag 12
+]));
 
 // ---- V2 ----
-ANM_BY_OPCODE.set('07', {
-  0: {ref: 'anm:nop'},
-  1: {ref: 'anm:delete'},
-  2: {ref: 'anm:static'},
-  3: {ref: 'anm:sprite'},
-  4: {ref: 'anm:jmp'},
-  5: {ref: 'anm:jmpDec'},
-  6: {ref: 'anm:pos'},
-  7: {ref: 'anm:scale'},
-  8: {ref: 'anm:alpha'},
-  9: {ref: 'anm:rgb-dword'},
-  10: {ref: 'anm:flipX'},
-  11: {ref: 'anm:flipY'},
-  12: {ref: 'anm:rotate'},
-  13: {ref: 'anm:angleVel'},
-  14: {ref: 'anm:scaleGrowth'},
-  15: {ref: 'anm:alphaTimeLinear'},
-  16: {ref: 'anm:blendAdditiveSet'},
-  17: {ref: 'anm:posTimeLinear'},
-  18: {ref: 'anm:posTimeEaseout'},
-  19: {ref: 'anm:posTimeEaseout4'},
-  20: {ref: 'anm:stop'},
-  21: {ref: 'anm:case'},
-  22: {ref: 'anm:anchorTopLeft'}, // PoFV:  flags 11=1, 12=1
-  23: {ref: 'anm:stop2'},
-  24: {ref: 'anm:posMode'},
-  25: {ref: 'anm:v0-26'}, // reads a word field
-  26: {ref: 'anm:uAdd'},
-  27: {ref: 'anm:vAdd'},
-  28: {ref: 'anm:visible'}, // PoFV:  sets flag 0
-  29: {ref: 'anm:scaleTimeLinear'},
-  30: {ref: 'anm:noZBuffer'}, // PoFV:  sets flag 13
-  31: {ref: 'anm:v1-31'}, // PoFV:  sets flag 15, usage at TH08+0x4626d6
-  32: {ref: 'anm:posTime'},
-  33: {ref: 'anm:rgbTime-dword'},
-  34: {ref: 'anm:alphaTime'},
-  35: {ref: 'anm:rotateTime'},
-  36: {ref: 'anm:scaleTime'},
+refByOpcode.set('07', new Map([
+  [0, {ref: 'anm:nop'}],
+  [1, {ref: 'anm:delete'}],
+  [2, {ref: 'anm:static'}],
+  [3, {ref: 'anm:sprite'}],
+  [4, {ref: 'anm:jmp'}],
+  [5, {ref: 'anm:jmpDec'}],
+  [6, {ref: 'anm:pos'}],
+  [7, {ref: 'anm:scale'}],
+  [8, {ref: 'anm:alpha'}],
+  [9, {ref: 'anm:rgb-dword'}],
+  [10, {ref: 'anm:flipX'}],
+  [11, {ref: 'anm:flipY'}],
+  [12, {ref: 'anm:rotate'}],
+  [13, {ref: 'anm:angleVel'}],
+  [14, {ref: 'anm:scaleGrowth'}],
+  [15, {ref: 'anm:alphaTimeLinear'}],
+  [16, {ref: 'anm:blendAdditiveSet'}],
+  [17, {ref: 'anm:posTimeLinear'}],
+  [18, {ref: 'anm:posTimeEaseout'}],
+  [19, {ref: 'anm:posTimeEaseout4'}],
+  [20, {ref: 'anm:stop'}],
+  [21, {ref: 'anm:case'}],
+  [22, {ref: 'anm:anchorTopLeft'}], // PoFV:  flags 11=1, 12=1
+  [23, {ref: 'anm:stop2'}],
+  [24, {ref: 'anm:posMode'}],
+  [25, {ref: 'anm:v0-26'}], // reads a word field
+  [26, {ref: 'anm:uAdd'}],
+  [27, {ref: 'anm:vAdd'}],
+  [28, {ref: 'anm:visible'}], // PoFV:  sets flag 0
+  [29, {ref: 'anm:scaleTimeLinear'}],
+  [30, {ref: 'anm:noZBuffer'}], // PoFV:  sets flag 13
+  [31, {ref: 'anm:v1-31'}], // PoFV:  sets flag 15, usage at TH08+0x4626d6
+  [32, {ref: 'anm:posTime'}],
+  [33, {ref: 'anm:rgbTime-dword'}],
+  [34, {ref: 'anm:alphaTime'}],
+  [35, {ref: 'anm:rotateTime'}],
+  [36, {ref: 'anm:scaleTime'}],
 
-  37: {ref: 'anm:set'},
-  38: {ref: 'anm:setF'},
-  39: {ref: 'anm:add'},
-  40: {ref: 'anm:addF'},
-  41: {ref: 'anm:sub'},
-  42: {ref: 'anm:subF'},
-  43: {ref: 'anm:mul'},
-  44: {ref: 'anm:mulF'},
-  45: {ref: 'anm:div'},
-  46: {ref: 'anm:divF'},
-  47: {ref: 'anm:mod'},
-  48: {ref: 'anm:modF'},
-  49: {ref: 'anm:add3'},
-  50: {ref: 'anm:addF3'},
-  51: {ref: 'anm:sub3'},
-  52: {ref: 'anm:subF3'},
-  53: {ref: 'anm:mul3'},
-  54: {ref: 'anm:mulF3'},
-  55: {ref: 'anm:div3'},
-  56: {ref: 'anm:divF3'},
-  57: {ref: 'anm:mod3'},
-  58: {ref: 'anm:modF3'},
-  59: {ref: 'anm:v3-rand'}, // FIXME merge
-  60: {ref: 'anm:v3-randF'}, // FIXME
-  61: {ref: 'anm:mathSin'},
-  62: {ref: 'anm:mathCos'},
-  63: {ref: 'anm:mathTan'},
-  64: {ref: 'anm:mathAcos'},
-  65: {ref: 'anm:mathAtan'},
-  66: {ref: 'anm:mathReduceAngle'},
+  [37, {ref: 'anm:set'}],
+  [38, {ref: 'anm:setF'}],
+  [39, {ref: 'anm:add'}],
+  [40, {ref: 'anm:addF'}],
+  [41, {ref: 'anm:sub'}],
+  [42, {ref: 'anm:subF'}],
+  [43, {ref: 'anm:mul'}],
+  [44, {ref: 'anm:mulF'}],
+  [45, {ref: 'anm:div'}],
+  [46, {ref: 'anm:divF'}],
+  [47, {ref: 'anm:mod'}],
+  [48, {ref: 'anm:modF'}],
+  [49, {ref: 'anm:add3'}],
+  [50, {ref: 'anm:addF3'}],
+  [51, {ref: 'anm:sub3'}],
+  [52, {ref: 'anm:subF3'}],
+  [53, {ref: 'anm:mul3'}],
+  [54, {ref: 'anm:mulF3'}],
+  [55, {ref: 'anm:div3'}],
+  [56, {ref: 'anm:divF3'}],
+  [57, {ref: 'anm:mod3'}],
+  [58, {ref: 'anm:modF3'}],
+  [59, {ref: 'anm:v3-rand'}], // FIXME merge
+  [60, {ref: 'anm:v3-randF'}], // FIXME
+  [61, {ref: 'anm:mathSin'}],
+  [62, {ref: 'anm:mathCos'}],
+  [63, {ref: 'anm:mathTan'}],
+  [64, {ref: 'anm:mathAcos'}],
+  [65, {ref: 'anm:mathAtan'}],
+  [66, {ref: 'anm:mathReduceAngle'}],
 
-  67: {ref: 'anm:jmpEq'},
-  68: {ref: 'anm:jmpEqF'},
-  69: {ref: 'anm:jmpNe'},
-  70: {ref: 'anm:jmpNeF'},
-  71: {ref: 'anm:jmpLt'},
-  72: {ref: 'anm:jmpLtF'},
-  73: {ref: 'anm:jmpLe'},
-  74: {ref: 'anm:jmpLeF'},
-  75: {ref: 'anm:jmpGt'},
-  76: {ref: 'anm:jmpGtF'},
-  77: {ref: 'anm:jmpGe'},
-  78: {ref: 'anm:jmpGeF'},
+  [67, {ref: 'anm:jmpEq'}],
+  [68, {ref: 'anm:jmpEqF'}],
+  [69, {ref: 'anm:jmpNe'}],
+  [70, {ref: 'anm:jmpNeF'}],
+  [71, {ref: 'anm:jmpLt'}],
+  [72, {ref: 'anm:jmpLtF'}],
+  [73, {ref: 'anm:jmpLe'}],
+  [74, {ref: 'anm:jmpLeF'}],
+  [75, {ref: 'anm:jmpGt'}],
+  [76, {ref: 'anm:jmpGtF'}],
+  [77, {ref: 'anm:jmpGe'}],
+  [78, {ref: 'anm:jmpGeF'}],
 
-  79: {ref: 'anm:wait'},
-  80: {ref: 'anm:uVel'},
-  81: {ref: 'anm:vVel'},
-});
+  [79, {ref: 'anm:wait'}],
+  [80, {ref: 'anm:uVel'}],
+  [81, {ref: 'anm:vVel'}],
+]));
 
 // ---- V3 ----
-ANM_BY_OPCODE.set('08', {
-  ...ANM_BY_OPCODE.get('07'),
-
+refByOpcode.set('08', new Map([...refByOpcode.get('07')!.entries(),
   // changed signatures
-  9: {ref: 'anm:rgb'},
-  33: {ref: 'anm:rgbTime'},
+  [9, {ref: 'anm:rgb'}],
+  [33, {ref: 'anm:rgbTime'}],
 
   // new instrs
-  82: {ref: 'anm:blendMode'},
+  [82, {ref: 'anm:blendMode'}],
   // This might be some sort of early renderMode analogue that's specific to player bullets.
-  83: {ref: 'anm:playerBulletMode2'},
-  84: {ref: 'anm:rgb2'},
-  85: {ref: 'anm:alpha2'},
-  86: {ref: 'anm:rgb2Time'},
-  87: {ref: 'anm:alpha2Time'},
-  88: {ref: 'anm:blink'}, // PoFV:  sets flag 17 if floor(arg/256) is odd
-  89: {ref: 'anm:caseReturn'},
-});
+  [83, {ref: 'anm:playerBulletMode2'}],
+  [84, {ref: 'anm:rgb2'}],
+  [85, {ref: 'anm:alpha2'}],
+  [86, {ref: 'anm:rgb2Time'}],
+  [87, {ref: 'anm:alpha2Time'}],
+  [88, {ref: 'anm:blink'}], // PoFV:  sets flag 17 if floor(arg/256) is odd
+  [89, {ref: 'anm:caseReturn'}],
+]));
 
-ANM_BY_OPCODE.set('09', {
-  ...ANM_BY_OPCODE.get('08'),
-});
+refByOpcode.set('09', new Map([...refByOpcode.get('08')!.entries()]));
 
 // ---- V4 ----
-ANM_BY_OPCODE.set('095', {
-  0: {ref: 'anm:nop'},
-  1: {ref: 'anm:delete'},
-  2: {ref: 'anm:static', wip: 1},
-  3: {ref: 'anm:sprite'},
-  4: {ref: 'anm:jmp'},
-  5: {ref: 'anm:jmpDec'},
+refByOpcode.set('095', new Map([
+  [0, {ref: 'anm:nop'}],
+  [1, {ref: 'anm:delete'}],
+  [2, {ref: 'anm:static', wip: 1}],
+  [3, {ref: 'anm:sprite'}],
+  [4, {ref: 'anm:jmp'}],
+  [5, {ref: 'anm:jmpDec'}],
 
-  6: {ref: 'anm:set'},
-  7: {ref: 'anm:setF'},
-  8: {ref: 'anm:add'},
-  9: {ref: 'anm:addF'},
-  10: {ref: 'anm:sub'},
-  11: {ref: 'anm:subF'},
-  12: {ref: 'anm:mul'},
-  13: {ref: 'anm:mulF'},
-  14: {ref: 'anm:div'},
-  15: {ref: 'anm:divF'},
-  16: {ref: 'anm:mod'},
-  17: {ref: 'anm:modF'},
-  18: {ref: 'anm:add3'},
-  19: {ref: 'anm:addF3'},
-  20: {ref: 'anm:sub3'},
-  21: {ref: 'anm:subF3'},
-  22: {ref: 'anm:mul3'},
-  23: {ref: 'anm:mulF3'},
-  24: {ref: 'anm:div3'},
-  25: {ref: 'anm:divF3'},
-  26: {ref: 'anm:mod3'},
-  27: {ref: 'anm:modF3'},
+  [6, {ref: 'anm:set'}],
+  [7, {ref: 'anm:setF'}],
+  [8, {ref: 'anm:add'}],
+  [9, {ref: 'anm:addF'}],
+  [10, {ref: 'anm:sub'}],
+  [11, {ref: 'anm:subF'}],
+  [12, {ref: 'anm:mul'}],
+  [13, {ref: 'anm:mulF'}],
+  [14, {ref: 'anm:div'}],
+  [15, {ref: 'anm:divF'}],
+  [16, {ref: 'anm:mod'}],
+  [17, {ref: 'anm:modF'}],
+  [18, {ref: 'anm:add3'}],
+  [19, {ref: 'anm:addF3'}],
+  [20, {ref: 'anm:sub3'}],
+  [21, {ref: 'anm:subF3'}],
+  [22, {ref: 'anm:mul3'}],
+  [23, {ref: 'anm:mulF3'}],
+  [24, {ref: 'anm:div3'}],
+  [25, {ref: 'anm:divF3'}],
+  [26, {ref: 'anm:mod3'}],
+  [27, {ref: 'anm:modF3'}],
 
-  28: {ref: 'anm:jmpEq'},
-  29: {ref: 'anm:jmpEqF'},
-  30: {ref: 'anm:jmpNe'},
-  31: {ref: 'anm:jmpNeF'},
-  32: {ref: 'anm:jmpLt'},
-  33: {ref: 'anm:jmpLtF'},
-  34: {ref: 'anm:jmpLe'},
-  35: {ref: 'anm:jmpLeF'},
-  36: {ref: 'anm:jmpGt'},
-  37: {ref: 'anm:jmpGtF'},
-  38: {ref: 'anm:jmpGe'},
-  39: {ref: 'anm:jmpGeF'},
+  [28, {ref: 'anm:jmpEq'}],
+  [29, {ref: 'anm:jmpEqF'}],
+  [30, {ref: 'anm:jmpNe'}],
+  [31, {ref: 'anm:jmpNeF'}],
+  [32, {ref: 'anm:jmpLt'}],
+  [33, {ref: 'anm:jmpLtF'}],
+  [34, {ref: 'anm:jmpLe'}],
+  [35, {ref: 'anm:jmpLeF'}],
+  [36, {ref: 'anm:jmpGt'}],
+  [37, {ref: 'anm:jmpGtF'}],
+  [38, {ref: 'anm:jmpGe'}],
+  [39, {ref: 'anm:jmpGeF'}],
 
-  40: {ref: 'anm:rand'},
-  41: {ref: 'anm:randF'},
-  42: {ref: 'anm:mathSin'},
-  43: {ref: 'anm:mathCos'},
-  44: {ref: 'anm:mathTan'},
-  45: {ref: 'anm:mathAcos', wip: 1},
-  46: {ref: 'anm:mathAtan'},
-  47: {ref: 'anm:mathReduceAngle'},
+  [40, {ref: 'anm:rand'}],
+  [41, {ref: 'anm:randF'}],
+  [42, {ref: 'anm:mathSin'}],
+  [43, {ref: 'anm:mathCos'}],
+  [44, {ref: 'anm:mathTan'}],
+  [45, {ref: 'anm:mathAcos', wip: 1}],
+  [46, {ref: 'anm:mathAtan'}],
+  [47, {ref: 'anm:mathReduceAngle'}],
 
-  48: {ref: 'anm:pos'},
-  49: {ref: 'anm:rotate'},
-  50: {ref: 'anm:scale'},
-  51: {ref: 'anm:alpha'},
-  52: {ref: 'anm:rgb'},
-  53: {ref: 'anm:angleVel'},
-  54: {ref: 'anm:scaleGrowth'},
-  55: {ref: 'anm:alphaTimeLinear'},
-  56: {ref: 'anm:posTime'},
-  57: {ref: 'anm:rgbTime'},
-  58: {ref: 'anm:alphaTime'},
-  59: {ref: 'anm:rotateTime'},
+  [48, {ref: 'anm:pos'}],
+  [49, {ref: 'anm:rotate'}],
+  [50, {ref: 'anm:scale'}],
+  [51, {ref: 'anm:alpha'}],
+  [52, {ref: 'anm:rgb'}],
+  [53, {ref: 'anm:angleVel'}],
+  [54, {ref: 'anm:scaleGrowth'}],
+  [55, {ref: 'anm:alphaTimeLinear'}],
+  [56, {ref: 'anm:posTime'}],
+  [57, {ref: 'anm:rgbTime'}],
+  [58, {ref: 'anm:alphaTime'}],
+  [59, {ref: 'anm:rotateTime'}],
 
-  60: {ref: 'anm:scaleTime'},
-  61: {ref: 'anm:flipX'},
-  62: {ref: 'anm:flipY'},
-  63: {ref: 'anm:stop'},
-  64: {ref: 'anm:case'},
-  65: {ref: 'anm:anchor'},
-  66: {ref: 'anm:blendMode'}, // TODO: UFO has fewer modes!
-  67: {ref: 'anm:renderMode'},
-  68: {ref: 'anm:layer'},
-  69: {ref: 'anm:stop2'},
+  [60, {ref: 'anm:scaleTime'}],
+  [61, {ref: 'anm:flipX'}],
+  [62, {ref: 'anm:flipY'}],
+  [63, {ref: 'anm:stop'}],
+  [64, {ref: 'anm:case'}],
+  [65, {ref: 'anm:anchor'}],
+  [66, {ref: 'anm:blendMode'}], // TODO: UFO has fewer modes!
+  [67, {ref: 'anm:renderMode'}],
+  [68, {ref: 'anm:layer'}],
+  [69, {ref: 'anm:stop2'}],
 
-  70: {ref: 'anm:uVel'},
-  71: {ref: 'anm:vVel'},
-  72: {ref: 'anm:visible', wip: 1}, // flag 0
-  73: {ref: 'anm:noZBuffer', wip: 1}, // flag 12
-  74: {ref: 'anm:v8-306', wip: 1},
-  75: {ref: 'anm:wait', wip: 1},
-  76: {ref: 'anm:rgb2'},
-  77: {ref: 'anm:alpha2'},
-  78: {ref: 'anm:rgb2Time'},
-  79: {ref: 'anm:alpha2Time'},
+  [70, {ref: 'anm:uVel'}],
+  [71, {ref: 'anm:vVel'}],
+  [72, {ref: 'anm:visible', wip: 1}], // flag 0
+  [73, {ref: 'anm:noZBuffer', wip: 1}], // flag 12
+  [74, {ref: 'anm:v8-306', wip: 1}],
+  [75, {ref: 'anm:wait', wip: 1}],
+  [76, {ref: 'anm:rgb2'}],
+  [77, {ref: 'anm:alpha2'}],
+  [78, {ref: 'anm:rgb2Time'}],
+  [79, {ref: 'anm:alpha2Time'}],
 
-  80: {ref: 'anm:colorMode'}, // flag lo:16 (DS: lo:16-17)
-  81: {ref: 'anm:caseReturn'},
-  82: {ref: 'anm:rotateAuto', wip: 1}, // flag lo:29
-  83: {ref: 'anm:posAdopt'},
-  84: {ref: 'anm:textureCircle'},
-  85: {ref: 'anm:v8-flag-431', wip: 1}, // flag lo:30 (DS: lo:31)
-  86: {ref: 'anm:v8-flag-432', wip: 1}, // flag lo:31 (DS: hi:0)
-  87: {ref: 'anm:v4-randMode'},
-});
+  [80, {ref: 'anm:colorMode'}], // flag lo:16 (DS: lo:16-17)
+  [81, {ref: 'anm:caseReturn'}],
+  [82, {ref: 'anm:rotateAuto', wip: 1}], // flag lo:29
+  [83, {ref: 'anm:posAdopt'}],
+  [84, {ref: 'anm:textureCircle'}],
+  [85, {ref: 'anm:v8-flag-431', wip: 1}], // flag lo:30 (DS: lo:31)
+  [86, {ref: 'anm:v8-flag-432', wip: 1}], // flag lo:31 (DS: hi:0)
+  [87, {ref: 'anm:v4-randMode'}],
+]));
 
-ANM_BY_OPCODE.set('10', {
-  ...ANM_BY_OPCODE.get('095'),
+refByOpcode.set('10', new Map([...refByOpcode.get('095')!.entries(),
+  [88, {ref: 'anm:createChild', wip: 1}],
+  [89, {ref: 'anm:resampleMode', wip: 1}], // flag hi:1 (DS: hi:2)
 
-  88: {ref: 'anm:createChild', wip: 1},
-  89: {ref: 'anm:resampleMode', wip: 1}, // flag hi:1 (DS: hi:2)
+  [90, {ref: 'anm:createChildUi', wip: 1}],
+  [91, {ref: 'anm:prependChild', wip: 1}],
+  [92, {ref: 'anm:prependChildUi', wip: 1}],
+]));
 
-  90: {ref: 'anm:createChildUi', wip: 1},
-  91: {ref: 'anm:prependChild', wip: 1},
-  92: {ref: 'anm:prependChildUi', wip: 1},
-});
+refByOpcode.set('11', new Map([...refByOpcode.get('10')!.entries(),
+  [93, {ref: 'anm:uVelTime'}],
+  [94, {ref: 'anm:vVelTime'}],
+  [95, {ref: 'anm:createRoot'}],
+  [96, {ref: 'anm:createChildPos'}],
+  [97, {ref: 'anm:createRootPos'}],
+  [98, {ref: 'anm:v8-418'}],
+  [99, {ref: 'anm:v8-flag-419', wip: 1}],
 
-ANM_BY_OPCODE.set('11', {
-  ...ANM_BY_OPCODE.get('10'),
+  [100, {ref: 'anm:posBezier'}],
+  [101, {ref: 'anm:v4-texCircle2'}], // type 13 in GFW
+  [102, {ref: 'anm:spriteRand'}],
+  [103, {ref: 'anm:drawRect'}], // type 15 in GFW
+]));
 
-  93: {ref: 'anm:uVelTime'},
-  94: {ref: 'anm:vVelTime'},
-  95: {ref: 'anm:createRoot'},
-  96: {ref: 'anm:createChildPos'},
-  97: {ref: 'anm:createRootPos'},
-  98: {ref: 'anm:v8-418'},
-  99: {ref: 'anm:v8-flag-419', wip: 1},
+refByOpcode.set('12', new Map([...refByOpcode.get('11')!.entries(),
+  [104, {ref: 'anm:drawPoly'}],
+  [105, {ref: 'anm:drawPolyBorder'}],
+  [106, {ref: 'anm:uvScale'}],
+  [107, {ref: 'anm:uvScaleTime'}],
+  [108, {ref: 'anm:drawRectGrad'}], // type 19 in GFW
+  [109, {ref: 'anm:drawRectShadow'}], // type 20 in GFW
+  [110, {ref: 'anm:drawRectShadowGrad'}], // type 21 in GFW
+]));
 
-  100: {ref: 'anm:posBezier'},
-  101: {ref: 'anm:v4-texCircle2'}, // type 13 in GFW
-  102: {ref: 'anm:spriteRand'},
-  103: {ref: 'anm:drawRect'}, // type 15 in GFW
-});
+refByOpcode.set('125', new Map([...refByOpcode.get('12')!.entries(),
+  [111, {ref: 'anm:v4-111'}], // (DS: hi:6-8)
+  [112, {ref: 'anm:ignoreParent'}], // (DS: hi:8)
+]));
 
-ANM_BY_OPCODE.set('12', {
-  ...ANM_BY_OPCODE.get('11'),
-  104: {ref: 'anm:drawPoly'},
-  105: {ref: 'anm:drawPolyBorder'},
-  106: {ref: 'anm:uvScale'},
-  107: {ref: 'anm:uvScaleTime'},
-  108: {ref: 'anm:drawRectGrad'}, // type 19 in GFW
-  109: {ref: 'anm:drawRectShadow'}, // type 20 in GFW
-  110: {ref: 'anm:drawRectShadowGrad'}, // type 21 in GFW
-});
-
-ANM_BY_OPCODE.set('125', {
-  ...ANM_BY_OPCODE.get('12'),
-  111: {ref: 'anm:v4-111'}, // (DS: hi:6-8)
-  112: {ref: 'anm:ignoreParent'}, // (DS: hi:8)
-});
-
-ANM_BY_OPCODE.set('128', {
-  ...ANM_BY_OPCODE.get('125'),
-  113: {ref: 'anm:rotateTime2D'},
-  114: {ref: 'anm:v4-texCircle3'}, // type 14 in GFW
-});
+refByOpcode.set('128', new Map([...refByOpcode.get('125')!.entries(),
+  [113, {ref: 'anm:rotateTime2D'}],
+  [114, {ref: 'anm:v4-texCircle3'}], // type 14 in GFW
+]));
 
 // ---- V8 ----
-ANM_BY_OPCODE.set('13', {
-  0: {ref: 'anm:nop'},
-  1: {ref: 'anm:delete'},
-  2: {ref: 'anm:static'},
-  3: {ref: 'anm:stop'},
-  4: {ref: 'anm:stop2'},
-  5: {ref: 'anm:case'},
-  6: {ref: 'anm:wait'},
-  7: {ref: 'anm:caseReturn'},
+refByOpcode.set('13', new Map([
+  [0, {ref: 'anm:nop'}],
+  [1, {ref: 'anm:delete'}],
+  [2, {ref: 'anm:static'}],
+  [3, {ref: 'anm:stop'}],
+  [4, {ref: 'anm:stop2'}],
+  [5, {ref: 'anm:case'}],
+  [6, {ref: 'anm:wait'}],
+  [7, {ref: 'anm:caseReturn'}],
 
-  100: {ref: 'anm:set'},
-  101: {ref: 'anm:setF'},
-  102: {ref: 'anm:add'},
-  103: {ref: 'anm:addF'},
-  104: {ref: 'anm:sub'},
-  105: {ref: 'anm:subF'},
-  106: {ref: 'anm:mul'},
-  107: {ref: 'anm:mulF'},
-  108: {ref: 'anm:div'},
-  109: {ref: 'anm:divF'},
-  110: {ref: 'anm:mod'},
-  111: {ref: 'anm:modF'},
-  112: {ref: 'anm:add3'},
-  113: {ref: 'anm:addF3'},
-  114: {ref: 'anm:sub3'},
-  115: {ref: 'anm:subF3'},
-  116: {ref: 'anm:mul3'},
-  117: {ref: 'anm:mulF3'},
-  118: {ref: 'anm:div3'},
-  119: {ref: 'anm:divF3'},
-  120: {ref: 'anm:mod3'},
-  121: {ref: 'anm:modF3'},
-  122: {ref: 'anm:rand'},
-  123: {ref: 'anm:randF'},
-  124: {ref: 'anm:mathSin'},
-  125: {ref: 'anm:mathCos'},
-  126: {ref: 'anm:mathTan'},
-  127: {ref: 'anm:mathAcos'},
-  128: {ref: 'anm:mathAtan'},
-  129: {ref: 'anm:mathReduceAngle'},
-  130: {ref: 'anm:mathCirclePos'},
-  131: {ref: 'anm:mathCirclePosRand'},
+  [100, {ref: 'anm:set'}],
+  [101, {ref: 'anm:setF'}],
+  [102, {ref: 'anm:add'}],
+  [103, {ref: 'anm:addF'}],
+  [104, {ref: 'anm:sub'}],
+  [105, {ref: 'anm:subF'}],
+  [106, {ref: 'anm:mul'}],
+  [107, {ref: 'anm:mulF'}],
+  [108, {ref: 'anm:div'}],
+  [109, {ref: 'anm:divF'}],
+  [110, {ref: 'anm:mod'}],
+  [111, {ref: 'anm:modF'}],
+  [112, {ref: 'anm:add3'}],
+  [113, {ref: 'anm:addF3'}],
+  [114, {ref: 'anm:sub3'}],
+  [115, {ref: 'anm:subF3'}],
+  [116, {ref: 'anm:mul3'}],
+  [117, {ref: 'anm:mulF3'}],
+  [118, {ref: 'anm:div3'}],
+  [119, {ref: 'anm:divF3'}],
+  [120, {ref: 'anm:mod3'}],
+  [121, {ref: 'anm:modF3'}],
+  [122, {ref: 'anm:rand'}],
+  [123, {ref: 'anm:randF'}],
+  [124, {ref: 'anm:mathSin'}],
+  [125, {ref: 'anm:mathCos'}],
+  [126, {ref: 'anm:mathTan'}],
+  [127, {ref: 'anm:mathAcos'}],
+  [128, {ref: 'anm:mathAtan'}],
+  [129, {ref: 'anm:mathReduceAngle'}],
+  [130, {ref: 'anm:mathCirclePos'}],
+  [131, {ref: 'anm:mathCirclePosRand'}],
 
-  200: {ref: 'anm:jmp'},
-  201: {ref: 'anm:jmpDec'},
-  202: {ref: 'anm:jmpEq'},
-  203: {ref: 'anm:jmpEqF'},
-  204: {ref: 'anm:jmpNe'},
-  205: {ref: 'anm:jmpNeF'},
-  206: {ref: 'anm:jmpLt'},
-  207: {ref: 'anm:jmpLtF'},
-  208: {ref: 'anm:jmpLe'},
-  209: {ref: 'anm:jmpLeF'},
-  210: {ref: 'anm:jmpGt'},
-  211: {ref: 'anm:jmpGtF'},
-  212: {ref: 'anm:jmpGe'},
-  213: {ref: 'anm:jmpGeF'},
+  [200, {ref: 'anm:jmp'}],
+  [201, {ref: 'anm:jmpDec'}],
+  [202, {ref: 'anm:jmpEq'}],
+  [203, {ref: 'anm:jmpEqF'}],
+  [204, {ref: 'anm:jmpNe'}],
+  [205, {ref: 'anm:jmpNeF'}],
+  [206, {ref: 'anm:jmpLt'}],
+  [207, {ref: 'anm:jmpLtF'}],
+  [208, {ref: 'anm:jmpLe'}],
+  [209, {ref: 'anm:jmpLeF'}],
+  [210, {ref: 'anm:jmpGt'}],
+  [211, {ref: 'anm:jmpGtF'}],
+  [212, {ref: 'anm:jmpGe'}],
+  [213, {ref: 'anm:jmpGeF'}],
 
-  300: {ref: 'anm:sprite'},
-  301: {ref: 'anm:spriteRand'},
-  302: {ref: 'anm:renderMode'},
-  303: {ref: 'anm:blendMode'},
-  304: {ref: 'anm:layer'},
-  305: {ref: 'anm:noZBuffer'},
-  306: {ref: 'anm:v8-306'},
-  307: {ref: 'anm:v8-randMode'},
-  308: {ref: 'anm:flipX'},
-  309: {ref: 'anm:flipY'},
-  310: {ref: 'anm:visible'},
-  311: {ref: 'anm:resampleMode'},
-  312: {ref: 'anm:scrollMode'},
+  [300, {ref: 'anm:sprite'}],
+  [301, {ref: 'anm:spriteRand'}],
+  [302, {ref: 'anm:renderMode'}],
+  [303, {ref: 'anm:blendMode'}],
+  [304, {ref: 'anm:layer'}],
+  [305, {ref: 'anm:noZBuffer'}],
+  [306, {ref: 'anm:v8-306'}],
+  [307, {ref: 'anm:v8-randMode'}],
+  [308, {ref: 'anm:flipX'}],
+  [309, {ref: 'anm:flipY'}],
+  [310, {ref: 'anm:visible'}],
+  [311, {ref: 'anm:resampleMode'}],
+  [312, {ref: 'anm:scrollMode'}],
 
-  400: {ref: 'anm:pos'},
-  401: {ref: 'anm:rotate'},
-  402: {ref: 'anm:scale'},
-  403: {ref: 'anm:alpha'},
-  404: {ref: 'anm:rgb'},
-  405: {ref: 'anm:alpha2'},
-  406: {ref: 'anm:rgb2'},
-  407: {ref: 'anm:posTime'},
-  408: {ref: 'anm:rgbTime'},
-  409: {ref: 'anm:alphaTime'},
-  410: {ref: 'anm:rotateTime'},
-  411: {ref: 'anm:rotateTime2D'},
-  412: {ref: 'anm:scaleTime'},
-  413: {ref: 'anm:rgb2Time'},
-  414: {ref: 'anm:alpha2Time'},
-  415: {ref: 'anm:angleVel'},
-  416: {ref: 'anm:scaleGrowth'},
-  417: {ref: 'anm:alphaTimeLinear'},
-  418: {ref: 'anm:v8-418'},
-  419: {ref: 'anm:v8-flag-419'},
-  420: {ref: 'anm:posBezier'},
-  421: {ref: 'anm:anchor'},
-  422: {ref: 'anm:posAdopt'},
-  423: {ref: 'anm:colorMode'},
-  424: {ref: 'anm:rotateAuto'},
-  425: {ref: 'anm:uVel'},
-  426: {ref: 'anm:vVel'},
-  427: {ref: 'anm:uVelTime'},
-  428: {ref: 'anm:vVelTime'},
-  429: {ref: 'anm:uvScale'},
-  430: {ref: 'anm:uvScaleTime'},
-  431: {ref: 'anm:v8-flag-431'},
-  432: {ref: 'anm:v8-flag-432'},
-  433: {ref: 'anm:posTime2D'},
-  434: {ref: 'anm:scale2'},
-  435: {ref: 'anm:scale2Time'},
-  436: {ref: 'anm:anchorOffset'},
-  437: {ref: 'anm:rotationSystem'},
-  438: {ref: 'anm:originMode'},
+  [400, {ref: 'anm:pos'}],
+  [401, {ref: 'anm:rotate'}],
+  [402, {ref: 'anm:scale'}],
+  [403, {ref: 'anm:alpha'}],
+  [404, {ref: 'anm:rgb'}],
+  [405, {ref: 'anm:alpha2'}],
+  [406, {ref: 'anm:rgb2'}],
+  [407, {ref: 'anm:posTime'}],
+  [408, {ref: 'anm:rgbTime'}],
+  [409, {ref: 'anm:alphaTime'}],
+  [410, {ref: 'anm:rotateTime'}],
+  [411, {ref: 'anm:rotateTime2D'}],
+  [412, {ref: 'anm:scaleTime'}],
+  [413, {ref: 'anm:rgb2Time'}],
+  [414, {ref: 'anm:alpha2Time'}],
+  [415, {ref: 'anm:angleVel'}],
+  [416, {ref: 'anm:scaleGrowth'}],
+  [417, {ref: 'anm:alphaTimeLinear'}],
+  [418, {ref: 'anm:v8-418'}],
+  [419, {ref: 'anm:v8-flag-419'}],
+  [420, {ref: 'anm:posBezier'}],
+  [421, {ref: 'anm:anchor'}],
+  [422, {ref: 'anm:posAdopt'}],
+  [423, {ref: 'anm:colorMode'}],
+  [424, {ref: 'anm:rotateAuto'}],
+  [425, {ref: 'anm:uVel'}],
+  [426, {ref: 'anm:vVel'}],
+  [427, {ref: 'anm:uVelTime'}],
+  [428, {ref: 'anm:vVelTime'}],
+  [429, {ref: 'anm:uvScale'}],
+  [430, {ref: 'anm:uvScaleTime'}],
+  [431, {ref: 'anm:v8-flag-431'}],
+  [432, {ref: 'anm:v8-flag-432'}],
+  [433, {ref: 'anm:posTime2D'}],
+  [434, {ref: 'anm:scale2'}],
+  [435, {ref: 'anm:scale2Time'}],
+  [436, {ref: 'anm:anchorOffset'}],
+  [437, {ref: 'anm:rotationSystem'}],
+  [438, {ref: 'anm:originMode'}],
 
-  500: {ref: 'anm:createChild'},
-  501: {ref: 'anm:createChildUi'},
-  502: {ref: 'anm:prependChild'},
-  503: {ref: 'anm:prependChildUi'},
-  504: {ref: 'anm:createRoot'},
-  505: {ref: 'anm:createChildPos'},
-  506: {ref: 'anm:createRootPos'},
-  507: {ref: 'anm:ignoreParent'},
-  508: {ref: 'anm:createEffect'},
+  [500, {ref: 'anm:createChild'}],
+  [501, {ref: 'anm:createChildUi'}],
+  [502, {ref: 'anm:prependChild'}],
+  [503, {ref: 'anm:prependChildUi'}],
+  [504, {ref: 'anm:createRoot'}],
+  [505, {ref: 'anm:createChildPos'}],
+  [506, {ref: 'anm:createRootPos'}],
+  [507, {ref: 'anm:ignoreParent'}],
+  [508, {ref: 'anm:createEffect'}],
 
-  600: {ref: 'anm:textureCircle'},
-  601: {ref: 'anm:textureArcEven'},
-  602: {ref: 'anm:textureArc'},
-  603: {ref: 'anm:drawRect'},
-  604: {ref: 'anm:drawPoly'},
-  605: {ref: 'anm:drawPolyBorder'},
-  606: {ref: 'anm:drawRectGrad'},
-  607: {ref: 'anm:drawRectShadow'},
-  608: {ref: 'anm:drawRectShadowGrad'},
-});
+  [600, {ref: 'anm:textureCircle'}],
+  [601, {ref: 'anm:textureArcEven'}],
+  [602, {ref: 'anm:textureArc'}],
+  [603, {ref: 'anm:drawRect'}],
+  [604, {ref: 'anm:drawPoly'}],
+  [605, {ref: 'anm:drawPolyBorder'}],
+  [606, {ref: 'anm:drawRectGrad'}],
+  [607, {ref: 'anm:drawRectShadow'}],
+  [608, {ref: 'anm:drawRectShadowGrad'}],
+]));
 
-ANM_BY_OPCODE.set('14', {
-  ...ANM_BY_OPCODE.get('13'),
-  313: {ref: 'anm:resolutionMode'},
-  314: {ref: 'anm:attached'},
-  315: {ref: 'anm:colorizeChildren'},
-  509: {ref: 'anm:copyParentVars'},
-  609: {ref: 'anm:textureCylinder3D'},
-  610: {ref: 'anm:textureRing3D'},
-});
+refByOpcode.set('14', new Map([...refByOpcode.get('13')!.entries(),
+  [313, {ref: 'anm:resolutionMode'}],
+  [314, {ref: 'anm:attached'}],
+  [315, {ref: 'anm:colorizeChildren'}],
+  [509, {ref: 'anm:copyParentVars'}],
+  [609, {ref: 'anm:textureCylinder3D'}],
+  [610, {ref: 'anm:textureRing3D'}],
+]));
 
-ANM_BY_OPCODE.set('143', {
-  ...ANM_BY_OPCODE.get('14'),
-  316: {ref: 'anm:v8-flag-316'}, // in 16: flag 2
-  317: {ref: 'anm:v8-flag-317'}, // in 16: flag 2
-  611: {ref: 'anm:drawRing'},
-});
+refByOpcode.set('143', new Map([...refByOpcode.get('14')!.entries(),
+  [316, {ref: 'anm:v8-flag-316'}], // in 16: flag 2
+  [317, {ref: 'anm:v8-flag-317'}], // in 16: flag 2
+  [611, {ref: 'anm:drawRing'}],
+]));
 
-ANM_BY_OPCODE.set('15', {
-  ...ANM_BY_OPCODE.get('143'),
-});
+refByOpcode.set('15', new Map([...refByOpcode.get('143')!.entries()]));
 
-ANM_BY_OPCODE.set('16', {
-  ...ANM_BY_OPCODE.get('15'),
-  612: {ref: 'anm:drawRectBorder'},
-  613: {ref: 'anm:drawLine'},
-});
+refByOpcode.set('16', new Map([...refByOpcode.get('15')!.entries(),
+  [612, {ref: 'anm:drawRectBorder'}],
+  [613, {ref: 'anm:drawLine'}],
+]));
 
-ANM_BY_OPCODE.set('165', {
-  ...ANM_BY_OPCODE.get('16'),
-  439: {ref: 'anm:vd-imaginary-439'},
-});
+refByOpcode.set('165', new Map([...refByOpcode.get('16')!.entries(),
+  [439, {ref: 'anm:vd-imaginary-439'}],
+]));
 
-ANM_BY_OPCODE.set('17', {
-  ...ANM_BY_OPCODE.get('165'),
-});
-delete ANM_BY_OPCODE.get('17')[439];
+refByOpcode.set('17', new Map([...refByOpcode.get('165')!.entries()]));
+refByOpcode.get('17')!.delete(439);
 
-ANM_BY_OPCODE.set('18', {
-  ...ANM_BY_OPCODE.get('17'),
-  439: {ref: 'anm:the-real-439'},
-  614: {ref: 'anm:drawArc'},
-});
-
-for (const [, inner] of ANM_BY_OPCODE.entries()) {
-  for (const [opcode, {ref, wip}] of NumMap.entries(inner)) {
-    inner[opcode] = {ref, wip: wip || 0};
-  }
-}
+refByOpcode.set('18', new Map([...refByOpcode.get('17')!.entries(),
+  [439, {ref: 'anm:the-real-439'}],
+  [614, {ref: 'anm:drawArc'}],
+]));
 
 // ==========================================================================
 // ==========================================================================
 // =====================    INSTRUCTION DATA    =============================
 
-// Lookup table by ref id. (game-independent, anmmap-independent name)
-export const ANM_INS_DATA = {};
+// Lookup table by ref id. (game-independent, map-independent name)
+export const byRefId = new Map<string, PartialInsData>();
 
 // ==============
 // ==== CORE ====
 // ==============
-Object.assign(ANM_INS_DATA, {
-  'nop': {sig: '', args: [], desc: "Does nothing."},
-  'delete': {sig: '', args: [], desc: `
+mapAssign(byRefId, {
+  'nop': {sig: '', args: [], md: "Does nothing."},
+  'delete': {sig: '', args: [], md: `
     :tipshow[Destroys the graphic.]
 
     * **:game[06]:** this instruction and :ref{r=anm:static} may only appear as the final instruction of a script,
@@ -522,7 +498,7 @@ Object.assign(ANM_INS_DATA, {
       will be automatically deleted *as if* it encountered this instruction.
   `},
   'static': {
-    sig: '', args: [], desc: `
+    sig: '', args: [], md: `
     :tipshow[Freezes the graphic until it is destroyed externally.]
 
     Any interpolation instructions like :ref{r=anm:posTime} will no longer advance,
@@ -530,7 +506,7 @@ Object.assign(ANM_INS_DATA, {
 
     **In :game[06] only,** this instruction and :ref{r=anm:delete} may only appear as the final instruction of a script.
   `},
-  'stop': {sig: '', args: [], desc: `
+  'stop': {sig: '', args: [], md: `
     :tipshow[Stops executing the script (at least for now), but keeps the graphic alive.]
 
     Interpolation instructions like :ref{r=anm:posTime} will continue to advance,
@@ -538,7 +514,7 @@ Object.assign(ANM_INS_DATA, {
     You could say this essentially behaves like an infinitely long :ref{r=anm:wait}.
   `},
   'stop2': {
-    sig: '', args: [], wip: 2, desc: `
+    sig: '', args: [], wip: 2, md: `
     :::tipshow
     This is like :ref{r=anm:stop} except that it also hides the graphic by clearing
     the visibility flag (see :ref{r=anm:visible}).
@@ -549,11 +525,11 @@ Object.assign(ANM_INS_DATA, {
     Successful interrupts will automatically re-enable the visibility flag.
   `},
   'case': {
-    sig: 'S', args: ['n'], desc: `
+    sig: 'S', args: ['n'], md: `
     A label for an [interrupt](#anm/concepts&a=interrupt). When executed, it is a no-op.
   `},
   'wait': {
-    sig: 'S', args: ['t'], desc: `
+    sig: 'S', args: ['t'], md: `
     :tipshow[Wait \`t\` frames.]
 
     An extremely similar effect can be achieved using [time labels](#anm/concepts&a=time):
@@ -582,7 +558,7 @@ Object.assign(ANM_INS_DATA, {
       (notice that \`thanm\` has \`timeof(label)\` syntax to make option 1 less painful anyways)
   `},
   'caseReturn': {
-    sig: '', args: [], desc: `
+    sig: '', args: [], md: `
     :::tipshow
     Can be used at the end of a :ref{r=anm:case} block to return back
     to the moment just before the VM received the [interrupt](#anm/concepts&a=interrupt).
@@ -601,14 +577,14 @@ Object.assign(ANM_INS_DATA, {
 // =====================
 // ==== OPS N JUMPS ====
 // =====================
-Object.assign(ANM_INS_DATA, {
+mapAssign(byRefId, {
   'v0-jmp': {
-    sig: 'S', args: ['dest'], succ: 'jmp', desc: `
+    sig: 'S', args: ['dest'], succ: 'jmp', md: `
     Jumps to byte offset \`dest\` from the script's beginning, and sets the time to that
     instruction's [time label](#anm/concepts&a=time).
   `},
   'jmp': {
-    sig: 'SS', args: ['dest', 't'], desc: `
+    sig: 'SS', args: ['dest', 't'], md: `
     :::tipshow
     Jumps to byte offset \`dest\` from the script's beginning and sets the time to \`t\`.
     \`thanm\` accepts a label name for \`dest\`.
@@ -617,7 +593,7 @@ Object.assign(ANM_INS_DATA, {
     :wip2[Chinese wiki says some confusing recommendation about setting a=0, can someone explain to me?]
   `},
   'jmpDec': {
-    sig: '$SS', args: ['x', 'dest', 't'], desc: `
+    sig: '$SS', args: ['x', 'dest', 't'], md: `
     :tipshow[Decrement \`x\` and then jump if \`x > 0\`.  You can use this to repeat a loop a fixed number of times.]
 
     ~~~anm
@@ -634,44 +610,44 @@ Object.assign(ANM_INS_DATA, {
 const JUMP_DATA = {jmpEq: "==", jmpNe: "!=", jmpLt: "<", jmpLe: "<=", jmpGt: ">", jmpGe: ">="};
 for (const [mnemonic, operator] of Object.entries(JUMP_DATA)) {
   for (const [suffix, ty] of [['', 'S'], ['F', 'f']]) {
-    ANM_INS_DATA[`${mnemonic}${suffix}`] = {
+    byRefId.set(`${mnemonic}${suffix}`, {
       sig: `${ty}${ty}SS`,
       args: ['a', 'b', 'dest', 't'],
-      desc: `Jumps if \`a ${operator} b\`.`,
-    };
+      md: `Jumps if \`a ${operator} b\`.`,
+    });
   }
 }
 
 const OPERATOR_DATA = {set: "=", add: "+=", sub: "-=", mul: "*=", div: "/=", mod: "%="};
 for (const [mnemonic, operator] of Object.entries(OPERATOR_DATA)) {
   for (const [suffix, refTy, valTy] of [['', '$', 'S'], ['F', '%', 'f']]) {
-    ANM_INS_DATA[`${mnemonic}${suffix}`] = {
+    byRefId.set(`${mnemonic}${suffix}`, {
       sig: `${refTy}${valTy}`,
       args: ['a', 'b'],
-      desc: `Does \`a ${operator} b\`.`,
-    };
+      md: `Does \`a ${operator} b\`.`,
+    });
   }
 }
 
 const OPERATOR_3_DATA = {add: "+", sub: "-", mul: "*", div: "/", mod: "%"};
 for (const [mnemonic, operator] of Object.entries(OPERATOR_3_DATA)) {
   for (const [suffix, refTy, valTy] of [['', '$', 'S'], ['F', '%', 'f']]) {
-    ANM_INS_DATA[`${mnemonic}${suffix}3`] = {
+    byRefId.set(`${mnemonic}${suffix}3`, {
       sig: `${refTy}${valTy}${valTy}`,
       args: ['x', 'a', 'b'],
-      desc: `Does \`a = b ${operator} c\`.`,
-    };
+      md: `Does \`a = b ${operator} c\`.`,
+    });
   }
 }
 
-Object.assign(ANM_INS_DATA, {
-  'v3-rand': {sig: '$S', args: ['x', 'n'], succ: 'v4-rand', desc: 'Draw a random integer `0 <= x < n` using the global RNG.'},
-  'v3-randF': {sig: '%f', args: ['x', 'r'], succ: 'v4-randF', desc: 'Draw a random float `0 <= x <= r` using the global RNG.'},
-  'v4-rand': {sig: '$S', args: ['x', 'n'], succ: 'rand', desc: 'Draw a random integer `0 <= x < n` using the selected RNG (see :ref{r=anm:v4-randMode}).'},
-  'v4-randF': {sig: '%f', args: ['x', 'r'], succ: 'randF', desc: 'Draw a random float `0 <= x <= r` using the selected RNG (see :ref{r=anm:v4-randMode}).'},
+mapAssign(byRefId, {
+  'v3-rand': {sig: '$S', args: ['x', 'n'], succ: 'v4-rand', md: 'Draw a random integer `0 <= x < n` using the global RNG.'},
+  'v3-randF': {sig: '%f', args: ['x', 'r'], succ: 'v4-randF', md: 'Draw a random float `0 <= x <= r` using the global RNG.'},
+  'v4-rand': {sig: '$S', args: ['x', 'n'], succ: 'rand', md: 'Draw a random integer `0 <= x < n` using the selected RNG (see :ref{r=anm:v4-randMode}).'},
+  'v4-randF': {sig: '%f', args: ['x', 'r'], succ: 'randF', md: 'Draw a random float `0 <= x <= r` using the selected RNG (see :ref{r=anm:v4-randMode}).'},
 
   'v4-randMode': {
-    sig: 'S', args: ['mode'], succ: 'v8-randMode', desc: `
+    sig: 'S', args: ['mode'], succ: 'v8-randMode', md: `
     :tipshow[Selects the RNG used by this VM.]
 
     | Mode | Effect |
@@ -686,7 +662,7 @@ Object.assign(ANM_INS_DATA, {
   `},
 
   'v8-randMode': {
-    sig: 'S', args: ['mode'], wip: 1, desc: `
+    sig: 'S', args: ['mode'], wip: 1, md: `
     :tipshow[A (:wip[completely ineffectual?]) leftover of :ref{r=anm:v4-randMode}.]
 
     Scripts in modern games still use this exactly as they did back in ANM V4/V7, and
@@ -695,18 +671,23 @@ Object.assign(ANM_INS_DATA, {
     but all of the code that _uses_ the bitflag appears to be gone.
   `},
 
-  'rand': {sig: '$S', args: ['x', 'n'], desc: 'Draw a random integer `0 <= x < n` using the [animation RNG](#anm/concepts&a=rng).'},
-  'randF': {sig: '%f', args: ['x', 'r'], desc: 'Draw a random float `0 <= x <= r` using the [animation RNG](#anm/concepts&a=rng).'},
+  'rand': {sig: '$S', args: ['x', 'n'], md: 'Draw a random integer `0 <= x < n` using the [animation RNG](#anm/concepts&a=rng).'},
+  'randF': {sig: '%f', args: ['x', 'r'], md: 'Draw a random float `0 <= x <= r` using the [animation RNG](#anm/concepts&a=rng).'},
 
-  'mathSin': {sig: '%f', args: ['dest', 'θ'], desc: 'Compute `sin(θ)` (`θ` in radians).'},
-  'mathCos': {sig: '%f', args: ['dest', 'θ'], desc: 'Compute `cos(θ)` (`θ` in radians).'},
-  'mathTan': {sig: '%f', args: ['dest', 'θ'], desc: 'Compute `tan(θ)` (`θ` in radians).'},
-  'mathAcos': {sig: '%f', args: ['dest', 'x'], desc: 'Compute `acos(x)` (output in radians).'},
-  'mathAtan': {sig: '%f', args: ['dest', 'm'], desc: 'Compute `atan(m)` (output in radians).'},
-  'mathReduceAngle': {sig: '%', args: ['θ'], desc: 'Reduce an angle modulo `2*PI` into the range `[-PI, +PI]`.'},
-  'mathCirclePos': {sig: '%%ff', args: ['x', 'y', 'θ', 'r'], desc: '`x = r*cos(θ);`<br>`y = r*sin(θ);`'},
+  'mathSin': {sig: '%f', args: ['dest', 'θ'], md: 'Compute `sin(θ)` (`θ` in radians).'},
+  'mathCos': {sig: '%f', args: ['dest', 'θ'], md: 'Compute `cos(θ)` (`θ` in radians).'},
+  'mathTan': {sig: '%f', args: ['dest', 'θ'], md: 'Compute `tan(θ)` (`θ` in radians).'},
+  'mathAcos': {sig: '%f', args: ['dest', 'x'], md: 'Compute `acos(x)` (output in radians).'},
+  'mathAtan': {sig: '%f', args: ['dest', 'm'], md: 'Compute `atan(m)` (output in radians).'},
+  'mathReduceAngle': {sig: '%', args: ['θ'], md: 'Reduce an angle modulo `2*PI` into the range `[-PI, +PI]`.'},
+  'mathCirclePos': {sig: '%%ff', args: ['x', 'y', 'θ', 'r'], md: `
+    ~~~clike
+    x = r*cos(θ);
+    y = r*sin(θ);
+    ~~~
+  `},
   'mathCirclePosRand': {
-    sig: '%%ff', args: ['x', 'y', 'rmin', 'rmax'], desc: `
+    sig: '%%ff', args: ['x', 'y', 'rmin', 'rmax'], md: `
     :::tipshow
     Uniformly draws a random radius \`r\` in the interval given by \`rmin\` and \`rmax\`, and picks a random angle
     (both using the [animation RNG](#anm/concepts&a=rng)).
@@ -721,9 +702,9 @@ Object.assign(ANM_INS_DATA, {
 // =========================
 // ==== RENDER SETTINGS ====
 // =========================
-Object.assign(ANM_INS_DATA, {
+mapAssign(byRefId, {
   'sprite': {
-    sig: 'S', args: ['id'], desc: `
+    sig: 'S', args: ['id'], md: `
     :tipshow[Sets the image used by this VM to one of the sprites defined in the ANM file.]
     A value of \`-1\` means to not use an image (this is frequently used with [special drawing instructions](#anm/ins&a=group-600)).
     thanm also lets you use the sprite's name instead of an index.
@@ -733,18 +714,18 @@ Object.assign(ANM_INS_DATA, {
     for 16 different colors.  The precise mechanism of this is not yet fully understood.]
   `},
   'spriteRand': {
-    sig: 'SS', args: ['a', 'b'], desc: `
+    sig: 'SS', args: ['a', 'b'], md: `
     :tipshow[Selects a random sprite from \`a\` (inclusive) to \`a + b\` (exclusive).]
 
     * (&ndash;:game[128]): uses the [replay RNG](#anm/concepts&a=rng), regardless of :ref{r=anm:v4-randMode}.
     * (:game[13]&ndash;): uses the [animation RNG](#anm/concepts&a=rng).
   `},
-  'blendAdditive': {sig: '', args: [], desc: `Enables additive blending by setting \`D3DRS_DESTBLEND\` to \`D3DBLEND_ONE\`.`},
-  'blendAlpha': {sig: '', args: [], desc: `Disables additive blending by setting \`D3DRS_DESTBLEND\` to \`D3DBLEND_INVSRCALPHA\`. (the default)`},
+  'blendAdditive': {sig: '', args: [], md: `Enables additive blending by setting \`D3DRS_DESTBLEND\` to \`D3DBLEND_ONE\`.`},
+  'blendAlpha': {sig: '', args: [], md: `Disables additive blending by setting \`D3DRS_DESTBLEND\` to \`D3DBLEND_INVSRCALPHA\`. (the default)`},
   'blendAdditiveSet': {
     sig: 'S', args: ['enable'],
     succ: undefined, // one could say blendMode is a successor to this, but unfortunately the two instructions coexist in TH08 and TH09
-    desc: `
+    md: `
     :tipshow[Enables or disables additive blending.]
 
     Note: in :game[08], the more general :ref{r=anm:blendMode} is added, and this instruction becomes identical to
@@ -754,7 +735,7 @@ Object.assign(ANM_INS_DATA, {
     ~~~
   `},
   'blendMode': {
-    sig: 'S', args: ['mode'], desc: `
+    sig: 'S', args: ['mode'], md: `
     :tipshow[Set color blending mode.]
 
     Modes for :game[14]: (other games may be different)
@@ -781,7 +762,7 @@ Object.assign(ANM_INS_DATA, {
   `},
   // TODO: Maybe link to RenderType enum.
   'renderMode': {
-    sig: 'S', args: ['mode'], desc: `
+    sig: 'S', args: ['mode'], md: `
     :tipshow[Determines how the ANM is rendered.]
 
     Mode numbers can change between games, but the most popular modes have pretty stable numbers:
@@ -798,7 +779,7 @@ Object.assign(ANM_INS_DATA, {
       like :ref{r=anm:textureCircle} and :ref{r=anm:drawRect} (each one has its own mode).
   `},
   'playerBulletMode2': {
-    sig: 'S', args: ['mode'], wip: 2, desc: `
+    sig: 'S', args: ['mode'], wip: 2, md: `
     :tipshow[Some weird kind of proto-:ref{r=anm:renderMode} used strictly for player bullet hit animations **and nothing else**.]
 
     The hit animation for a player bullet that has hit an enemy uses one of 6 different possible functions to
@@ -811,7 +792,7 @@ Object.assign(ANM_INS_DATA, {
     If you try to use this on anything other than a player bullet hit animation, it has no effect.
   `},
   'layer': {
-    sig: 'S', args: ['n'], desc: `
+    sig: 'S', args: ['n'], md: `
     :tipshow[Sets the layer of the ANM.]  :wip[This may or may not affect z-ordering? It's weird...]
 
     **Different layer numbers may behave differently!** Each game only has a finite number of layers,
@@ -819,21 +800,21 @@ Object.assign(ANM_INS_DATA, {
     Be especially careful when porting something from one game to another, as the layer groupings may have changed.
   `},
   'flipX': {
-    sig: '', args: [], desc: `
+    sig: '', args: [], md: `
     :tipshow[Toggles mirroring on the x axis.]
 
     This very simply :tip[just]{tip="It also sets a bitflag but I think only EoSD uses it to keep the sign flipped during interpolation of scale."}
     flips the sign of \`sx\` in :ref{r=anm:scale}.  Future calls to :ref{r=anm:scale} will thus basically undo it.
   `},
   'flipY': {
-    sig: '', args: [], desc: `
+    sig: '', args: [], md: `
     :tipshow[Toggles mirroring on the y axis.]
 
     This very simply :tip[just]{tip="It also sets a bitflag but I think only EoSD uses it to keep the sign flipped during interpolation of scale."}
     flips the sign of \`sy\` in :ref{r=anm:scale}.  Future calls to :ref{r=anm:scale} will thus basically undo it.
   `},
   'resampleMode': {
-    sig: 'S', args: ['n'], desc: `
+    sig: 'S', args: ['n'], md: `
     :tipshow[Determines how a sprite is resampled when scale is greater or less than 1f.]
 
     | Mode | D3D constant | Meaning | Layman's terms |
@@ -846,7 +827,7 @@ Object.assign(ANM_INS_DATA, {
     <img src="./content/anm/img/ins-v8-311.png" height="200px">
   `},
   'scrollMode': {
-    sig: 'SS', args: ['xmode', 'ymode'], desc: `
+    sig: 'SS', args: ['xmode', 'ymode'], md: `
     :::tipshow
     Determines how a sprite pulls image data when an instruction like :ref{r=anm:uvScale}, :ref{r=anm:uVel},
     or :ref{r=anm:textureCircle} causes it to pull from [uv coords](#anm/concepts&a=uv-coords) outside the \`(0,0)-(1,1)\` rectangle.
@@ -859,7 +840,7 @@ Object.assign(ANM_INS_DATA, {
     | 2    | \`D3DTADDRESS_MIRROR\` | like 0 but every other image is mirrored |
   `},
   'originMode': {
-    sig: 'S', args: ['mode'], wip: 1, desc: `
+    sig: 'S', args: ['mode'], wip: 1, md: `
     :tipshow[Determines the origin used by the sprite.]
 
     | Value | Origin | Appropriate for |
@@ -877,7 +858,7 @@ Object.assign(ANM_INS_DATA, {
     This only has an effect on root graphics. (for child graphics, the origin is always the parent's position)
   `},
   'resolutionMode': {
-    sig: 'S', args: ['n'], wip: 1, desc: `
+    sig: 'S', args: ['n'], wip: 1, md: `
     :tipshow[Determines how certain aspects of the game are scaled to the current resolution.]
 
     :wip[TODO: details]
@@ -893,16 +874,16 @@ Object.assign(ANM_INS_DATA, {
 // ==================
 // ==== DA BASICS ===
 // ==================
-Object.assign(ANM_INS_DATA, {
+mapAssign(byRefId, {
   'pos': {
-    sig: 'fff', args: ['x', 'y', 'z'], desc: `
+    sig: 'fff', args: ['x', 'y', 'z'], md: `
     :tipshow[Sets the position of the graphic.]
 
     If you look in the code, you'll see that if a certain bitflag is set, this will write to a different variable.
     This is part of the implementation of :ref{r=anm:posMode} in earlier games, and is, to my knowledge, entirely dead code in every game since :game[095].
   `},
   'rotate': {
-    sig: 'fff', args: ['rx', 'ry', 'rz'], desc: `
+    sig: 'fff', args: ['rx', 'ry', 'rz'], md: `
     :tipshow[Set the graphic's rotation.  For 2D objects, only the z rotation matters.]
 
     In some rare cases, x rotation has a special meaning for [special drawing instructions](#anm/ins&a=group-600).
@@ -918,7 +899,7 @@ Object.assign(ANM_INS_DATA, {
     *If nothing seems to be happening when you call this, check your :ref{r=anm:renderMode} setting!*
   `},
   'rotateAuto': {
-    sig: 'b', args: ['mode'], desc: `
+    sig: 'b', args: ['mode'], md: `
     :tipshow[Sets the auto-rotate flag, which causes a graphic to rotate to face its direction of motion.]
 
     :::wip
@@ -930,51 +911,51 @@ Object.assign(ANM_INS_DATA, {
     :::
   `},
   'rotationSystem': {
-    sig: 'S', args: ['mode'], desc: `
+    sig: 'S', args: ['mode'], md: `
     Sets the conventions for 3D rotation (e.g. XYZ, ZYX, etc.).
     :wip[TODO: Define the modes.]
   `},
   'scale': {
-    sig: 'ff', args: ['sx', 'sy'], desc: `
+    sig: 'ff', args: ['sx', 'sy'], md: `
     Scales the ANM independently along the x and y axis.
     Graphics grow around their anchor point (see :ref{r=anm:anchor}).
     Some [special drawing instructions](#anm/ins&a=group-600) give the x and y scales special meaning.
   `},
   'scale2': {
-    sig: 'ff', args: ['sx', 'sy'], desc: `
+    sig: 'ff', args: ['sx', 'sy'], md: `
     :tipshow[*As far as we know,* this is just an extra set of scale factors that apply separately (multiplicatively) to :ref{r=anm:scale}.]
 
     All [special drawing instructions](#anm/ins&a=group-600) ignore this (which is a shame, because it means you still can't
     draw ellipses...).
   `},
   'rgb-dword': {
-    sig: 'S', args: ['rgb'], succ: 'rgb', desc: `
+    sig: 'S', args: ['rgb'], succ: 'rgb', md: `
     :tipshow[Set a color which gets blended with this sprite.]
     Blend operation is [multiply](https://en.wikipedia.org/wiki/Blend_modes#Multiply), so setting white (\`0xFFFFFF\`) eliminates the effect.
 
     This version takes a single dword in the form \`0x00RRGGBB\`.  Variables are not supported.
   `},
   'rgb': {
-    sig: 'SSS', args: ['r', 'g', 'b'], desc: `
+    sig: 'SSS', args: ['r', 'g', 'b'], md: `
     :tipshow[Set a color which gets blended with this sprite.]
     Blend operation is [multiply](https://en.wikipedia.org/wiki/Blend_modes#Multiply), so setting white (255, 255, 255) eliminates the effect.
   `},
   'alpha': {
-    sig: 'S', args: ['alpha'], desc: `
+    sig: 'S', args: ['alpha'], md: `
     Set alpha (opacity) to a value 0-255.
   `},
   'rgb2': {
-    sig: 'SSS', args: ['r', 'g', 'b'], desc: `
+    sig: 'SSS', args: ['r', 'g', 'b'], md: `
     Set a second color for gradients.  Gradients are used by certain [special drawing instructions](#anm/ins&a=group-600), and can be enabled
     on regular sprites using :ref{r=anm:colorMode}.
   `},
   'alpha2': {
-    sig: 'S', args: ['alpha'], desc: `
+    sig: 'S', args: ['alpha'], md: `
     Set a second alpha for gradients.  Gradients are used by certain [special drawing instructions](#anm/ins&a=group-600), and can be enabled
     on regular sprites using :ref{r=anm:colorMode}.
   `},
   'colorMode': {
-    sig: 'S', args: ['mode'], desc: `
+    sig: 'S', args: ['mode'], md: `
     :tipshow[Lets you enable gradients on regular sprites.]
 
     | Value | Effect |
@@ -994,7 +975,7 @@ Object.assign(ANM_INS_DATA, {
     on the VM in slot 0 of an enemy, because it uses them to make enemies blink when they take damage.
   `},
   'colorizeChildren': {
-    sig: 'b', args: ['enable'], desc: `
+    sig: 'b', args: ['enable'], md: `
     :tipshow[Sets a bitflag that causes colorization (see :ref{r=anm:rgb}) to affect children as well.]
 
     The game uses this on yin-yang orb enemies to ensure that their satellites also flash on damage taken.
@@ -1007,23 +988,23 @@ Object.assign(ANM_INS_DATA, {
     * Not supported by [special drawing instructions](#anm/ins&a=group-600).
     * Both parent and child must not be using gradients (i.e. they must have :ref{r=anm:colorMode} 0 or 1).
   `},
-  'angleVel': {sig: 'fff', args: ['ωx', 'ωy', 'ωz'], desc: `Set a constant angular velocity, in radians per frame.`},
-  'scaleGrowth': {sig: 'ff', args: ['gx', 'gy'], desc: `
+  'angleVel': {sig: 'fff', args: ['ωx', 'ωy', 'ωz'], md: `Set a constant angular velocity, in radians per frame.`},
+  'scaleGrowth': {sig: 'ff', args: ['gx', 'gy'], md: `
     Every frame, it increases the values of :ref{r=anm:scale} as \`sx -> sx + gx\` and \`sy -> sy + gy\`.
     Basically, :ref{r=anm:scaleGrowth tip=0} is to :ref{r=anm:scale} as :ref{r=anm:angleVel} is to :ref{r=anm:rotate}.
     (they even share implemenation details...)
   `},
-  'uAdd': {sig: 'f', args: ['du'], desc: `
+  'uAdd': {sig: 'f', args: ['du'], md: `
     :tipshow[Adds \`du\` to the [texture u coordinate](#anm/concepts&a=uv-coords).]
 
     Later versions remove this entirely in favor of :ref{r=anm:uVel}.
   `},
-  'vAdd': {sig: 'f', args: ['dv'], desc: `
+  'vAdd': {sig: 'f', args: ['dv'], md: `
     :tipshow[Adds \`dv\` to the [texture v coordinate](#anm/concepts&a=uv-coords).]
 
     Later versions remove this entirely in favor of :ref{r=anm:vVel}.
   `},
-  'uVel': {sig: 'f', args: ['vel'], desc: `
+  'uVel': {sig: 'f', args: ['vel'], md: `
     :::tipshow
     Add \`vel\` to the [texture u coordinate](#anm/concepts&a=uv-coords) every frame (in units of \`1 / total_image_width\`),
     causing the displayed sprite to scroll horizontally through the image file.
@@ -1033,13 +1014,13 @@ Object.assign(ANM_INS_DATA, {
 
     <img src="content/anm/img/ins-u-vel.gif">
   `},
-  'vVel': {sig: 'f', args: ['vel'], desc: `
+  'vVel': {sig: 'f', args: ['vel'], md: `
     :::tipshow
     Add \`vel\` to the [texture v coordinate](#anm/concepts&a=uv-coords) every frame (in units of \`1 / total_image_height\`),
     causing the displayed sprite to scroll vertically through the image file.
     :::
   `},
-  'uvScale': {sig: 'ff', args: ['uscale', 'vscale'], desc: `
+  'uvScale': {sig: 'ff', args: ['uscale', 'vscale'], md: `
     :tipshow[Scales [texture uv coordinates](#anm/concepts&a=uv-coords).]  Values greater than 1 means that a larger
     region of the texture (spritesheet) is shown.  Typically used to make a texture repeat multiple times, but you
     can also use :ref{r=anm:scrollMode} to change what happens.
@@ -1049,7 +1030,7 @@ Object.assign(ANM_INS_DATA, {
 
     <img src="content/anm/img/ins-uv-scale.gif" height="200px">
   `},
-  'anchorTopLeft': {sig: '', args: [], desc: `
+  'anchorTopLeft': {sig: '', args: [], md: `
     :tipshow[Changes the anchor point to the top left. (default is center)]
 
     :wip[UNTESTED:]
@@ -1058,7 +1039,7 @@ Object.assign(ANM_INS_DATA, {
     by \`(+sx*w/2, +sy*h/2)\` *after* scaling and rotating it. (where \`w,h\` are sprite dimensions
     and \`sx,sy\` come from :ref{r=anm:scale}).
   `},
-  'anchor': {sig: 'ss', args: ['h', 'v'], desc: `
+  'anchor': {sig: 'ss', args: ['h', 'v'], md: `
     :::tipshow
     Set the horizontal and vertical anchoring of the sprite.  Notice the args are each two bytes.
     For further fine-tuning see :ref{r=anm:anchorOffset}.
@@ -1069,7 +1050,7 @@ Object.assign(ANM_INS_DATA, {
     | \`h\` | Center | Left | Right  |
     | \`v\` | Center | Top  | Bottom |
   `},
-  'anchorOffset': {sig: 'ff', args: ['dx', 'dy'], desc: `
+  'anchorOffset': {sig: 'ff', args: ['dx', 'dy'], md: `
     :::tipshow
     Nudge the anchor point of the sprite right by \`dx\` pixels and down by \`dy\` pixels in the source image.
     Important for asymmetric bullet sprites because the anchor position is the center point for rotation and scaling.
@@ -1093,42 +1074,42 @@ Object.assign(ANM_INS_DATA, {
 });
 
 // more timely basics
-Object.assign(ANM_INS_DATA, {
-  'posTime': {sig: 'SSfff', args: ['t', 'mode', 'x', 'y', 'z'], desc: `Over the next \`t\` frames, changes :ref{r=anm:pos} to the given values using [interpolation mode](#anm/interpolation) \`mode\`.`},
-  'rotateTime': {sig: 'SSfff', args: ['t', 'mode', 'rx', 'ry', 'rz'], desc: `Over the next \`t\` frames, changes :ref{r=anm:rotate} to the given values using [interpolation mode](#anm/interpolation) \`mode\`.`},
-  'scaleTime': {sig: 'SSff', args: ['t', 'mode', 'sx', 'sy'], desc: `Over the next \`t\` frames, changes :ref{r=anm:scale} to the given values using [interpolation mode](#anm/interpolation) \`mode\`.`},
-  'scale2Time': {sig: 'SSff', args: ['t', 'mode', 'sx', 'sy'], desc: `Over the next \`t\` frames, changes :ref{r=anm:scale2} to the given values using [interpolation mode](#anm/interpolation) \`mode\`.`},
-  'uvScaleTime': {sig: 'SSff', args: ['t', 'mode', 'uscale', 'vscale'], desc: `Over the next \`t\` frames, changes :ref{r=anm:uvScale} to the given values using [interpolation mode](#anm/interpolation) \`mode\`.`},
-  'alphaTime': {sig: 'SSS', args: ['t', 'mode', 'alpha'], desc: `Over the next \`t\` frames, changes :ref{r=anm:alpha} to the given values using [interpolation mode](#anm/interpolation) \`mode\`.`},
-  'alpha2Time': {sig: 'SSS', args: ['t', 'mode', 'alpha'], desc: `
+mapAssign(byRefId, {
+  'posTime': {sig: 'SSfff', args: ['t', 'mode', 'x', 'y', 'z'], md: `Over the next \`t\` frames, changes :ref{r=anm:pos} to the given values using [interpolation mode](#anm/interpolation) \`mode\`.`},
+  'rotateTime': {sig: 'SSfff', args: ['t', 'mode', 'rx', 'ry', 'rz'], md: `Over the next \`t\` frames, changes :ref{r=anm:rotate} to the given values using [interpolation mode](#anm/interpolation) \`mode\`.`},
+  'scaleTime': {sig: 'SSff', args: ['t', 'mode', 'sx', 'sy'], md: `Over the next \`t\` frames, changes :ref{r=anm:scale} to the given values using [interpolation mode](#anm/interpolation) \`mode\`.`},
+  'scale2Time': {sig: 'SSff', args: ['t', 'mode', 'sx', 'sy'], md: `Over the next \`t\` frames, changes :ref{r=anm:scale2} to the given values using [interpolation mode](#anm/interpolation) \`mode\`.`},
+  'uvScaleTime': {sig: 'SSff', args: ['t', 'mode', 'uscale', 'vscale'], md: `Over the next \`t\` frames, changes :ref{r=anm:uvScale} to the given values using [interpolation mode](#anm/interpolation) \`mode\`.`},
+  'alphaTime': {sig: 'SSS', args: ['t', 'mode', 'alpha'], md: `Over the next \`t\` frames, changes :ref{r=anm:alpha} to the given values using [interpolation mode](#anm/interpolation) \`mode\`.`},
+  'alpha2Time': {sig: 'SSS', args: ['t', 'mode', 'alpha'], md: `
     :tipshow[Over the next \`t\` frames, changes :ref{r=anm:alpha2} to the given value using [interpolation mode](#anm/interpolation) \`mode\`.]
 
     For some reason, in :game[14] onwards, this also sets :ref{r=anm:colorMode} to 1, which can be a mild inconvenience.
   `},
   'rgbTime-dword': {
-    sig: 'SSS', args: ['t', 'mode', 'rgb'], succ: 'rgbTime', desc: `
+    sig: 'SSS', args: ['t', 'mode', 'rgb'], succ: 'rgbTime', md: `
     Over the next \`t\` frames, changes :ref{r=anm:rgb-dword} to the given value using [interpolation mode](#anm/interpolation) \`mode\`.
 
     This version takes a single dword in the form \`0x00RRGGBB\`.  Variables are not supported.
   `},
-  'rgbTime': {sig: 'SSSSS', args: ['t', 'mode', 'r', 'g', 'b'], desc: `Over the next \`t\` frames, changes :ref{r=anm:rgb} to the given value using [interpolation mode](#anm/interpolation) \`mode\`.`},
-  'rgb2Time': {sig: 'SSSSS', args: ['t', 'mode', 'r', 'g', 'b'], desc: `
+  'rgbTime': {sig: 'SSSSS', args: ['t', 'mode', 'r', 'g', 'b'], md: `Over the next \`t\` frames, changes :ref{r=anm:rgb} to the given value using [interpolation mode](#anm/interpolation) \`mode\`.`},
+  'rgb2Time': {sig: 'SSSSS', args: ['t', 'mode', 'r', 'g', 'b'], md: `
     :tipshow[Over the next \`t\` frames, changes :ref{r=anm:rgb2} to the given value using [interpolation mode](#anm/interpolation) \`mode\`.]
 
     For some reason, in :game[14] onwards, this also sets :ref{r=anm:colorMode} to 1, which can be a mild inconvenience.
   `},
-  'uVelTime': {sig: 'SSf', args: ['t', 'mode', 'vel'], desc: `
+  'uVelTime': {sig: 'SSf', args: ['t', 'mode', 'vel'], md: `
     :tipshow[Over the next \`t\` frames, changes :ref{r=anm:uVel} to the given value using [interpolation mode](#anm/interpolation) \`mode\`.]
 
     Remember that :ref{r=anm:uVel} is scroll *velocity,* not position.
   `},
-  'vVelTime': {sig: 'SSf', args: ['t', 'mode', 'vel'], desc: `
+  'vVelTime': {sig: 'SSf', args: ['t', 'mode', 'vel'], md: `
     :tipshow[Over the next \`t\` frames, changes :ref{r=anm:vVel} to the given value using [interpolation mode](#anm/interpolation) \`mode\`.]
 
     Remember that :ref{r=anm:vVel} is scroll *velocity,* not position.
   `},
   'rotateTime2D': {
-    sig: 'SSf', args: ['t', 'mode', 'rz'], desc: `
+    sig: 'SSf', args: ['t', 'mode', 'rz'], md: `
     :tipshow[A compact version of :ref{r=anm:rotateTime} that only interpolates the z rotation.]
     Only used by :game[128] in the main menu.
 
@@ -1136,21 +1117,21 @@ Object.assign(ANM_INS_DATA, {
     to be used together and their effects do not stack properly)
   `},
   'alphaTimeLinear': {
-    sig: 'SS', args: ['alpha', 't'], desc: `
+    sig: 'SS', args: ['alpha', 't'], md: `
     **Obsolete.** Use :ref{r=anm:alphaTime} instead.
 
     :tipshow[:wip[UNTESTED:] Linearly changes alpha to \`alpha\` over the next \`t\` frames.]
     Identical to calling :ref{r=anm:alphaTime}\`(t, 0, alpha)\`.
   `},
   'posTimeLinear': {
-    sig: 'fffS', args: ['x', 'y', 'z', 't'], wip: 1, desc: `
+    sig: 'fffS', args: ['x', 'y', 'z', 't'], wip: 1, md: `
     **Obsolete.** Use :ref{r=anm:posTime} instead.
 
     :tipshow[:wip[UNTESTED:] Linearly changes position to \`(x, y, z)\` over the next \`t\` frames.]
     Identical to calling :ref{r=anm:posTime}\`(t, 0, x, y, z)\`.
   `},
   'posTimeEaseout': {
-    sig: 'fffS', args: ['x', 'y', 'z', 't'], wip: 1, desc: `
+    sig: 'fffS', args: ['x', 'y', 'z', 't'], wip: 1, md: `
     **Obsolete.** Use :ref{r=anm:posTime} instead.
 
     :tipshow[:wip[UNTESTED:]
@@ -1159,7 +1140,7 @@ Object.assign(ANM_INS_DATA, {
     Identical to calling :ref{r=anm:posTime}\`(t, 4, x, y, z)\`.
   `},
   'posTimeEaseout4': {
-    sig: 'fffS', args: ['x', 'y', 'z', 't'], wip: 1, desc: `
+    sig: 'fffS', args: ['x', 'y', 'z', 't'], wip: 1, md: `
     **Obsolete.** Use :ref{r=anm:posTime} instead.
 
     :tipshow[:wip[UNTESTED:]
@@ -1168,7 +1149,7 @@ Object.assign(ANM_INS_DATA, {
     Identical to calling :ref{r=anm:posTime}\`(t, 6, x, y, z)\`.
   `},
   'scaleTimeLinear': {
-    sig: 'ffS', args: ['sx', 'sy', 't'], wip: 1, desc: `
+    sig: 'ffS', args: ['sx', 'sy', 't'], wip: 1, md: `
     **Obsolete.** Use :ref{r=anm:scaleTime} instead.
 
     :tipshow[:wip[UNTESTED:]
@@ -1176,8 +1157,7 @@ Object.assign(ANM_INS_DATA, {
     Identical to calling :ref{r=anm:scaleTime}\`(t, 0, sx, sy)\`.
   `},
   'posBezier': {
-    sig: 'Sfffffffff', args: ['t', 'x1', 'y1', 'z1', 'x2', 'y2', 'z2', 'x3', 'y3', 'z3'],
-    desc: `
+    sig: 'Sfffffffff', args: ['t', 'x1', 'y1', 'z1', 'x2', 'y2', 'z2', 'x3', 'y3', 'z3'], md: `
     :tipshow[In \`t\` frames, moves to \`(x2, y2, z2)\` using Bezier interpolation.]
 
     * The graphic starts at its current position.
@@ -1186,7 +1166,7 @@ Object.assign(ANM_INS_DATA, {
     * \`(x3/t, y3/t, z3/t)\` is the **final velocity.**
   `},
   'posTime2D': {
-    sig: 'SSff', args: ['t', 'mode', 'x', 'y'], wip: 1, desc: `
+    sig: 'SSff', args: ['t', 'mode', 'x', 'y'], wip: 1, md: `
     Looks like a 2D version of :ref{r=anm:posTime}?  (:wip[Is that all? Seems pointless])
   `},
 });
@@ -1196,9 +1176,9 @@ Object.assign(ANM_INS_DATA, {
 // =================
 
 // 2D texture circles
-Object.assign(ANM_INS_DATA, {
+mapAssign(byRefId, {
   'textureCircle': {
-    sig: 'S', args: ['nmax'], desc: `
+    sig: 'S', args: ['nmax'], md: `
     :tipshow[Wraps a texture into a thin ring (annulus).  The argument determines the size of an internal buffer.]
 
     First, the texture is repeated an integer number of times along the y axis.
@@ -1221,11 +1201,12 @@ Object.assign(ANM_INS_DATA, {
     :wip[Out of all five 600-series instructions that contort textures, this instruction is unique in that it
     appears to support gradients whenever :ref{r=anm:colorMode} is nonzero, but I haven't tested this.]
 
-    Comparison image of the two-dimensional texture circle instructions in TH17:<br>
+    Comparison image of the two-dimensional texture circle instructions in TH17:
+
     ![600, 601, 602 comparison](./content/anm/img/ins-v8-texCircle.png)
   `},
   'textureArc': {
-    sig: 'S', args: ['nmax'], desc: `
+    sig: 'S', args: ['nmax'], md: `
     :tipshow[Similar to :ref{r=anm:textureCircle}, but creates an arc segment beginning from an angle of zero and running clockwise.]
     In addition to all of the settings :ref{r=anm:textureCircle}, this has one additional parameter:
     * The x rotation from :ref{r=anm:rotate} defines **the angle subtended by the arc.**
@@ -1234,11 +1215,11 @@ Object.assign(ANM_INS_DATA, {
     \`rotx\` rather than being cut off).
   `},
   'textureArcEven': {
-    sig: 'S', args: ['nmax'], desc: `
+    sig: 'S', args: ['nmax'], md: `
     Identical to :ref{r=anm:textureArc} but awkwardly centered around angle 0 rather than starting at 0.
   `},
   'textureCylinder3D': {
-    sig: 'S', args: ['nmax'], desc: `
+    sig: 'S', args: ['nmax'], md: `
     :::tipshow
     Wraps a texture into the 3D surface of a cylindrical section.
     The argument determines the size of an internal buffer.
@@ -1262,7 +1243,7 @@ Object.assign(ANM_INS_DATA, {
     <img src="./content/anm/img/ins-v8-609.png" height="250px">
   `},
   'textureRing3D': {
-    sig: 'S', args: ['nmax'], desc: `
+    sig: 'S', args: ['nmax'], md: `
     :::tipshow
     Wraps a texture into a thin ring (annulus) positioned in 3D space (i.e. the stage background).
     The argument determines the size of an internal buffer.
@@ -1288,20 +1269,20 @@ Object.assign(ANM_INS_DATA, {
 });
 
 // Circle-drawing family
-Object.assign(ANM_INS_DATA, {
+mapAssign(byRefId, {
   'drawPoly': {
-    sig: 'fS', args: ['radius', 'nInit'], desc: `
+    sig: 'fS', args: ['radius', 'nInit'], md: `
     :tipshow[Draws a filled regular n-gon with a gradient going from center to edge.]
     \`nInit\` will be stored in the integer variable :ref{r=anmvar:i0}, where you can change it at any time.
     If you want to change the radius in real-time or from ECL, you can adjust the x-scale from :ref{r=anm:scale}
     (which gets multiplied into the \`radius\` argument).
   `},
   'drawPolyBorder': {
-    sig: 'fS', args: ['radius', 'nInit'], desc: `
+    sig: 'fS', args: ['radius', 'nInit'], md: `
     Like :ref{r=anm:drawPoly} but draws a 1-pixel border. No gradients.
   `},
   'drawRing': {
-    sig: 'ffS', args: ['radius', 'thickness', 'nInit'], desc: `
+    sig: 'ffS', args: ['radius', 'thickness', 'nInit'], md: `
     :tipshow[Draws a filled ring (annulus) with n sides.  No gradients.]
     \`nInit\` is stored in $I0 like :ref{r=anm:drawPoly} and :ref{r=anm:drawPolyBorder}.
     \`radius\` is mean radius (0.5*(R1+R2)), \`thickness\` is (R2 - R1).
@@ -1312,23 +1293,24 @@ Object.assign(ANM_INS_DATA, {
 });
 
 // Rectangle-drawing family
-Object.assign(ANM_INS_DATA, {
+mapAssign(byRefId, {
   'drawRect': {
-    sig: 'ff', args: ['w', 'h'], desc: `
+    sig: 'ff', args: ['w', 'h'], md: `
     :::tipshow
     Draws a filled rectangle with the given dimensions.  No gradients.
     If you want to control the dimensions from ECL, consider passing in \`1.0\` and changing the anm's scale instead.
     :::
 
-    Image of the rectangle-drawing family of instructions in TH17:<br>
+    Image of the rectangle-drawing family of instructions in TH17:
+
     ![Overview of rectangle-drawing instructions in TH17.](./content/anm/img/ins-v8-drawRect.png)
   `},
   'drawRectGrad': {
-    sig: 'ff', args: ['w', 'h'], desc: `
+    sig: 'ff', args: ['w', 'h'], md: `
     Same as :ref{r=anm:drawRect} but supports gradients (:ref{r=anm:rgb2}), which go from left to right.
   `},
   'drawRectShadow': {
-    sig: 'ff', args: ['w', 'h'], desc: `
+    sig: 'ff', args: ['w', 'h'], md: `
     :::tipshow
     A variant of :ref{r=anm:drawRect} intended for rotated rectangles, which smooths out the edges somewhat.
     :::
@@ -1359,25 +1341,25 @@ Object.assign(ANM_INS_DATA, {
     :::
   `},
   'drawRectShadowGrad': {
-    sig: 'ff', args: ['w', 'h'], desc: `
+    sig: 'ff', args: ['w', 'h'], md: `
     Same as :ref{r=anm:drawRect} but supports gradients (:ref{r=anm:rgb2}), which go from left to right.
   `},
   'drawRectBorder': {
-    sig: 'ff', args: ['w', 'h'], desc: `
+    sig: 'ff', args: ['w', 'h'], md: `
     :tipshow[Draws a 1-pixel thick outline of a rectangle.  No gradients.]
 
     Just like :ref{r=anm:drawRect}, you can control the dimensions externally using :ref{r=anm:scale}.
     (the border will remain 1 pixel thick even when scaled)
   `},
   'drawLine': {
-    sig: 'ff', args: ['len', 'unused'], desc: `
+    sig: 'ff', args: ['len', 'unused'], md: `
     :tipshow[Draws a 1-pixel thick horizontal line.  The second argument is unused.  No gradients.]
 
     Just like :ref{r=anm:drawRect}, you can change the length on demand by setting the x-scale in :ref{r=anm:scale};
     the y-scale has no effect. If you want to change its direction, you must use :ref{r=anm:rotate}.
   `},
   'drawArc': {
-    sig: 'ff', args: ['radius', 'angle'], wip: 1, desc: `
+    sig: 'ff', args: ['radius', 'angle'], wip: 1, md: `
     :tipshow[:wip[Draws an arc?]]
 
     Dai wrote the following: *the instruction is \`ins_614(float a, float b)\`, and I think it draws a single polygon from the center of the ANM object to a distance set by \`a\`, with an angle width of \`b\`.*
@@ -1388,40 +1370,40 @@ Object.assign(ANM_INS_DATA, {
 // ==================
 // ==== CHILDREN ====
 // ==================
-Object.assign(ANM_INS_DATA, {
+mapAssign(byRefId, {
   'createChild': {
-    sig: 'S', args: ['script'], desc: `
+    sig: 'S', args: ['script'], md: `
     The standard way to create a child graphic.
   `},
   'prependChild': {
-    sig: 'S', args: ['script'], wip: 1, desc: `
+    sig: 'S', args: ['script'], wip: 1, md: `
     Create a child graphic, but insert it **at the front** of the [world list](#anm/ontick-ondraw) instead of the back.
   `},
   'createChildUi': {
-    sig: 'S', args: ['script'], desc: `
+    sig: 'S', args: ['script'], md: `
     Create a child graphic, but insert it at the back **of the [UI list](#anm/ontick-ondraw)** instead.
 
     UI ANMs are ticked even while the game is paused.
   `},
   'prependChildUi': {
-    sig: 'S', args: ['script'], wip: 1, desc: `
+    sig: 'S', args: ['script'], wip: 1, md: `
     Create a child graphic, but insert it **at the front of the [UI list](#anm/ontick-ondraw)**.
   `},
   'attached': {
-    sig: 'S', args: ['enable'], wip: 1, desc: `
+    sig: 'S', args: ['enable'], wip: 1, md: `
     Sets a bitflag.  When the bitflag is enabled, the graphic will move as its parent rotates.
     (picture a person holding a shield; as the person rotates, the shield moves around them)
 
     :wip[Where is it used? Are there other effects?]
   `},
   'createEffect': {
-    sig: 'S', args: ['kind'], wip: 1, desc: `
+    sig: 'S', args: ['kind'], wip: 1, md: `
     Creates a special child graphic that may have additional hardcoded behavior.
 
     Different games have different effects!  Someday we'll have a table of them.
   `},
   'createRoot': {
-    sig: 'S', args: ['script'], wip: 1, desc: `
+    sig: 'S', args: ['script'], wip: 1, md: `
     :tipshow[Creates a new root VM. (i.e. the new VM will have no parent)]
 
     Pseudocode:
@@ -1436,7 +1418,7 @@ Object.assign(ANM_INS_DATA, {
     for the new VM corresponds to the original location of the parent when it called this instruction.
   `},
   'createChildPos': {
-    sig: 'Sff', args: ['script', 'x', 'y'], wip: 1, desc: `
+    sig: 'Sff', args: ['script', 'x', 'y'], wip: 1, md: `
     :tipshow[Creates a child at an offset from this graphic.]
 
     The child's [three position variables](#anm/concepts&a=position) will be:
@@ -1447,7 +1429,7 @@ Object.assign(ANM_INS_DATA, {
     ~~~
   `},
   'createRootPos': {
-    sig: 'Sff', args: ['script', 'x', 'y'], wip: 1, desc: `
+    sig: 'Sff', args: ['script', 'x', 'y'], wip: 1, md: `
     :tipshow[Combines the effects of :ref{r=anm:createRoot} and :ref{r=anm:createChildPos}.]
 
     The net effect on the [three position variables](#anm/concepts&a=position) is:
@@ -1463,7 +1445,7 @@ Object.assign(ANM_INS_DATA, {
     ~~~
   `},
   'ignoreParent': {
-    sig: 'S', args: ['ignore'], desc: `
+    sig: 'S', args: ['ignore'], md: `
     :::tipshow
     Sets a bitflag.  If the bitflag is 1, then in many different contexts, the ANM will e.g. ignore the
     parent's position/scale/rotation/etc. and it will be allowed to use e.g. :ref{r=anm:originMode} as though
@@ -1480,7 +1462,7 @@ Object.assign(ANM_INS_DATA, {
     (This will probably be more reliable/less buggy in the end.)
   `},
   'copyParentVars': {
-    sig: '', args: [], desc: `
+    sig: '', args: [], md: `
     :tipshow[When called on a child graphic, copies over a number of variables from its parent.]
 
     They are:
@@ -1502,11 +1484,11 @@ Object.assign(ANM_INS_DATA, {
 // ============================
 // ==== WEIRD-ASS NONSENSE ====
 // ============================
-Object.assign(ANM_INS_DATA, {
-  'v1-31': {sig: 'S', args: ['a'], wip: 2, desc: `:wip2[Sets a bitflag.]`},
-  'v4-111': {sig: 'S', args: ['a'], wip: 2, desc: `:wip2[Sets a 2-bit bitfield.]`},
+mapAssign(byRefId, {
+  'v1-31': {sig: 'S', args: ['a'], wip: 2, md: `:wip2[Sets a bitflag.]`},
+  'v4-111': {sig: 'S', args: ['a'], wip: 2, md: `:wip2[Sets a 2-bit bitfield.]`},
   'v8-418': {
-    sig: '', args: [], desc: `
+    sig: '', args: [], md: `
     :::tipshow
     A bizarre and **totally unused** instruction that appears to select a new sprite in the image file based on the anm's coordinates.
     :::
@@ -1532,7 +1514,7 @@ Object.assign(ANM_INS_DATA, {
     :::
   `},
   'noZBuffer': {
-    sig: 'S', args: ['disable'], wip: 1, desc: `
+    sig: 'S', args: ['disable'], wip: 1, md: `
     :tipshow[If \`disable\` is 1, writing to the z-buffer is disabled.  Otherwise, it is enabled.]
     This can matter in cases where z-testing is used to filter writes.
     (:wip[under what conditions are z-testing enabled, anyway?])
@@ -1544,7 +1526,7 @@ Object.assign(ANM_INS_DATA, {
     <a href="./content/anm/img/ins-v8-305.png" target="_blank"><img src="./content/anm/img/ins-v8-305.png" style="max-width:100%;"></a>
   `},
   'v8-306': {
-    sig: 'S', args: ['enable'], wip: 2, desc: `
+    sig: 'S', args: ['enable'], wip: 2, md: `
     :::wip2
     :tipshow[Sets the state of a STD-related bitflag.]
     When this flag is enabled, some unknown vector from the stage background
@@ -1552,11 +1534,11 @@ Object.assign(ANM_INS_DATA, {
     :::
   `},
   'posAdopt': {
-    sig: '', args: [], wip: 2, desc: `
+    sig: '', args: [], wip: 2, md: `
     :wip2[Copies [\`pos_3\`](#anm/concepts&a=position) into \`pos\`, and zeros out \`pos_3\`...]
   `},
   'visible': {
-    sig: 'b', args: ['visible'], desc: `
+    sig: 'b', args: ['visible'], md: `
     :tipshow[Set the visibility flag (1 = visible). Invisible graphics are skipped during rendering.]
 
     Generally speaking this is not a huge deal as the most expensive parts of rendering are typically
@@ -1565,7 +1547,7 @@ Object.assign(ANM_INS_DATA, {
     The visibility flag is automatically set to 1 whenever a successful [interrupt](#anm/concepts&a=interrupt) occurs.
   `},
   'v0-26': {
-    sig: 's', args: ['arg'], wip: 2, desc: `
+    sig: 's', args: ['arg'], wip: 2, md: `
     :tipshow[Uhhhhh. Geeze.  I dunno.  Might be a precursor to :ref{r=anm:renderMode}?]
 
     Sets a word-sized field. Only ever called with the arguments 1, 2, or (:game[08]&ndash;) 18.
@@ -1576,15 +1558,15 @@ Object.assign(ANM_INS_DATA, {
     * Additionally, enemy rendering code at \`th08.exe+0x42e1e6\` sets the z-rotation on any *slotted VM* where this
       field is nonzero. (slotted VMs only; the primary VM looks at the flag on the enemy set by ECL \`ins_145\` instead)
   `},
-  'v8-flag-316': {sig: '', args: [], wip: 2, desc: `:wip2[Enables an unknown bitflag. Clear with :ref{r=anm:v8-flag-317}.]`},
-  'v8-flag-317': {sig: '', args: [], wip: 2, desc: `:wip2[Clears the bitflag from :ref{r=anm:v8-flag-316}.]`},
-  'v8-flag-419': {sig: 'S', args: ['enable'], wip: 2, desc: `:wip2[Sets the state of an unknown bitflag.]`},
-  'v8-flag-431': {sig: 'S', args: ['enable'], wip: 2, desc: `:wip2[Sets the state of an unknown bitflag.]`},
-  'v8-flag-432': {sig: 'S', args: ['enable'], wip: 2, desc: `:wip2[Sets the state of an unknown bitflag. Only used by photo games.]`},
-  'v4-texCircle2': {sig: '', args: [], wip: 2, desc: ':wip2[unidentified member of texCircle family, likely :ref{r=anm:textureArcEven}]'},
-  'v4-texCircle3': {sig: '', args: [], wip: 2, desc: ':wip2[unidentified member of texCircle family, likely :ref{r=anm:textureArc}]'},
+  'v8-flag-316': {sig: '', args: [], wip: 2, md: `:wip2[Enables an unknown bitflag. Clear with :ref{r=anm:v8-flag-317}.]`},
+  'v8-flag-317': {sig: '', args: [], wip: 2, md: `:wip2[Clears the bitflag from :ref{r=anm:v8-flag-316}.]`},
+  'v8-flag-419': {sig: 'S', args: ['enable'], wip: 2, md: `:wip2[Sets the state of an unknown bitflag.]`},
+  'v8-flag-431': {sig: 'S', args: ['enable'], wip: 2, md: `:wip2[Sets the state of an unknown bitflag.]`},
+  'v8-flag-432': {sig: 'S', args: ['enable'], wip: 2, md: `:wip2[Sets the state of an unknown bitflag. Only used by photo games.]`},
+  'v4-texCircle2': {sig: '', args: [], wip: 2, md: ':wip2[unidentified member of texCircle family, likely :ref{r=anm:textureArcEven}]'},
+  'v4-texCircle3': {sig: '', args: [], wip: 2, md: ':wip2[unidentified member of texCircle family, likely :ref{r=anm:textureArc}]'},
   'vd-imaginary-439': {
-    sig: 'S', args: ['_'], desc: `
+    sig: 'S', args: ['_'], md: `
     :tipshow[ANM \`ins_439\` does not exi[s](http://www.scpwiki.com/scp-3930)t.]
     It is used by :game[165] in \`photo.anm\`, where it does nothing because, again, *it does not exist.*
     We thank you for your understanding.
@@ -1592,13 +1574,13 @@ Object.assign(ANM_INS_DATA, {
     To make matters worse, in :game[18], this ID gets reused for another instruction with a different signature!
   `},
   'posMode': {
-    sig: 'S', args: ['flag'], wip: 1, desc: `
+    sig: 'S', args: ['flag'], wip: 1, md: `
     :tipshow[Sets the state of a bitflag that controls how positioning works.]
 
     I'm working on a page that explains in more detail, but the short of it is: VM positioning in pre-v4 games is awkward.  :ref{r=anm:pos} has virtually no effect on many types of sprites (e.g. enemies) due to how position is defined in these games.  For these types of sprites, you can use :ref{r=anm:posMode}\`(1)\` to cause :ref{r=anm:pos} to define a *relative* offset instead.
   `},
   'blink': {
-    sig: 'S', args: ['arg'], wip: 2, desc: `
+    sig: 'S', args: ['arg'], wip: 2, md: `
     :::wip2
     :tipshow[
     **Never used.** Does some bit math and then sets what *appears* to be the color flag
@@ -1610,22 +1592,7 @@ Object.assign(ANM_INS_DATA, {
     :::
   `},
   'the-real-439': {
-    sig: 'Sff', args: ['a', 'b', 'c'], wip: 2, desc: `
+    sig: 'Sff', args: ['a', 'b', 'c'], wip: 2, md: `
     :wip2[Unknown. Added in :game[18].]
   `},
 });
-
-for (const [key, value] of Object.entries(ANM_INS_DATA)) {
-  value.wip = value.wip || 0;
-  if (value.desc === undefined) window.console.error(`TABLE CORRUPT: anm ref ${key} has no 'desc'`);
-  if (value.sig === undefined) window.console.error(`TABLE CORRUPT: anm ref ${key} has no 'sig'`);
-  if (value.sig != null && value.args === undefined) window.console.error(`TABLE CORRUPT: anm ref ${key} has no 'args'`);
-  if (value.sig && value.sig.length !== value.args.length) {
-    window.console.error(`TABLE CORRUPT: anm ref ${key} has arg count mismatch`);
-  }
-
-  // automatically remove tips from self-references
-  const re = new RegExp(`\\:ref\\[anm/${key}\\]`, 'g');
-  value.desc = value.desc.replace(re, `:tip[:ref{r=anm:${key}}]{tip="YOU ARE HERE" deco="0"}`);
-  value.desc = preprocessTrustedMarkdown(dedent(value.desc));
-}

@@ -152,7 +152,7 @@ function StatsTable_<D extends CommonData>(props: {
 }
 
 function getStatsRows<D extends CommonData>(statsByOpcode: StatsByOpcodeJson, tableHandlers: TableDef<D>): StatsByRef {
-  const {byOpcode: refByOpcode, mainPrefix, noun} = tableHandlers;
+  const {refByOpcode, mainPrefix, noun} = tableHandlers;
 
   // Deep-copy.  We're about to tear it down...
   statsByOpcode = JSON.parse(JSON.stringify(statsByOpcode));
