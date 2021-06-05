@@ -35,9 +35,22 @@ function Content() {
   return <Switch>
     <Route exact path="/">FIXME main page</Route>
     <Route exact path="/index"><Redirect to="/" /></Route>
-    <Route exact path="/anm/stats">
-      <StatsPage />
-    </Route>
+    <Route exact path="/settings">FIXME</Route>
+    <Route exact path="/anm/ins">FIXME</Route>
+    <Route exact path="/anm/var">FIXME</Route>
+    <Route exact path="/std/ins">FIXME</Route>
+    <Route exact path="/msg/ins">FIXME</Route>
+    <Route exact path="/anm/stats"><StatsPage /></Route>
+    {/* FIXME what to do about all of these markdown pages?  Should the NotFound route look for md files? */}
+    <Route exact path="/anm/concepts">FIXME</Route>
+    <Route exact path="/anm/interpolation">FIXME</Route>
+    <Route exact path="/anm/stages-of-rendering">FIXME</Route>
+    <Route exact path="/anm/ontick-ondraw">FIXME</Route>
+    <Route exact path="/anm/layer-viewer">FIXME</Route>
+    <Route exact path="/mods/bullet-cap">FIXME</Route>
+    <Route exact path="/mods/debug-counters">FIXME</Route>
+    <Route exact path="/mods/seasonize">FIXME</Route>
+    <Route exact path="/mods/za-warudo">FIXME</Route>
     {/* <Route exact path="/settings"><Redirect to="/" /></Route> */}
     <Route><NotFound /></Route>
   </Switch>;
