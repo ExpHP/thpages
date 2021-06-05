@@ -2,12 +2,16 @@ import React from 'react';
 import {StylesProvider} from '@material-ui/core/styles';
 import {HashRouter as Router, Switch, Route, Redirect, Link} from 'react-router-dom';
 
+import {STD_TABLE} from './tables';
 import {ErrorBoundary} from './Error';
 import {Navbar} from './Navbar';
 import {Tip} from './Tip';
 import {StatsPage} from './Stats';
 import {useSettings, NameSettingsContext} from './settings';
+import {ReferenceTablePage} from './ReferenceTable';
+import {Title} from './XUtil';
 
+export const MAIN_TITLE = "ExpHP's Touhou pages";
 export function App() {
   const {savedSettings, nameSettings, setSavedSettings} = useSettings();
 
@@ -38,7 +42,7 @@ function Content() {
     <Route exact path="/settings">FIXME</Route>
     <Route exact path="/anm/ins">FIXME</Route>
     <Route exact path="/anm/var">FIXME</Route>
-    <Route exact path="/std/ins">FIXME</Route>
+    <Route exact path="/std/ins"><ReferenceTablePage table={STD_TABLE} /></Route>
     <Route exact path="/msg/ins">FIXME</Route>
     <Route exact path="/anm/stats"><StatsPage /></Route>
     {/* FIXME what to do about all of these markdown pages?  Should the NotFound route look for md files? */}
@@ -58,6 +62,7 @@ function Content() {
 
 function NotFound() {
   return <>
+    <Title>404</Title>
     <h1>Page not found</h1>
     <p>
       The page at this address could not be found.

@@ -56,84 +56,8 @@ export function App() {
   }
 }
 
-
-/**
- * Do early initialization before page-specific scripts run.
- */
-export function init() {
-  initAnm();
-  initSettings();
-}
-
-const MAIN_TITLE = `ExpHP's Touhou Pages`;
-const pageMarkdownCache: {[s: string]: string | undefined} = {};
-
-function Content({currentQuery}: {currentQuery: Query}) {
-  const [prevQuery, setPrevQuery] = React.useState<Query | null>(null);
-  const [pageMarkdown, setPageMarkdown] = React.useState<string | null>(null);
-
-  React.useEffect(() => {
-    if (prevQuery && !queryEqualsUptoAnchor(prevQuery, currentQuery)) {
-      resetScroll();
-    }
-    setPrevQuery(currentQuery);
-  }, [prevQuery, currentQuery]);
-
-  let displayedMarkdown = pageMarkdown;
-  if (prevQuery?.s !== currentQuery.s) {
-    // This is to prevent an accidental, brief display of the current table for a different game
-    // when navigating from e.g. "#/anm/ins&g=12" to "#/anm/var".
-    //
-    // (in this case, pageMarkdown will be stale because any calls to setPageMarkdown(null)
-    //  have not yet taken effect)
-    displayedMarkdown = null;
-  }
-
-  React.useEffect(() => {
-    const abortController = new AbortController();
-    getPossiblyCachedContentMd(currentQuery.s, abortController)
-        .then((md) => setPageMarkdown(md))
-        .catch((e) => console.error(e));
-
-    return () => {
-      abortController.abort();
-      setPageMarkdown(null);
-    };
-  }, [currentQuery]);
-
-  if (displayedMarkdown === null) return null;
-  return <div className="content-wrapper"><div className="content">
-    <TrustedMarkdown {...{currentQuery}}>{displayedMarkdown}</TrustedMarkdown>
-  </div></div>;
-}
-
-// Get the text content of an `.md` file in `content/`.
-async function getPossiblyCachedContentMd(page: string, abort: AbortController) {
-  if (pageMarkdownCache[page]) {
-    return pageMarkdownCache[page]!;
-  }
-  const result = await fetch(`content/${page}.md`, abort);
-  const md = await result.text();
-  pageMarkdownCache[page] = md;
-  return md;
-}
-
-function getErrorString() {
-  return `
-# An error has occured while loading the page.
-Try reloading using **CTRL+F5**, or **clearing browser cache** of this site.
-If the problem persists, contact me on Discord: **ExpHP#4754**.
-`;
-}
-
 function resetScroll() {
   document.body.scrollTop = document.documentElement.scrollTop = 0;
-}
-
-export function setWindowTitle(text: string | null) {
-  const prefix = text ? `${text} &mdash; ` : '';
-  const $title = document.head.querySelector("title");
-  if ($title) $title.innerHTML = `${prefix}${MAIN_TITLE}`;
 }
 
 // function buildOrScrollToContent() {

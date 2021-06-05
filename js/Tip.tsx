@@ -17,12 +17,12 @@ export function Tip({tip, children, disable}: {tip: ReactNode, children: ReactCh
     // Ensure it's an element.
     children = <span>{children}</span>;
   }
-  // const isTip = React.useContext(IsTipContext);
+  const isTip = React.useContext(IsTipContext);
   if (disable) return <>{children}</>;
-  // if (isTip) return children; // no nested tips!
+  if (isTip) return children; // no nested tips!
 
-  // <IsTipContext.Provider value={true}>
-  return  <Tooltip
+  return <IsTipContext.Provider value={true}>
+    <Tooltip
       title={tip as any}
       classes={{tooltip: 'tip'}}
       enterDelay={0} leaveDelay={0}
@@ -30,6 +30,6 @@ export function Tip({tip, children, disable}: {tip: ReactNode, children: ReactCh
       placement="top"
     >
       {children}
-    </Tooltip>;
-  //</IsTipContext.Provider>;
+    </Tooltip>
+  </IsTipContext.Provider>;
 }

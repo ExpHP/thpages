@@ -8,6 +8,7 @@ import {GameTh} from './Game';
 import {InlineRef} from './InlineRef';
 import {Tip} from './Tip';
 import {Ref, TableDef, CommonData, STD_TABLE} from './tables';
+import {Title} from './XUtil';
 
 type CellData = {
   opcode: number, // opcode in this game
@@ -32,6 +33,7 @@ export function StatsPage() {
   });
 
   return <>
+    <Title>ANM stats</Title>
     <h1>Usage statistics</h1>
     <p>
       This page counts the number of uses of each instruction across all games.

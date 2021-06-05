@@ -1,14 +1,13 @@
-import type {PartialInsData} from './tables';
-import {mapAssign} from '../util';
+import {mapAssign} from '~/js/util';
 
-import * as myself from './std';
-export default myself;
+import type {PartialInsData, PartialOpcodeRefData} from './tables';
+import {Game} from './game';
 
 // ==========================================================================
 // ==========================================================================
 // ===================    LOOKUP TABLE BY OPCODE    =========================
 
-export const byOpcode = new Map(); // has to be a map because 'integer' keys defy insertion order
+export const byOpcode = new Map<Game, Map<number, PartialOpcodeRefData>>(); // has to be a map because 'integer' keys defy insertion order
 
 // ---- EoSD ----
 byOpcode.set('06', new Map([
@@ -57,13 +56,13 @@ byOpcode.set('07', new Map([
 ]));
 
 byOpcode.set('08', new Map([
-  ...byOpcode.get('07').entries(),
+  ...byOpcode.get('07')!.entries(),
   [32, {ref: 'std:v0-rocking-vector'}],
   [33, {ref: 'std:v0-rock'}],
   [34, {ref: 'std:v0-sprite-c'}],
 ]));
 
-byOpcode.set('09', new Map([...byOpcode.get('08').entries()]));
+byOpcode.set('09', new Map([...byOpcode.get('08')!.entries()]));
 byOpcode.set('095', new Map([
   [0, {ref: 'std:stop'}],
   [1, {ref: 'std:jmp'}],
@@ -93,37 +92,37 @@ byOpcode.set('095', new Map([
   // to trigger an interrupt in these two games.
 ]));
 
-byOpcode.set('10', new Map([...byOpcode.get('095').entries()]));
+byOpcode.set('10', new Map([...byOpcode.get('095')!.entries()]));
 byOpcode.set('11', new Map([
-  ...byOpcode.get('10').entries(),
+  ...byOpcode.get('10')!.entries(),
   [16, {ref: 'std:case'}],
   [17, {ref: 'std:distortion'}],
 ]));
 
 byOpcode.set('12', new Map([
-  ...byOpcode.get('11').entries(),
+  ...byOpcode.get('11')!.entries(),
   [14, {ref: 'std:sprite-3arg'}], // signature change!
   [18, {ref: 'std:up-time'}],
 ]));
 
-byOpcode.set('125', new Map([...byOpcode.get('12').entries()]));
-byOpcode.set('128', new Map([...byOpcode.get('125').entries()]));
-byOpcode.set('13', new Map([...byOpcode.get('128').entries()]));
+byOpcode.set('125', new Map([...byOpcode.get('12')!.entries()]));
+byOpcode.set('128', new Map([...byOpcode.get('125')!.entries()]));
+byOpcode.set('13', new Map([...byOpcode.get('128')!.entries()]));
 byOpcode.set('14', new Map([
-  ...byOpcode.get('13').entries(),
+  ...byOpcode.get('13')!.entries(),
   [19, {ref: 'std:ins-19'}],
   [20, {ref: 'std:draw-distance'}],
 ]));
 
-byOpcode.set('143', new Map([...byOpcode.get('14').entries()]));
-byOpcode.set('15', new Map([...byOpcode.get('143').entries()]));
-byOpcode.set('16', new Map([...byOpcode.get('15').entries()]));
-byOpcode.set('165', new Map([...byOpcode.get('16').entries()]));
+byOpcode.set('143', new Map([...byOpcode.get('14')!.entries()]));
+byOpcode.set('15', new Map([...byOpcode.get('143')!.entries()]));
+byOpcode.set('16', new Map([...byOpcode.get('15')!.entries()]));
+byOpcode.set('165', new Map([...byOpcode.get('16')!.entries()]));
 byOpcode.set('17', new Map([
-  ...byOpcode.get('16'),
+  ...byOpcode.get('16')!,
   [21, {ref: 'std:fov-time'}],
 ]));
-byOpcode.set('18', new Map([...byOpcode.get('17').entries()]));
+byOpcode.set('18', new Map([...byOpcode.get('17')!.entries()]));
 
 // ==========================================================================
 // ==========================================================================
@@ -135,7 +134,7 @@ export const byRefId = new Map<string, PartialInsData>();
 // EoSD
 mapAssign(byRefId, {
   'v0-pos-keyframe': {
-    sig: 'fff', args: ['x', 'y', 'z'], desc: `
+    sig: 'fff', args: ['x', 'y', 'z'], md: `
     :tipshow[Declares a keyframe for camera position at the current time label.]
     The game will automatically search ahead for the next keyframe and linearly interpolate
     position between the two time labels. For instance, the following snippet will linearly
@@ -153,7 +152,7 @@ mapAssign(byRefId, {
     The final keyframe must have a time label of \`-1\` or the game may attempt to read out of bounds.
   `},
   'eosd-facing': {
-    sig: 'fff', args: ['x', 'y', 'z'], succ: 'v0-facing', desc: `
+    sig: 'fff', args: ['x', 'y', 'z'], succ: 'v0-facing', md: `
     :tipshow[Set the direction the camera is facing.]
     The vector does not need to be normalized.
 
@@ -161,7 +160,7 @@ mapAssign(byRefId, {
     the specified time frame rather than instantly.
   `},
   'eosd-facing-time': {
-    sig: 'S__', args: ['t', '_', '_'], succ: 'v0-facing-time', desc: `
+    sig: 'S__', args: ['t', '_', '_'], succ: 'v0-facing-time', md: `
     :::tipshow
     Causes the final :ref{r=std:eosd-facing} instruction on this same frame to be interpolated linearly over
     the next \`t\` frames rather than occuring instantly.
@@ -174,7 +173,7 @@ mapAssign(byRefId, {
     Thus, it doesn't matter which order you call :ref{r=std:eosd-facing} and :ref{r=std:eosd-facing-time}.
   `},
   'v0-skyfog': {
-    sig: 'Sff', args: ['color', 'near', 'far'], succ: 'skyfog', desc: `
+    sig: 'Sff', args: ['color', 'near', 'far'], succ: 'skyfog', md: `
     :tipshow[Set the color, near plane, and far plane of the distance fog.]
     Color is \`0xAARRGGBB\`. \`thstd\` also supports \`#RRGGBBAA\` notation.
 
@@ -182,7 +181,7 @@ mapAssign(byRefId, {
     the specified time frame rather than instantly.
   `},
   'v0-skyfog-time': {
-    sig: 'S__', args: ['t', '_', '_'], desc: `
+    sig: 'S__', args: ['t', '_', '_'], md: `
     :tipshow[Cause the next :ref{r=std:v0-skyfog} to be linearly interpolated over the next \`t\` frames.]
 
     More precisely:
@@ -193,11 +192,11 @@ mapAssign(byRefId, {
     :ref{r=std:v0-skyfog}. (except on the first frame when you are setting the initial fog)
   `},
   'eosd-stop': {
-    sig: '___', args: ['_', '_', '_'], succ: 'v0-stop', desc: `
+    sig: '___', args: ['_', '_', '_'], succ: 'v0-stop', md: `
     Stops executing the script until unpaused by ECL \`ins_125()\`.
   `},
   'v0-stop': {
-    sig: '___', args: ['_', '_', '_'], succ: 'stop', desc: `
+    sig: '___', args: ['_', '_', '_'], succ: 'stop', md: `
     :tipshow[Stops executing the script.]
 
     This is basically like putting an infinitely large time label in the script.
@@ -205,7 +204,7 @@ mapAssign(byRefId, {
   `},
 
   'v0-case': {
-    sig: 'S__', args: ['number', '_', '_'], wip: 1, succ: 'case', desc: `
+    sig: 'S__', args: ['number', '_', '_'], wip: 1, succ: 'case', md: `
     :tipshow[A label for an interrupt.]
 
     STD interrupts are similar to [ANM interrupts](#/anm/concepts&a=interrupt). They can occur
@@ -217,7 +216,7 @@ mapAssign(byRefId, {
   `},
 
   'v0-clear-color': {
-    sig: 'S__', args: ['color', '_', '_'], wip: 1, succ: 'clear-color', desc: `
+    sig: 'S__', args: ['color', '_', '_'], wip: 1, succ: 'clear-color', md: `
     :tipshow[Sets a color that gets used at some point in a call to \`IDirect3DDevice8::Clear\`.]
     I'm not sure when and where this color would ever be visible in-game...
 
@@ -225,7 +224,7 @@ mapAssign(byRefId, {
   `},
 
   'v0-jmp': {
-    sig: 'SS_', args: ['instr', 'time', '_'], wip: 1, succ: 'jmp', desc: `
+    sig: 'SS_', args: ['instr', 'time', '_'], wip: 1, succ: 'jmp', md: `
     :tipshow[Jumps to the instruction with index \`instr\` and sets the current time to \`time\`.]
 
     Notice this is different from jump instructions in later versions or other formats in that it takes the
@@ -236,7 +235,7 @@ mapAssign(byRefId, {
   `},
 
   'v0-pos': {
-    sig: 'fff', args: ['x', 'y', 'z'], succ: 'pos', desc: `
+    sig: 'fff', args: ['x', 'y', 'z'], succ: 'pos', md: `
     :tipshow[Set the position of the camera.]
 
     :wip[If the \`wtfisthisicanteven\` flag is set (see :ref{r=std:v0-jmp}),
@@ -245,7 +244,7 @@ mapAssign(byRefId, {
   `},
 
   'v0-pos-time': {
-    sig: 'SS_', args: ['t', 'mode', '_'], desc: `
+    sig: 'SS_', args: ['t', 'mode', '_'], md: `
     :::tipshow
     Causes the final :ref{r=std:v0-pos} instruction on this same frame to be interpolated over
     the next \`t\` frames using the given [interpolation mode](#/anm/interpolation&a=old-games)
@@ -261,12 +260,12 @@ mapAssign(byRefId, {
     Thus, it doesn't matter which order you call :ref{r=std:v0-pos} and :ref{r=std:v0-pos-time}.
   `},
 
-  'v0-facing': {sig: 'fff', args: ['x', 'y', 'z'], succ: 'facing', desc: `Set the direction the camera is facing.  The vector does not need to be normalized.`},
-  'v0-up': {sig: 'fff', args: ['x', 'y', 'z'], succ: 'up', desc: `Set the up direction of the camera.  The vector does not need to be normalized.`},
-  'v0-fov': {sig: 'f__', args: ['fovy', '_', '_'], succ: 'fov', desc: `Set the vertical field-of-view of the camera.`},
+  'v0-facing': {sig: 'fff', args: ['x', 'y', 'z'], succ: 'facing', md: `Set the direction the camera is facing.  The vector does not need to be normalized.`},
+  'v0-up': {sig: 'fff', args: ['x', 'y', 'z'], succ: 'up', md: `Set the up direction of the camera.  The vector does not need to be normalized.`},
+  'v0-fov': {sig: 'f__', args: ['fovy', '_', '_'], succ: 'fov', md: `Set the vertical field-of-view of the camera.`},
 
   'v0-pos-initial': {
-    sig: 'fff', args: ['x', 'y', 'z'], desc: `
+    sig: 'fff', args: ['x', 'y', 'z'], md: `
     :tipshow[Simply writes the initial camera position for time interpolation.]
 
     Be aware that :ref{r=std:v0-pos} already copies the final position into the initial position, so it does not make sense
@@ -289,7 +288,7 @@ mapAssign(byRefId, {
   `},
 
   'v0-pos-final': {
-    sig: 'fff', args: ['x', 'y', 'z'], desc: `
+    sig: 'fff', args: ['x', 'y', 'z'], md: `
     :tipshow[Simply writes the final camera position for time interpolation, without the extra effects of the :ref{r=std:v0-pos} instruction.
     (i.e. this one doesn't overwrite the initial position.)]
     (it also doesn't do the funny stuff with \`EffectManager\`...)
@@ -298,25 +297,25 @@ mapAssign(byRefId, {
   `},
 
   'v0-sprite-a': {
-    sig: 'S__', args: ['i', '_', '_'], wip: 1, desc: `
+    sig: 'S__', args: ['i', '_', '_'], wip: 1, md: `
     :wip[Sets something sprite related. Like an ANM script index or something. Possibly skybox related.]
   `},
   'v0-sprite-b': {
-    sig: 'S__', args: ['i', '_', '_'], wip: 1, desc: `
+    sig: 'S__', args: ['i', '_', '_'], wip: 1, md: `
     :wip[Sets something sprite related. Like an ANM script index or something. Possibly skybox related.]
   `},
   'v0-sprite-c': {
-    sig: 'S__', args: ['i', '_', '_'], wip: 1, desc: `
+    sig: 'S__', args: ['i', '_', '_'], wip: 1, md: `
     :wip[Sets something sprite related. Like an ANM script index or something. Possibly skybox related.]
   `},
 
   'v0-rock': {
-    sig: 'S__', args: ['mode', '_', '_'], wip: 1, succ: 'rock', desc: `
+    sig: 'S__', args: ['mode', '_', '_'], wip: 1, succ: 'rock', md: `
     :tipshow[Sets the rocking mode and resets the rocking timer to 0.]
     Different games have different modes. 0 disables rocking.
   `},
   'v0-rocking-vector': {
-    sig: 'fff', args: ['x', 'y', 'z'], wip: 1, desc: `
+    sig: 'fff', args: ['x', 'y', 'z'], wip: 1, md: `
     :tipshow[Manually sets :wip[an unknown vector that is usually modified by rocking modes.]]
 
     The game only ever uses this to reset the vector back to \`(0, 0, 0)\` after setting
@@ -326,7 +325,7 @@ mapAssign(byRefId, {
 
 for (const thing of ['facing', 'up', 'fov']) {
   byRefId.set(`v0-${thing}-time`, {
-    sig: 'SS_', args: ['t', 'mode', '_'], desc: `
+    sig: 'SS_', args: ['t', 'mode', '_'], md: `
     :tipshow[Causes the final :ref{r=std:v0-${thing}} instruction on this same frame to be interpolated over
     the next \`t\` frames using the given [interpolation mode](#/anm/interpolation&a=old-games)
     rather than occuring instantly.]
@@ -338,7 +337,7 @@ for (const thing of ['facing', 'up', 'fov']) {
 
 for (const thing of ['facing', 'up']) {
   byRefId.set(`v0-${thing}-time`, {
-    sig: 'SS_', args: ['t', 'mode', '_'], desc: `
+    sig: 'SS_', args: ['t', 'mode', '_'], md: `
     :tipshow[Causes the final :ref{r=std:v0-${thing}} instruction on this same frame to be interpolated over
     the next \`t\` frames using the given [interpolation mode](#/anm/interpolation&a=old-games)
     rather than occuring instantly.]
@@ -348,13 +347,13 @@ for (const thing of ['facing', 'up']) {
   `});
 
   byRefId.set(`v0-${thing}-initial`, {
-    sig: 'SS_', args: ['t', 'mode', '_'], desc: `
+    sig: 'SS_', args: ['t', 'mode', '_'], md: `
     :tipshow[Simply writes the initial value of :ref{r=std:v0-${thing}} for time interpolation.]
     This has similar caveats to :ref{r=std:v0-pos-initial}, and the games only ever use it as part of the
     setup for :ref{r=std:v0-${thing}-bezier}.
   `});
   byRefId.set(`v0-${thing}-final`, {
-    sig: 'SS_', args: ['t', 'mode', '_'], desc: `
+    sig: 'SS_', args: ['t', 'mode', '_'], md: `
     :tipshow[Simply writes the final value of :ref{r=std:v0-${thing}} for time interpolation,
     without any of the additional effects of a direct call to :ref{r=std:v0-${thing}}.]
     The games only ever use it as part of the setup for :ref{r=std:v0-${thing}-bezier}.
@@ -363,20 +362,20 @@ for (const thing of ['facing', 'up']) {
 
 for (const thing of ['pos', 'facing', 'up']) {
   byRefId.set(`v0-${thing}-bezier`, {
-    sig: 'S__', args: ['t', '_', '_'], desc: `
+    sig: 'S__', args: ['t', '_', '_'], md: `
     :tipshow[Interpolates :ref{r=std:v0-${thing}} using a Bezier.]
     Identical to calling :ref{r=std:v0-${thing}-time}\`(t, 7, 0)\`. (7 is the Bezier mode)
   `});
 
   byRefId.set(`v0-${thing}-initial-deriv`, {
-    sig: 'fff', args: ['dx', 'dy', 'dz'], desc: `
+    sig: 'fff', args: ['dx', 'dy', 'dz'], md: `
     :tipshow[Sets the initial derivative for Bezier interpolation of :ref{r=std:v0-${thing}}.]
     This is the initial derivative of the normalized easing function, so the initial velocity
     will be \`(dx/t, dy/t, dz/t)\` (where \`t\` comes from :ref{r=std:v0-${thing}-bezier})
   `});
 
   byRefId.set(`v0-${thing}-final-deriv`, {
-    sig: 'fff', args: ['dx', 'dy', 'dz'], desc: `
+    sig: 'fff', args: ['dx', 'dy', 'dz'], md: `
     :tipshow[Sets the final derivative for Bezier interpolation of :ref{r=std:v0-${thing}}.]
     This is the final derivative of the normalized easing function, so the final velocity
     will be \`(dx/t, dy/t, dz/t)\` (where \`t\` comes from :ref{r=std:v0-${thing}-bezier})
@@ -385,7 +384,7 @@ for (const thing of ['pos', 'facing', 'up']) {
 
 // Later games
 mapAssign(byRefId, {
-  'stop': {sig: '', args: [], desc: `
+  'stop': {sig: '', args: [], md: `
     :tipshow[Stops executing the script.]
 
     This is basically like putting an infinitely large time label in the script.
@@ -393,24 +392,24 @@ mapAssign(byRefId, {
   `},
 
   'jmp': {
-    sig: 'SS', args: ['offset', 'time'], desc: `
+    sig: 'SS', args: ['offset', 'time'], md: `
     Jumps to the instruction at offset \`offset\` from the beginning of the script, and sets the current time to \`time\`.
   `},
 
-  'pos': {sig: 'fff', args: ['x', 'y', 'z'], desc: `Set the position of the camera.`},
-  'facing': {sig: 'fff', args: ['x', 'y', 'z'], desc: `Set the direction the camera is facing.  The vector does not need to be normalized.`},
-  'up': {sig: 'fff', args: ['x', 'y', 'z'], desc: `Set the up direction of the camera.  The vector does not need to be normalized.`},
-  'fov': {sig: 'f', args: ['fovy'], desc: `Set the vertical field-of-view of the camera.`},
+  'pos': {sig: 'fff', args: ['x', 'y', 'z'], md: `Set the position of the camera.`},
+  'facing': {sig: 'fff', args: ['x', 'y', 'z'], md: `Set the direction the camera is facing.  The vector does not need to be normalized.`},
+  'up': {sig: 'fff', args: ['x', 'y', 'z'], md: `Set the up direction of the camera.  The vector does not need to be normalized.`},
+  'fov': {sig: 'f', args: ['fovy'], md: `Set the vertical field-of-view of the camera.`},
 
   'skyfog': {
-    sig: 'Sff', args: ['color', 'near', 'far'], desc: `
+    sig: 'Sff', args: ['color', 'near', 'far'], md: `
     :tipshow[Set the color, near plane, and far plane of the distance fog.]
 
     Color is \`0xAARRGGBB\`. \`thstd\` also supports \`#RRGGBBAA\` notation.
   `},
 
   'pos-bezier': {
-    sig: 'SSfffffffff', args: ['t', '_unused', 'x1', 'y1', 'z1', 'x2', 'y2', 'z2', 'x3', 'y3', 'z3'], desc: `
+    sig: 'SSfffffffff', args: ['t', '_unused', 'x1', 'y1', 'z1', 'x2', 'y2', 'z2', 'x3', 'y3', 'z3'], md: `
     :tipshow[In \`t\` frames, moves the camera to \`(x2, y2, z2)\` using Bezier interpolation.]
 
     :wip[Assuming everything works the same as :ref{r=anm:posBezier}:]
@@ -423,7 +422,7 @@ mapAssign(byRefId, {
   `},
 
   'facing-bezier': {
-    sig: 'SSfffffffff', args: ['t', '_unused', 'x1', 'y1', 'z1', 'x2', 'y2', 'z2', 'x3', 'y3', 'z3'], desc: `
+    sig: 'SSfffffffff', args: ['t', '_unused', 'x1', 'y1', 'z1', 'x2', 'y2', 'z2', 'x3', 'y3', 'z3'], md: `
     :tipshow[In \`t\` frames, moves to \`(x2, y2, z2)\` using Bezier interpolation.]
 
     :wip[Assuming everything works the same as :ref{r=anm:posBezier}:]
@@ -436,13 +435,13 @@ mapAssign(byRefId, {
   `},
 
   'rock': {
-    sig: 'S', args: ['mode'], desc: `
+    sig: 'S', args: ['mode'], md: `
     :tipshow[Sets the rocking mode and resets the rocking timer to 0.]
     Different games have different modes. 0 disables rocking.
   `},
 
   'clear-color': {
-    sig: 'S', args: ['color'], desc: `
+    sig: 'S', args: ['color'], md: `
     :tipshow[Sets a color that gets used at some point in a call to \`IDirect3DDevice8::Clear\`.]
     I'm not sure when and where this color would ever be visible in-game...
 
@@ -450,14 +449,14 @@ mapAssign(byRefId, {
   `},
 
   'sprite-2arg': {
-    sig: 'SS', args: ['slot', 'script'], succ: 'sprite-3arg', desc: `
+    sig: 'SS', args: ['slot', 'script'], succ: 'sprite-3arg', md: `
     :tipshow[Load a 2d sprite, used for skyboxes and stuff.]
 
     In :game[095]&ndash;:game[17] there are 8 slots.  Prior to :game[14] this has no \`layer\` argument.
   `},
 
   'sprite-3arg': {
-    sig: 'SSS', args: ['slot', 'script', 'layer'], desc: `
+    sig: 'SSS', args: ['slot', 'script', 'layer'], md: `
     :tipshow[Load a 2d sprite, used for skyboxes and stuff.]
 
     In :game[095]&ndash;:game[17] there are 8 slots, numbered 0&ndash;7.
@@ -466,10 +465,10 @@ mapAssign(byRefId, {
     :wip[The number of layers in each game is different, so be careful!]
   `},
 
-  'ins-15': {sig: '', args: [], wip: 1, desc: `This appears to be a nop.  However, no game ever uses it.`},
+  'ins-15': {sig: '', args: [], wip: 1, md: `This appears to be a nop.  However, no game ever uses it.`},
 
   'case': {
-    sig: 'S', args: ['n'], desc: `
+    sig: 'S', args: ['n'], md: `
     :tipshow[A label for an interrupt.]
 
     STD interrupts are similar to [ANM interrupts](#/anm/concepts&a=interrupt). They can occur
@@ -478,7 +477,7 @@ mapAssign(byRefId, {
   `},
 
   'distortion': {
-    sig: 'S', args: ['a'], wip: 1, desc: `
+    sig: 'S', args: ['a'], wip: 1, md: `
     :tipshow[Triggers distortion effects on the edge of the screen.]
 
     :wip[The meaning of the argument is not entirely clear.  :game[11] uses a value of 1 to create distortion
@@ -486,14 +485,14 @@ mapAssign(byRefId, {
   `},
 
   'ins-19': {
-    sig: 'S', args: ['n'], desc: `
+    sig: 'S', args: ['n'], md: `
     :tipshow[Invokes ANM interrupt \`n + 7\` on all sprites in the stage background.]
 
     It has various uses, like messing with the doors in :game[16] stage 6.
   `},
 
   'draw-distance': {
-    sig: 'f', args: ['rsq'], desc: `
+    sig: 'f', args: ['rsq'], md: `
     :tipshow[Changes the draw distance threshold.] (default value is \`9160000.0\`, or \`3100.0\` squared)
 
     The game implements a radial draw distance, and sprites will instantly pop in or out as soon as
@@ -508,7 +507,7 @@ for (const thing of ['pos', 'up', 'facing', 'fov', 'skyfog']) {
   byRefId.set(`${thing}-time`, {
     sig: 'SS' + byRefId.get(thing)!.sig,
     args: ['t', 'mode', ...byRefId.get(thing)!.args],
-    desc: `
+    md: `
     Smoothly interpolates the value of :ref{r=std:${thing}} over the next \`t\` frames
     using the given [interpolation mode](#/anm/interpolation&a=old-games).
   `});

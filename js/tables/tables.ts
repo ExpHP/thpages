@@ -1,6 +1,12 @@
+import type {ReactElement} from 'react';
+
 import * as settings from '~/js/settings';
+import dedent from '~/js/lib/dedent';
 import {Game} from './game';
-import stdTableModule from './std';
+import * as stdTableModule from './std';
+import {InsSiggy, VarHeader} from '../InsAndVar';
+import {InsTableRow, VarTableRow} from '../ReferenceTable';
+import {preprocessTrustedMarkdown} from '../Markdown';
 
 export type Ref = string;
 
@@ -21,6 +27,8 @@ export type OpcodeRefData = {
   wip: Wip,
 };
 
+export type PartialOpcodeRefData = Omit<OpcodeRefData, 'wip'> & {wip?: Wip};
+
 /** Data associated with a crossref. */
 export type CommonData = {
   /**
@@ -39,11 +47,11 @@ export type CommonData = {
   /** How complete is our understanding of this thing? */
   wip: Wip,
   /** Markdown description. */
-  desc: string,
+  mdast: Promise<object>,
 };
 
-type Wip = 0 | 1 | 2;
-type VarType = '%' | '$';
+export type Wip = 0 | 1 | 2;
+export type VarType = '%' | '$';
 
 export type Group = {
   min: number,
@@ -63,6 +71,8 @@ type DataHandlers<D extends CommonData> = {
   formatAnchor: TableDef<D>['formatAnchor'];
   getDefaultName: TableDef<D>['getDefaultName'];
   addTypeSigilIfNeeded: TableDef<D>['addTypeSigilIfNeeded'];
+  TipHeader: TableDef<D>['TipHeader'];
+  TableRow: TableDef<D>['TableRow'];
 };
 
 export type InsData = {
@@ -85,6 +95,8 @@ const INS_HANDLERS: DataHandlers<InsData> = {
   },
   getDefaultName: (opcode: number) => `ins_${opcode}`,
   addTypeSigilIfNeeded: (name: string) => name,
+  TipHeader: InsSiggy,
+  TableRow: InsTableRow,
 } as const;
 
 const VAR_HANDLERS: DataHandlers<VarData> = {
@@ -93,12 +105,14 @@ const VAR_HANDLERS: DataHandlers<VarData> = {
   validateData: (_data: VarData, _refId: string) => {},
   getDefaultName: (opcode: number, {type}: VarData) => `[${opcode}${type === '%' ? '.0f' : ''}]`,
   addTypeSigilIfNeeded: (name: string, {type}: VarData) => name[0] == '[' ? name : type + name,
+  TipHeader: VarHeader,
+  TableRow: VarTableRow,
 } as const;
 
 // =============================================================================
 
 export type ReverseTable = Map<Game, Map<Ref, number>>;
-export type RefByOpcode = Map<Game, Map<number, OpcodeRefData>>;
+export type RefByOpcode = Map<Game, Map<number, PartialOpcodeRefData>>;
 export type LatestGameTable = Map<Ref, QualifiedOpcode>;
 export type QualifiedOpcode = {game: Game, opcode: number};
 
@@ -119,10 +133,10 @@ export class TableDef<Data extends CommonData> {
   readonly noun: string;
 
   /** Table that maps an item id (portion of crossref after mainPrefix) to data about that item. */
-  readonly dataTable: Map<string, Data>;
+  private readonly dataTable: Map<string, Data>;
 
   /** Table that maps a game and opcode to a reference. */
-  readonly byOpcode: RefByOpcode;
+  private readonly byOpcode: RefByOpcode;
 
   /** Finds the opcode from a crossref. */
   readonly reverseTable: ReverseTable;
@@ -143,11 +157,29 @@ export class TableDef<Data extends CommonData> {
   /** Turns opcode into the anchor (URL a= field) for that item on the table's page. */
   readonly formatAnchor: (num: number) => string;
 
+  /**
+   * Get groups to build a table of contents from on the table page.
+   *
+   * If there's only one group, no table of contents is generated.
+   */
+  readonly getGroups: (game: Game) => Group[];
+
+  /** Markdown content to place after summary and before Toc or Table. */
+  readonly textBeforeTable: (game: Game) => string | null;
+
+  /** Generate HTML for a tooltip header. */
+  readonly TipHeader: (props: {r: Ref, data: Data}) => ReactElement;
+
+  /** Generate a row of the table. */
+  readonly TableRow: (props: {table: TableDef<Data>, r: Ref, game: Game, data: Data, opcode: number}) => ReactElement;
+
   constructor(props: {
-    tablePage: string,
-    mainPrefix: string,
+    tablePage: TableDef<Data>['tablePage'],
+    mainPrefix: TableDef<Data>['mainPrefix'],
     dataHandlers: DataHandlers<Data>,
-    nameSettingsPath: {lang: settings.Lang, submap: settings.SubmapKey},
+    nameSettingsPath: TableDef<Data>['nameSettingsPath'],
+    getGroups: TableDef<Data>['getGroups'],
+    textBeforeTable: TableDef<Data>['textBeforeTable'],
     module: {
       byOpcode: RefByOpcode;
       byRefId: Map<string, PartialData<Data>>;
@@ -156,7 +188,7 @@ export class TableDef<Data extends CommonData> {
     const {reverseTable, latestGameTable} = computeReverseTable(props.module.byOpcode);
     this.mainPrefix = props.mainPrefix;
     this.tablePage = props.tablePage;
-    this.dataTable = preprocessTable(this.mainPrefix, props.module.byRefId);
+    this.dataTable = preprocessTable(props.module.byRefId);
     this.byOpcode = props.module.byOpcode;
     this.reverseTable = reverseTable;
     this.latestGameTable = latestGameTable;
@@ -165,6 +197,10 @@ export class TableDef<Data extends CommonData> {
     this.getDefaultName = props.dataHandlers.getDefaultName;
     this.addTypeSigilIfNeeded = props.dataHandlers.addTypeSigilIfNeeded;
     this.formatAnchor = props.dataHandlers.formatAnchor;
+    this.getGroups = props.getGroups;
+    this.textBeforeTable = props.textBeforeTable;
+    this.TipHeader = props.dataHandlers.TipHeader;
+    this.TableRow = props.dataHandlers.TableRow;
 
     this.dataTable.forEach(props.dataHandlers.validateData);
   }
@@ -182,7 +218,7 @@ export class TableDef<Data extends CommonData> {
     return out;
   }
 
-  getRefByOpcode(game: Game, opcode: number) {
+  getRefByOpcode(game: Game, opcode: number): OpcodeRefData | null {
     const entry = this.byOpcode.get(game)?.get(opcode);
     if (entry === undefined) return null; // opcode doesn't exist in game
 
@@ -198,7 +234,7 @@ export class TableDef<Data extends CommonData> {
    * all games, however, so this function can be used to normalize instructions to their
    * latest ref.
    */
-  makeRefGameIndependent(ref: string) {
+  makeRefGameIndependent(ref: Ref): Ref {
     for (let attempt=0; attempt < 100; attempt++) {
       const {succ} = this.getDataByRef(ref)!;
       if (!succ) return ref;
@@ -206,6 +242,10 @@ export class TableDef<Data extends CommonData> {
       ref = `${this.mainPrefix}:${succ}`;
     }
     throw new Error(`could not make ref ${ref} game-independent; may be a cycle in successors`);
+  }
+
+  supportedGames(): Game[] {
+    return [...this.byOpcode.keys()];
   }
 }
 
@@ -229,20 +269,56 @@ function computeReverseTable(tableByOpcode: RefByOpcode) {
 
 // =============================================================================
 
+// const ANM_INS_HANDLERS: TableHandlers<InsData> = makeTableHandlers({
+//   ...COMMON_INS_HANDLERS,
+//   tablePage: 'anm/ins',
+//   dataTable: ANM_INS_DATA,
+//   tableByOpcode: ANM_BY_OPCODE,
+//   insNames: ANM_INS_NAMES,
+//   mainPrefix: 'anm',
+//   nameSettingsPath: {lang: 'anm', submap: 'ins'},
+//   getGroups: (game) => '13' <= game ? ANM_GROUPS_V8 : [{min: 0, max: 1300, title: null}],
+//   textBeforeTable: () => null,
+// });
+
+// const ANM_VAR_HANDLERS: TableHandlers<VarData> = makeTableHandlers({
+//   ...COMMON_VAR_HANDLERS,
+//   tablePage: 'anm/var',
+//   dataTable: ANM_VAR_DATA,
+//   tableByOpcode: ANM_VARS_BY_NUMBER,
+//   insNames: ANM_VAR_NAMES,
+//   mainPrefix: 'anmvar',
+//   nameSettingsPath: {lang: 'anm', submap: 'vars'},
+//   getGroups: () => [{min: 10000, max: 11000, title: null}],
+//   textBeforeTable: (game: Game) => (game === '06') ? '**EoSD ANM has no variables, _nerrrrd._**' : null,
+// });
+
 export const STD_TABLE = new TableDef({
   module: stdTableModule,
   tablePage: '/std/ins',
   mainPrefix: 'std',
   nameSettingsPath: {lang: 'std', submap: 'ins'},
   dataHandlers: INS_HANDLERS,
-  // getGroups: () => [{min: 0, max: 100, title: null}],
-  // textBeforeTable: (c: Context) => (queryGame(c) > '09') ? null : dedent(`
-  //   In games prior to :game[095], all STD instructions are the same size, with room for three arguments.
-  //   An argument of \`__\` below indicates a padding argument whose value is unused. \`thstd\` requires
-  //   you to always supply three arguments, while [\`trustd\`](https://github.com/ExpHP/truth#readme) allows
-  //   these padding arguments to be omitted.
-  // `),
+  getGroups: () => [{min: 0, max: 100, title: null}],
+  textBeforeTable: (game: Game) => (game > '09') ? null : dedent(`
+    In games prior to :game[095], all STD instructions are the same size, with room for three arguments.
+    An argument of \`__\` below indicates a padding argument whose value is unused. \`thstd\` requires
+    you to always supply three arguments, while [\`trustd\`](https://github.com/ExpHP/truth#readme) allows
+    these padding arguments to be omitted.
+  `),
 });
+
+// const MSG_HANDLERS: TableHandlers<InsData> = makeTableHandlers({
+//   ...COMMON_INS_HANDLERS,
+//   tablePage: 'msg/ins',
+//   dataTable: MSG_INS_DATA,
+//   tableByOpcode: MSG_BY_OPCODE,
+//   insNames: MSG_INS_NAMES,
+//   mainPrefix: 'msg',
+//   nameSettingsPath: {lang: 'msg', submap: 'ins'},
+//   getGroups: () => [{min: 0, max: 1000, title: null}],
+//   textBeforeTable: (game: Game) => getMsgTableText(game),
+// });
 
 export function getAllTables() {
   return [STD_TABLE];
@@ -268,19 +344,17 @@ function stripRefPrefix(prefix: string, ref: Ref) {
 
 export type PartialInsData = PartialData<InsData>;
 export type PartialVarData = PartialData<VarData>;
-export type PartialData<D extends CommonData> = Omit<D, 'wip' | 'desc'> & {
+export type PartialData<D extends CommonData> = Omit<D, 'wip' | 'mdast'> & {
   wip?: Wip,
-  desc: string,
+  md: string,
 };
 
-function preprocessTable<D extends CommonData>(mainPrefix: string, rawTable: Map<string, PartialData<D>>): Map<string, D> {
+function preprocessTable<D extends CommonData>(rawTable: Map<string, PartialData<D>>): Map<string, D> {
   return new Map([...rawTable.entries()].map(([key, value]) => {
-    const ref = `${mainPrefix}:${key}`;
-    const re = new RegExp(`:ref\\{r=${ref}\\}`, 'g');
     return [key, {
       ...value,
       wip: value.wip || 0,
-      desc: value.desc.replace(re, `:tip[:ref{r=${ref}}]{tip="YOU ARE HERE" deco="0"}`),
+      mdast: preprocessTrustedMarkdown(dedent(value.md)),
     } as any];
   }));
 }

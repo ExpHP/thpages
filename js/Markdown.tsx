@@ -14,66 +14,36 @@ import {select as hastSelect} from "hast-util-select";
 import {map as unistMap} from "unist-util-map";
 import {h} from "hastscript";
 
-import {Err} from './common-components';
-import {setWindowTitle} from "./main";
-import {InlineRef} from "./ref";
-import {WithTip} from "./tips";
-import {gameData, validateGame, GameData, Game} from './game-names';
-import {Query, urlWithProps} from './url-format';
-import {GameSelector, TablePage, getHandlers} from './anm/tables';
+import {InlineRef} from "./InlineRef";
+import {Tip} from "./Tip";
+import {validateGame, Game} from './tables/game';
+import {GameShort, GameNum, GameTh, GameThLong} from './Game';
 import {rehypeHighlight} from "./highlight";
-
-// React libraries do not all agree on how to supply a single child.
-type OneChild<T> = T | [T];
-function getSingleChild<T>(s: OneChild<T>): T {
-  if (Array.isArray(s)) {
-    return s[0];
-  }
-  return s;
-}
-
-type MarkdownContextAttrs = {
-  currentQuery: Query,
-};
-const MarkdownContext = React.createContext<MarkdownContextAttrs>({currentQuery: {s: '/index'}});
-
-function Title({children}: {children: OneChild<string>}) {
-  const title = getSingleChild(children);
-  React.useEffect(() => {
-    setWindowTitle(title);
-  });
-  return null;
-}
+import {SingleChild, getSingleChild, Title, Wip, Wip2} from "./XUtil";
+import {Err} from './Error';
 
 function C({children, color}: {children: ReactNode, color: string}) {
   return <span style={{color}}>{children}</span>;
 }
 
-const makeGc = (children: OneChild<string>, func: (g: GameData) => string) => {
-  const gameStr = getSingleChild(children);
-  const game = validateGame(gameStr);
-  if (game) {
-    return <Gc game={game}>{func(gameData(game))}</Gc>;
-  } else {
-    return <Err>GAME_ERROR({gameStr})</Err>;
-  }
+const makeGc = (Component: ((p: {game: Game}) => ReactElement)) => {
+  return ({children}: {children: SingleChild<string>}) => {
+    const gameStr = getSingleChild(children);
+    const game = validateGame(gameStr);
+    if (game) {
+      return <Component game={game}/>;
+    } else {
+      return <Err>GAME_ERROR({gameStr})</Err>;
+    }
+  };
 };
-
-function Gc({game, children}: {game: Game, children: ReactNode}) {
-  return <span className={`gamecolor gamecolor-${game}`}>{children}</span>;
-}
-function GameShort({children}: {children: OneChild<string>}) { return makeGc(children, (g) => g.short); }
-function GameTh({children}: {children: OneChild<string>}) { return makeGc(children, (g) => g.thname); }
-function GameNum({children}: {children: OneChild<string>}) { return makeGc(children, (g) => g.thname.substring(2)); }
-function GameThLong({children}: {children: OneChild<string>}) { return makeGc(children, (g) => g.long); }
 
 type RefProps = {tip?: string, url?: string};
 function Ref({r, ...props}: {r: string} & RefProps) {
-  const {currentQuery} = React.useContext(MarkdownContext);
   const allProps = {tip: "1", url: "1", ...props};
   const tip = allProps.tip === "1";
   const url = allProps.url === "1";
-  return InlineRef({ref: r, tip, url, currentQuery});
+  return <InlineRef {...{r, tip, url}}/>;
 }
 
 function More({children}: {children: ReactNode}) {
@@ -86,11 +56,11 @@ function More({children}: {children: ReactNode}) {
   </div>;
 }
 
-function Tip({tip, children, deco}: {children: ReactNode, tip: string, deco?: string}) {
+function MdTip({tip, children, deco}: {children: ReactNode, tip: string, deco?: string}) {
   const className = deco === "0" ? "tip-nodeco" : "tip-deco";
-  return <WithTip tip={<>{tip}</>}>
+  return <Tip tip={<>{tip}</>}>
     {<span className={className}>{children}</span>}
-  </WithTip>;
+  </Tip>;
 }
 
 function HeadlessTable({children}: {children: ReactNode}) {
@@ -98,47 +68,24 @@ function HeadlessTable({children}: {children: ReactNode}) {
   // return <div className="headless-table"><Markdown>{children}</Markdown></div>;
 }
 
-function Wip({children}: {children: ReactNode}) {
-  return <span data-wip="1">{children}</span>;
-}
-function Wip2({children}: {children: ReactNode}) {
-  return <span data-wip="2">{children}</span>;
-}
-
 // used to de-emphasize so that I don't abuse :wip2[] for this
 function Weak({children}: {children: ReactNode}) {
   return <span className="weak">{children}</span>;
 }
 
-function FootRef({children}: {children: string | [string]}) {
-  const {currentQuery} = React.useContext(MarkdownContext);
-  const id = getSingleChild(children);
-  const target = urlWithProps(currentQuery, {a: `footnote-${id}`});
-  return <sup className="footnote link"><a href={target}>{id}</a></sup>;
-}
+// function FootRef({children}: {children: string | [string]}) {
+//   const id = getSingleChild(children);
+//   return <sup className="footnote link"><Link to={{hash: `#footnote-${id}`}}>{id}</Link></sup>;
+// }
 
-function FootDef({children}: {children: string | [string]}) {
-  const id = getSingleChild(children);
-  return <sup className="footnote def" id={`footnote-${id}`}>{id}</sup>;
-}
+// function FootDef({children}: {children: string | [string]}) {
+//   const id = getSingleChild(children);
+//   return <sup className="footnote def" id={`footnote-${id}`}>{id}</sup>;
+// }
 
 // download link with icon
 function Dl({href, children}: {href: string, children: string | [string]}) {
   return <a download className='download' href={href}>{children}</a>;
-}
-
-function ReferenceTable({children}: {children: OneChild<string>}) {
-  const {currentQuery} = React.useContext(MarkdownContext);
-  const id = getSingleChild(children);
-  const handlers = getHandlers(id);
-  return <React.Fragment>
-    <p>
-      {"Select game version: "}
-      <GameSelector handlers={handlers} currentQuery={currentQuery}></GameSelector>
-    </p>
-
-    <TablePage handlers={handlers} currentQuery={currentQuery}></TablePage>
-  </React.Fragment>;
 }
 
 function rehypeExtractTipContents() {
@@ -247,7 +194,7 @@ function rehypeTableFootnotes() {
   }
 }
 
-export function preprocessTrustedMarkdown(source: string): Promise<any> {
+export function preprocessTrustedMarkdown(source: string): Promise<object> {
   const processor = unified()
       .use(remarkParse)
       .use([remarkDirective, remarkHeadingId, remarkGfm]);
@@ -256,14 +203,14 @@ export function preprocessTrustedMarkdown(source: string): Promise<any> {
   return processor.run(tree);
 }
 
-export function TrustedMarkdown({mdast, currentQuery}: {mdast: any, currentQuery: Query}): ReactElement;
-export function TrustedMarkdown({children, currentQuery}: {children: string, currentQuery: Query}): ReactElement;
-export function TrustedMarkdown({mdast, children, currentQuery}: {mdast?: any, children?: string, currentQuery: Query}) {
+export function TrustedMarkdown({mdast}: {mdast: object}): ReactElement;
+export function TrustedMarkdown({children}: {children: string}): ReactElement;
+export function TrustedMarkdown({mdast, children}: {mdast?: object, children?: string}) {
   if (children && mdast) throw new Error("cannot supply both mdast and children");
   if (!children && !mdast) throw new Error("must supply either mdast or children");
 
   const [reactContent, setReactContent] = React.useState<ReactElement | null>(null);
-  const setMdast = React.useCallback((mdast: any) => {
+  const setMdast = React.useCallback((mdast: object) => {
     const processor = unified()
         .use([remarkDirectivesToHtml])
         .use([remarkToRehype, {allowDangerousHtml: true}])
@@ -272,17 +219,19 @@ export function TrustedMarkdown({mdast, children, currentQuery}: {mdast?: any, c
           createElement: React.createElement,
           Fragment: React.Fragment,
           components: {
-            'exp-c': C, 'exp-gc': Gc, 'exp-wip': Wip, 'exp-wip2': Wip2, 'exp-weak': Weak, 'exp-dl': Dl,
-            'exp-game': GameShort, 'exp-game-th': GameTh, 'exp-game-num': GameNum, 'exp-game-thlong': GameThLong,
+            'exp-c': C, 'exp-wip': Wip, 'exp-wip2': Wip2, 'exp-weak': Weak, 'exp-dl': Dl,
+            'exp-game': makeGc(GameShort),
+            'exp-game-th': makeGc(GameTh),
+            'exp-game-num': makeGc(GameNum),
+            'exp-game-thlong': makeGc(GameThLong),
             'exp-more': More, 'exp-title': Title,
             'exp-headless-table': HeadlessTable,
-            'exp-ref': Ref, 'exp-tip': Tip,
-            'exp-foot-ref': FootRef, 'exp-foot-def': FootDef,
-            'exp-reference-table': ReferenceTable,
+            'exp-ref': Ref, 'exp-tip': MdTip,
+            // 'exp-foot-ref': FootRef, 'exp-foot-def': FootDef,
           },
         });
 
-    processor.run(mdast)
+    processor.run(mdast as any)
         .then((node) => processor.stringify(node)) // compiles to React elements. ("stringify" is a misleading generic name)
         .then((jsx) => setReactContent(jsx as any as ReactElement));
   }, []);
@@ -292,7 +241,5 @@ export function TrustedMarkdown({mdast, children, currentQuery}: {mdast?: any, c
     mdastPromise.then(setMdast);
   }, [mdast, children, setMdast]);
 
-  return <MarkdownContext.Provider value={{currentQuery}}>
-    {reactContent}
-  </MarkdownContext.Provider>;
+  return <>{reactContent}</>;
 }

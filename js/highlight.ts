@@ -4,7 +4,7 @@
  */
 
 import refractor from 'refractor/core.js';
-import clike from 'refractor/lang/javascript.js';
+import clike from 'refractor/lang/clike.js';
 import js from 'refractor/lang/javascript.js';
 import json from 'refractor/lang/json.js';
 import {visit as unistVisit} from 'unist-util-visit';
