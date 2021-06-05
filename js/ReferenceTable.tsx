@@ -28,10 +28,10 @@ export function GameSelector<D extends CommonData>({table, currentGame}: {table:
   const history = useHistory();
   const [currentChoice, setCurrentChoice] = React.useState(currentGame);
 
+  // This makes sure the dropdown is always correct, even if we navigate Back.
+  React.useEffect(() => setCurrentChoice(currentGame), [currentGame]);
+
   function onChange(ev: any) {
-    // FIXME Do we even need this, considering the page reload?
-    //       Can we avoid the page reload?
-    setCurrentChoice(ev.target.value);
     history.push({search: `?g=${ev.target.value}`});
   }
 

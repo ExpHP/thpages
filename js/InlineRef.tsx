@@ -82,11 +82,11 @@ function TipBody<D extends CommonData>({r, refData: {data, table}}: {r: Ref, ref
 
   const {TipHeader} = table;
   const omittedInfo = false; // FIXME
-  const mdast = data.mdast.then((d) => ({
+  const mdast = {
     type: 'containerDirective',
     name: 'is-tip',
-    children: [d],
-  }));
+    children: [data.mdast],
+  };
   const contents = <TrustedMarkdown mdast={mdast}/>;
   return <>
     <div className="heading"><TipHeader data={data} r={r} /></div>

@@ -194,13 +194,13 @@ function rehypeTableFootnotes() {
   }
 }
 
-export function preprocessTrustedMarkdown(source: string): Promise<object> {
+export function preprocessTrustedMarkdown(source: string): object {
   const processor = unified()
       .use(remarkParse)
       .use([remarkDirective, remarkHeadingId, remarkGfm]);
 
   const tree = processor().parse(source);
-  return processor.run(tree);
+  return processor.runSync(tree);
 }
 
 export function TrustedMarkdown({mdast}: {mdast: object}): ReactElement;
@@ -208,38 +208,31 @@ export function TrustedMarkdown({children}: {children: string}): ReactElement;
 export function TrustedMarkdown({mdast, children}: {mdast?: object, children?: string}) {
   if (children && mdast) throw new Error("cannot supply both mdast and children");
   if (!children && !mdast) throw new Error("must supply either mdast or children");
+  if (children) {
+    mdast = preprocessTrustedMarkdown(children);
+  }
 
-  const [reactContent, setReactContent] = React.useState<ReactElement | null>(null);
-  const setMdast = React.useCallback((mdast: object) => {
-    const processor = unified()
-        .use([remarkDirectivesToHtml])
-        .use([remarkToRehype, {allowDangerousHtml: true}])
-        .use([rehypeExtractTipContents, rehypeTableFootnotes, rehypeCodeRef, rehypeHighlight, rehypeRaw])
-        .use(rehypeReact, {
-          createElement: React.createElement,
-          Fragment: React.Fragment,
-          components: {
-            'exp-c': C, 'exp-wip': Wip, 'exp-wip2': Wip2, 'exp-weak': Weak, 'exp-dl': Dl,
-            'exp-game': makeGc(GameShort),
-            'exp-game-th': makeGc(GameTh),
-            'exp-game-num': makeGc(GameNum),
-            'exp-game-thlong': makeGc(GameThLong),
-            'exp-more': More, 'exp-title': Title,
-            'exp-headless-table': HeadlessTable,
-            'exp-ref': Ref, 'exp-tip': MdTip,
-            // 'exp-foot-ref': FootRef, 'exp-foot-def': FootDef,
-          },
-        });
+  const processor = unified()
+      .use([remarkDirectivesToHtml])
+      .use([remarkToRehype, {allowDangerousHtml: true}])
+      .use([rehypeExtractTipContents, rehypeTableFootnotes, rehypeCodeRef, rehypeHighlight, rehypeRaw])
+      .use(rehypeReact, {
+        createElement: React.createElement,
+        Fragment: React.Fragment,
+        components: {
+          'exp-c': C, 'exp-wip': Wip, 'exp-wip2': Wip2, 'exp-weak': Weak, 'exp-dl': Dl,
+          'exp-game': makeGc(GameShort),
+          'exp-game-th': makeGc(GameTh),
+          'exp-game-num': makeGc(GameNum),
+          'exp-game-thlong': makeGc(GameThLong),
+          'exp-more': More, 'exp-title': Title,
+          'exp-headless-table': HeadlessTable,
+          'exp-ref': Ref, 'exp-tip': MdTip,
+          // 'exp-foot-ref': FootRef, 'exp-foot-def': FootDef,
+        },
+      });
 
-    processor.run(mdast as any)
-        .then((node) => processor.stringify(node)) // compiles to React elements. ("stringify" is a misleading generic name)
-        .then((jsx) => setReactContent(jsx as any as ReactElement));
-  }, []);
-
-  React.useEffect(() => {
-    const mdastPromise = mdast ? Promise.resolve(mdast) : preprocessTrustedMarkdown(children!);
-    mdastPromise.then(setMdast);
-  }, [mdast, children, setMdast]);
-
+  const hast = processor.runSync(mdast as any);
+  const reactContent = processor.stringify(hast); // compiles to React elements, despite the method name.
   return <>{reactContent}</>;
 }
