@@ -4,7 +4,7 @@ import {HashRouter as Router, Switch, Route, Redirect, Link} from 'react-router-
 
 import {useScrollToAnchor} from './ScrollToAnchorHelper';
 import {ANM_INS_TABLE, ANM_VAR_TABLE, STD_TABLE, MSG_TABLE} from './tables';
-import {CurrentPageGameProvider} from './current-url';
+import {CurrentPageProvider} from './UrlTools';
 import {ErrorBoundary} from './Error';
 import {Navbar} from './Navbar';
 import {Tip} from './Tip';
@@ -31,9 +31,9 @@ export function App() {
           <div className='content-paper'>
             <ErrorBoundary>
               <NameSettingsProvider savedSettings={savedSettings} loading={"Loading mapfiles..."}>
-                <CurrentPageGameProvider>
+                <CurrentPageProvider>
                   <Content/>
-                </CurrentPageGameProvider>
+                </CurrentPageProvider>
               </NameSettingsProvider>
             </ErrorBoundary>
           </div>

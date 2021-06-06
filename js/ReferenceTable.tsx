@@ -2,7 +2,7 @@ import React from 'react';
 import {Link, useHistory} from 'react-router-dom';
 import history from 'history';
 
-import {useCurrentPageGame} from './current-url';
+import {useCurrentPageGame, HashLink} from './UrlTools';
 import type {Wip, Group, Ref, InsData, VarData, TableDef, CommonData} from './tables';
 import {CurrentReferenceTableRowContext} from './InlineRef';
 import {TrustedMarkdown} from './Markdown';
@@ -10,6 +10,7 @@ import {gameData, Game} from './tables/game';
 import {GameThLong} from './Game';
 import {Wip as Wip1, Wip2} from './XUtil';
 import {VarHeader, InsSiggy} from './InsAndVar';
+import {debugId} from './util';
 
 export function ReferenceTablePage<D extends CommonData>({table, setContentLoaded}: {table: TableDef<D>, setContentLoaded: (x: boolean) => void}) {
   const currentGame = useCurrentPageGame();
@@ -70,9 +71,9 @@ function ReferenceTable<D extends CommonData>({table, currentGame: game, setCont
       const groupAnchor = `group-${group.min}`;
       const to = {hash: `#${groupAnchor}`};
       tocData.push({group, to});
-      possibleHeader = <h2 id={groupAnchor}><Link className="self-link" to={to}>
+      possibleHeader = <h2 id={groupAnchor}><HashLink className="self-link" hash={to.hash}>
         {group.min}-{group.max}: {group.title}
-      </Link></h2>;
+      </HashLink></h2>;
     }
 
     const rows = range(group.min, group.max + 1).map((opcode) => {
@@ -131,27 +132,27 @@ function ReferenceTable<D extends CommonData>({table, currentGame: game, setCont
   </div>;
 }
 
-export function InsTableRow(props: {table: TableDef<InsData>, r: Ref, game: Game, data: InsData, opcode: number}) {
+export const InsTableRow = React.memo(function InsTableRow(props: {table: TableDef<InsData>, r: Ref, game: Game, data: InsData, opcode: number}) {
   const {table, r, data, opcode} = props;
   const desc = <TrustedMarkdown mdast={data.mdast} />;
 
   const anchor = table.formatAnchor(opcode);
   return <tr className="ins-table-entry" id={anchor}>
-    <td className="col-id"><Link className="self-link" to={{hash: `#${anchor}`}}>{opcode}</Link></td>
+    <td className="col-id"><HashLink className="self-link" hash={'#' + anchor}>{opcode}</HashLink></td>
     <td className="col-name"><InsSiggy data={data} r={r} /></td>
     <td className="col-desc">{desc}</td>
   </tr>;
-}
+});
 
-export function VarTableRow(props: {table: TableDef<VarData>, r: Ref, game: Game, data: VarData, opcode: number}) {
+export const VarTableRow = React.memo(function VarTableRow(props: {table: TableDef<VarData>, r: Ref, game: Game, data: VarData, opcode: number}) {
   const {table, r, data, opcode} = props;
   const desc = <TrustedMarkdown mdast={data.mdast} />;
 
   const anchor = table.formatAnchor(opcode);
   // FIXME: add a mutability column.
   return <tr className="ins-table-entry" id={anchor}>
-    <td className="col-id"><Link className="self-link" to={{hash: `#${anchor}`}}>{opcode}</Link></td>
+    <td className="col-id"><HashLink className="self-link" hash={'#' + anchor}>{opcode}</HashLink></td>
     <td className="col-name"><VarHeader data={data} r={r} /></td>
     <td className="col-desc">{desc}</td>
   </tr>;
-}
+});

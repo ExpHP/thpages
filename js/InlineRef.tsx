@@ -1,7 +1,6 @@
 import React from 'react';
-import {Link} from 'react-router-dom';
 
-import {useCurrentPageGame} from './current-url';
+import {useCurrentPageGame, SimpleLink} from './UrlTools';
 import {useNameSettings, NameSettings} from './settings';
 import {TrustedMarkdown} from './Markdown';
 import {Tip} from './Tip';
@@ -28,11 +27,11 @@ export function InlineRef({r}: {r: string}) {
 
   const {game, opcode} = refData.qualifiedOpcode;
   const name = getRefName(r, refData, nameSettings);
-  return <Tip tip={<TipBody {...{r, refData}}/>}><Link to={{
+  return <Tip tip={<TipBody {...{r, refData}}/>}><SimpleLink to={{
     pathname: refData.table.tablePage,
     search: `?g=${game}`,
     hash: '#' + refData.table.formatAnchor(opcode),
-  }}><code className="isref">{name}</code></Link></Tip>;
+  }}><code className="isref">{name}</code></SimpleLink></Tip>;
 }
 
 export type RefData<D extends CommonData> = {
