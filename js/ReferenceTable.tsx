@@ -11,7 +11,7 @@ import {GameThLong} from './Game';
 import {Wip as Wip1, Wip2} from './XUtil';
 import {VarHeader, InsSiggy} from './InsAndVar';
 
-export function ReferenceTablePage<D extends CommonData>({table}: {table: TableDef<D>}) {
+export function ReferenceTablePage<D extends CommonData>({table, setContentLoaded}: {table: TableDef<D>, setContentLoaded: (x: boolean) => void}) {
   const currentGame = useCurrentPageGame();
   return <>
     <p>
@@ -19,7 +19,7 @@ export function ReferenceTablePage<D extends CommonData>({table}: {table: TableD
       <GameSelector table={table} currentGame={currentGame}></GameSelector>
     </p>
 
-    <ReferenceTable table={table} currentGame={currentGame}></ReferenceTable>
+    <ReferenceTable table={table} currentGame={currentGame} setContentLoaded={setContentLoaded}></ReferenceTable>
   </>;
 }
 
@@ -47,8 +47,15 @@ function range(start: number, end: number) {
   return [...new Array(end - start).keys()].map((x) => x + start);
 }
 
-function ReferenceTable<D extends CommonData>({table, currentGame: game}: {table: TableDef<D>, currentGame: Game}) {
+function ReferenceTable<D extends CommonData>({table, currentGame: game, setContentLoaded}: {table: TableDef<D>, currentGame: Game, setContentLoaded: (x: boolean) => void}}) {
   const {getGroups, mainPrefix, textBeforeTable, TableRow} = table;
+
+  // Implement hash scrolling by signaling when content has been generated.
+  // (TODO: make tables display incrementally and do this when done)
+  React.useEffect(() => {
+    setContentLoaded(true);
+    return () => setContentLoaded(false);
+  }, [table, game, setContentLoaded]);
 
   let total = 0;
   let documented = 0;

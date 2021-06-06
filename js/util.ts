@@ -61,3 +61,21 @@ export function unreachable(x: never): never {
   console.error(x); // log the value since it clearly defies our type annotations
   throw new Error('the unpossible happened!');
 }
+
+/**
+ * Return a unique identifier for each object passed in, to help differentiate object identity while debugging.
+ *
+ * Usage: `console.log(debugId(obj));`
+ */
+export const debugId = (() => {
+  const symbol = Symbol();
+  let id = 0;
+  return (x: any) => {
+    if (typeof x === 'object') {
+      if (x[symbol] == null) {
+        x[symbol] = ++id;
+      }
+    }
+    return x[symbol];
+  };
+})();
