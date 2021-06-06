@@ -1,0 +1,24 @@
+!stdmap
+
+# STD - TH095 to TH13
+
+!ins_names
+0 stop
+1 jmp
+2 pos
+3 posTime
+4 facing
+5 facingTime
+6 up
+7 fov
+8 fog
+9 fogTime
+10 posBezier
+11 facingBezier
+12 rockingMode
+13 bgColor
+14 sprite
+# 15 might be a nop
+16 interruptLabel
+17 distortion  # distorts bottom of screen
+18 upTime

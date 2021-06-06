@@ -3,7 +3,7 @@ import React from 'react';
 import {Err} from './Error';
 import {Ref, InsData, VarData} from './tables';
 import {useRefData, getRefName} from './InlineRef';
-import {NameSettingsContext} from './settings';
+import {useNameSettings} from './settings';
 
 /* eslint-disable react/display-name */
 const INS_PARAMETER_TABLE: {[s: string]: (name: string) => JSX.Element} = {
@@ -20,7 +20,7 @@ const INS_PARAMETER_TABLE: {[s: string]: (name: string) => JSX.Element} = {
 /* eslint-enable */
 
 export function InsSiggy({r, data}: {r: Ref, data: InsData}) {
-  const nameSettings = React.useContext(NameSettingsContext);
+  const nameSettings = useNameSettings();
   const refData = useRefData(r);
   if (!(refData)) {
     return <Err>{`REF_ERROR(${r})`}</Err>;
@@ -55,7 +55,7 @@ function InsParameter({type, name}: {type: string, name: string}) {
 }
 
 export function VarHeader({r, data}: {r: Ref, data: VarData}) {
-  const nameSettings = React.useContext(NameSettingsContext);
+  const nameSettings = useNameSettings();
   const refData = useRefData(r);
   if (!(refData)) {
     return <Err>{`REF_ERROR(${r})`}</Err>;

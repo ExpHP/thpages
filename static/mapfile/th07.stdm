@@ -38,3 +38,7 @@
 32 rockVector  # added in IN
 33 rockMode    # added in IN
 34 spriteC     # added in IN
+
+# STD in these games don't actually have a designated nop instruction.
+# However, it still treats all unrecognized opcodes as nops, so we can cheat.
+9000 nop

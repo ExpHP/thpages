@@ -1,30 +1,41 @@
 import React from 'react';
+import type {ReactNode} from 'react';
+import {Async} from 'react-async';
 
-import {computeNameSettingsFromSettings, getDummyNameSettings, NameSettings} from './settings';
+import {computeNameSettingsFromSettings, getDummyNameSettings, NameSettings, SavedSettings} from './settings';
 import {getSavedSettingsFromLocalStorage} from './local-storage';
 
 /**
  * This should be called in the root of the application, above everything else that needs settings.
- * and 'nameSettings' should be supplied to `NameSettingsContext` ASAP.
  */
-export function useSettings() {
-  const [savedSettings, setSavedSettings] = React.useState(getSavedSettingsFromLocalStorage);
+export function useSavedSettingsState() {
+  return React.useState(getSavedSettingsFromLocalStorage);
+}
 
-  let nameSettings: NameSettings;
+export function NameSettingsProvider({savedSettings, loading, children}: {savedSettings: SavedSettings, loading: ReactNode, children: ReactNode}) {
+  return <Async promiseFn={nameSettingsPromiseFn} savedSettings={savedSettings}>
+    <Async.Loading>{loading}</Async.Loading>
+    <Async.Fulfilled>{(data: NameSettings) => (
+      <NameSettingsContext.Provider value={data}>{children}</NameSettingsContext.Provider>
+      )}</Async.Fulfilled>
+  </Async>;
+}
+
+const NameSettingsContext = React.createContext<NameSettings | null>(null as any);
+export function useNameSettings(): NameSettings {
+  const nameSettings = React.useContext(NameSettingsContext);
+  if (!nameSettings) {
+    throw new Error("Cannot use useNameSettings outside of NameSettingsProvider!");
+  }
+  return nameSettings;
+}
+
+async function nameSettingsPromiseFn({savedSettings}: {savedSettings: SavedSettings}, abort: AbortController): Promise<NameSettings> {
   try {
-    nameSettings = computeNameSettingsFromSettings(savedSettings);
+    return await computeNameSettingsFromSettings(savedSettings, abort);
   } catch (e) {
     // This can happen very high up and we don't want it to bring the whole site down.
     console.error("Couldn't compute name settings", e);
-    nameSettings = getDummyNameSettings();
+    return getDummyNameSettings();
   }
-  return {savedSettings, nameSettings, setSavedSettings};
 }
-
-// (For this thing it's easier to debug "why is this null" when it happens, than it is to deal with the
-//  cognitive load of constantly having to think about "what does it mean if this is null?". (hint: it means a bug!)
-//
-//  In an ideal world, React.createContext would have an overload that takes a lazily computed initial state,
-//  where we could simply throw an exception.)
-export const NameSettingsContext = React.createContext<NameSettings>(null as any);
-

@@ -8,16 +8,16 @@ import {ErrorBoundary} from './Error';
 import {Navbar} from './Navbar';
 import {Tip} from './Tip';
 import {StatsPage} from './Stats';
-import {useSettings, NameSettingsContext} from './settings';
+import {useSavedSettingsState, NameSettingsProvider} from './settings';
 import {ReferenceTablePage} from './ReferenceTable';
 import {Title} from './XUtil';
 
 export const MAIN_TITLE = "ExpHP's Touhou pages";
 export function App() {
-  const {savedSettings, nameSettings, setSavedSettings} = useSettings();
+  const [savedSettings, setSavedSettings] = useSavedSettingsState();
 
   // injectFirst gives our CSS precedence over MUI's JSS
-  return <StylesProvider injectFirst><NameSettingsContext.Provider value={nameSettings}>
+  return <StylesProvider injectFirst>
     <div className='page-width-controller'>
       <div className='header-pane'>
         <div className="header-text">{"ExpHP's Touhou pages"}</div>
@@ -29,15 +29,17 @@ export function App() {
         <div className='content-pane'>
           <div className='content-paper'>
             <ErrorBoundary>
-              <CurrentPageGameProvider>
-                <Content/>
-              </CurrentPageGameProvider>
+              <NameSettingsProvider savedSettings={savedSettings} loading={"Loading mapfiles..."}>
+                <CurrentPageGameProvider>
+                  <Content/>
+                </CurrentPageGameProvider>
+              </NameSettingsProvider>
             </ErrorBoundary>
           </div>
         </div>
       </Router>
     </div>
-  </NameSettingsContext.Provider></StylesProvider>;
+  </StylesProvider>;
 }
 
 function Content() {

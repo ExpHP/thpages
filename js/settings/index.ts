@@ -1,2 +1,2 @@
-export {useSettings, NameSettingsContext} from './hooks';
+export * from './hooks';
 export * from './settings';

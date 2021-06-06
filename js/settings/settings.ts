@@ -4,7 +4,7 @@ import {Game} from '~/js/tables/game';
 import {getAllTables, Ref} from '~/js/tables';
 import {readUploadedFile} from '~/js/util';
 
-import {parseEclmap} from './eclmap';
+import {parseMapfile, loadMapSet, Mapfile} from './mapfile';
 import {fixOldLocalStorageKeys} from './local-storage';
 
 export function settingsPreAppInit() {
@@ -16,6 +16,13 @@ export type BuiltinNameSet = 'raw' | 'truth';
 export function allBuiltins(): BuiltinNameSet[] { return ['raw', 'truth']; }
 export function defaultBuiltin(): BuiltinNameSet { return 'truth'; }
 export function allLangs(): Lang[] { return ['anm', 'msg', 'std']; }
+
+const truthMapPath = './mapfile';
+const truthGamemaps: {[L in Lang]: string} = {
+  anm: 'any.anmm',
+  std: 'any.stdm',
+  msg: 'any.msgm',
+};
 
 /** Form of an ECLMap stored in memory. */
 export type LoadedMap = {[K in SubmapKey]: NumberMap};
@@ -42,7 +49,8 @@ export type NameSettingsForRef = {
 }
 
 export type NameSettingSource =
-  | {type: 'mapfile', name: string}
+  | {type: 'user-mapfile', name: string}
+  | {type: 'truth-mapfile', name: string}
   ;
 
 /** Representation of settings that's close to what we keep in localStorage. */
@@ -60,26 +68,30 @@ export type SavedLangSettings = {
 };
 export type SavedLangMap = {name: string, mapfile: LoadedMap, game: Game};
 
-export async function loadMapFromFile(file: File): Promise<LoadedMap> {
+export async function loadMapFromFile(file: File, warn: (msg: string) => void): Promise<LoadedMap> {
   const text = await readUploadedFile(file);
-  const {ins, vars, timelineIns} = parseEclmap(text);
+  return loadedMapFromMapfile(parseMapfile(text, warn));
+}
+
+export function loadedMapFromMapfile(mapfile: Mapfile): LoadedMap {
+  const {ins, vars, timelineIns} = mapfile;
   return {ins, vars, timeline: timelineIns};
 }
 
 /** Compute names for refs in all languages. */
-export function computeNameSettingsFromSettings(savedSettings: SavedSettings): NameSettings {
-  const out = {dataByRef: new Map<Ref, NameSettingsForRef>()};
+export async function computeNameSettingsFromSettings(savedSettings: SavedSettings, abort: AbortController): Promise<NameSettings> {
+  let out = {dataByRef: new Map<Ref, NameSettingsForRef>()};
 
   for (const lang of allLangs()) {
-    addNameSettingsFromLangSettings(out, lang, savedSettings[lang]);
+    out = await addNameSettingsFromLangSettings(out, lang, savedSettings[lang], abort);
   }
   return out;
 }
 
 /** Compute names for refs in a single language. */
-export function computeNameSettingsFromLangSettings(lang: Lang, savedSettings: SavedLangSettings): NameSettings {
-  const out = {dataByRef: new Map<Ref, NameSettingsForRef>()};
-  addNameSettingsFromLangSettings(out, lang, savedSettings);
+export async function computeNameSettingsFromLangSettings(lang: Lang, savedSettings: SavedLangSettings, abort: AbortController): Promise<NameSettings> {
+  let out = {dataByRef: new Map<Ref, NameSettingsForRef>()};
+  out = await addNameSettingsFromLangSettings(out, lang, savedSettings, abort);
   return out;
 }
 
@@ -87,16 +99,32 @@ export function getDummyNameSettings(): NameSettings {
   return {dataByRef: new Map()};
 }
 
-function addNameSettingsFromLangSettings(out: NameSettings, lang: Lang, savedSettings: SavedLangSettings) {
-  const {builtin, mapfiles} = savedSettings;
-
-  // Builtins
-  if (builtin === 'truth') {
-    console.warn('TODO: reimplement truth builtin');
+async function addNameSettingsFromLangSettings(out: NameSettings, lang: Lang, savedSettings: SavedLangSettings, abort: AbortController): Promise<NameSettings> {
+  if (savedSettings.builtin === 'truth') {
+    out = await addNameSettingsFromTruth(out, lang, abort);
   }
 
-  // Mapfiles
-  //
+  addNameSettingsFromMapfiles(out, lang, savedSettings.mapfiles, 'user-mapfile');
+  return out;
+}
+
+async function addNameSettingsFromTruth(out: NameSettings, lang: Lang, abort: AbortController): Promise<NameSettings> {
+  const gamemapFilename = truthGamemaps[lang];
+  const readFile = (filename: string) => fetch(`${truthMapPath}/${filename}`, abort).then((r) => r.text());
+  const warn = (msg: string) => { throw new Error(`error in truth mapfile: ${msg}`); };
+
+  try {
+    const mapSet = await loadMapSet({gamemapFilename, readFile, warn});
+    const mapfiles = mapSet.map(({game, mapfile}) => ({name: gamemapFilename, game, mapfile: loadedMapFromMapfile(mapfile)}));
+    addNameSettingsFromMapfiles(out, lang, mapfiles, 'truth-mapfile');
+  } catch (e) {
+    console.error(`Ignoring truth mapfiles for '${lang}' due to an error.`, e);
+  }
+  return out;
+}
+
+
+function addNameSettingsFromMapfiles(out: NameSettings, lang: Lang, mapfiles: SavedLangMap[], type: 'user-mapfile' | 'truth-mapfile') {
   // Use table handlers to connect submaps (e.g. ins, vars, timeline) to ref tables.
   // E.g. if lang is 'anm' we should find the 'anm' table and the 'anmvar' table.
   for (const table of getAllTables()) {
@@ -108,7 +136,7 @@ function addNameSettingsFromLangSettings(out: NameSettings, lang: Lang, savedSet
         const data = table.getRefByOpcode(game, opcode);
         if (!data) continue;
 
-        out.dataByRef.set(data.ref, {name, source: {type: 'mapfile', name: source}});
+        out.dataByRef.set(data.ref, {name, source: {type, name: source}});
       }
     }
   }

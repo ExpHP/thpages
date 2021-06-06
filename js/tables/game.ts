@@ -51,6 +51,7 @@ export function gameData(key: Game) {
 export function parseGame(s: string): Game | null {
   s = s.replace(/^th/i, ''); // e.g. th14
   s = s.replace(/\./, ''); // e.g. 14.3
+  if (s === '95') s = '095';
   if (s.length === 1) s = `0${s}`; // e.g. 8
   return validateGame(s);
 }

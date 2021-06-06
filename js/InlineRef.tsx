@@ -2,7 +2,7 @@ import React from 'react';
 import {Link} from 'react-router-dom';
 
 import {useCurrentPageGame} from './current-url';
-import {NameSettingsContext, NameSettings} from './settings';
+import {useNameSettings, NameSettings} from './settings';
 import {TrustedMarkdown} from './Markdown';
 import {Tip} from './Tip';
 import {Ref, getTableByPrefix, TableDef, CommonData, QualifiedOpcode} from './tables';
@@ -20,7 +20,7 @@ import {Err} from './Error';
 export const CurrentReferenceTableRowContext = React.createContext<Ref | null>(null);
 
 export function InlineRef({r}: {r: string}) {
-  const nameSettings = React.useContext(NameSettingsContext);
+  const nameSettings = useNameSettings();
   const refData = useRefData(r);
   if (!refData) {
     return <Err>{`REF_ERROR(${r})`}</Err>;
