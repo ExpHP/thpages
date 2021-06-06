@@ -3,6 +3,7 @@ import {StylesProvider} from '@material-ui/core/styles';
 import {HashRouter as Router, Switch, Route, Redirect, Link} from 'react-router-dom';
 
 import {ANM_INS_TABLE, ANM_VAR_TABLE, STD_TABLE, MSG_TABLE} from './tables';
+import {CurrentPageGameProvider} from './current-url';
 import {ErrorBoundary} from './Error';
 import {Navbar} from './Navbar';
 import {Tip} from './Tip';
@@ -27,7 +28,11 @@ export function App() {
         </nav>
         <div className='content-pane'>
           <div className='content-paper'>
-            <ErrorBoundary><Content></Content></ErrorBoundary>
+            <ErrorBoundary>
+              <CurrentPageGameProvider>
+                <Content/>
+              </CurrentPageGameProvider>
+            </ErrorBoundary>
           </div>
         </div>
       </Router>

@@ -47,7 +47,7 @@ function range(start: number, end: number) {
   return [...new Array(end - start).keys()].map((x) => x + start);
 }
 
-export function ReferenceTable<D extends CommonData>({table, currentGame: game}: {table: TableDef<D>, currentGame: Game}) {
+function ReferenceTable<D extends CommonData>({table, currentGame: game}: {table: TableDef<D>, currentGame: Game}) {
   const {getGroups, mainPrefix, textBeforeTable, TableRow} = table;
 
   let total = 0;
