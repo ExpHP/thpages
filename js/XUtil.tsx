@@ -60,20 +60,19 @@ export function useDependentState<S>(
  *
  * The counter will always begin equal to `step`, and will reset to this value whenever the dependencies change.
  */
-export function useIncremental({step, max}: {step?: number, max: number}, dependencies: ReadonlyArray<any>) {
+export function useIncremental({step = 1, max}: {step?: number, max: number}, dependencies: ReadonlyArray<any>) {
   if (step === 0) {
     throw new Error("zero step!");
   }
-  const step_ = step == null ? 1 : step;
 
-  const [numToShow, setNumToShow] = useDependentState(step_, [...dependencies]);
+  const [numToShow, setNumToShow] = useDependentState(step, [...dependencies]);
   React.useEffect(() => {
     if (numToShow < max) {
-      const id = setTimeout(() => setNumToShow((n) => Math.min(n + step_, max)));
+      const id = setTimeout(() => setNumToShow((n) => Math.min(n + step, max)));
       return () => clearTimeout(id);
     }
     return undefined;
-  }, [numToShow, setNumToShow, step_, max]);
+  }, [numToShow, setNumToShow, step, max]);
 
   return numToShow;
 }

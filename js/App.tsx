@@ -7,7 +7,7 @@ import {ANM_INS_TABLE, ANM_VAR_TABLE, STD_TABLE, MSG_TABLE} from './tables';
 import {CurrentPageProvider} from './UrlTools';
 import {ErrorBoundary} from './Error';
 import {Navbar} from './Navbar';
-import {Tip} from './Tip';
+import {MarkdownPage} from './MarkdownPage';
 import {StatsPage} from './Stats';
 import {useSavedSettingsState, NameSettingsProvider} from './settings';
 import {ReferenceTablePage} from './ReferenceTable';
@@ -47,7 +47,7 @@ function Content() {
   const setContentLoaded = useScrollToAnchor();
 
   return <Switch>
-    <Route exact path="/">FIXME main page</Route>
+    <Route exact path="/"><MarkdownPage path="./content/index.md"/></Route>
     <Route exact path="/index"><Redirect to="/" /></Route>
     <Route exact path="/settings">FIXME</Route>
     <Route exact path="/anm/ins"><ReferenceTablePage table={ANM_INS_TABLE} setContentLoaded={setContentLoaded} /></Route>
@@ -56,15 +56,18 @@ function Content() {
     <Route exact path="/msg/ins"><ReferenceTablePage table={MSG_TABLE} setContentLoaded={setContentLoaded} /></Route>
     <Route exact path="/anm/stats"><StatsPage /></Route>
     {/* FIXME what to do about all of these markdown pages?  Should the NotFound route look for md files? */}
-    <Route exact path="/anm/concepts">FIXME</Route>
-    <Route exact path="/anm/interpolation">FIXME</Route>
-    <Route exact path="/anm/stages-of-rendering">FIXME</Route>
-    <Route exact path="/anm/ontick-ondraw">FIXME</Route>
-    <Route exact path="/anm/layer-viewer">FIXME</Route>
-    <Route exact path="/mods/bullet-cap">FIXME</Route>
-    <Route exact path="/mods/debug-counters">FIXME</Route>
-    <Route exact path="/mods/seasonize">FIXME</Route>
-    <Route exact path="/mods/za-warudo">FIXME</Route>
+    {[
+      "/anm/concepts",
+      "/anm/interpolation",
+      "/anm/stages-of-rendering",
+      "/anm/ontick-ondraw",
+      "/anm/game-colors",
+      "/anm/layer-viewer",
+      "/mods/bullet-cap",
+      "/mods/debug-counters",
+      "/mods/seasonize",
+      "/mods/za-warudo",
+    ].map((path) => <Route key={path} exact path={path}><MarkdownPage path={`./content${path}`}/></Route>)}
     {/* <Route exact path="/settings"><Redirect to="/" /></Route> */}
     <Route><NotFound /></Route>
   </Switch>;

@@ -79,6 +79,12 @@ module.exports = {
         // Unfortunately, there's no option to allow omitting @params (you can only omit types and descriptions), so...
         "valid-jsdoc": "off",
 
+        // This lint interferes with writing `({}, pattern) => { ... }`.
+        //
+        // The purpose of the lint appears to be to protect against accidentally writing e.g. `const [{}] = stuff`
+        // when you meant to write `const [a = {}] = stuff`, but wouldn't the undefined variable lint catch this anyways?
+        "no-empty-pattern": "off",
+
         // https://github.com/microsoft/TypeScript/issues/14306#issuecomment-552890299
         //
         // Unfortunately libs: ["dom"] in tsconfig provides all of the window globals.

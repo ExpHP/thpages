@@ -1,6 +1,9 @@
-import dedent from '../lib/dedent';
-import {readUploadedFile} from '../util';
-import {parseGame, Game} from '../game-names';
+import React from 'react';
+
+import {parseAnmSpec, AnmSpec, AnmSpecScript, AnmSpecSprite} from './analyze-script';
+
+import {readUploadedFile} from './util';
+import {parseGame, Game} from './game-names';
 import {getAnmInsHandlers} from './tables';
 import {globalTips, Tip} from '../tips';
 import * as events from 'events';
@@ -11,15 +14,6 @@ const BigImports = {
   JSZip: import('jszip'),
   Packery: import('packery') as unknown as Promise<typeof Packery>,
 };
-
-type AnmSpec = {
-  textures: AnmSpecTexture[],
-  sprites: AnmSpecSprite[],
-  scripts: AnmSpecScript[],
-};
-type AnmSpecScript = {indexInFile: number, sprites: (number | null)[], layers: (number | null)[]};
-type AnmSpecSprite = {indexInFile: number, texture: number, left: number, top: number, width: number, height: number};
-type AnmSpecTexture = {indexInFile: number, path: string, xOffset: number, yOffset: number};
 
 type Progress = {anmFilesTotal: number, anmFilesDone: number, remainingFilenames: string[]};
 
@@ -137,35 +131,12 @@ async function runLayerViewer(status: Status, cancel: Cancel, zip: JSZip, $layer
     const subdir = specZipObj.name.split('/')[0];
     const anmBasename = subdir;
 
-    LVIEWER_TIP_RESOLVER.registerPrefix(anmBasename, (scriptSpriteStr) => {
-      const [scriptStr, spriteStr] = scriptSpriteStr.split("-");
-      const script = parsedSpec.scripts[Number.parseInt(scriptStr)];
-      const sprite = parsedSpec.sprites[Number.parseInt(spriteStr)];
-      return generateTip(anmBasename, script, sprite);
-    });
-
     return addAnmFileToLayerViewer(helpers, $layerViewer, layerPackers, zip, subdir, parsedSpec);
   });
 
   // Work is now occurring on all anm files concurrently.
   // To properly trap errors though we need to await everything.
   await Promise.all(promises);
-}
-
-async function readGameFromZip({cancel}: Helpers, zip: JSZip) {
-  const gameZipObj = zip.file('game.txt');
-  if (!gameZipObj) {
-    throw new Error('missing game.txt in archive');
-  }
-
-  const gameStr = (await gameZipObj.async('text')).trim();
-  const game = parseGame(gameStr);
-  cancel.check();
-  if (game === null) {
-    throw new Error(`unable to parse game number "${game}"`);
-  }
-
-  return game;
 }
 
 async function trapErr(
@@ -186,110 +157,6 @@ async function trapErr(
   }
 }
 
-// This is a really dumb parser that's easily fooled. Please be nice to it.
-function parseAnmSpec(text: string, game: Game, filename?: string): AnmSpec {
-  text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-
-  type EntryState = {state: 'entry', path: string | null, xOffset: number, yOffset: number};
-  type ScriptState = {state: 'script', layers: (number | null)[], sprites: (number | null)[]};
-  type NoState = {state: null};
-  let state: EntryState | ScriptState | NoState = {state: null};
-
-  const layerOpcode = getAnmInsHandlers().reverseTable[game]?.['anm:layer'];
-  if (layerOpcode == null) {
-    throw new Error(`game ${game} does not have layers, you silly billy`);
-  }
-
-  const layerInsRe = new RegExp(`ins_${layerOpcode}\\(([0-9]+)\\)`);
-  const readLayerInsDigits = (line: string) => line.match(layerInsRe)?.[1];
-
-  const lines = text.split('\n');
-  const out: AnmSpec = {textures: [], sprites: [], scripts: []};
-  for (let lineI = 0; lineI < lines.length; lineI++) {
-    const line = lines[lineI];
-    const lineErr = (msg: string) => new Error(`${filename || '<unknown>'}:${lineI}: ${msg}`);
-
-    if (line.startsWith('entry')) {
-      if (state.state !== null) {
-        throw lineErr(`Expected '}' before 'entry'`);
-      }
-      state = {state: 'entry', path: null, xOffset: 0, yOffset: 0};
-
-    } else if (line.startsWith('script')) {
-      if (state.state !== null) {
-        throw lineErr(`Expected '}' before 'script'`);
-      }
-      state = {state: 'script', layers: [], sprites: []};
-
-    } else if (line.startsWith('}')) {
-      switch (state.state) {
-        case null:
-          throw lineErr(`Unexpected '}'`);
-        case 'entry': {
-          // end of entry
-          if (state.path === null) {
-            throw lineErr(`No image filepath found in entry!`);
-          }
-          const {path, xOffset, yOffset} = state;
-          out.textures.push({indexInFile: out.textures.length, path, xOffset, yOffset});
-          state = {state: null};
-          break;
-        }
-        case 'script': {
-          // end of script
-          const unnullify = (a: number | null) => a == null ? -1 : a;
-
-          state.sprites = [...new Set(state.sprites)];
-          state.sprites.sort((a, b) => unnullify(a) - unnullify(b));
-          state.layers = [...new Set(state.layers)];
-          state.layers.sort((a, b) => unnullify(a) - unnullify(b));
-          out.scripts.push({indexInFile: out.scripts.length, sprites: state.sprites, layers: state.layers});
-          state = {state: null};
-          break;
-        }
-      }
-
-    } else if (state.state === 'entry') {
-      let match: RegExpMatchArray | null;
-      if (match = line.match(/name: "([^"]+)"/)) {
-        // no need to unescape anything because thanm itself doesn't escape anything
-        state.path = match[1];
-      } else if (match = line.match(/xOffset: ([0-9]+),/)) {
-        state.xOffset = Number.parseInt(match[1]);
-      } else if (match = line.match(/yOffset: ([0-9]+),/)) {
-        state.yOffset = Number.parseInt(match[1]);
-      }
-      // we rely on the default, sequential sprite names being used for simplicity
-      if (match = line.match(/sprite([0-9]+): *(\{.+\})/)) {
-        if (Number.parseInt(match[1], 10) !== out.sprites.length) {
-          throw lineErr(`Expected to find sprite${out.sprites.length} here!`);
-        }
-
-        // the syntax is *almost* valid json
-        const json = JSON.parse(match[2].replace(/(\w+):/g, '"$1":'));
-        out.sprites.push({
-          indexInFile: out.sprites.length,
-          texture: out.textures.length,
-          left: json.x, top: json.y,
-          width: json.w, height: json.h,
-        });
-      }
-
-    } else if (state.state === 'script') {
-      let match: RegExpMatchArray | null;
-      if (match = line.match(/sprite([0-9]+)/)) {
-        state.sprites.push(Number.parseInt(match[1], 10));
-      }
-
-      const layerStr = readLayerInsDigits(line);
-      if (layerStr) {
-        state.layers.push(Number.parseInt(layerStr, 10));
-      }
-    }
-  } // for (let lineI = ...)
-
-  return out;
-}
 
 /** Add all images from an ANM file to the layer viewer. */
 async function addAnmFileToLayerViewer(
@@ -444,35 +311,25 @@ async function domOnce($elem: HTMLElement, type: string) {
   await events.once(emitter, 'trigger');
 }
 
-function generateTip(anmName: string, script: AnmSpecScript, sprite: AnmSpecSprite): Tip {
-  let warning = "";
-  if (script.layers.length > 1) {
-    const joined = script.layers.join(", ");
-    warning = `<br/><span data-wip="1">Layer uncertain! Might belong to: ${joined}</span>`;
-  }
-  return {
-    contents: dedent(`
-      <strong>${anmName}.anm</strong><br/>
-      entry${sprite.texture}<br/>
-      sprite${sprite.indexInFile}<br/>
-      script${script.indexInFile}<br/>
-      ${sprite.width}×${sprite.height}${warning}
-    `),
-    omittedInfo: false,
-  };
+function TipBody({anmName, script, sprite}: {anmName: string, script: AnmSpecScript, sprite: AnmSpecSprite}) {
+  return <>
+    <strong>{anmName}.anm</strong>
+    <br/>entry{sprite.texture}
+    <br/>sprite{sprite.indexInFile}
+    <br/>script{script.indexInFile}
+    <br/>{sprite.width}×{sprite.height}
+    {script.layers.length > 1 ? (<>
+      <br/><Wip>Layer uncertain! Might belong to: {script.layers.join(", ")}</Wip>
+    </>) : null}
+  </>;
 }
 
-async function makeGridItemForDynamicSprite(anmName: string, texture: AnmSpecTexture, sprite: AnmSpecSprite) {
-  const $gridItem = document.createElement('div');
-  $gridItem.classList.add('imageless');
-
-  $gridItem.innerHTML = /* html */`
-    <div class='buffer-type'>${texture.path}</div>
-    <div class='sprite-size'>${sprite.width}×${sprite.height}</div>
-    <div class='anm-name'>${anmName}</div>
-  `;
-
-  return $gridItem;
+function DynamicSpriteGridItem(anmName: string, texture: AnmSpecTexture, sprite: AnmSpecSprite) {
+  return <div className='imageless'>
+    <div className='buffer-type'>{texture.path}</div>
+    <div className='sprite-size'>{sprite.width}×{sprite.height}</div>
+    <div className='anm-name'>{anmName}</div>
+  </div>;
 }
 
 // FIXME: Due to SPA design, this probably still leaks memory if the user navigates to another "page" before
