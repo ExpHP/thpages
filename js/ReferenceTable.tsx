@@ -52,7 +52,7 @@ function ReferenceTable<D extends CommonData>({table, currentGame: game, setCont
   const {getGroups, textBeforeTable, TableRow} = table;
   const instrCounts = getInstrCounts(table, game);
 
-  const incrementalFuel = useIncremental({step: 10, max: instrCounts.total}, [table, game]);
+  const incrementalFuel = useIncremental({step: 1, max: instrCounts.total}, [table, game]);
   let remainingFuel = incrementalFuel;
 
   // Implement hash scrolling by signaling when content has been generated.
