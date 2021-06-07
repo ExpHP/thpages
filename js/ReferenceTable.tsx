@@ -1,16 +1,14 @@
 import React from 'react';
-import {Link, useHistory} from 'react-router-dom';
-import history from 'history';
+import {useHistory} from 'react-router-dom';
 
 import {useCurrentPageGame, HashLink} from './UrlTools';
-import type {Wip, Group, Ref, InsData, VarData, TableDef, CommonData} from './tables';
+import type {Group, Ref, InsData, VarData, TableDef, CommonData} from './tables';
 import {CurrentReferenceTableRowContext} from './InlineRef';
 import {TrustedMarkdown} from './Markdown';
 import {gameData, Game} from './tables/game';
 import {GameThLong} from './Game';
-import {Wip as Wip1, Wip2} from './XUtil';
+import {Wip as Wip1, Wip2, useIncremental} from './XUtil';
 import {VarHeader, InsSiggy} from './InsAndVar';
-import {debugId} from './util';
 
 export function ReferenceTablePage<D extends CommonData>({table, setContentLoaded}: {table: TableDef<D>, setContentLoaded: (x: boolean) => void}) {
   const currentGame = useCurrentPageGame();
@@ -44,27 +42,35 @@ export function GameSelector<D extends CommonData>({table, currentGame}: {table:
   </select>;
 }
 
+
 function range(start: number, end: number) {
   return [...new Array(end - start).keys()].map((x) => x + start);
 }
 
+
 function ReferenceTable<D extends CommonData>({table, currentGame: game, setContentLoaded}: {table: TableDef<D>, currentGame: Game, setContentLoaded: (x: boolean) => void}}) {
-  const {getGroups, mainPrefix, textBeforeTable, TableRow} = table;
+  const {getGroups, textBeforeTable, TableRow} = table;
+  const instrCounts = getInstrCounts(table, game);
+
+  const incrementalFuel = useIncremental({step: 10, max: instrCounts.total}, [table, game]);
+  let remainingFuel = incrementalFuel;
 
   // Implement hash scrolling by signaling when content has been generated.
   // (TODO: make tables display incrementally and do this when done)
   React.useEffect(() => {
-    setContentLoaded(true);
-    return () => setContentLoaded(false);
-  }, [table, game, setContentLoaded]);
+    if (incrementalFuel === instrCounts.total) {
+      setContentLoaded(true);
+      return () => setContentLoaded(false);
+    }
+    return undefined;
+  }, [remainingFuel, table, game, setContentLoaded]);
 
   const groups = getGroups(game);
   const shouldHaveToc = groups.length > 1;
-  const instrCounts = getInstrCounts(table, game);
 
   const contentSections = groups.map((group) => {
     let possibleHeader = null;
-    if (shouldHaveToc) {
+    if (shouldHaveToc && remainingFuel > 0) {
       const anchor = groupAnchor(group)
       possibleHeader = <h2 id={anchor}><HashLink className="self-link" hash={'#' + anchor}>
         {group.min}-{group.max}: {group.title}
@@ -75,6 +81,9 @@ function ReferenceTable<D extends CommonData>({table, currentGame: game, setCont
       const refObj = table.getRefByOpcode(game, opcode);
       if (refObj == null) return null; // instruction doesn't exist
       const data = table.getDataByRef(refObj.ref)!; // getInstrCounts will have thrown if this is missing
+
+      if (remainingFuel <= 0) return null;
+      --remainingFuel;
 
       return <CurrentReferenceTableRowContext.Provider key={opcode} value={refObj.ref}>
         <TableRow {...{table, game, data, opcode, r: refObj.ref}} />
@@ -106,6 +115,7 @@ function ReferenceTable<D extends CommonData>({table, currentGame: game, setCont
   </div>;
 }
 
+
 function getInstrCounts<D extends CommonData>(table: TableDef<D>, game: Game) {
   const map = table.refByOpcode.get(game)!;
   
@@ -125,9 +135,11 @@ function getInstrCounts<D extends CommonData>(table: TableDef<D>, game: Game) {
   return {total: map.size, documented}
 }
 
+
 function groupAnchor(group: Group): string {
   return `group-${group.min}`;
 }
+
 
 export function Toc({groups}: {groups: Group[]}) {
   return <div className='toc'>
@@ -137,6 +149,7 @@ export function Toc({groups}: {groups: Group[]}) {
     ))}</ul>
   </div>;
 }
+
 
 export const InsTableRow = React.memo(function InsTableRow(props: {table: TableDef<InsData>, r: Ref, game: Game, data: InsData, opcode: number}) {
   const {table, r, data, opcode} = props;
@@ -150,6 +163,7 @@ export const InsTableRow = React.memo(function InsTableRow(props: {table: TableD
   </tr>;
 });
 
+
 export const VarTableRow = React.memo(function VarTableRow(props: {table: TableDef<VarData>, r: Ref, game: Game, data: VarData, opcode: number}) {
   const {table, r, data, opcode} = props;
   const desc = <TrustedMarkdown mdast={data.mdast} />;
@@ -162,3 +176,4 @@ export const VarTableRow = React.memo(function VarTableRow(props: {table: TableD
     <td className="col-desc">{desc}</td>
   </tr>;
 });
+

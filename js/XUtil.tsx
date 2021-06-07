@@ -31,20 +31,49 @@ export function Wip2({children}: {children: React.ReactNode}) {
   return <span data-wip="2">{children}</span>;
 }
 
-export function Incremental({step, children}: {step?: number, children: React.ReactNode}) {
+/** useState but with a dependency list.  Not all overloads are supported. */
+export function useDependentState<S>(
+    initial: S,
+    inputs: ReadonlyArray<any>,
+    reset?: (prevState?: S) => S,
+): [S, React.Dispatch<React.SetStateAction<S>>] {
+  let [state, setState] = React.useState<S>(initial);
+
+  React.useMemo(() => {
+    const newState = reset ? reset(state) : initial;
+    if (newState !== state) {
+      // Reassigning state is deliberate so that THIS render does not have a stale value.
+      setState(state = newState); // eslint-disable-line
+    }
+  }, inputs);
+
+  return [state, setState];
+}
+
+/**
+ * Returns a counter that increases over subsequent renders, giving the browser a chance to update the DOM
+ * each time using setTimeout.
+ *
+ * By e.g. trimming an array of child JSX elements to this length, you can use this to render a large page incrementally,
+ * reducing the perceived time of page load by the user. (Note that `React.memo` may be necessary to avoid needlessly
+ * rerendering children near the front).
+ *
+ * The counter will always begin equal to `step`, and will reset to this value whenever the dependencies change.
+ */
+export function useIncremental({step, max}: {step?: number, max: number}, dependencies: ReadonlyArray<any>) {
   if (step === 0) {
     throw new Error("zero step!");
   }
-  const childArray = React.Children.toArray(children);
-  const step_ = step == null ? 10 : step;
+  const step_ = step == null ? 1 : step;
 
-  const [numToShow, setNumToShow] = React.useState(step_);
-  console.log(numToShow, childArray.length);
+  const [numToShow, setNumToShow] = useDependentState(step_, [...dependencies]);
   React.useEffect(() => {
-    if (numToShow < childArray.length) {
-      setTimeout(() => setNumToShow(numToShow + step_), 10000);
+    if (numToShow < max) {
+      const id = setTimeout(() => setNumToShow((n) => Math.min(n + step_, max)));
+      return () => clearTimeout(id);
     }
-  }, [numToShow, step_, childArray.length]);
+    return undefined;
+  }, [numToShow, setNumToShow, step_, max]);
 
-  return <>{childArray.slice(0, numToShow)}</>;
+  return numToShow;
 }
