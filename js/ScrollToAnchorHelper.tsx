@@ -1,20 +1,7 @@
 import React from 'react';
 import {useLocation} from 'react-router-dom';
 
-import {debugId} from './util';
-type State =
-  | {type: 'inactive'}
-  | {type: 'waiting-for-content'}
-  | {type: 'done'}
-  ;
-
-type Action =
-  | {type: 'new-page'}
-  | {type: 'navigated'}
-  | {type: 'stop'}
-  ;
-
-// FIXME turn into a useDependentReducer instead
+// useState but with a dependency list
 function useDependentState<S>(
     initial: S,
     inputs: ReadonlyArray<any>,
@@ -24,9 +11,9 @@ function useDependentState<S>(
 
   React.useMemo(() => {
     const newState = reset ? reset(state) : initial;
-
     if (newState !== state) {
-      setState(state = newState);
+      // Reassigning state is deliberate so that THIS render does not have a stale value.
+      setState(state = newState); // eslint-disable-line
     }
   }, inputs);
 
@@ -35,10 +22,8 @@ function useDependentState<S>(
 
 export function useScrollToAnchor() {
   const location = useLocation();
-  console.log(debugId(location), location);
   const [traveled, setTraveled] = useDependentState(false, [location]);
-  const [contentLoaded, setContentLoaded] = useDependentState(false, [location.pathname, location.search]);
-  console.log('useScrollToAnchor');
+  const [contentLoaded, setContentLoaded] = React.useState(false);
 
   React.useLayoutEffect(() => {
     console.log(contentLoaded, traveled, location.hash);
