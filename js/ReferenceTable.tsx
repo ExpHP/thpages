@@ -58,63 +58,37 @@ function ReferenceTable<D extends CommonData>({table, currentGame: game, setCont
     return () => setContentLoaded(false);
   }, [table, game, setContentLoaded]);
 
-  let total = 0;
-  let documented = 0;
   const groups = getGroups(game);
-
   const shouldHaveToc = groups.length > 1;
-  const tocData: {group: Group, to: history.To}[] = [];
+  const instrCounts = getInstrCounts(table, game);
 
   const contentSections = groups.map((group) => {
     let possibleHeader = null;
     if (shouldHaveToc) {
-      const groupAnchor = `group-${group.min}`;
-      const to = {hash: `#${groupAnchor}`};
-      tocData.push({group, to});
-      possibleHeader = <h2 id={groupAnchor}><HashLink className="self-link" hash={to.hash}>
+      const anchor = groupAnchor(group)
+      possibleHeader = <h2 id={anchor}><HashLink className="self-link" hash={'#' + anchor}>
         {group.min}-{group.max}: {group.title}
       </HashLink></h2>;
     }
-
+  
     const rows = range(group.min, group.max + 1).map((opcode) => {
       const refObj = table.getRefByOpcode(game, opcode);
       if (refObj == null) return null; // instruction doesn't exist
+      const data = table.getDataByRef(refObj.ref)!; // getInstrCounts will have thrown if this is missing
 
-      // instruction exists, but our docs may suck
-      let {ref, wip} = refObj;
-      const data = table.getDataByRef(ref);
-      if (!data) {
-        // instruction is assigned, but ref has no entry in table
-        throw new Error(`ref ${ref} is assigned to ${mainPrefix} number ${game}:${opcode} but has no data`);
-      }
-      wip = Math.max(wip, data.wip) as Wip;
-
-      if (wip === 0) {
-        documented += 1;
-      }
-      total += 1;
-      return <CurrentReferenceTableRowContext.Provider key={opcode} value={ref}>
-        <TableRow {...{table, game, data, opcode, r: ref}} />
+      return <CurrentReferenceTableRowContext.Provider key={opcode} value={refObj.ref}>
+        <TableRow {...{table, game, data, opcode, r: refObj.ref}} />
       </CurrentReferenceTableRowContext.Provider>;
     }).filter((x) => x);
-
+  
     return <React.Fragment key={group.min}>
       {possibleHeader}
       <table className='ins-table'><tbody>{rows}</tbody></table>
     </React.Fragment>;
   });
 
-  let toc = null;
-  if (shouldHaveToc) {
-    toc = <div className='toc'>
-      <h3>Navigation</h3>
-      <ul>{tocData.map(({group, to}) =>
-        <li key={group.min}><Link to={to}>{group.title} ({group.min}..)</Link></li>,
-      )}</ul>
-    </div>;
-  }
-
   const baseMd = textBeforeTable(game);
+  const {total, documented} = instrCounts;
   return <div>
     <p>
       {/* Even though this is right next to the dropdown, the current game is displayed here for the sake of pages like the var-table
@@ -127,8 +101,40 @@ function ReferenceTable<D extends CommonData>({table, currentGame: game, setCont
       </> : null}
     </p>
     {baseMd ? <TrustedMarkdown>{baseMd}</TrustedMarkdown> : null}
-    {toc}
+    {shouldHaveToc ? <Toc groups={groups} /> : null}
     {contentSections}
+  </div>;
+}
+
+function getInstrCounts<D extends CommonData>(table: TableDef<D>, game: Game) {
+  const map = table.refByOpcode.get(game)!;
+  
+  let documented = 0;
+  for (const opcode of table.refByOpcode.get(game)!.keys()) {
+    const refObj = table.getRefByOpcode(game, opcode)!;
+    const data = table.getDataByRef(refObj.ref);
+    if (!data) {
+      // instruction is assigned, but ref has no entry in table
+      throw new Error(`ref ${refObj.ref} is assigned to ${table.mainPrefix} number ${game}:${opcode} but has no data`);
+    }
+
+    if (Math.max(refObj.wip, data.wip) === 0) {
+      documented += 1;
+    }
+  }
+  return {total: map.size, documented}
+}
+
+function groupAnchor(group: Group): string {
+  return `group-${group.min}`;
+}
+
+export function Toc({groups}: {groups: Group[]}) {
+  return <div className='toc'>
+    <h3>Navigation</h3>
+    <ul>{groups.map((group) => (
+      <li key={group.min}><HashLink hash={'#' + groupAnchor(group)}>{group.title} ({group.min}..)</HashLink></li>
+    ))}</ul>
   </div>;
 }
 

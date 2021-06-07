@@ -31,20 +31,20 @@ export function Wip2({children}: {children: React.ReactNode}) {
   return <span data-wip="2">{children}</span>;
 }
 
-// export function Incremental({step, children}: {step?: number, children: React.ReactNode}) {
-//   if (step === 0) {
-//     throw new Error("zero step!");
-//   }
-//   const childArray = React.Children.toArray(children);
-//   const step_ = step == null ? 10 : step;
+export function Incremental({step, children}: {step?: number, children: React.ReactNode}) {
+  if (step === 0) {
+    throw new Error("zero step!");
+  }
+  const childArray = React.Children.toArray(children);
+  const step_ = step == null ? 10 : step;
 
-//   const [numToShow, setNumToShow] = React.useState(step_);
-//   console.log(numToShow, childArray.length);
-//   React.useEffect(() => {
-//     if (numToShow < childArray.length) {
-//       setTimeout(() => setNumToShow(numToShow + step_), 10000);
-//     }
-//   }, [numToShow, step_, childArray.length]);
+  const [numToShow, setNumToShow] = React.useState(step_);
+  console.log(numToShow, childArray.length);
+  React.useEffect(() => {
+    if (numToShow < childArray.length) {
+      setTimeout(() => setNumToShow(numToShow + step_), 10000);
+    }
+  }, [numToShow, step_, childArray.length]);
 
-//   return <>{childArray.slice(0, numToShow)}</>;
-// }
+  return <>{childArray.slice(0, numToShow)}</>;
+}

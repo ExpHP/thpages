@@ -26,7 +26,6 @@ export function useScrollToAnchor() {
   const [contentLoaded, setContentLoaded] = React.useState(false);
 
   React.useLayoutEffect(() => {
-    console.log(contentLoaded, traveled, location.hash);
     if (contentLoaded && !traveled) {
       const id = location.hash.substring(1);
       if (id.length) {
