@@ -1,3 +1,7 @@
+// Polyfills
+import "core-js/stable";
+import "regenerator-runtime/runtime";
+
 import {init} from "./main.js";
 
 // Generally speaking, modules in this codebase try to avoid doing things on import
