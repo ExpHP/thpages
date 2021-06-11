@@ -79,3 +79,43 @@ export const debugId = (() => {
     return x[symbol];
   };
 })();
+
+/** Deep equality test. */
+export function deepEqual(val1: unknown, val2: unknown) {
+  return deepInequalityWitness(val1, val2) == null;
+}
+
+export type InequalityWitness = {
+  /** Sequence of attributes to follow in order to reach the mismatch. */
+  path: string[];
+  /** The mismatched values at this path. */
+  values: [unknown, unknown];
+};
+
+/**
+ * Deep equality test that produces a witness of inequality.
+ *
+ * Note: The current implementation allows a missing attribute to match with `undefined`.
+ **/
+export function deepInequalityWitness(val1: unknown, val2: unknown, path: string[] = []): InequalityWitness | null {
+  return (val1 && val2 && typeof val1 === 'object' && typeof val2 === 'object')
+    ? objectDeepInequalityWitness(val1, val2, path)
+    : Object.is(val1, val2)
+      ? null
+      : {path, values: [val1, val2]}
+  ;
+}
+
+function objectDeepInequalityWitness(object1: object, object2: object, path: string[]): InequalityWitness | null {
+  const keys1 = Object.keys(object1);
+  const keys2 = Object.keys(object1);
+  const union = new Set([...keys1, ...keys2]);
+  for (const key of union) {
+    path.push(key);
+    const witness = deepInequalityWitness((object1 as any)[key], (object2 as any)[key], path);
+    if (witness) return witness;
+    --path.length;
+  }
+
+  return null;
+}

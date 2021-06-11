@@ -9,13 +9,12 @@ import {ErrorBoundary} from './Error';
 import {Navbar} from './Navbar';
 import {MarkdownPage} from './MarkdownPage';
 import {StatsPage} from './Stats';
-import {useSavedSettingsState, NameSettingsProvider} from './settings';
+import {useSavedSettingsState, NameSettingsProvider, SettingsPage} from './settings';
 import {ReferenceTablePage} from './ReferenceTable';
 import {Title} from './XUtil';
 
 export const MAIN_TITLE = "ExpHP's Touhou pages";
 export function App() {
-  const [savedSettings, setSavedSettings] = useSavedSettingsState();
 
   // injectFirst gives our CSS precedence over MUI's JSS
   return <StylesProvider injectFirst>
@@ -30,11 +29,9 @@ export function App() {
         <div className='content-pane'>
           <div className='content-paper'>
             <ErrorBoundary>
-              <NameSettingsProvider savedSettings={savedSettings} loading={"Loading mapfiles..."}>
-                <CurrentPageProvider>
-                  <Content/>
-                </CurrentPageProvider>
-              </NameSettingsProvider>
+              <CurrentPageProvider>
+                <Content/>
+              </CurrentPageProvider>
             </ErrorBoundary>
           </div>
         </div>
@@ -45,32 +42,36 @@ export function App() {
 
 function Content() {
   const setContentLoaded = useScrollToAnchor();
+  const [savedSettings, setSavedSettings] = useSavedSettingsState();
+  console.log('saved', savedSettings);
 
-  return <Switch>
-    <Route exact path="/"><MarkdownPage path="./content/index.md"/></Route>
-    <Route exact path="/index"><Redirect to="/" /></Route>
-    <Route exact path="/settings">FIXME</Route>
-    <Route exact path="/anm/ins"><ReferenceTablePage table={ANM_INS_TABLE} setContentLoaded={setContentLoaded} /></Route>
-    <Route exact path="/anm/var"><ReferenceTablePage table={ANM_VAR_TABLE} setContentLoaded={setContentLoaded} /></Route>
-    <Route exact path="/std/ins"><ReferenceTablePage table={STD_TABLE} setContentLoaded={setContentLoaded} /></Route>
-    <Route exact path="/msg/ins"><ReferenceTablePage table={MSG_TABLE} setContentLoaded={setContentLoaded} /></Route>
-    <Route exact path="/anm/stats"><StatsPage /></Route>
-    {/* FIXME what to do about all of these markdown pages?  Should the NotFound route look for md files? */}
-    {[
-      "/anm/concepts",
-      "/anm/interpolation",
-      "/anm/stages-of-rendering",
-      "/anm/ontick-ondraw",
-      "/anm/game-colors",
-      "/anm/layer-viewer",
-      "/mods/bullet-cap",
-      "/mods/debug-counters",
-      "/mods/seasonize",
-      "/mods/za-warudo",
-    ].map((path) => <Route key={path} exact path={path}><MarkdownPage path={`./content${path}`}/></Route>)}
-    {/* <Route exact path="/settings"><Redirect to="/" /></Route> */}
-    <Route><NotFound /></Route>
-  </Switch>;
+  return <NameSettingsProvider savedSettings={savedSettings} loading={"Loading mapfiles..."}>
+    <Switch>
+      <Route exact path="/"><MarkdownPage path="./content/index.md"/></Route>
+      <Route exact path="/index"><Redirect to="/" /></Route>
+      <Route exact path="/settings"><SettingsPage settings={savedSettings} onSave={setSavedSettings} /></Route>
+      <Route exact path="/anm/ins"><ReferenceTablePage table={ANM_INS_TABLE} setContentLoaded={setContentLoaded} /></Route>
+      <Route exact path="/anm/var"><ReferenceTablePage table={ANM_VAR_TABLE} setContentLoaded={setContentLoaded} /></Route>
+      <Route exact path="/std/ins"><ReferenceTablePage table={STD_TABLE} setContentLoaded={setContentLoaded} /></Route>
+      <Route exact path="/msg/ins"><ReferenceTablePage table={MSG_TABLE} setContentLoaded={setContentLoaded} /></Route>
+      <Route exact path="/anm/stats"><StatsPage /></Route>
+      {/* FIXME what to do about all of these markdown pages?  Should the NotFound route look for md files? */}
+      {[
+        "/anm/concepts",
+        "/anm/interpolation",
+        "/anm/stages-of-rendering",
+        "/anm/ontick-ondraw",
+        "/anm/game-colors",
+        "/anm/layer-viewer",
+        "/mods/bullet-cap",
+        "/mods/debug-counters",
+        "/mods/seasonize",
+        "/mods/za-warudo",
+      ].map((path) => <Route key={path} exact path={path}><MarkdownPage path={`./content${path}.md`}/></Route>)}
+      {/* <Route exact path="/settings"><Redirect to="/" /></Route> */}
+      <Route><NotFound /></Route>
+    </Switch>
+  </NameSettingsProvider>;
 }
 
 function NotFound() {

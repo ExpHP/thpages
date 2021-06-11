@@ -1,4 +1,5 @@
 import React, {forwardRef} from 'react';
+import type {ReactNode} from 'react';
 import clsx from 'clsx';
 import FlipMove from 'react-flip-move';
 import Button from '@material-ui/core/Button';
@@ -13,6 +14,7 @@ import TableHead from '@material-ui/core/TableHead';
 import TableBody from '@material-ui/core/TableBody';
 import TableCell from '@material-ui/core/TableCell';
 import TableContainer from '@material-ui/core/TableContainer';
+import Snackbar from '@material-ui/core/Snackbar';
 import MenuItem from '@material-ui/core/MenuItem';
 import Paper from '@material-ui/core/Paper';
 import TextField from '@material-ui/core/TextField';
@@ -22,23 +24,18 @@ import InputLabel from '@material-ui/core/InputLabel';
 import ListItemText from '@material-ui/core/ListItemText';
 import Typography from '@material-ui/core/Typography';
 import ScopedCssBaseline from '@material-ui/core/ScopedCssBaseline';
+import {makeStyles} from '@material-ui/core/styles';
 import KeyboardArrowDownIcon from '@material-ui/icons/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@material-ui/icons/KeyboardArrowUp';
 import RestoreIcon from '@material-ui/icons/Restore';
 import DeleteIcon from '@material-ui/icons/Delete';
 
-import {Game, allGames} from '../game-names';
-import {getAllTables} from '../anm/tables';
-
-import {Ref} from '../ref';
-import {getNameSettingsFromLocalStorage} from './local-storage';
+import {If} from '~/js/XUtil';
+import {Game, allGames} from '~/js/tables/game';
+import {Ref, getAllTables} from '~/js/tables';
 import {SavedSettings, SavedLangSettings, Lang, loadMapFromFile, computeNameSettingsFromLangSettings, NameSettings} from './settings';
-import {getLangReducer, initializeLangStateFromSettings, newSettingsFromLangState, LangAction, CustomMapfileListItem} from './settings-page-state';
-
-/** This should be called in the root of the application, above everything else that needs settings. */
-export function useSettings() {
-  return React.useState(getNameSettingsFromLocalStorage);
-}
+import {saveNewSettings} from './local-storage';
+import {useSettingsPageStateReducer, newSettingsFromState, LangState, LangAction, CustomMapfileListItem, State} from './settings-page-state';
 
 // (For this thing it's easier to debug "why is this null" when it happens, than it is to deal with the
 //  cognitive load of constantly having to think about "what does it mean if this is null?". (hint: it means a bug!)
@@ -48,47 +45,105 @@ export function useSettings() {
 export const NameSettingsContext = React.createContext<NameSettings>(null as any);
 
 export function SettingsPage({settings, onSave}: {settings: SavedSettings, onSave: (s: SavedSettings) => void}) {
+  const [state, dispatch] = useSettingsPageStateReducer(settings);
+
   return <>
     <h1>Settings</h1>
+    <SaveButton state={state} onSave={onSave} />
     <h2>anmmap</h2>
-    <SingleLangSettings lang="anm" savedSettings={settings.anm} />
+    <SingleLangSettings state={state.anm} dispatch={dispatch.anm} />
     <h2>stdmap</h2>
-    <SingleLangSettings lang="std" savedSettings={settings.std} />
+    <SingleLangSettings state={state.std} dispatch={dispatch.std} />
     <h2>msgmap</h2>
-    <SingleLangSettings lang="msg" savedSettings={settings.msg} />
+    <SingleLangSettings state={state.msg} dispatch={dispatch.msg} />
   </>;
 }
 
-function SingleLangSettings({savedSettings, lang}: {savedSettings: SavedLangSettings, lang: Lang}) {
-  // Create runtime state for a language on the settings page, based off of the saved settings data (the 'settings' prop).
-  //
-  // The runtime state is maintained through the reducer pattern.
-  const reducer = React.useMemo(() => getLangReducer(lang), [lang]);
-  const stateInit = React.useCallback(() => initializeLangStateFromSettings(lang, savedSettings), [lang, savedSettings]);
-  const [optionsState, dispatch] = React.useReducer(reducer, null, stateInit);
+function SaveButton({state, onSave}: {state: State, onSave: (s: SavedSettings) => void}) {
+  const [snackbarType, setSnackbarType] = React.useState<'success' | 'error' | null>(null);
 
-  const oldNames = React.useMemo(() => computeNameSettingsFromLangSettings(lang, savedSettings), [lang, savedSettings]);
-  const newSettings = React.useMemo(() => newSettingsFromLangState(optionsState), [optionsState]);
-  const newNames = React.useMemo(() => computeNameSettingsFromLangSettings(lang, newSettings), [lang, newSettings]);
-  const allRefs = React.useMemo(() => allRefsForLang(lang), [lang]);
+  function handleClick() {
+    const settings = newSettingsFromState(state);
+    try {
+      saveNewSettings(settings);
+      onSave(settings);
+      setSnackbarType('success');
+    } catch (e) {
+      console.error(e);
+      setSnackbarType('error');
+    }
+  }
+  return <>
+    <p><Button variant='contained' onClick={handleClick}>Save changes</Button></p>
+    <Snackbar
+      anchorOrigin={{vertical: 'bottom', horizontal: 'center'}}
+      open={snackbarType != null}
+      autoHideDuration={snackbarType === 'error' ? 4000 : 2000}
+      onClose={(ev, reason) => reason === 'clickaway' && setSnackbarType(null)}
+    ><div>
+      <If cond={snackbarType === 'success'}>Settings saved!</If>
+      <If cond={snackbarType === 'error'}>An error occurred! Settings have not been saved.</If>
+    </div></Snackbar>
+  </>;
+}
 
-  console.log(newSettings, oldNames, newNames);
-
+function SingleLangSettings({state, dispatch}: {state: LangState, dispatch: React.Dispatch<LangAction>}) {
   return <>
     <div className="mapfile-builtin-options">
-      <RadioGroup row aria-label="builtin config" value={optionsState.builtin} onChange={(ev: any) => dispatch({type: 'change-builtin', payload: {builtin: ev.target.value}})}>
+      <RadioGroup row aria-label="builtin config" value={state.builtin} onChange={(ev: any) => dispatch({type: 'change-builtin', payload: {builtin: ev.target.value}})}>
         <FormControlLabel labelPlacement="end" control={<Radio color="primary" />} value="truth" label="Use mapfiles from truth"/>
         <FormControlLabel labelPlacement="end" control={<Radio color="primary" />} value="raw" label="Use raw syntax"/>
       </RadioGroup>
       <FormControlLabel
         labelPlacement="end" control={<Switch color="primary" />} label="Additionally use custom mapfiles"
-        checked={optionsState.customEnabled}
+        checked={state.customEnabled}
         onChange={(ev: any) => dispatch({type: 'toggle-custom-maps', payload: {customEnabled: ev.target.checked}})}
       />
-      <CustomMapfileList list={optionsState.customMapfileList} dispatch={dispatch} enabled={optionsState.customEnabled}/>
-      <NameTable oldNames={oldNames} newNames={newNames} allRefs={allRefs} />
+      <SlidingDrawer open={state.customEnabled}>
+        <CustomMapfileList list={state.customMapfileList} dispatch={dispatch} enabled={state.customEnabled}/>
+      </SlidingDrawer>
     </div>
   </>;
+}
+
+// styles to make sticky header and column work
+const useStyles = makeStyles({
+  // make a div whose height can change
+  slidingDrawerContainer: {
+    position: 'relative',
+    overflowY: 'hidden',
+    // transition: 'height 0.25s ease-out',
+    height: 0,
+  },
+  // anchor the content to the bottom
+  slidingDrawerContent: {
+    position: 'absolute',
+    bottom: 0,
+  },
+});
+
+function SlidingDrawer({open, children}: {open: boolean, children: ReactNode}) {
+  const classes = useStyles();
+  const ref = React.useRef<HTMLDivElement | null>(null);
+  const [contentHeight, setContentHeight] = React.useState(0);
+  console.log(contentHeight, ref.current?.offsetHeight, open);
+
+  React.useLayoutEffect(() => {
+    if (ref.current) {
+      setContentHeight(ref.current.offsetHeight);
+    }
+  }, []);
+
+  const drawerInlineStyle = {
+    transition: contentHeight > 0 ? 'height 0.1s ease-out' : undefined, // to prevent growing from 0 at the start
+    height: open ? contentHeight : 0,
+  };
+
+  return <div className={classes.slidingDrawerContainer} style={drawerInlineStyle}>
+    <div className={classes.slidingDrawerContent} ref={ref}>
+      {children}
+    </div>
+  </div>;
 }
 
 function CustomMapfileList({list, dispatch, enabled}: {list: CustomMapfileListItem[], dispatch: React.Dispatch<LangAction>, enabled: boolean}) {
@@ -161,47 +216,4 @@ function GameDropDown({chosenGame, enabled, onChange}: {chosenGame: Game | null,
       {[...allGames()].map((game) => <MenuItem key={game} value={game}>{`TH${game}`}</MenuItem>)}
     </Select>
   </FormControl>;
-}
-
-// =============================================================================
-
-function NameTable({oldNames, newNames, allRefs}: {oldNames: NameSettings, newNames: NameSettings, allRefs: Ref[]}) {
-  return <TableContainer component={Paper} style={{marginLeft: "0.75em", marginTop: "0.2em", maxWidth: "30rem", maxHeight: 440}}>
-    <Typography variant="h6" component="div">
-      Names
-    </Typography>
-    <Table stickyHeader size="small" aria-label="">
-      <TableHead>
-        <TableRow>
-          <TableCell align="right">Internal name</TableCell>
-          <TableCell>Old name</TableCell>
-          <TableCell>New name</TableCell>
-        </TableRow>
-      </TableHead>
-      <TableBody>
-        {allRefs.map((ref) => {
-          const oldName = oldNames.dataByRef.get(ref)?.name || null;
-          const newName = newNames.dataByRef.get(ref)?.name || null;
-          return <TableRow key={ref}>
-            <TableCell component="th" scope="row" align="right"><code>{ref}</code></TableCell>
-            <TableCell><code>{oldName || ''}</code></TableCell>
-            <TableCell><code>{newName || ''}</code></TableCell>
-          </TableRow>;
-        })}
-      </TableBody>
-    </Table>
-  </TableContainer>;
-}
-
-function allRefsForLang(lang: Lang) {
-  const allRefs = new Set<Ref>();
-  for (const table of getAllTables()) {
-    if (table.nameSettingsPath.lang === lang) {
-      const {mainPrefix, dataTable} = table;
-      for (const id of Object.keys(dataTable)) {
-        allRefs.add(`${mainPrefix}:${id}`);
-      }
-    }
-  }
-  return [...allRefs];
 }

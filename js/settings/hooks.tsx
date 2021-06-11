@@ -7,6 +7,8 @@ import {getSavedSettingsFromLocalStorage} from './local-storage';
 
 /**
  * This should be called in the root of the application, above everything else that needs settings.
+ *
+ * Mind, calling the setter will not update local storage!
  */
 export function useSavedSettingsState() {
   return React.useState(getSavedSettingsFromLocalStorage);
@@ -17,7 +19,7 @@ export function NameSettingsProvider({savedSettings, loading, children}: {savedS
     <Async.Loading>{loading}</Async.Loading>
     <Async.Fulfilled>{(data: NameSettings) => (
       <NameSettingsContext.Provider value={data}>{children}</NameSettingsContext.Provider>
-      )}</Async.Fulfilled>
+    )}</Async.Fulfilled>
   </Async>;
 }
 

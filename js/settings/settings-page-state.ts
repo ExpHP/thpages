@@ -1,13 +1,16 @@
+import React from 'react';
 
+import {Game} from '~/js/tables/game';
+import {Ref} from '~/js/tables';
+import {unreachable} from '../util';
 
-import {Game} from '../game-names';
-import {Ref} from '../ref';
-import {Without, unreachable} from '../util';
-
-import {Lang, BuiltinNameSet, LoadedMap, SavedLangSettings} from './settings';
+import {allLangs, Lang, BuiltinNameSet, LoadedMap, SavedSettings, SavedLangSettings} from './settings';
 
 // =============================================================================
 // Component state for a single language.
+
+export type State = {[L in Lang]: LangState};
+export type Dispatch = {[L in Lang]: React.Dispatch<LangAction>};
 
 /**
  * This is like SavedLangSettings, but augmented with additional details about unsaved edits
@@ -49,7 +52,7 @@ export type LangAction =
   | {type: 'change-builtin', payload: {builtin: BuiltinNameSet}}
   | {type: 'toggle-custom-maps', payload: {customEnabled: boolean}}
   // mapfiles
-  | {type: 'custom-map/add', payload: Without<CustomMapfileListItem, 'id'>}
+  | {type: 'custom-map/add', payload: Omit<CustomMapfileListItem, 'id'>}
   | {type: 'custom-map/delete', payload: {id: CustomMapfileId}}
   | {type: 'custom-map/move-up', payload: {id: CustomMapfileId}}
   | {type: 'custom-map/move-down', payload: {id: CustomMapfileId}}
@@ -57,8 +60,23 @@ export type LangAction =
   | {type: 'custom-map/delete', payload: {id: CustomMapfileId}}
   ;
 
+export function useSettingsPageStateReducer(settings: SavedSettings): [State, Dispatch] {
+  const [anmState, anmDispatch] = useLangStateReducer(settings, 'anm');
+  const [stdState, stdDispatch] = useLangStateReducer(settings, 'std');
+  const [msgState, msgDispatch] = useLangStateReducer(settings, 'msg');
+  return [{anm: anmState, std: stdState, msg: msgState}, {anm: anmDispatch, std: stdDispatch, msg: msgDispatch}];
+}
+
+function useLangStateReducer(settings: SavedSettings, lang: Lang): [LangState, React.Dispatch<LangAction>] {
+  const langSettings = settings[lang];
+  const initFunc = React.useCallback(() => initializeLangStateFromSettings(lang, langSettings), [lang, langSettings]);
+  const reducer = React.useMemo(() => getLangReducer('anm'), []);
+  return React.useReducer(reducer, null, initFunc);
+}
+
 export function initializeLangStateFromSettings(language: Lang, settings: SavedLangSettings): LangState {
   const {builtin, customEnabled, mapfiles} = settings;
+  console.log('initialize', mapfiles);
 
   let state: LangState = {builtin, customEnabled, customMapfileList: [], nextUnusedId: 0};
 
@@ -75,8 +93,14 @@ export function initializeLangStateFromSettings(language: Lang, settings: SavedL
   return state;
 }
 
-export function newSettingsFromLangState(state: LangState): SavedLangSettings {
+export function newSettingsFromState(state: State): SavedSettings {
+  return Object.fromEntries(Object.entries(state).map(([lang, value]) => [lang, newSettingsFromLangState(value)] as const));
+}
+
+function newSettingsFromLangState(state: LangState): SavedLangSettings {
   const {builtin, customEnabled, customMapfileList} = state;
+  console.log(state);
+  console.log(customMapfileList);
   const mapfiles = customMapfileList.flatMap(({name, game, savedContents, uploadedContents}) => {
     if (!game) return [];
     if (!(uploadedContents || savedContents)) return [];
@@ -85,7 +109,7 @@ export function newSettingsFromLangState(state: LangState): SavedLangSettings {
   return {builtin, customEnabled, mapfiles};
 }
 
-export function getLangReducer(language: Lang) {
+function getLangReducer(language: Lang) {
   return reducer;
 
   function reducer(state: LangState, action: LangAction): LangState {

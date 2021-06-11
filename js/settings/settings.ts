@@ -66,7 +66,12 @@ export type SavedLangSettings = {
   /** Mapfiles uploaded by the user. */
   mapfiles: SavedLangMap[];
 };
-export type SavedLangMap = {name: string, mapfile: LoadedMap, game: Game};
+export type SavedLangMap = {
+  name: string,
+  mapfile: LoadedMap,
+  game: Game,
+  uploadTime?: Date,
+};
 
 export async function loadMapFromFile(file: File, warn: (msg: string) => void): Promise<LoadedMap> {
   const text = await readUploadedFile(file);
@@ -122,7 +127,6 @@ async function addNameSettingsFromTruth(out: NameSettings, lang: Lang, abort: Ab
   }
   return out;
 }
-
 
 function addNameSettingsFromMapfiles(out: NameSettings, lang: Lang, mapfiles: SavedLangMap[], type: 'user-mapfile' | 'truth-mapfile') {
   // Use table handlers to connect submaps (e.g. ins, vars, timeline) to ref tables.

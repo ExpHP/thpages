@@ -1,5 +1,6 @@
 import {allBuiltins, defaultBuiltin, SavedSettings, SavedLangSettings, SavedLangMap, LoadedMap} from './settings';
 import {validateGame, Game} from '~/js/tables/game';
+import {deepInequalityWitness} from '~/js/util';
 
 // It occurs to me that this site shares localStorage with everything else under the same domain,
 // so we should use prefixed keys.
@@ -26,15 +27,8 @@ export function getSavedSettingsFromLocalStorage(): SavedSettings {
   try {
     const json = localStorage.getItem(LOCAL_STORAGE_KEY_NAMES);
     if (json) {
-      const data = JSON.parse(json);
-      if (data.version !== 1) { // version 0 wasn't stored here. (also didn't have a version field...)
-        throw new Error(`unexpected settings version: ${data.version}`);
-      }
-      return {
-        anm: data.anm ? parseSavedLangSettingsV1(data.anm) : defaultLangSettings(),
-        msg: data.msg ? parseSavedLangSettingsV1(data.msg) : defaultLangSettings(),
-        std: data.std ? parseSavedLangSettingsV1(data.std) : defaultLangSettings(),
-      };
+      const x = deserializeSettingsFromString(json);
+      return x;
 
     } else {
       // Nothing at the new localStorage key.  Try the old ones.
@@ -66,8 +60,35 @@ export function getSavedSettingsFromLocalStorage(): SavedSettings {
   }
 }
 
-export function writeNameSettingsToLocalStorage(settings: SavedSettings) {
-  function replacer(x: unknown) {
+export function saveNewSettings(settings: SavedSettings) {
+  const json = serializeSettingsToString(settings);
+
+  // Double check that the new settings are valid before committing them.
+  const reparsed = deserializeSettingsFromString(json);
+  let witness;
+  if (witness = deepInequalityWitness(settings, reparsed)) {
+    console.error("Settings could not roundtrip!", settings, reparsed, witness);
+    throw new Error("Failed to save settings! Please contact the administrator.");
+  }
+  localStorage.setItem(LOCAL_STORAGE_KEY_NAMES, json);
+}
+
+function deserializeSettingsFromString(json: string) {
+  const data = JSON.parse(json);
+  if (data.version !== 1) { // version 0 wasn't stored here. (also didn't have a version field...)
+    throw new Error(`unexpected settings version: ${data.version}`);
+  }
+  return {
+    anm: data.anm ? parseSavedLangSettingsV1(data.anm) : defaultLangSettings(),
+    msg: data.msg ? parseSavedLangSettingsV1(data.msg) : defaultLangSettings(),
+    std: data.std ? parseSavedLangSettingsV1(data.std) : defaultLangSettings(),
+  };
+}
+
+function serializeSettingsToString(settings: SavedSettings) {
+  const trueSettings = {...settings, version: 1};
+
+  return JSON.stringify(trueSettings, function replacer(_key: string, x: unknown) {
     if (x instanceof Map) {
       const out = {} as any;
       for (const [key, value] of x.entries()) {
@@ -76,9 +97,7 @@ export function writeNameSettingsToLocalStorage(settings: SavedSettings) {
       return out;
     }
     return x;
-  }
-  const json = JSON.stringify(settings, replacer);
-  localStorage.setItem(LOCAL_STORAGE_KEY_NAMES, json);
+  });
 }
 
 function defaultLangSettings(): SavedLangSettings {
@@ -92,7 +111,7 @@ function defaultLangSettings(): SavedLangSettings {
 function parseSavedLangSettingsV1(settings: any): SavedLangSettings {
   const builtin = allBuiltins().includes(settings.builtin) ? settings.builtin : defaultBuiltin();
   const customEnabled = [true, false].includes(settings.customEnabled) ? settings.customEnabled : false;
-  const mapfiles = parseMapListV1(settings.overrides);
+  const mapfiles = parseMapListV1(settings.mapfiles);
   return {builtin, customEnabled, mapfiles};
 }
 
@@ -103,11 +122,11 @@ function parseMapListV1(x: unknown): SavedLangMap[] {
   const out = [];
   for (const item of x) {
     try {
-      const {name, gameStr} = item;
-      const game = validateGame(gameStr);
+      const {mapfile: mapfileRaw, name, game: gameStr} = item as {[K in keyof SavedLangMap]?: unknown};
+      const game = validateGame('' + gameStr);
       if (!game) throw new Error(`expected game, got: ${JSON.stringify(gameStr)}`);
       if (typeof name !== 'string') throw new Error(`expected string, got: ${JSON.stringify(name)}`);
-      const mapfile = parseLoadedMapV1(x.map);
+      const mapfile = parseLoadedMapV1(mapfileRaw);
 
       out.push({name, game, mapfile});
 
