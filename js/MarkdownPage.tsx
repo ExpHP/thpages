@@ -4,7 +4,7 @@ import {useAsync} from 'react-async';
 import {TrustedMarkdown} from './Markdown';
 import {Err} from './Error';
 
-export function MarkdownPage({path}: {path: string}) {
+export function MarkdownPage({path, setContentLoaded}: {path: string, setContentLoaded?: (x: boolean) => void}) {
   // BEWARE: useAsync only pays attention to changes in the callback, not in the additional arguments provided
   //         alongside promiseFn, so it's safer to just have an empty arguments object and use useCallback.
   const fetchMd = React.useCallback(async ({}, {signal}: AbortController) => {
@@ -14,6 +14,10 @@ export function MarkdownPage({path}: {path: string}) {
   }, [path]);
 
   const {data, error, isPending} = useAsync({promiseFn: fetchMd}, {});
+  React.useEffect(() => {
+    if (setContentLoaded) setContentLoaded(!!data);
+  }, [data, setContentLoaded]);
+
   if (isPending) return <>Loading content...</>;
   if (error) return <Err>{error.message}</Err>;
   if (data) return <TrustedMarkdown>{data}</TrustedMarkdown>;

@@ -6,7 +6,12 @@ import {useDependentState} from './XUtil';
 export function useScrollToAnchor() {
   const location = useLocation();
   const [traveled, setTraveled] = useDependentState(false, [location]);
-  const [contentLoaded, setContentLoaded] = React.useState(false);
+
+  // To see why this must be dependent state, try the following steps:
+  //  1. Go to /#/mods/bullet-cap
+  //  2. Enter /#/anm/interpolation#footnote-1 into the URL bar
+  // It should go to the anchor...
+  const [contentLoaded, setContentLoaded] = useDependentState(false, [location.search, location.pathname]);
 
   React.useLayoutEffect(() => {
     if (contentLoaded && !traveled) {

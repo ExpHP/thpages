@@ -39,10 +39,18 @@ export function useDependentState<S>(
 ): [S, React.Dispatch<React.SetStateAction<S>>] {
   let [state, setState] = React.useState<S>(initial);
 
+  // FIXME: Using useMemo for side-effects is wrong, and React reserves the right to break this.
+  //        However, we can't change this to useEffect because we need it to happen NOW;
+  //        useMemo and useCallback are the only ways to trigger code on the *current* render
+  //        when a dependency has changed.
+  //
+  //        AFAICT, there is no hook that can fix this.  The only correct solution would be to reimplement
+  //        React's dependency change check and use that to imperatively update `state` and call `setState`
+  //        in the render function body.
   React.useMemo(() => {
     const newState = reset ? reset(state) : initial;
     if (newState !== state) {
-      // Reassigning state is deliberate so that THIS render does not have a stale value.
+      // Reassigning the local 'state' (used in our return value) is deliberate so that THIS render does not have a stale value.
       setState(state = newState); // eslint-disable-line
     }
   }, inputs);

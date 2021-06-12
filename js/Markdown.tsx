@@ -19,6 +19,7 @@ import {validateGame, Game} from './tables/game';
 import {GameShort, GameNum, GameTh, GameThLong} from './Game';
 import {rehypeHighlight} from "./highlight";
 import {SingleChild, getSingleChild, Title, Wip, Wip2} from "./XUtil";
+import {HashLink} from "./UrlTools";
 import {Err} from './Error';
 
 function C({children, color}: {children: ReactNode, color: string}) {
@@ -71,15 +72,15 @@ function Weak({children}: {children: ReactNode}) {
   return <span className="weak">{children}</span>;
 }
 
-// function FootRef({children}: {children: string | [string]}) {
-//   const id = getSingleChild(children);
-//   return <sup className="footnote link"><Link to={{hash: `#footnote-${id}`}}>{id}</Link></sup>;
-// }
+function FootRef({children}: {children: string | [string]}) {
+  const id = getSingleChild(children);
+  return <sup className="footnote link"><HashLink hash={`#footnote-${id}`}>{id}</HashLink></sup>;
+}
 
-// function FootDef({children}: {children: string | [string]}) {
-//   const id = getSingleChild(children);
-//   return <sup className="footnote def" id={`footnote-${id}`}>{id}</sup>;
-// }
+function FootDef({children}: {children: string | [string]}) {
+  const id = getSingleChild(children);
+  return <sup className="footnote def" id={`footnote-${id}`}>{id}</sup>;
+}
 
 // download link with icon
 function Dl({href, children}: {href: string, children: string | [string]}) {
@@ -212,7 +213,7 @@ export function preprocessTrustedMarkdown(source: string): object {
 
 export function TrustedMarkdown({mdast}: {mdast: object}): ReactElement;
 export function TrustedMarkdown({children}: {children: string}): ReactElement;
-export function TrustedMarkdown({mdast, children}: {mdast?: object, children?: string}) {
+export const TrustedMarkdown = React.memo(function TrustedMarkdown({mdast, children}: {mdast?: object, children?: string}) {
   if (children && mdast) throw new Error("cannot supply both mdast and children");
   if (!children && !mdast) throw new Error("must supply either mdast or children");
   if (children) {
@@ -236,11 +237,11 @@ export function TrustedMarkdown({mdast, children}: {mdast?: object, children?: s
           'exp-more': More, 'exp-title': Title,
           'exp-headless-table': HeadlessTable,
           'exp-ref': Ref, 'exp-tip': MdTip,
-          // 'exp-foot-ref': FootRef, 'exp-foot-def': FootDef,
+          'exp-foot-ref': FootRef, 'exp-foot-def': FootDef,
         },
       });
 
   const hast = processor.runSync(mdast as any);
   const reactContent = processor.stringify(hast); // compiles to React elements, despite the method name.
   return <>{reactContent}</>;
-}
+});

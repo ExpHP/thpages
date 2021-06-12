@@ -88,6 +88,7 @@ function Content() {
       <Route exact path="/std/ins"><ReferenceTablePage table={STD_TABLE} setContentLoaded={setContentLoaded} /></Route>
       <Route exact path="/msg/ins"><ReferenceTablePage table={MSG_TABLE} setContentLoaded={setContentLoaded} /></Route>
       <Route exact path="/anm/stats"><StatsPage /></Route>
+
       {/* FIXME what to do about all of these markdown pages?  Should the NotFound route look for md files? */}
       {[
         "/anm/concepts",
@@ -100,7 +101,10 @@ function Content() {
         "/mods/debug-counters",
         "/mods/seasonize",
         "/mods/za-warudo",
-      ].map((path) => <Route key={path} exact path={path}><MarkdownPage path={`./content${path}.md`}/></Route>)}
+      ].map((path) => <Route key={path} exact path={path}>
+        <MarkdownPage path={`./content${path}.md`} setContentLoaded={setContentLoaded}/>
+      </Route>)}
+
       {/* <Route exact path="/settings"><Redirect to="/" /></Route> */}
       <Route><NotFound /></Route>
     </Switch>
