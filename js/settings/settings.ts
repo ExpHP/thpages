@@ -70,17 +70,24 @@ export type SavedLangMap = {
   name: string,
   mapfile: LoadedMap,
   game: Game,
-  uploadTime?: Date,
+  uploadDate: Date | null,
 };
 
-export async function loadMapFromFile(file: File, warn: (msg: string) => void): Promise<LoadedMap> {
+export async function loadMapFromFile(file: File): Promise<{mapfile: LoadedMap, warnings: string[]}> {
+  const warnings: string[] = [];
   const text = await readUploadedFile(file);
-  return loadedMapFromMapfile(parseMapfile(text, warn));
+  const mapfile = loadedMapFromMapfile(parseMapfile(text, (msg: string) => warnings.push(msg)));
+  return {mapfile, warnings};
 }
 
 export function loadedMapFromMapfile(mapfile: Mapfile): LoadedMap {
   const {ins, vars, timelineIns} = mapfile;
   return {ins, vars, timeline: timelineIns};
+}
+
+export function countNamesInLoadedMap(mapfile: LoadedMap): number {
+  const {ins, vars, timeline} = mapfile;
+  return ins.size + vars.size + timeline.size;
 }
 
 /** Compute names for refs in all languages. */

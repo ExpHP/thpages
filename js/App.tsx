@@ -1,5 +1,7 @@
 import React from 'react';
-import {StylesProvider} from '@material-ui/core/styles';
+import {StylesProvider, ThemeProvider, createMuiTheme} from '@material-ui/core/styles';
+import yellow from '@material-ui/core/colors/yellow';
+import pink from '@material-ui/core/colors/pink';
 import {HashRouter as Router, Switch, Route, Redirect, Link} from 'react-router-dom';
 
 import {useScrollToAnchor} from './ScrollToAnchorHelper';
@@ -15,30 +17,61 @@ import {Title} from './XUtil';
 
 export const MAIN_TITLE = "ExpHP's Touhou pages";
 export function App() {
-
   // injectFirst gives our CSS precedence over MUI's JSS
-  return <StylesProvider injectFirst>
+  return (
+    <ThemeProvider theme={theme}>
+      <StylesProvider injectFirst>
+        <Router>
+          <AppBody />
+        </Router>
+      </StylesProvider>
+    </ThemeProvider>
+  );
+}
+
+export function AppBody() {
+  return (
     <div className='page-width-controller'>
       <div className='header-pane'>
         <div className="header-text">{"ExpHP's Touhou pages"}</div>
       </div>
-      <Router>
-        <nav className='navigation-pane'>
-          <ErrorBoundary><Navbar></Navbar></ErrorBoundary>
-        </nav>
-        <div className='content-pane'>
-          <div className='content-paper'>
-            <ErrorBoundary>
-              <CurrentPageProvider>
-                <Content/>
-              </CurrentPageProvider>
-            </ErrorBoundary>
-          </div>
+      <nav className='navigation-pane'>
+        <ErrorBoundary><Navbar></Navbar></ErrorBoundary>
+      </nav>
+      <div className='content-pane'>
+        <div className='content-paper'>
+          <ErrorBoundary>
+            <CurrentPageProvider>
+              <Content/>
+            </CurrentPageProvider>
+          </ErrorBoundary>
         </div>
-      </Router>
+      </div>
     </div>
-  </StylesProvider>;
+  );
 }
+
+//
+const theme = createMuiTheme({
+  palette: {
+    type: 'dark',
+    primary: {main: yellow[500]},
+    secondary: {main: pink[500]},
+  },
+  transitions: {
+    duration: {
+      // make transitions shorter in general.
+      shortest: 50,
+      shorter: 100,
+      short: 150,
+      standard: 175,
+      complex: 200,
+      enteringScreen: 225,
+      leavingScreen: 195,
+    },
+  },
+});
+
 
 function Content() {
   const setContentLoaded = useScrollToAnchor();

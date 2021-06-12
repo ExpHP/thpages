@@ -7,46 +7,19 @@ input.MuiButton-root {
   transition: none;
 }
 
-.map-files {
+.mapfile-list-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
   margin-left: 1em;
-  .col.raw label::after { content: "raw"; }
-  .col.auto label::after { content: "default"; }
+}
 
-  .col.label {
-    font-weight: bold;
-    margin-right: 10px;
-    min-width: 8em;
-  }
+.mapfile-list-icon-button {
+  flex-shrink: 0;
+}
 
-  .row {
-    position: relative;
-    display: flex;
-    flex-flow: row wrap;
-    .col {
-      display: inline-block;
-      margin-right: 5px;
-    }
-    .col.status {
-      display: none;
-      margin-left: auto; // align right in flex
-    }
-  }
-
-  .save-status {
-    display: inline-block;
-    margin-left: 1em;
+.mapfile-info-tip {
+  .mapfile-info-datetime {
     font-style: italic;
-  }
-  .save-status.success::after {
-    content: 'saved';
-    color: green;
-  }
-  .save-status.unsaved::after {
-    content: 'changes unsaved';
-    color: yellow;
-  }
-  .save-status.error::after {
-    content: 'changes rolled back due to an error';
-    color: red;
   }
 }

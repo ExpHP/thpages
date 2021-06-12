@@ -1,10 +1,9 @@
 import React from 'react';
 
 import {Game} from '~/js/tables/game';
-import {Ref} from '~/js/tables';
 import {unreachable} from '../util';
 
-import {allLangs, Lang, BuiltinNameSet, LoadedMap, SavedSettings, SavedLangSettings} from './settings';
+import {Lang, BuiltinNameSet, LoadedMap, SavedSettings, SavedLangSettings} from './settings';
 
 // =============================================================================
 // Component state for a single language.
@@ -28,9 +27,9 @@ export type CustomMapfileListItem = {
   id: CustomMapfileId;
   name: string;
   game: Game | null;
-  // exactly one of these is non-null
-  savedContents: LoadedMap | null;
-  uploadedContents: LoadedMap | null;
+  contents: LoadedMap;
+  uploadDate: Date | null,
+  warnings: string[],
 };
 function findMapfileIndex(state: LangState, id: CustomMapfileId) {
   const matches = state.customMapfileList.map((value, index) => [value.id, index]).filter(([itemId]) => itemId === id);
@@ -82,11 +81,9 @@ export function initializeLangStateFromSettings(language: Lang, settings: SavedL
 
   // We'll let the reducer handle the mapfiles so it can take care of IDs for us.
   const reducer = getLangReducer(language);
-  for (const {name, mapfile, game} of mapfiles) {
+  for (const {name, mapfile, game, uploadDate} of mapfiles) {
     state = reducer(state, {type: 'custom-map/add', payload: {
-      name, game,
-      savedContents: mapfile,
-      uploadedContents: null,
+      name, game, uploadDate, contents: mapfile, warnings: [],
     }});
   }
 
@@ -101,10 +98,9 @@ function newSettingsFromLangState(state: LangState): SavedLangSettings {
   const {builtin, customEnabled, customMapfileList} = state;
   console.log(state);
   console.log(customMapfileList);
-  const mapfiles = customMapfileList.flatMap(({name, game, savedContents, uploadedContents}) => {
-    if (!game) return [];
-    if (!(uploadedContents || savedContents)) return [];
-    return [{name, game, mapfile: (uploadedContents || savedContents)!}];
+  const mapfiles = customMapfileList.flatMap(({name, game, contents, uploadDate}) => {
+    if (!game) throw new Error('You must select a game for all mapfiles');
+    return [{name, game, uploadDate, mapfile: contents}];
   });
   return {builtin, customEnabled, mapfiles};
 }
@@ -171,10 +167,6 @@ function getLangReducer(language: Lang) {
         state.customMapfileList[index] = {...oldEntry};
         const entry = state.customMapfileList[index];
         entry.id = index;
-        if (entry.uploadedContents) {
-          entry.savedContents = entry.uploadedContents;
-          entry.uploadedContents = null;
-        }
       });
       state.nextUnusedId = state.customMapfileList.length;
       return state;

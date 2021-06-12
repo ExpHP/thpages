@@ -96,6 +96,9 @@ function serializeSettingsToString(settings: SavedSettings) {
       }
       return out;
     }
+    if (x instanceof Date) {
+      return x.getTime();
+    }
     return x;
   });
 }
@@ -122,13 +125,20 @@ function parseMapListV1(x: unknown): SavedLangMap[] {
   const out = [];
   for (const item of x) {
     try {
-      const {mapfile: mapfileRaw, name, game: gameStr} = item as {[K in keyof SavedLangMap]?: unknown};
+      const {mapfile: mapfileRaw, name, game: gameStr, uploadDate: uploadDateRaw} = item as {[K in keyof SavedLangMap]?: unknown};
       const game = validateGame('' + gameStr);
       if (!game) throw new Error(`expected game, got: ${JSON.stringify(gameStr)}`);
       if (typeof name !== 'string') throw new Error(`expected string, got: ${JSON.stringify(name)}`);
+
+      let uploadDate: Date | null = null;
+      if (uploadDateRaw != null) {
+        if (typeof uploadDateRaw !== 'string') throw new Error(`expected datetime, got: ${JSON.stringify(uploadDateRaw)}`);
+        uploadDate = new Date(uploadDateRaw);
+      }
+
       const mapfile = parseLoadedMapV1(mapfileRaw);
 
-      out.push({name, game, mapfile});
+      out.push({name, game, mapfile, uploadDate});
 
     } catch (e) {
       console.error(e);

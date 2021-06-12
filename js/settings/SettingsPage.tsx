@@ -24,16 +24,19 @@ import InputLabel from '@material-ui/core/InputLabel';
 import ListItemText from '@material-ui/core/ListItemText';
 import Typography from '@material-ui/core/Typography';
 import ScopedCssBaseline from '@material-ui/core/ScopedCssBaseline';
-import {makeStyles} from '@material-ui/core/styles';
+import {makeStyles, createStyles} from '@material-ui/core/styles';
 import KeyboardArrowDownIcon from '@material-ui/icons/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@material-ui/icons/KeyboardArrowUp';
 import RestoreIcon from '@material-ui/icons/Restore';
+import WarningIcon from '@material-ui/icons/Warning';
+import InfoIcon from '@material-ui/icons/InfoOutlined';
 import DeleteIcon from '@material-ui/icons/Delete';
 
 import {If} from '~/js/XUtil';
 import {Game, allGames} from '~/js/tables/game';
+import {Tip} from '~/js/Tip';
 import {Ref, getAllTables} from '~/js/tables';
-import {SavedSettings, SavedLangSettings, Lang, loadMapFromFile, computeNameSettingsFromLangSettings, NameSettings} from './settings';
+import {SavedSettings, loadMapFromFile, NameSettings, countNamesInLoadedMap} from './settings';
 import {saveNewSettings} from './local-storage';
 import {useSettingsPageStateReducer, newSettingsFromState, LangState, LangAction, CustomMapfileListItem, State} from './settings-page-state';
 
@@ -79,11 +82,14 @@ function SaveButton({state, onSave}: {state: State, onSave: (s: SavedSettings) =
       anchorOrigin={{vertical: 'bottom', horizontal: 'center'}}
       open={snackbarType != null}
       autoHideDuration={snackbarType === 'error' ? 4000 : 2000}
-      onClose={(ev, reason) => reason === 'clickaway' && setSnackbarType(null)}
-    ><div>
-      <If cond={snackbarType === 'success'}>Settings saved!</If>
-      <If cond={snackbarType === 'error'}>An error occurred! Settings have not been saved.</If>
-    </div></Snackbar>
+      onClose={(ev, reason) => reason !== 'clickaway' && setSnackbarType(null)}
+      message={
+        snackbarType === 'error'
+          ? "An error occurred! Settings have not been saved."
+          : "Settings saved!"
+      }
+    >
+    </Snackbar>
   </>;
 }
 
@@ -106,19 +112,17 @@ function SingleLangSettings({state, dispatch}: {state: LangState, dispatch: Reac
   </>;
 }
 
-// styles to make sticky header and column work
 const useStyles = makeStyles({
-  // make a div whose height can change
   slidingDrawerContainer: {
     position: 'relative',
     overflowY: 'hidden',
-    // transition: 'height 0.25s ease-out',
     height: 0,
   },
-  // anchor the content to the bottom
   slidingDrawerContent: {
-    position: 'absolute',
-    bottom: 0,
+    transition: 'opacity 0.3s ease-out',
+    '&[data-open]': {
+      transition: 'opacity 0.3s ease-in',
+    },
   },
 });
 
@@ -132,7 +136,7 @@ function SlidingDrawer({open, children}: {open: boolean, children: ReactNode}) {
     if (ref.current) {
       setContentHeight(ref.current.offsetHeight);
     }
-  }, []);
+  }, [children]);
 
   const drawerInlineStyle = {
     transition: contentHeight > 0 ? 'height 0.1s ease-out' : undefined, // to prevent growing from 0 at the start
@@ -140,80 +144,121 @@ function SlidingDrawer({open, children}: {open: boolean, children: ReactNode}) {
   };
 
   return <div className={classes.slidingDrawerContainer} style={drawerInlineStyle}>
-    <div className={classes.slidingDrawerContent} ref={ref}>
+    <div className={classes.slidingDrawerContent} ref={ref} data-open={open || undefined}>
       {children}
     </div>
   </div>;
 }
 
 function CustomMapfileList({list, dispatch, enabled}: {list: CustomMapfileListItem[], dispatch: React.Dispatch<LangAction>, enabled: boolean}) {
+  const handleFile = (file: File) => {
+    const uploadDate = new Date();
+    loadMapFromFile(file)
+        .then(({mapfile, warnings}) => {
+          dispatch({type: 'custom-map/add', payload: {name: file.name, game: null, contents: mapfile, warnings, uploadDate}});
+        });
+  };
+
   return <div className="mapfile-list">
-    <FlipMove duration={100}>
-      {list.map((item) => <CustomMapfileListItem key={item.id} {...{item, dispatch, enabled}}/>)}
-      <CustomMapfileListItem dispatch={dispatch} enabled={enabled}/>
-    </FlipMove>
+    <FlipMove duration={200} >{[
+      ...list.map((item) => (
+        <CustomMapfileListItem className="mapfile-list-item" key={item.id} {...{item, dispatch, enabled}}/>
+      )),
+
+      // Include this button in the same array so that it can keep its key for FlipMove when it turns into a real row.
+      <div className="mapfile-list-item" key={list.length}>
+        <Tip tip="Upload a mapfile for thtk or truth" tipProps={{placement: "top-start"}}>
+          <input type="file" onChange={(ev) => handleFile(ev.target.files![0])} disabled={!enabled} />
+        </Tip>
+      </div>,
+    ]}</FlipMove>
   </div>;
 }
 
 type CustomMapfileListItemProps = {
   enabled: boolean,
-  item?: CustomMapfileListItem;
+  item: CustomMapfileListItem;
   dispatch: React.Dispatch<LangAction>;
+  className: string;
 };
 
-// The forwardRef is needed by <FlipMove>.
-const CustomMapfileListItem = forwardRef(({item, dispatch, enabled}: CustomMapfileListItemProps, ref: React.ForwardedRef<any>) => {
-  let content;
+// Bizarrely, Icons don't support color="info", or really, most of the useful colors in the palette.
+const useIconStyles = makeStyles((theme) =>
+  createStyles({
+    success: {color: theme.palette.success.main},
+    error: {color: theme.palette.error.main},
+    warning: {color: theme.palette.warning.main},
+    info: {color: theme.palette.info.main},
+  })
+);
 
-  const handleFile = (file: File) => {
-    loadMapFromFile(file)
-        .then((loadedMap) => dispatch({type: 'custom-map/add', payload: {name: file.name, game: null, uploadedContents: loadedMap, savedContents: null}}));
+
+// The forwardRef is needed by <FlipMove>.
+const CustomMapfileListItem = forwardRef(({item, className, dispatch, enabled}: CustomMapfileListItemProps, ref: React.ForwardedRef<any>) => {
+  const {id, game, name} = item;
+
+  const MyIconButton = ({dispatchType, Icon, enabled}: {dispatchType: any, Icon: any, enabled: boolean}) => {
+    return <IconButton className='mapfile-list-icon-button' size="small" onClick={() => dispatch({type: dispatchType, payload: {id}})} disabled={!enabled}>
+      <Icon/>
+    </IconButton>;
   };
 
-  if (item == null) {
-    content = <Button variant="contained" component="label" disabled={!enabled}>
-      Upload
-      <input type="file" hidden onChange={(ev) => handleFile(ev.target.files![0])} />
-    </Button>;
-  } else {
-    const {id, game, savedContents, uploadedContents} = item;
-
-    const MyIconButton = ({dispatchType, Icon, enabled}: {dispatchType: any, Icon: any, enabled: boolean}) => {
-      return <IconButton style={{flexShrink: 0}} size="small" onClick={() => dispatch({type: dispatchType, payload: {id}})} disabled={!enabled}>
-        <Icon/>
-      </IconButton>;
-    };
-    content = <>
-      <span style={{
-        marginRight: "0.5em", // FIXME what's the "right way" to get text here in MUI so we don't have to hack in our own margins?
-        display: "inline-block", whiteSpace: "nowrap",
-        overflow: "hidden", textOverflow: "ellipsis",
-        width: "10em", flexShrink: 3,
-      }}>{item.name}</span>
-      <GameDropDown
-        enabled={enabled && (savedContents == null)}
-        chosenGame={game}
-        onChange={(ev) => dispatch({type: 'custom-map/change-game', payload: {id, game: ev.target.value as Game}})}
-      />
+  return <div ref={ref} className={className}>
+    <Typography style={{
+      marginRight: "0.5em", // FIXME what's the "right way" to get text here in MUI so we don't have to hack in our own margins?
+      display: "inline-block", whiteSpace: "nowrap",
+      overflow: "hidden", textOverflow: "ellipsis",
+      width: "10em", flexShrink: 3,
+    }}>{name}</Typography>
+    <GameDropDown
+      enabled={enabled}
+      chosenGame={game}
+      onChange={(ev) => dispatch({type: 'custom-map/change-game', payload: {id, game: ev.target.value as Game}})}
+    />
+    <Tip tipProps={{enterDelay: 100}} tip={<>Rearrange map order.<br/>Maps near the bottom take priority.</>}><div>
       <MyIconButton dispatchType='custom-map/move-down' Icon={KeyboardArrowDownIcon} enabled={enabled} />
+    </div></Tip>
+    <Tip tipProps={{enterDelay: 100}} tip={<>Rearrange map order.<br/>Maps near the bottom take priority.</>}><div>
       <MyIconButton dispatchType='custom-map/move-up' Icon={KeyboardArrowUpIcon} enabled={enabled} />
+    </div></Tip>
+    <Tip tipProps={{enterDelay: 100}} tip={"Delete this map."}><div>
       <MyIconButton dispatchType='custom-map/delete' Icon={DeleteIcon} enabled={enabled} />
-      <MyIconButton dispatchType='custom-map/restore-saved' Icon={RestoreIcon} enabled={enabled && savedContents != null && uploadedContents != null} />
-    </>;
-  }
-
-  return <div ref={ref} className="mapfile-list-item" style={{display: 'flex', flexDirection: 'row', alignItems: 'center', marginLeft: "1em"}}>
-    {content}
+    </div></Tip>
+    <MapfileInfoIcon item={item}/>
   </div>;
 });
 CustomMapfileListItem.displayName = 'CustomMapfileListItem';
 
+function MapfileInfoIcon({item}: {item: CustomMapfileListItem}) {
+  const iconClasses = useIconStyles();
+  const {warnings, contents, uploadDate} = item;
+  const numNames = countNamesInLoadedMap(contents);
+
+  return (
+    <Tip tipProps={{classes: {tooltip: clsx('mapfile-info-tip', {'warning': warnings.length})}}} tip={<>
+      <p>Provides {numNames} names.</p>
+
+      {warnings.length ? <>
+        <p>Some warnings occurred while reading the file:</p>
+        <ul>{warnings.slice(0, 3).map((msg, index) => <li key={index}>{msg}</li>)}</ul>
+      </> : null}
+
+      {uploadDate ? <div className='mapfile-info-datetime'>Uploaded {new Intl.DateTimeFormat([], {dateStyle: 'medium', timeStyle: 'short'}).format(uploadDate)}</div> : null}
+    </>}>
+      {warnings.length
+        ? <WarningIcon className={iconClasses.warning} />
+        : <InfoIcon className={iconClasses.info} />}
+    </Tip>);
+}
+
 function GameDropDown({chosenGame, enabled, onChange}: {chosenGame: Game | null, enabled: boolean, onChange: React.ChangeEventHandler<any>}) {
-  return <FormControl error={chosenGame == null} size='small'>
-    <InputLabel>Game</InputLabel>
-    <Select value={chosenGame || ''} disabled={!enabled} onChange={onChange} style={{width: "5em"}}>
-      <MenuItem disabled value=''></MenuItem>
-      {[...allGames()].map((game) => <MenuItem key={game} value={game}>{`TH${game}`}</MenuItem>)}
-    </Select>
-  </FormControl>;
+  return <>
+    {/* <FormControl error={chosenGame == null} size='small'> */}
+    {/* <InputLabel>Game</InputLabel> */}
+    <select value={chosenGame || ''} disabled={!enabled} onChange={onChange} style={{width: "5em"}}>
+      <option disabled value=''>Game</option>
+      {[...allGames()].map((game) => <option key={game} value={game}>{`TH${game}`}</option>)}
+    </select>
+    {/* </FormControl> */}
+  </>;
 }

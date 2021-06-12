@@ -195,6 +195,10 @@ tfoot {
   z-index: 100;
   font-size: 14px;
 
+  &.warning {
+    background: @tip-bg-warning-color;
+  }
+
   // prevent a perfectly-placed pointer from making the tip flicker
   &, * {
     pointer-events: none;
