@@ -7,7 +7,7 @@ import {Game, allGames, gameData} from './tables/game';
 import {GameTh} from './Game';
 import {InlineRef} from './InlineRef';
 import {Tip} from './Tip';
-import {Ref, TableDef, CommonData, STD_TABLE} from './tables';
+import {Ref, TableDef, CommonData, ANM_INS_TABLE, ANM_VAR_TABLE, STD_TABLE, MSG_TABLE} from './tables';
 import {Title} from './XUtil';
 
 type CellData = {
@@ -45,8 +45,14 @@ export function StatsPage() {
 
       if (data) {
         return <>
+          <h2>Anm instructions</h2>
+          <StatsTable statsRaw={data} dataSubkey={['anm', 'ins']} table={ANM_INS_TABLE} />
+          <h2>Anm variables</h2>
+          <StatsTable statsRaw={data} dataSubkey={['anm', 'var']} table={ANM_VAR_TABLE} />
           <h2>Std instructions</h2>
           <StatsTable statsRaw={data} dataSubkey={['std', 'ins']} table={STD_TABLE} />
+          <h2>Msg (stage) instructions</h2>
+          <StatsTable statsRaw={data} dataSubkey={['msg', 'ins']} table={MSG_TABLE} />
         </>;
       }
       return null;
@@ -58,7 +64,7 @@ export function StatsPage() {
 const useStyles = makeStyles({
   container: {
     resize: 'vertical',
-    overflow: 'scroll',
+    overflowY: 'scroll',
   },
   table: {
     padding: 0, // be flush with scrollbars
@@ -91,7 +97,7 @@ function StatsTable<D extends CommonData>({dataSubkey: [lang, subkey], table, st
   return <StatsTable_ {...{table, numFiles, dataByRow}} />;
 }
 
-function StatsTable_<D extends CommonData>(props: {
+const StatsTable_ = React.memo(function StatsTable_<D extends CommonData>(props: {
     numFiles: NumFiles,
     dataByRow: StatsByRef,
     table: TableDef<D>,
@@ -135,13 +141,19 @@ function StatsTable_<D extends CommonData>(props: {
 
             {games.map((game) => {
               const cellData = rowData.get(game);
-              return <Tip key={game} disable={!(cellData)} tip={<TipBody {...{game, cellData: cellData!, numFiles}} />} >
-                <td className={clsx({
-                  na: cellData == null,
-                  zero: cellData?.total === 0,
-                })}>
-                  <span>{cellData ? `${cellData.total}` : ''}</span>  {/* FIXME is the span really necessary?? */}
-                </td>
+              return <Tip
+                key={game}
+                disable={!(cellData)}
+                tip={<TipBody {...{game, cellData: cellData!, numFiles}} />}
+                element='td' elementProps={{
+                  className: clsx({
+                    na: cellData == null,
+                    zero: cellData?.total === 0,
+                  }),
+                }}
+              >
+                {/* Note: the <span> is used to apply opacity styling to the text */}
+                <span>{cellData ? `${cellData.total}` : ''}</span>
               </Tip>;
             })}
           </tr>
@@ -149,7 +161,7 @@ function StatsTable_<D extends CommonData>(props: {
       </tbody>
     </table>
   </div>;
-}
+});
 
 function getStatsRows<D extends CommonData>(statsByOpcode: StatsByOpcodeJson, tableHandlers: TableDef<D>): StatsByRef {
   const {refByOpcode, mainPrefix, noun} = tableHandlers;

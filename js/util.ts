@@ -68,15 +68,17 @@ export function unreachable(x: never): never {
  * Usage: `console.log(debugId(obj));`
  */
 export const debugId = (() => {
-  const symbol = Symbol();
+  // it's tempting to try and set a Symbol on the object to store an ID on it, but
+  // that could fail due to Object.freeze.  We have to store the IDs externally.
+  const map = new WeakMap();
   let id = 0;
   return (x: any) => {
-    if (typeof x === 'object') {
-      if (x[symbol] == null) {
-        x[symbol] = ++id;
+    if (x && typeof x === 'object') {
+      if (!map.has(x)) {
+        map.set(x, ++id);
       }
     }
-    return x[symbol];
+    return map.get(x);
   };
 })();
 

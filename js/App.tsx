@@ -13,6 +13,7 @@ import {MarkdownPage} from './MarkdownPage';
 import {StatsPage} from './Stats';
 import {useSavedSettingsState, NameSettingsProvider, SettingsPage} from './settings';
 import {ReferenceTablePage} from './ReferenceTable';
+import {TipProvider} from './Tip';
 import {Title} from './XUtil';
 
 export const MAIN_TITLE = "ExpHP's Touhou pages";
@@ -78,7 +79,7 @@ function Content() {
   const [savedSettings, setSavedSettings] = useSavedSettingsState();
   console.log('saved', savedSettings);
 
-  return <NameSettingsProvider savedSettings={savedSettings} loading={"Loading mapfiles..."}>
+  return <NameSettingsProvider savedSettings={savedSettings} loading={"Loading mapfiles..."}><TipProvider>
     <Switch>
       <Route exact path="/"><MarkdownPage path="./content/index.md"/></Route>
       <Route exact path="/index"><Redirect to="/" /></Route>
@@ -108,7 +109,7 @@ function Content() {
       {/* <Route exact path="/settings"><Redirect to="/" /></Route> */}
       <Route><NotFound /></Route>
     </Switch>
-  </NameSettingsProvider>;
+  </TipProvider></NameSettingsProvider>;
 }
 
 function NotFound() {

@@ -215,13 +215,13 @@ const CustomMapfileListItem = forwardRef(({item, className, dispatch, enabled}: 
       chosenGame={game}
       onChange={(ev) => dispatch({type: 'custom-map/change-game', payload: {id, game: ev.target.value as Game}})}
     />
-    <Tip tipProps={{enterDelay: 100}} tip={<>Rearrange map order.<br/>Maps near the bottom take priority.</>}><div>
+    <Tip tip={<>Rearrange map order.<br/>Maps near the bottom take priority.</>}><div>
       <MyIconButton dispatchType='custom-map/move-down' Icon={KeyboardArrowDownIcon} enabled={enabled} />
     </div></Tip>
-    <Tip tipProps={{enterDelay: 100}} tip={<>Rearrange map order.<br/>Maps near the bottom take priority.</>}><div>
+    <Tip tip={<>Rearrange map order.<br/>Maps near the bottom take priority.</>}><div>
       <MyIconButton dispatchType='custom-map/move-up' Icon={KeyboardArrowUpIcon} enabled={enabled} />
     </div></Tip>
-    <Tip tipProps={{enterDelay: 100}} tip={"Delete this map."}><div>
+    <Tip tip={"Delete this map."}><div>
       <MyIconButton dispatchType='custom-map/delete' Icon={DeleteIcon} enabled={enabled} />
     </div></Tip>
     <MapfileInfoIcon item={item}/>
@@ -235,7 +235,7 @@ function MapfileInfoIcon({item}: {item: CustomMapfileListItem}) {
   const numNames = countNamesInLoadedMap(contents);
 
   return (
-    <Tip tipProps={{classes: {tooltip: clsx('mapfile-info-tip', {'warning': warnings.length})}}} tip={<>
+    <Tip popperClassName={clsx('mapfile-info-tip', {'warning': warnings.length})} tip={<>
       <p>Provides {numNames} names.</p>
 
       {warnings.length ? <>
