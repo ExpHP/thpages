@@ -25,7 +25,6 @@ export type AnmSpecSprite = {indexInFile: number, texture: number, left: number,
 export type AnmSpecTexture = {indexInFile: number, path: string, xOffset: number, yOffset: number};
 
 export async function loadAnmZip(cancel: Cancel, file: File): Promise<AnmSpecs> {
-  console.log('loadAnmZip');
   const zipBytes = await readUploadedFile(file, 'binary');
   cancel.check();
   const zip = await (await JSZipPromise).loadAsync(zipBytes);

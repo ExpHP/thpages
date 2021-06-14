@@ -4,9 +4,10 @@ import clsx from 'clsx';
 
 import {Wip, Title} from '~/js/XUtil';
 import {TrustedMarkdown} from '~/js/Markdown';
-import {arrayFromFunc, debugId, debugTimesSeen} from '~/js/util';
+import {arrayFromFunc} from '~/js/util';
 import {Tip} from '~/js/Tip';
 import {Err} from '~/js/Error';
+import {useProgress, Progress, ProgressDispatch} from './Progress';
 
 import {loadAnmZip, AnmSpecs, AnmSpec, AnmSpecTexture, AnmSpecScript, AnmSpecSprite} from './process-zip';
 import {Packery, PackeryItem} from './Packery';
@@ -69,27 +70,42 @@ function reducer(state: State, action: Action): State {
 
 
 function LayerViewerFromFile({file}: {file: File}) {
-  const promiseFn = React.useCallback(({}, abort) => loadAnmZip(new Cancel(), file), [file]); // FIXME: abort to Cancel
+  const [progressState, progress] = useProgress();
+
+  const promiseFn = React.useCallback(async ({}, abort) => {
+    const cancel = new Cancel(abort);
+    return await cancel.scopeAsync(async () => {
+      const specs = await loadAnmZip(cancel, file);
+
+      for (const spec of specs.specs) {
+        progress({type: 'spec/begin', payload: {specBasename: spec.basename, numScripts: spec.scripts.length}});
+      }
+      return specs;
+    });
+  }, [file, progress]);
 
   return <Async promiseFn={promiseFn}>
-    <Async.Pending>Reading Zip...</Async.Pending>
+    <Async.Pending><h2>Reading Zip...</h2></Async.Pending>
     <Async.Rejected>{(e) => <Err>{e.message}</Err>}</Async.Rejected>
-    <Async.Fulfilled>{(specs) => <LayerViewerFromSpecs specs={specs} />}</Async.Fulfilled>
+    <Async.Fulfilled>{(specs) => specs && (<>
+      <Progress state={progressState} />
+      <LayerViewerFromSpecs specs={specs} progress={progress} />
+    </>)}</Async.Fulfilled>
   </Async>;
 }
 
 
-function LayerViewerFromSpecs({specs}: {specs: AnmSpecs}) {
+function LayerViewerFromSpecs({specs, progress}: {specs: AnmSpecs, progress: ProgressDispatch}) {
   const [state, dispatch] = React.useReducer(reducer, null, () => arrayFromFunc(specs.maxLayer + 1, () => []));
 
   React.useEffect(() => {
     const cancel = new Cancel();
-    for (const spec of specs.specs) {
+    for (const spec of specs.specs.values()) {
       // start each file
-      cancel.scopeAsync(async () => addAnmFileToLayerViewer(dispatch, cancel, spec));
+      cancel.scopeAsync(async () => addAnmFileToLayerViewer(dispatch, progress, cancel, spec));
     }
     return () => cancel.cancel();
-  }, [specs]);
+  }, [specs, progress]);
 
   return <>
     <LayerViewers layers={state} />
@@ -165,6 +181,7 @@ const LayerViewer = React.memo(function LayerViewer({items}: {
 /** Asynchronous task that adds all images from an ANM file to the layer viewer. */
 async function addAnmFileToLayerViewer(
     dispatch: React.Dispatch<Action>,
+    progress: ProgressDispatch,
     cancel: Cancel,
     specData: AnmSpec,
 ) {
@@ -197,6 +214,7 @@ async function addAnmFileToLayerViewer(
         dispatch({type: 'add-script', payload: {layer, gridItem}});
       }
     }
+    progress({type: 'script/finished', payload: {specBasename: specData.basename}});
   }
 }
 

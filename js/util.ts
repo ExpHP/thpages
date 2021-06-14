@@ -173,3 +173,33 @@ export async function domOnce($elem: HTMLElement, type: string) {
     $elem.addEventListener('error', onerror);
   });
 }
+
+export interface Comparator<T> {
+  (a: T, b: T): number
+}
+
+export function defaultCmp<T>(a: T, b: T) {
+  if (a < b) return -1;
+  if (a > b) return 1;
+  return 0;
+}
+
+/** In-place stable sort. */
+export function stableSort<T>(array: T[], funcs: {cmp?: Comparator<T>}): T[];
+export function stableSort<T, U>(array: T[], funcs: {cmp?: Comparator<U>, key?: (a: T) => U}): T[];
+export function stableSort<T, U>(array: T[], {cmp = defaultCmp, key = (x: any) => x}: {cmp: any, key: any}): T[] {
+  const stabilized = array.map((el, index) => [key(el), index] as const);
+  const stableCmp: Comparator<readonly [U, number]> = (a, b) => {
+    const order = cmp(a[0], b[0]);
+    if (order != 0) return order;
+    return a[1] - b[1];
+  };
+
+  stabilized.sort(stableCmp);
+  const originals = array.splice(0, array.length);
+  for (const [, index] of stabilized) {
+    array.push(originals[index]);
+  }
+
+  return array;
+}
