@@ -81,7 +81,7 @@
   overflow-y: scroll;
 
   img {
-    vertical-align: middle; // don't have a baseline
+    display: block;
   }
 
   .grid-item {
@@ -99,7 +99,7 @@
     }
   }
 
-  .grid-item.imageless {
+  .grid-item .imageless {
     display: grid;
     grid-template-rows: 35px 13px 13px;
     justify-items: center;

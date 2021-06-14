@@ -85,47 +85,45 @@ function LayerViewerFromSpecs({specs}: {specs: AnmSpecs}) {
   React.useEffect(() => {
     const cancel = new Cancel();
     for (const spec of specs.specs) {
-      // start each file (this is async)
-      addAnmFileToLayerViewer(dispatch, cancel, spec);
+      // start each file
+      cancel.scopeAsync(async () => addAnmFileToLayerViewer(dispatch, cancel, spec));
     }
-
     return () => cancel.cancel();
   }, [specs]);
 
   return <>
-    {/* <Status /> */}
-    {/* <ErrorDisplay /> */}
     <LayerViewers layers={state} />
   </>;
 }
 
 
-/** Helper used to cancel async operations on an error by using an exception to bubble out of cancelable operations. */
+/** Helper used to cancel operations by using an exception to bubble out of a computationally intensive or async task. */
 export class Cancel {
-  public cancelled: boolean;
+  private _abortController: AbortController;
+  /** The error type thrown by `check`.  Each instance of `Cancel` has a unique `Error` type. */
   public Error: new () => Error;
-  constructor() {
+
+  constructor(abortController?: AbortController) {
+    this._abortController = abortController || new AbortController();
+
     class CancelError extends Error {}
-    this.cancelled = false;
     this.Error = CancelError;
   }
+  get cancelled() {
+    return this._abortController.signal.aborted;
+  }
+  /** Get an object that implements the AbortController interface.  Multiple calls are guaranteed to return the same object. */
+  public asAbortController() {
+    return this._abortController;
+  }
   public cancel() {
-    this.cancelled = true;
+    this._abortController.abort();
   }
   /** Check for cancellation.  If cancellation has occurred, a CancelError is thrown to bubble out of the nearest `scope`. */
   public check() {
     if (this.cancelled) throw new this.Error();
   }
-  /** Run a callback, catching CancelError.  This effectively sets a boundary for what gets canceled. */
-  public scope<T>(cb: () => T): T | null {
-    if (this.cancelled) return null;
-    try {
-      return cb();
-    } catch (e) {
-      if (e instanceof this.Error) return null;
-      throw e;
-    }
-  }
+  /** Run an async callback, converting CancelError rejections into "successful" null values. */
   public async scopeAsync<T>(cb: () => Promise<T>): Promise<T | null> {
     if (this.cancelled) return null;
     try {
@@ -162,58 +160,58 @@ const LayerViewer = React.memo(function LayerViewer({items}: {
   </div>;
 });
 
+// =============================================================================
 
-/** Add all images from an ANM file to the layer viewer. */
+/** Asynchronous task that adds all images from an ANM file to the layer viewer. */
 async function addAnmFileToLayerViewer(
     dispatch: React.Dispatch<Action>,
     cancel: Cancel,
     specData: AnmSpec,
 ) {
   for (const script of specData.scripts) {
-    for (const layer of script.layers) {
-      if (layer == null) continue;
-      for (const spriteId of script.sprites) {
-        if (spriteId == null) continue;
+    for (const spriteId of script.sprites) {
+      if (spriteId == null) continue;
 
-        const sprite = specData.sprites[spriteId];
-        const texture = specData.textures[sprite.texture];
-        const $textureImg = await specData.textureImages[sprite.texture];
-        await new Promise((resolve) => setTimeout(resolve, 0));
+      const sprite = specData.sprites[spriteId];
+      const texture = specData.textures[sprite.texture];
+      const $textureImg = await specData.textureImages[sprite.texture];
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      cancel.check();
+
+      const className = clsx({'warn-multiple-layer': script.layers.length > 1});
+
+      let gridItemBody;
+      if ($textureImg) {
+        const blob = await getCroppedSpriteBlob(texture, sprite, $textureImg);
         cancel.check();
-        const className = clsx({'warn-multiple-layer': script.layers.length > 1});
-        const gridItem = (
-          <Tip tip={<TipBody anmName={specData.basename} script={script} sprite={sprite}/>}>
-            {$textureImg
-              ? <ImageSpriteGridItem className={className} {...{cancel, $textureImg, texture, sprite}}/>
-              : <DynamicSpriteGridItem className={className} {...{anmName: specData.basename, texture, sprite}}/>}
-          </Tip>
-        );
+        gridItemBody = <ImageSpriteGridItem className={className} {...{sprite, blob}}/>;
+      } else {
+        gridItemBody = <DynamicSpriteGridItem className={className} {...{anmName: specData.basename, texture, sprite}}/>;
+      }
+
+      const gridItemTip = <TipBody anmName={specData.basename} script={script} sprite={sprite}/>;
+      const gridItem = <Tip element="div" tip={gridItemTip}>{gridItemBody}</Tip>;
+
+      for (const layer of script.layers) {
+        if (layer == null) continue;
         dispatch({type: 'add-script', payload: {layer, gridItem}});
       }
     }
   }
 }
 
-const ImageSpriteGridItem = React.memo(function ImageSpriteGridItem(allprops: {cancel: Cancel, texture: AnmSpecTexture, sprite: AnmSpecSprite, $textureImg: HTMLImageElement} & React.HTMLAttributes<HTMLElement>) {
-  const {cancel, texture, sprite, $textureImg, ...props} = allprops;
+const ImageSpriteGridItem = React.memo(function ImageSpriteGridItem(allprops: {sprite: AnmSpecSprite, blob: Blob} & React.HTMLAttributes<HTMLElement>) {
+  const {sprite, blob, ...props} = allprops;
 
   const [nicerWidth, nicerHeight] = nicerImageSize([sprite.width, sprite.height]);
-  const promiseFn = React.useCallback(() => getCroppedSpriteBlob(cancel, texture, sprite, $textureImg), [cancel, texture, sprite, $textureImg]);
-
   if (sprite.width === 0 || sprite.height === 0) {
     return <div style={{width: 16, height: 16}}></div>;
   }
 
-  return <Async promiseFn={promiseFn}>
-    <Async.Pending><img width={nicerWidth} height={nicerHeight} src={TRANSPARENT_PIXEL_IMAGE_SRC} /></Async.Pending>
-    <Async.Fulfilled>{(blob) => (
-      <BlobImg width={nicerWidth} height={nicerHeight} blob={blob as Blob} {...props} />
-    )}</Async.Fulfilled>
-    <Async.Rejected><Err>img</Err></Async.Rejected>
-  </Async>;
+  return <BlobImg width={nicerWidth} height={nicerHeight} blob={blob} {...props} />;
 });
 
-async function getCroppedSpriteBlob(cancel: Cancel, texture: AnmSpecTexture, sprite: AnmSpecSprite, $textureImg: HTMLImageElement): Promise<Blob> {
+async function getCroppedSpriteBlob(texture: AnmSpecTexture, sprite: AnmSpecSprite, $textureImg: HTMLImageElement): Promise<Blob> {
   // create a new <img> whose image is the texture cropped to this sprite.
   const $clippingCanvas = document.createElement('canvas');
   const clippingCtx = $clippingCanvas.getContext('2d');
@@ -229,32 +227,22 @@ async function getCroppedSpriteBlob(cancel: Cancel, texture: AnmSpecTexture, spr
       0, 0, sprite.width, sprite.height, // dest rect
   );
 
-  let out;
-  try {
-    out = await canvasToBlobAsync($clippingCanvas);
-  } catch (e) {
-    console.error(sprite);
-    throw e;
-  }
-
-  // need to check after every await (and we can't do this inside of the try, or the CancelError would be caught there)
-  cancel.check();
-  return out;
+  return await canvasToBlobAsync($clippingCanvas);
 }
 
 function BlobImg({blob, ...props}: {blob: Blob} & React.ImgHTMLAttributes<HTMLImageElement>) {
-  const [objectUrl, setObjectUrl] = React.useState<string | undefined>();
+  const [imageSrc, setImageSrc] = React.useState<string>(TRANSPARENT_PIXEL_IMAGE_SRC);
   const ref = React.useRef<HTMLImageElement | null>(null);
 
   React.useEffect(() => {
     const url = URL.createObjectURL(blob);
-    setObjectUrl(url);
+    setImageSrc(url);
     ref.current!.addEventListener('load', () => URL.revokeObjectURL(url));
 
     return () => URL.revokeObjectURL(url);
   }, [blob]);
 
-  return <img ref={ref} src={objectUrl} {...props}/>;
+  return <img ref={ref} src={imageSrc} {...props}/>;
 }
 
 function DynamicSpriteGridItem(allprops: {anmName: string, texture: AnmSpecTexture, sprite: AnmSpecSprite, className: string} & React.HTMLAttributes<HTMLDivElement>) {
