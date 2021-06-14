@@ -10,6 +10,7 @@ import {CurrentPageProvider} from './UrlTools';
 import {ErrorBoundary} from './Error';
 import {Navbar} from './Navbar';
 import {MarkdownPage} from './MarkdownPage';
+import {LayerViewerPage} from './layer-viewer/LayerViewer';
 import {StatsPage} from './Stats';
 import {useSavedSettingsState, NameSettingsProvider, SettingsPage} from './settings';
 import {ReferenceTablePage} from './ReferenceTable';
@@ -89,6 +90,7 @@ function Content() {
       <Route exact path="/std/ins"><ReferenceTablePage table={STD_TABLE} setContentLoaded={setContentLoaded} /></Route>
       <Route exact path="/msg/ins"><ReferenceTablePage table={MSG_TABLE} setContentLoaded={setContentLoaded} /></Route>
       <Route exact path="/anm/stats"><StatsPage /></Route>
+      <Route exact path="/anm/layer-viewer"><LayerViewerPage /></Route>
 
       {/* FIXME what to do about all of these markdown pages?  Should the NotFound route look for md files? */}
       {[
@@ -97,7 +99,6 @@ function Content() {
         "/anm/stages-of-rendering",
         "/anm/ontick-ondraw",
         "/anm/game-colors",
-        "/anm/layer-viewer",
         "/mods/bullet-cap",
         "/mods/debug-counters",
         "/mods/seasonize",

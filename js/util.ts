@@ -82,6 +82,24 @@ export const debugId = (() => {
   };
 })();
 
+/**
+ * Return a unique identifier for each object passed in, to help differentiate object identity while debugging.
+ *
+ * Usage: `console.log(debugId(obj));`
+ */
+export const debugTimesSeen = (() => {
+  const map = new WeakMap();
+  return (x: any) => {
+    if (x && typeof x === 'object') {
+      const old = map.get(x) || 0;
+      map.set(x, old + 1);
+      return old + 1;
+    }
+    return map.get(x);
+  };
+})();
+
+
 /** Deep equality test. */
 export function deepEqual(val1: unknown, val2: unknown) {
   return deepInequalityWitness(val1, val2) == null;
@@ -120,4 +138,38 @@ function objectDeepInequalityWitness(object1: object, object2: object, path: str
   }
 
   return null;
+}
+
+/** Generates an array of the integers from start (inclusive) to end (exclusive). */
+export function range(start: number, end: number) {
+  return [...new Array(end - start).keys()].map((x) => x + start);
+}
+
+
+/** Create an array by calling a function on each index. */
+export function arrayFromFunc<T>(length: number, func: (index: number) => T): T[] {
+  return range(0, length).map(func);
+}
+
+
+/**
+ * Async-ifies an HTML DOM event.
+ *
+ * E.g. `await domOnce(elem, 'click')` will wait for a single `'click'` event to occur.
+ * During this time, an `error` event will be mapped to `Promise.reject`; this is used by some
+ * HTML elements like `<img>`.
+ **/
+export async function domOnce($elem: HTMLElement, type: string) {
+  return new Promise((resolve, reject) => {
+    const onerror = (ev: ErrorEvent) => {
+      $elem.removeEventListener('error', onerror);
+      reject(new Error(ev.message));
+    };
+    const onevent = () => {
+      $elem.removeEventListener('error', onerror);
+      resolve(undefined);
+    };
+    $elem.addEventListener(type, onevent);
+    $elem.addEventListener('error', onerror);
+  });
 }

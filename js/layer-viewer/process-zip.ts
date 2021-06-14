@@ -2,51 +2,69 @@ import type JSZip from 'jszip';
 
 import {ANM_INS_TABLE} from "~/js/tables";
 import {parseGame, Game} from '~/js/tables/game';
+import {readUploadedFile, domOnce} from '~/js/util';
+import type {Cancel} from './LayerViewer';
+
+const JSZipPromise = import('jszip'); // big module
+
+export type AnmSpecs = {
+  specs: AnmSpec[];
+  maxLayer: number;
+};
 
 export type AnmSpec = {
-  textures: AnmSpecTexture[],
-  sprites: AnmSpecSprite[],
-  scripts: AnmSpecScript[],
+  basename: string,
+  textures: AnmSpecTexture[];
+  sprites: AnmSpecSprite[];
+  scripts: AnmSpecScript[];
+  textureImages: Promise<HTMLImageElement | null>[];
 };
+type ParsedAnmSpec = Omit<AnmSpec, 'textureImages' | 'basename'>;
 export type AnmSpecScript = {indexInFile: number, sprites: (number | null)[], layers: (number | null)[]};
 export type AnmSpecSprite = {indexInFile: number, texture: number, left: number, top: number, width: number, height: number};
 export type AnmSpecTexture = {indexInFile: number, path: string, xOffset: number, yOffset: number};
 
-
-async function runLayerViewer(status: Status, cancel: Cancel, zip: JSZip, $layerViewer: HTMLElement): Promise<void> {
-  // clear any existing stuff
-  $layerViewer.innerHTML = '';
-  LVIEWER_TIP_RESOLVER = new PrefixResolver();
-  globalTips.registerPrefix('layer-viewer', LVIEWER_TIP_RESOLVER);
+export async function loadAnmZip(cancel: Cancel, file: File): Promise<AnmSpecs> {
+  console.log('loadAnmZip');
+  const zipBytes = await readUploadedFile(file, 'binary');
+  cancel.check();
+  const zip = await (await JSZipPromise).loadAsync(zipBytes);
+  cancel.check();
+  const game = await readGameFromZip(cancel, zip);
+  cancel.check();
 
   const specZipObjs = zip.file(/spec\.spec/);
-  const progress = {
-    anmFilesDone: 0,
-    anmFilesTotal: specZipObjs.length,
-    remainingFilenames: specZipObjs.map((obj) => `${obj.name.split('/')[0]}.anm`),
-  };
-  status.setFromProgress(progress);
+  // progress.startAnmFiles(specZipObjs.map((obj) => `${specAnmBasename(obj.name)}.anm`));
 
-  const helpers = {status, cancel, progress};
-  const game = await readGameFromZip(helpers, zip);
-
-  const promises = specZipObjs.map(async (specZipObj) => {
+  const specs = await Promise.all(specZipObjs.map(async (specZipObj) => {
     const text = await specZipObj.async('text');
     cancel.check();
     const parsedSpec = parseAnmSpec(text, game, specZipObj.name);
-    const subdir = specZipObj.name.split('/')[0];
-    const anmBasename = subdir;
+    const subdir = specAnmBasename(specZipObj.name);
+    const textureImages = beginLoadingTexturesFromZip(cancel, parsedSpec, zip, subdir);
+    return {...parsedSpec, textureImages, basename: subdir};
+  }));
 
-    return addAnmFileToLayerViewer(helpers, $layerViewer, layerPackers, zip, subdir, parsedSpec);
-  });
-
-  // Work is now occurring on all anm files concurrently.
-  // To properly trap errors though we need to await everything.
-  await Promise.all(promises);
+  const maxLayer = findMaxLayer(specs);
+  return {specs, maxLayer};
 }
 
 
-async function readGameFromZip({cancel}: Helpers, zip: JSZip) {
+function findMaxLayer(specs: AnmSpec[]): number {
+  const maxBySpec = specs.map((spec) => Math.max(...spec.scripts.map(
+      (script) => Math.max(...script.layers.map((layer) => layer || 0)),
+  )));
+
+  return Math.max(...maxBySpec, 0);
+}
+
+
+function specAnmBasename(specPath: string): string {
+  return specPath.split('/')[0];
+}
+
+
+async function readGameFromZip(cancel: Cancel, zip: JSZip) {
   const gameZipObj = zip.file('game.txt');
   if (!gameZipObj) {
     throw new Error('missing game.txt in archive');
@@ -64,7 +82,7 @@ async function readGameFromZip({cancel}: Helpers, zip: JSZip) {
 
 
 // This is a really dumb parser that's easily fooled. Please be nice to it.
-export function parseAnmSpec(text: string, game: Game, filename?: string): AnmSpec {
+function parseAnmSpec(text: string, game: Game, filename?: string): ParsedAnmSpec {
   text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
 
   type EntryState = {state: 'entry', path: string | null, xOffset: number, yOffset: number};
@@ -81,7 +99,7 @@ export function parseAnmSpec(text: string, game: Game, filename?: string): AnmSp
   const readLayerInsDigits = (line: string) => line.match(layerInsRe)?.[1];
 
   const lines = text.split('\n');
-  const out: AnmSpec = {textures: [], sprites: [], scripts: []};
+  const out: ParsedAnmSpec = {textures: [], sprites: [], scripts: []};
   for (let lineI = 0; lineI < lines.length; lineI++) {
     const line = lines[lineI];
     const lineErr = (msg: string) => new Error(`${filename || '<unknown>'}:${lineI}: ${msg}`);
@@ -166,4 +184,38 @@ export function parseAnmSpec(text: string, game: Game, filename?: string): AnmSp
   } // for (let lineI = ...)
 
   return out;
+}
+
+
+function beginLoadingTexturesFromZip(cancel: Cancel, anmSpec: ParsedAnmSpec, zip: JSZip, subdir: string): Promise<HTMLImageElement | null>[] {
+  return anmSpec.textures.map(async ({path}) => {
+    if (path.charAt(0) === '@') {
+      return null; // dynamic image buffer, not a spritesheet
+    }
+
+    const file = zip.file(`${subdir}/${path}`);
+    if (!file) {
+      throw new Error(`Could not find image file "${path}" in archive`);
+    }
+    const $textureImg = new Image();
+    const textureBytes = await file.async('arraybuffer');
+    cancel.check();
+    setImageToObjectUrl($textureImg, new Blob([textureBytes], {type: 'image/png'}));
+
+    // Wait for the image to load before using it to create sprites.
+    await domOnce($textureImg, 'load');
+    cancel.check();
+
+    return $textureImg;
+  });
+}
+
+
+// FIXME: Due to SPA design, this probably still leaks memory if the user navigates to another "page" before
+//        the image loads, but the process of exacerbating this leak is slow so (a) it's difficult to validate the
+//        success of any solution to the problem and (b) the problem will probably never noticeably impact anyone.
+/** Sets an image to use an object URL for the given object, automatically revoking the URL once it is loaded. */
+export function setImageToObjectUrl($img: HTMLImageElement, object: Blob) {
+  $img.src = URL.createObjectURL(object);
+  $img.addEventListener('load', () => URL.revokeObjectURL($img.src));
 }

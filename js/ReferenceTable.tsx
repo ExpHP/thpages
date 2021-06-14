@@ -7,6 +7,7 @@ import {CurrentReferenceTableRowContext} from './InlineRef';
 import {TrustedMarkdown} from './Markdown';
 import {gameData, Game} from './tables/game';
 import {GameThLong} from './Game';
+import {range} from './util';
 import {Wip as Wip1, Wip2, useIncremental} from './XUtil';
 import {VarHeader, InsSiggy} from './InsAndVar';
 
@@ -43,11 +44,6 @@ export function GameSelector<D extends CommonData>({table, currentGame}: {table:
 }
 
 
-function range(start: number, end: number) {
-  return [...new Array(end - start).keys()].map((x) => x + start);
-}
-
-
 function ReferenceTable<D extends CommonData>({table, currentGame: game, setContentLoaded}: {table: TableDef<D>, currentGame: Game, setContentLoaded: (x: boolean) => void}}) {
   const {getGroups, textBeforeTable, TableRow} = table;
   const instrCounts = getInstrCounts(table, game);
@@ -76,7 +72,7 @@ function ReferenceTable<D extends CommonData>({table, currentGame: game, setCont
         {group.min}-{group.max}: {group.title}
       </HashLink></h2>;
     }
-  
+
     const rows = range(group.min, group.max + 1).map((opcode) => {
       const refObj = table.getRefByOpcode(game, opcode);
       if (refObj == null) return null; // instruction doesn't exist
@@ -89,7 +85,7 @@ function ReferenceTable<D extends CommonData>({table, currentGame: game, setCont
         <TableRow {...{table, game, data, opcode, r: refObj.ref}} />
       </CurrentReferenceTableRowContext.Provider>;
     }).filter((x) => x);
-  
+
     return <React.Fragment key={group.min}>
       {possibleHeader}
       <table className='ins-table'><tbody>{rows}</tbody></table>
@@ -118,7 +114,7 @@ function ReferenceTable<D extends CommonData>({table, currentGame: game, setCont
 
 function getInstrCounts<D extends CommonData>(table: TableDef<D>, game: Game) {
   const map = table.refByOpcode.get(game)!;
-  
+
   let documented = 0;
   for (const opcode of table.refByOpcode.get(game)!.keys()) {
     const refObj = table.getRefByOpcode(game, opcode)!;

@@ -1,24 +1,107 @@
 import React from 'react';
+import {Async} from 'react-async';
+import clsx from 'clsx';
 
-import {parseAnmSpec, AnmSpec, AnmSpecScript, AnmSpecSprite} from './analyze-script';
+import {Wip, Title} from '~/js/XUtil';
+import {TrustedMarkdown} from '~/js/Markdown';
+import {arrayFromFunc, debugId, debugTimesSeen} from '~/js/util';
+import {Tip} from '~/js/Tip';
+import {Err} from '~/js/Error';
 
-import {readUploadedFile} from './util';
-import {parseGame, Game} from './game-names';
-import {getAnmInsHandlers} from './tables';
-import {globalTips, Tip} from '../tips';
-import * as events from 'events';
-import {PrefixResolver} from '../resolver';
-import type JSZip from 'jszip';
-import type Packery from 'packery';
-const BigImports = {
-  JSZip: import('jszip'),
-  Packery: import('packery') as unknown as Promise<typeof Packery>,
-};
+import {loadAnmZip, AnmSpecs, AnmSpec, AnmSpecTexture, AnmSpecScript, AnmSpecSprite} from './process-zip';
+import {Packery, PackeryItem} from './Packery';
 
-type Progress = {anmFilesTotal: number, anmFilesDone: number, remainingFilenames: string[]};
+export function LayerViewerPage() {
+  const [file, setFile] = React.useState<File | undefined>();
 
-/** Helper used to cancel async operations on an error. */
-class Cancel {
+  return <>
+    <Title>ANM Layer Viewer</Title>
+    <PageText/>
+    <p><input type='file' accept='.zip' onChange={(event) => setFile(event.target.files![0])} /></p>
+    <hr style={{clear: 'both'}} />
+    {file
+      ? <LayerViewerFromFile file={file}/>
+      : <h2>No file loaded</h2>
+    }
+  </>;
+}
+
+function PageText() {
+  return <TrustedMarkdown>{/* md */`
+# Layer Viewer
+
+<!-- FIXME: should really be trying to make use of 'figure' elements and try to make the styling responsive -->
+<img height="350" style="border: solid 2px white; float: right; margin: 10px;" src="content/anm/img/layer-viewer-example.png" />
+
+This page can show you can show you all of the sprites whose ANM scripts explicitly use each layer in a Touhou game.
+
+1. Make sure thtk binaries (particularly \`thdat\` and \`thanm\`) are available on your PATH.
+   **IMPORTANT: even the latest release of thtk is not recent enough;**
+   you will need a development version of thanm from the [\`thanm-new-spec-format\`](https://github.com/thpatch/thtk/tree/thanm-new-spec-format) branch.
+   Windows builds of this branch are available in the \`#thtk-builds\` channel on the [ZUNcode Discord](https://discord.gg/fvPJvHJ).
+   (commit \`b7321bb\` should do fine)
+2. Use :dl[this python script]{href="content/anm/make-layer-viewer-zip.py"} to repackage the anm files from \`thXX.dat\` into a zip file:
+   ~~~
+   py -3 make-layer-viewer-zip.py --game 125 th125.dat -o th125-anms.zip
+   ~~~
+3. Click the button below and select the zip you created.
+4. The page should begin to populate.
+
+If you have problems/ideas/requests, go \`@\` me on the [ZUNcode discord](https://discord.gg/fvPJvHJ).
+`}</TrustedMarkdown>;
+}
+
+type State = React.ReactElement[][];
+type Action =
+  | {type: 'add-script', payload: {layer: number, gridItem: React.ReactElement}}
+  ;
+
+function reducer(state: State, action: Action): State {
+  switch (action.type) {
+    case 'add-script': {
+      const {layer, gridItem} = action.payload;
+      const newState = [...state];
+      newState[layer] = [...newState[layer], gridItem]; // FIXME quadratic
+      return newState;
+    }
+  }
+}
+
+
+function LayerViewerFromFile({file}: {file: File}) {
+  const promiseFn = React.useCallback(({}, abort) => loadAnmZip(new Cancel(), file), [file]); // FIXME: abort to Cancel
+
+  return <Async promiseFn={promiseFn}>
+    <Async.Pending>Reading Zip...</Async.Pending>
+    <Async.Rejected>{(e) => <Err>{e.message}</Err>}</Async.Rejected>
+    <Async.Fulfilled>{(specs) => <LayerViewerFromSpecs specs={specs} />}</Async.Fulfilled>
+  </Async>;
+}
+
+
+function LayerViewerFromSpecs({specs}: {specs: AnmSpecs}) {
+  const [state, dispatch] = React.useReducer(reducer, null, () => arrayFromFunc(specs.maxLayer + 1, () => []));
+
+  React.useEffect(() => {
+    const cancel = new Cancel();
+    for (const spec of specs.specs) {
+      // start each file (this is async)
+      addAnmFileToLayerViewer(dispatch, cancel, spec);
+    }
+
+    return () => cancel.cancel();
+  }, [specs]);
+
+  return <>
+    {/* <Status /> */}
+    {/* <ErrorDisplay /> */}
+    <LayerViewers layers={state} />
+  </>;
+}
+
+
+/** Helper used to cancel async operations on an error by using an exception to bubble out of cancelable operations. */
+export class Cancel {
   public cancelled: boolean;
   public Error: new () => Error;
   constructor() {
@@ -29,10 +112,13 @@ class Cancel {
   public cancel() {
     this.cancelled = true;
   }
+  /** Check for cancellation.  If cancellation has occurred, a CancelError is thrown to bubble out of the nearest `scope`. */
   public check() {
     if (this.cancelled) throw new this.Error();
   }
+  /** Run a callback, catching CancelError.  This effectively sets a boundary for what gets canceled. */
   public scope<T>(cb: () => T): T | null {
+    if (this.cancelled) return null;
     try {
       return cb();
     } catch (e) {
@@ -41,6 +127,7 @@ class Cancel {
     }
   }
   public async scopeAsync<T>(cb: () => Promise<T>): Promise<T | null> {
+    if (this.cancelled) return null;
     try {
       return await cb();
     } catch (e) {
@@ -50,214 +137,83 @@ class Cancel {
   }
 }
 
-class Status {
-  private $elem;
-  constructor($elem: HTMLElement) {
-    this.$elem = $elem;
-  }
-  set(cssClass: 'idle' | 'working', text: string, filenamesText: string) {
-    const $mainText = this.$elem.querySelector('.main-text')! as HTMLElement;
-    const $filenamesText = this.$elem.querySelector('.filenames-text')! as HTMLElement;
-    this.$elem.classList.remove('idle', 'working');
-    this.$elem.classList.add(cssClass);
-    $mainText.innerText = text;
-    $filenamesText.innerText = filenamesText;
-  }
-  setFromProgress({anmFilesDone, anmFilesTotal, remainingFilenames}: Progress) {
-    const endPunctuation = anmFilesDone === anmFilesTotal ? '!' : '...';
-    const cssClass = anmFilesDone === anmFilesTotal ? 'idle' : 'working';
-    const mainText = `Processed ${anmFilesDone} of ${anmFilesTotal} anm files${endPunctuation}`;
 
-    let filenamesText = "";
-    if (remainingFilenames.length > 0) {
-      const numToShow = 7;
-      const filenamesEllipsis = remainingFilenames.length > numToShow ? ", ..." : "";
-      filenamesText = "(working: " + remainingFilenames.slice(0, numToShow).join(", ") + filenamesEllipsis + ")";
-    }
-    this.set(cssClass, mainText, filenamesText);
-  }
+function LayerViewers({layers}: {
+    layers: React.ReactElement[][],
+}) {
+  return <>{layers.map((layer, index) => (
+    <React.Fragment key={index}>
+      <h2>Layer {index}</h2>
+      <LayerViewer items={layer}/>
+    </React.Fragment>
+  ))}</>;
 }
 
-type Helpers = {status: Status, progress: Progress, cancel: Cancel};
+const LayerViewer = React.memo(function LayerViewer({items}: {
+    items: React.ReactElement[],
+}) {
+  const packeryOptions = React.useMemo(() => ({gutter: 4}), []);
 
-// This global could easily be replaced with a local variable, but I've deliberately made it global
-// to emphasize the fact that multiple cannot exist. (they would both try to register for the 'layer-viewer' prefix)
-/** Resolves tips for the layer viewers. Tip keys look like `layer-viewer:stg5enm:5-4` (last two numbers are script and sprite). */
-let LVIEWER_TIP_RESOLVER = new PrefixResolver<Tip>();
-
-(window as any).buildLayerViewer = buildLayerViewer;
-async function buildLayerViewer() {
-  const $layerViewer = document.querySelector<HTMLElement>('#layer-viewer-output')!;
-  const $fileUpload = document.querySelector<HTMLInputElement>('#layer-viewer-file')!;
-  const status = new Status(document.querySelector<HTMLElement>('#layer-viewer-status')!);
-  status.set('idle', 'No zip file loaded', '');
-
-  $fileUpload.addEventListener('change', (() => {
-    const cancel = new Cancel();
-    return async () => await trapErr({status, cancel}, async () => await cancel.scopeAsync(async () => {
-      if ($fileUpload.files!.length === 0) return;
-      const zipBytes = await readUploadedFile($fileUpload.files![0], 'binary');
-      const zip = await (await BigImports.JSZip).loadAsync(zipBytes);
-      cancel.check();
-      status.set('working', `Reading zip file structure...`, '');
-
-      await runLayerViewer(status, cancel, zip, $layerViewer);
-    }));
-  })());
-}
-
-async function runLayerViewer(status: Status, cancel: Cancel, zip: JSZip, $layerViewer: HTMLElement): Promise<void> {
-  // clear any existing stuff
-  $layerViewer.innerHTML = '';
-  LVIEWER_TIP_RESOLVER = new PrefixResolver();
-  globalTips.registerPrefix('layer-viewer', LVIEWER_TIP_RESOLVER);
-
-  const specZipObjs = zip.file(/spec\.spec/);
-  const progress = {
-    anmFilesDone: 0,
-    anmFilesTotal: specZipObjs.length,
-    remainingFilenames: specZipObjs.map((obj) => `${obj.name.split('/')[0]}.anm`),
-  };
-  status.setFromProgress(progress);
-
-  const helpers = {status, cancel, progress};
-  const game = await readGameFromZip(helpers, zip);
-
-  const layerPackers: Packery[] = [];
-  const promises = specZipObjs.map(async (specZipObj) => {
-    const text = await specZipObj.async('text');
-    cancel.check();
-    const parsedSpec = parseAnmSpec(text, game, specZipObj.name);
-    const subdir = specZipObj.name.split('/')[0];
-    const anmBasename = subdir;
-
-    return addAnmFileToLayerViewer(helpers, $layerViewer, layerPackers, zip, subdir, parsedSpec);
-  });
-
-  // Work is now occurring on all anm files concurrently.
-  // To properly trap errors though we need to await everything.
-  await Promise.all(promises);
-}
-
-async function trapErr(
-    {status, cancel}: Omit<Helpers, 'progress'>,
-    cb: () => Promise<any>,
-): Promise<void> {
-  try {
-    return await cb();
-  } catch (e) {
-    status.set('idle', 'Operation cancelled due to an error.', '');
-    cancel.cancel();
-    const $error = document.querySelector<HTMLElement>('#layer-viewer-error')!;
-    if ($error.style.display === 'none') {
-      $error.innerText = `An error occurred:\n\n${e}`;
-      $error.style.display = 'block';
-    }
-    throw e;
-  }
-}
+  // the outer div is because packery always sets height
+  return <div className='layer-viewer-scripts'>
+    <Packery className='packery-container' packeryOptions={packeryOptions}>
+      {items.map((child, index) => <PackeryItem key={index}>{child}</PackeryItem>)}
+    </Packery>
+  </div>;
+});
 
 
 /** Add all images from an ANM file to the layer viewer. */
 async function addAnmFileToLayerViewer(
-    helpers: Helpers,
-    $layerViewer: HTMLElement,
-    layerPackers: Packery[],
-    zip: JSZip,
-    subdir: string, // subdir of zip to load images from.  Also anm basename
+    dispatch: React.Dispatch<Action>,
+    cancel: Cancel,
     specData: AnmSpec,
 ) {
-  const Packery = await BigImports.Packery;
-  const {progress, status, cancel} = helpers;
-  const anmBasename = subdir;
+  for (const script of specData.scripts) {
+    for (const layer of script.layers) {
+      if (layer == null) continue;
+      for (const spriteId of script.sprites) {
+        if (spriteId == null) continue;
 
-  cancel.check();
-
-  // Add boxes for new layers as needed.
-  const maxLayerInFile = Math.max(...specData.scripts.map(
-      (script) => Math.max(...script.layers.map((lay) => lay || 0)),
-  ));
-  while (layerPackers.length <= maxLayerInFile) {
-    const thisLayer = layerPackers.length;
-
-    const $header = document.createElement('h2');
-    $header.innerText = `Layer ${thisLayer}`;
-    $layerViewer.appendChild($header);
-
-    const $div = document.createElement('div');
-    $div.classList.add('layer-viewer-scripts');
-    $layerViewer.appendChild($div);
-
-    // don't give packery the div itself because it always sets height
-    const $inner = document.createElement('div');
-    $inner.classList.add('packery-container');
-    $div.appendChild($inner);
-
-    layerPackers.push(new Packery($inner, {itemSelector: '.grid-item', gutter: 4}));
-  } // while (layerPackers.length < ...)
-
-  for (const texture of specData.textures) {
-    const {path} = texture;
-
-    let getGridItem: (sprite: AnmSpecSprite) => Promise<HTMLElement>;
-    if (path.startsWith('@')) {
-      getGridItem = (sprite) => makeGridItemForDynamicSprite(subdir, texture, sprite);
-    } else {
-      const file = zip.file(`${subdir}/${path}`);
-      if (!file) {
-        throw new Error(`Could not find image file "${path}" in archive`);
+        const sprite = specData.sprites[spriteId];
+        const texture = specData.textures[sprite.texture];
+        const $textureImg = await specData.textureImages[sprite.texture];
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        cancel.check();
+        const className = clsx({'warn-multiple-layer': script.layers.length > 1});
+        const gridItem = (
+          <Tip tip={<TipBody anmName={specData.basename} script={script} sprite={sprite}/>}>
+            {$textureImg
+              ? <ImageSpriteGridItem className={className} {...{cancel, $textureImg, texture, sprite}}/>
+              : <DynamicSpriteGridItem className={className} {...{anmName: specData.basename, texture, sprite}}/>}
+          </Tip>
+        );
+        dispatch({type: 'add-script', payload: {layer, gridItem}});
       }
-      const $textureImg = new Image();
-      const textureBytes = await file.async('arraybuffer');
-      setImageToObjectUrl($textureImg, new Blob([textureBytes], {type: 'image/png'}));
-
-      // Wait for the image to load before using it to create sprites.
-      await domOnce($textureImg, 'load');
-
-      getGridItem = (sprite) => makeGridItemForImageSprite($textureImg, texture, sprite);
     }
-
-    // We haven't collected scripts for a texture ahead of time so just filter the list.
-    // This technically leads to quadratic complexity but no anm file in any game has THAT many textures...
-    for (const script of specData.scripts) {
-      for (const layer of script.layers) {
-        if (layer == null) continue;
-        for (const spriteId of script.sprites) {
-          if (spriteId == null) continue;
-
-          const sprite = specData.sprites[spriteId];
-          if (sprite.texture === texture.indexInFile) {
-            // (TODO: consider getting all of these started and then using Promise.all)
-            const $gridItem = await getGridItem(sprite);
-            $gridItem.classList.add('grid-item');
-            if (script.layers.length > 1) {
-              $gridItem.classList.add('warn-multiple-layer');
-            }
-            $gridItem.dataset.tipId = `layer-viewer:${anmBasename}:${script.indexInFile}-${spriteId}`;
-            cancel.check();
-
-            $layerViewer.querySelectorAll('.layer-viewer-scripts .packery-container').item(layer).appendChild($gridItem);
-            layerPackers[layer].appended($gridItem);
-          }
-        }
-      }
-    } // for (const script ...)
-  } // for (const texture ...)
-  cancel.check();
-  // Because we awaited all promises we know everything for this anm file is done.
-  progress.anmFilesDone += 1;
-  progress.remainingFilenames.splice(progress.remainingFilenames.indexOf(`${anmBasename}.anm`), 1);
-  status.setFromProgress(progress);
+  }
 }
 
-async function makeGridItemForImageSprite($textureImg: HTMLImageElement, texture: AnmSpecTexture, sprite: AnmSpecSprite) {
+const ImageSpriteGridItem = React.memo(function ImageSpriteGridItem(allprops: {cancel: Cancel, texture: AnmSpecTexture, sprite: AnmSpecSprite, $textureImg: HTMLImageElement} & React.HTMLAttributes<HTMLElement>) {
+  const {cancel, texture, sprite, $textureImg, ...props} = allprops;
+
+  const [nicerWidth, nicerHeight] = nicerImageSize([sprite.width, sprite.height]);
+  const promiseFn = React.useCallback(() => getCroppedSpriteBlob(cancel, texture, sprite, $textureImg), [cancel, texture, sprite, $textureImg]);
+
   if (sprite.width === 0 || sprite.height === 0) {
-    const $div = document.createElement('div');
-    $div.style.width = '16px';
-    $div.style.height = '16px';
-    return $div;
+    return <div style={{width: 16, height: 16}}></div>;
   }
 
+  return <Async promiseFn={promiseFn}>
+    <Async.Pending><img width={nicerWidth} height={nicerHeight} src={TRANSPARENT_PIXEL_IMAGE_SRC} /></Async.Pending>
+    <Async.Fulfilled>{(blob) => (
+      <BlobImg width={nicerWidth} height={nicerHeight} blob={blob as Blob} {...props} />
+    )}</Async.Fulfilled>
+    <Async.Rejected><Err>img</Err></Async.Rejected>
+  </Async>;
+});
+
+async function getCroppedSpriteBlob(cancel: Cancel, texture: AnmSpecTexture, sprite: AnmSpecSprite, $textureImg: HTMLImageElement): Promise<Blob> {
   // create a new <img> whose image is the texture cropped to this sprite.
   const $clippingCanvas = document.createElement('canvas');
   const clippingCtx = $clippingCanvas.getContext('2d');
@@ -273,42 +229,41 @@ async function makeGridItemForImageSprite($textureImg: HTMLImageElement, texture
       0, 0, sprite.width, sprite.height, // dest rect
   );
 
-  const $spriteImg = new Image();
-  const [nicerWidth, nicerHeight] = nicerImageSize([sprite.width, sprite.height]);
-  $spriteImg.width = nicerWidth;
-  $spriteImg.height = nicerHeight;
+  let out;
   try {
-    const blob = await canvasToBlobAsync($clippingCanvas);
-    setImageToObjectUrl($spriteImg, blob);
+    out = await canvasToBlobAsync($clippingCanvas);
   } catch (e) {
     console.error(sprite);
     throw e;
   }
 
-  return $spriteImg;
+  // need to check after every await (and we can't do this inside of the try, or the CancelError would be caught there)
+  cancel.check();
+  return out;
 }
 
-/**
- * Async-ifies an HTML DOM event.
- *
- * E.g. `await domOnce(elem, 'click')` will wait for a single `'click'` event to occur.
- * During this time, an `error` event will be mapped to `Promise.reject`; this is used by some
- * HTML elements like `<img>`.
- **/
-async function domOnce($elem: HTMLElement, type: string) {
-  const emitter = new events.EventEmitter();
-  const onerror = (ev: ErrorEvent) => {
-    $elem.removeEventListener('error', onerror);
-    // FIXME: what's the idiomatic conversion from ErrorEvent to Error? ev.error is experimental...
-    emitter.emit('error', new Error(ev.message));
-  };
-  const onevent = () => {
-    $elem.removeEventListener('error', onerror);
-    emitter.emit('trigger');
-  };
-  $elem.addEventListener(type, onevent);
-  $elem.addEventListener('error', onerror);
-  await events.once(emitter, 'trigger');
+function BlobImg({blob, ...props}: {blob: Blob} & React.ImgHTMLAttributes<HTMLImageElement>) {
+  const [objectUrl, setObjectUrl] = React.useState<string | undefined>();
+  const ref = React.useRef<HTMLImageElement | null>(null);
+
+  React.useEffect(() => {
+    const url = URL.createObjectURL(blob);
+    setObjectUrl(url);
+    ref.current!.addEventListener('load', () => URL.revokeObjectURL(url));
+
+    return () => URL.revokeObjectURL(url);
+  }, [blob]);
+
+  return <img ref={ref} src={objectUrl} {...props}/>;
+}
+
+function DynamicSpriteGridItem(allprops: {anmName: string, texture: AnmSpecTexture, sprite: AnmSpecSprite, className: string} & React.HTMLAttributes<HTMLDivElement>) {
+  const {anmName, texture, sprite, className, ...props} = allprops;
+  return <div className={clsx('imageless', className)} {...props}>
+    <div className='buffer-type'>{texture.path}</div>
+    <div className='sprite-size'>{sprite.width}×{sprite.height}</div>
+    <div className='anm-name'>{anmName}</div>
+  </div>;
 }
 
 function TipBody({anmName, script, sprite}: {anmName: string, script: AnmSpecScript, sprite: AnmSpecSprite}) {
@@ -322,23 +277,6 @@ function TipBody({anmName, script, sprite}: {anmName: string, script: AnmSpecScr
       <br/><Wip>Layer uncertain! Might belong to: {script.layers.join(", ")}</Wip>
     </>) : null}
   </>;
-}
-
-function DynamicSpriteGridItem(anmName: string, texture: AnmSpecTexture, sprite: AnmSpecSprite) {
-  return <div className='imageless'>
-    <div className='buffer-type'>{texture.path}</div>
-    <div className='sprite-size'>{sprite.width}×{sprite.height}</div>
-    <div className='anm-name'>{anmName}</div>
-  </div>;
-}
-
-// FIXME: Due to SPA design, this probably still leaks memory if the user navigates to another "page" before
-//        the image loads, but the process of exacerbating this leak is slow so (a) it's difficult to validate the
-//        success of any solution to the problem and (b) the problem will probably never noticeably impact anyone.
-/** Sets an image to use an object URL for the given object, automatically revoking the URL once it is loaded. */
-function setImageToObjectUrl($img: HTMLImageElement, object: Blob) {
-  $img.src = URL.createObjectURL(object);
-  $img.addEventListener('load', () => URL.revokeObjectURL($img.src));
 }
 
 function nicerImageSize([w, h]: [number, number]): [number, number] {
@@ -362,3 +300,5 @@ function canvasToBlobAsync($canvas: HTMLCanvasElement) {
     });
   });
 }
+
+const TRANSPARENT_PIXEL_IMAGE_SRC = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQYV2NgAAIAAAUAAarVyFEAAAAASUVORK5CYII=";
