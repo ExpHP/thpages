@@ -55,6 +55,10 @@ If you have problems/ideas/requests, go \`@\` me on the [ZUNcode discord](https:
 type State = React.ReactElement[][];
 type Action =
   | {type: 'add-script', payload: {layer: number, gridItem: React.ReactElement}}
+  // Multiple updates batched into one, because React 17 performs synchronous renders when state is updated from outside of a React event.
+  //
+  // Hopefully React 18's automatic batching will eliminate the need for this.
+  | {type: 'batched', payload: {actions: Action[]}}
   ;
 
 function reducer(state: State, action: Action): State {
@@ -64,6 +68,9 @@ function reducer(state: State, action: Action): State {
       const newState = [...state];
       newState[layer] = [...newState[layer], gridItem]; // FIXME quadratic
       return newState;
+    }
+    case 'batched': {
+      return action.payload.actions.reduce(reducer, state);
     }
   }
 }
@@ -171,7 +178,7 @@ const LayerViewer = React.memo(function LayerViewer({items}: {
   // the outer div is because packery always sets height
   return <div className='layer-viewer-scripts'>
     <Packery className='packery-container' packeryOptions={packeryOptions}>
-      {items.map((child, index) => <PackeryItem key={index}>{child}</PackeryItem>)}
+      {items}
     </Packery>
   </div>;
 });
@@ -186,6 +193,7 @@ async function addAnmFileToLayerViewer(
     specData: AnmSpec,
 ) {
   for (const script of specData.scripts) {
+    const dispatchActions = [];
     for (const spriteId of script.sprites) {
       if (spriteId == null) continue;
 
@@ -195,39 +203,43 @@ async function addAnmFileToLayerViewer(
       await new Promise((resolve) => setTimeout(resolve, 0));
       cancel.check();
 
-      const className = clsx({'warn-multiple-layer': script.layers.length > 1});
-
-      let gridItemBody;
-      if ($textureImg) {
-        const blob = await getCroppedSpriteBlob(texture, sprite, $textureImg);
-        cancel.check();
-        gridItemBody = <ImageSpriteGridItem className={className} {...{sprite, blob}}/>;
-      } else {
-        gridItemBody = <DynamicSpriteGridItem className={className} {...{anmName: specData.basename, texture, sprite}}/>;
-      }
+      const gridItemBody = await makeGridItemBody($textureImg, specData, sprite, texture);
+      cancel.check();
 
       const gridItemTip = <TipBody anmName={specData.basename} script={script} sprite={sprite}/>;
-      const gridItem = <Tip element="div" tip={gridItemTip}>{gridItemBody}</Tip>;
+      const gridItem = <PackeryItem
+        key={`${specData.basename}-${script.indexInFile}-${spriteId}`}
+        className={clsx({'warn-multiple-layer': script.layers.length > 1})}
+      >
+        <Tip element="div" tip={gridItemTip}>{gridItemBody}</Tip>
+      </PackeryItem>;
 
       for (const layer of script.layers) {
         if (layer == null) continue;
-        dispatch({type: 'add-script', payload: {layer, gridItem}});
+        dispatchActions.push({type: 'add-script', payload: {layer, gridItem}} as const);
       }
+    }
+    if (dispatchActions.length) {
+      dispatch({type: 'batched', payload: {actions: dispatchActions}});
     }
     progress({type: 'script/finished', payload: {specBasename: specData.basename}});
   }
 }
 
-const ImageSpriteGridItem = React.memo(function ImageSpriteGridItem(allprops: {sprite: AnmSpecSprite, blob: Blob} & React.HTMLAttributes<HTMLElement>) {
-  const {sprite, blob, ...props} = allprops;
+async function makeGridItemBody($textureImg: HTMLImageElement | null, spec: AnmSpec, sprite: AnmSpecSprite, texture: AnmSpecTexture) {
+  if ($textureImg) {
+    const [nicerWidth, nicerHeight] = nicerImageSize([sprite.width, sprite.height]);
+    if (sprite.width === 0 || sprite.height === 0) {
+      // bail out with an empty div as toBlob would produce null
+      return <div style={{width: 16, height: 16}}></div>;
+    }
 
-  const [nicerWidth, nicerHeight] = nicerImageSize([sprite.width, sprite.height]);
-  if (sprite.width === 0 || sprite.height === 0) {
-    return <div style={{width: 16, height: 16}}></div>;
+    const blob = await getCroppedSpriteBlob(texture, sprite, $textureImg);
+    return <BlobImg width={nicerWidth} height={nicerHeight} {...{sprite, blob}}/>;
+  } else {
+    return <DynamicSpriteGridItem {...{anmName: spec.basename, texture, sprite}}/>;
   }
-
-  return <BlobImg width={nicerWidth} height={nicerHeight} blob={blob} {...props} />;
-});
+}
 
 async function getCroppedSpriteBlob(texture: AnmSpecTexture, sprite: AnmSpecSprite, $textureImg: HTMLImageElement): Promise<Blob> {
   // create a new <img> whose image is the texture cropped to this sprite.
@@ -248,7 +260,7 @@ async function getCroppedSpriteBlob(texture: AnmSpecTexture, sprite: AnmSpecSpri
   return await canvasToBlobAsync($clippingCanvas);
 }
 
-function BlobImg({blob, ...props}: {blob: Blob} & React.ImgHTMLAttributes<HTMLImageElement>) {
+const BlobImg = React.memo(function BlobImg({blob, ...props}: {blob: Blob} & React.ImgHTMLAttributes<HTMLImageElement>) {
   const [imageSrc, setImageSrc] = React.useState<string>(TRANSPARENT_PIXEL_IMAGE_SRC);
   const ref = React.useRef<HTMLImageElement | null>(null);
 
@@ -261,11 +273,11 @@ function BlobImg({blob, ...props}: {blob: Blob} & React.ImgHTMLAttributes<HTMLIm
   }, [blob]);
 
   return <img ref={ref} src={imageSrc} {...props}/>;
-}
+});
 
-function DynamicSpriteGridItem(allprops: {anmName: string, texture: AnmSpecTexture, sprite: AnmSpecSprite, className: string} & React.HTMLAttributes<HTMLDivElement>) {
-  const {anmName, texture, sprite, className, ...props} = allprops;
-  return <div className={clsx('imageless', className)} {...props}>
+function DynamicSpriteGridItem(allprops: {anmName: string, texture: AnmSpecTexture, sprite: AnmSpecSprite} & React.HTMLAttributes<HTMLDivElement>) {
+  const {anmName, texture, sprite, ...props} = allprops;
+  return <div className={'imageless'} {...props}>
     <div className='buffer-type'>{texture.path}</div>
     <div className='sprite-size'>{sprite.width}×{sprite.height}</div>
     <div className='anm-name'>{anmName}</div>

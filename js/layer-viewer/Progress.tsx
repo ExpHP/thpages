@@ -16,7 +16,6 @@ export function Progress({state}: {state: ProgressState}) {
 }
 
 function ProgressHeader({state}: {state: ProgressState}) {
-  console.log(state);
   const {counts} = state;
   const incomplete = countIncompleteFiles(state);
   const scriptsDone = [...state.counts.values()].map(({done}) => done).reduce((a, b) => a + b, 0);
