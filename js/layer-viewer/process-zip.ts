@@ -2,7 +2,7 @@ import type JSZip from 'jszip';
 
 import {ANM_INS_TABLE} from "~/js/tables";
 import {parseGame, Game} from '~/js/tables/game';
-import {readUploadedFile, domOnce} from '~/js/util';
+import {readUploadedFile, domOnce, arrayFromFunc} from '~/js/util';
 import type {Cancel} from './LayerViewer';
 
 const JSZipPromise = import('jszip'); // big module
@@ -18,8 +18,9 @@ export type AnmSpec = {
   sprites: AnmSpecSprite[];
   scripts: AnmSpecScript[];
   textureImages: Promise<HTMLImageElement | null>[];
+  spriteScripts: number[][];
 };
-type ParsedAnmSpec = Omit<AnmSpec, 'textureImages' | 'basename'>;
+type ParsedAnmSpec = Omit<AnmSpec, 'textureImages' | 'basename' | 'spriteScripts'>;
 export type AnmSpecScript = {indexInFile: number, sprites: (number | null)[], layers: (number | null)[]};
 export type AnmSpecSprite = {indexInFile: number, texture: number, left: number, top: number, width: number, height: number};
 export type AnmSpecTexture = {indexInFile: number, path: string, xOffset: number, yOffset: number};
@@ -41,7 +42,8 @@ export async function loadAnmZip(cancel: Cancel, file: File): Promise<AnmSpecs> 
     const parsedSpec = parseAnmSpec(text, game, specZipObj.name);
     const subdir = specAnmBasename(specZipObj.name);
     const textureImages = beginLoadingTexturesFromZip(cancel, parsedSpec, zip, subdir);
-    return {...parsedSpec, textureImages, basename: subdir};
+    const spriteScripts = collectSpriteScripts(parsedSpec.sprites, parsedSpec.scripts);
+    return {...parsedSpec, textureImages, basename: subdir, spriteScripts};
   }));
 
   const maxLayer = findMaxLayer(specs);
@@ -77,6 +79,19 @@ async function readGameFromZip(cancel: Cancel, zip: JSZip) {
   }
 
   return game;
+}
+
+
+function collectSpriteScripts(sprites: AnmSpecSprite[], scripts: AnmSpecScript[]) {
+  const out: number[][] = arrayFromFunc(sprites.length, () => []);
+  for (const script of scripts) {
+    for (const spriteId of script.sprites) {
+      if (spriteId) {
+        out[spriteId].push(script.indexInFile);
+      }
+    }
+  }
+  return out;
 }
 
 

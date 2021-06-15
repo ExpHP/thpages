@@ -18,10 +18,10 @@ export function Progress({state}: {state: ProgressState}) {
 function ProgressHeader({state}: {state: ProgressState}) {
   const {counts} = state;
   const incomplete = countIncompleteFiles(state);
-  const scriptsDone = [...state.counts.values()].map(({done}) => done).reduce((a, b) => a + b, 0);
-  const scriptsTotal = [...state.counts.values()].map(({total}) => total).reduce((a, b) => a + b, 0);
+  const spritesDone = [...state.counts.values()].map(({done}) => done).reduce((a, b) => a + b, 0);
+  const spritesTotal = [...state.counts.values()].map(({total}) => total).reduce((a, b) => a + b, 0);
 
-  const className = clsx('layer-viewer-status', {working: counts.size === 0 || scriptsDone < scriptsTotal});
+  const className = clsx('layer-viewer-status', {working: counts.size === 0 || spritesDone < spritesTotal});
 
   if (counts.size === 0) {
     return <h2 className={className}>Reading zip file...</h2>;
@@ -29,7 +29,7 @@ function ProgressHeader({state}: {state: ProgressState}) {
 
   return <>
     <h2 className={className}>Processing {incomplete} of {state.counts.size} ANM files...</h2>
-    <p className='script-total'>({scriptsDone} of {scriptsTotal} scripts done)</p>
+    <p className='script-total'>({spritesDone} of {spritesTotal} sprites done)</p>
   </>;
 }
 
@@ -56,15 +56,15 @@ function ProgressBars({state}: {state: ProgressState}) {
 
 export type ProgressDispatch = (action: ProgressAction) => void;
 export type ProgressState = {
-  counts: Map<string, ScriptCounts>,
+  counts: Map<string, SpriteCounts>,
 };
 
-export type ScriptCounts = {done: number, total: number};
+export type SpriteCounts = {done: number, total: number};
 
 export type ProgressAction =
   | {type: 'new-zip'}
-  | {type: 'spec/begin', payload: {specBasename: string, numScripts: number}}
-  | {type: 'script/finished', payload: {specBasename: string}}
+  | {type: 'spec/begin', payload: {specBasename: string, numSprites: number}}
+  | {type: 'sprite/finished', payload: {specBasename: string}}
   ;
 
 export function reducer(state: ProgressState, action: ProgressAction): ProgressState {
@@ -75,11 +75,11 @@ export function reducer(state: ProgressState, action: ProgressAction): ProgressS
     case 'spec/begin': {
       state = {...state};
       state.counts = new Map([...state.counts.entries()]);
-      state.counts.set(action.payload.specBasename, {done: 0, total: action.payload.numScripts});
+      state.counts.set(action.payload.specBasename, {done: 0, total: action.payload.numSprites});
       return state;
     }
 
-    case 'script/finished': {
+    case 'sprite/finished': {
       state = {...state};
       state.counts = new Map([...state.counts.entries()]);
       const {done, total} = state.counts.get(action.payload.specBasename)!;

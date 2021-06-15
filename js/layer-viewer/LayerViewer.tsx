@@ -85,7 +85,11 @@ function LayerViewerFromFile({file}: {file: File}) {
       const specs = await loadAnmZip(cancel, file);
 
       for (const spec of specs.specs) {
-        progress({type: 'spec/begin', payload: {specBasename: spec.basename, numScripts: spec.scripts.length}});
+        progress({type: 'spec/begin', payload: {
+          specBasename: spec.basename,
+          // only count sprites that need to appear in at least one location on the page
+          numSprites: spec.spriteScripts.filter((x) => x.length).length,
+        }});
       }
       return specs;
     });
@@ -192,23 +196,27 @@ async function addAnmFileToLayerViewer(
     cancel: Cancel,
     specData: AnmSpec,
 ) {
-  for (const script of specData.scripts) {
+  for (const sprite of specData.sprites) {
+    const spriteId = sprite.indexInFile;
+    if (!specData.spriteScripts[spriteId].length) {
+      continue; // don't generate an image if there's nowhere to put it
+    }
+
+    const texture = specData.textures[sprite.texture];
+    const $textureImg = await specData.textureImages[sprite.texture];
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    cancel.check();
+
+    const gridItemBody = await makeGridItemBody($textureImg, specData, sprite, texture);
+    cancel.check();
+
     const dispatchActions = [];
-    for (const spriteId of script.sprites) {
-      if (spriteId == null) continue;
-
-      const sprite = specData.sprites[spriteId];
-      const texture = specData.textures[sprite.texture];
-      const $textureImg = await specData.textureImages[sprite.texture];
-      await new Promise((resolve) => setTimeout(resolve, 0));
-      cancel.check();
-
-      const gridItemBody = await makeGridItemBody($textureImg, specData, sprite, texture);
-      cancel.check();
+    for (const scriptId of specData.spriteScripts[spriteId]) {
+      const script = specData.scripts[scriptId];
 
       const gridItemTip = <TipBody anmName={specData.basename} script={script} sprite={sprite}/>;
       const gridItem = <PackeryItem
-        key={`${specData.basename}-${script.indexInFile}-${spriteId}`}
+        key={`${specData.basename}-${scriptId}-${spriteId}`}
         className={clsx({'warn-multiple-layer': script.layers.length > 1})}
       >
         <Tip element="div" tip={gridItemTip}>{gridItemBody}</Tip>
@@ -222,7 +230,7 @@ async function addAnmFileToLayerViewer(
     if (dispatchActions.length) {
       dispatch({type: 'batched', payload: {actions: dispatchActions}});
     }
-    progress({type: 'script/finished', payload: {specBasename: specData.basename}});
+    progress({type: 'sprite/finished', payload: {specBasename: specData.basename}});
   }
 }
 
