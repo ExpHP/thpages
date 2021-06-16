@@ -28,7 +28,11 @@ function ProgressHeader({state}: {state: ProgressState}) {
   }
 
   return <>
-    <h2 className={className}>Processing {incomplete} of {state.counts.size} ANM files...</h2>
+    <h2 className={className}>{
+      incomplete
+      ? <>Processing {incomplete} of {state.counts.size} ANM files...</>
+      : <>Processing complete.</>
+    }</h2>
     <p className='script-total'>({spritesDone} of {spritesTotal} sprites done)</p>
   </>;
 }

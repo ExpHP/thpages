@@ -73,7 +73,7 @@ export const debugId = (() => {
   const map = new WeakMap();
   let id = 0;
   return (x: any) => {
-    if (x && typeof x === 'object') {
+    if (x && (typeof x === 'object' || typeof x === 'function')) {
       if (!map.has(x)) {
         map.set(x, ++id);
       }
@@ -90,7 +90,7 @@ export const debugId = (() => {
 export const debugTimesSeen = (() => {
   const map = new WeakMap();
   return (x: any) => {
-    if (x && typeof x === 'object') {
+    if (x && (typeof x === 'object' || typeof x === 'function')) {
       const old = map.get(x) || 0;
       map.set(x, old + 1);
       return old + 1;

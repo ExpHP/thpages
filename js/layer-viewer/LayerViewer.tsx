@@ -127,14 +127,9 @@ function LayerViewerFromSpecs({specs, progress}: {specs: AnmSpecs, progress: Pro
 /** Helper used to cancel operations by using an exception to bubble out of a computationally intensive or async task. */
 export class Cancel {
   private _abortController: AbortController;
-  /** The error type thrown by `check`.  Each instance of `Cancel` has a unique `Error` type. */
-  public Error: new () => Error;
 
   constructor(abortController?: AbortController) {
     this._abortController = abortController || new AbortController();
-
-    class CancelError extends Error {}
-    this.Error = CancelError;
   }
   get cancelled() {
     return this._abortController.signal.aborted;
@@ -148,7 +143,9 @@ export class Cancel {
   }
   /** Check for cancellation.  If cancellation has occurred, a CancelError is thrown to bubble out of the nearest `scope`. */
   public check() {
-    if (this.cancelled) throw new this.Error();
+    if (this.cancelled) {
+      throw new CancelError();
+    }
   }
   /** Run an async callback, converting CancelError rejections into "successful" null values. */
   public async scopeAsync<T>(cb: () => Promise<T>): Promise<T | null> {
@@ -156,12 +153,14 @@ export class Cancel {
     try {
       return await cb();
     } catch (e) {
-      if (e instanceof this.Error) return null;
+      if (e instanceof CancelError) return null;
       throw e;
     }
   }
 }
 
+/** The error type used by Cancel to bubble out of cancelable code. */
+class CancelError extends Error {}
 
 function LayerViewers({layers}: {
     layers: React.ReactElement[][],
