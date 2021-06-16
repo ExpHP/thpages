@@ -53,7 +53,7 @@ export function AppBody() {
   );
 }
 
-//
+
 const theme = createMuiTheme({
   palette: {
     type: 'dark',
@@ -112,6 +112,37 @@ function Content() {
     </Switch>
   </TipProvider></NameSettingsProvider>;
 }
+
+
+// This event listener is added before starting React, so that it runs before React's hashchange
+// (which could potentially trigger an undesirable brief display of "Page not found" before redirecting).
+export function redirectPreAppInit() {
+  // Old-format links to our pages may still exist out there.
+  // Intercept them before React Router even gets the chance to see them.
+  window.addEventListener('hashchange', function redirectOldHashes() {
+    let newHash = window.location.hash;
+    newHash = (newHash === '') ? '#' : newHash;
+    // ancient format:  #s=/anm/ins&g=08
+    newHash = newHash.replace(/^#s=/, '#');
+
+    if (!newHash.includes('?')) {
+      // This is a tad aggressive, and we really only want these replacements to work if they occur
+      // in the 'pathname' part of the location.
+      //
+      // However, since we know there's no '?', we can only really mess up the hash, which would never have these.
+      //
+      // old format:   #/anm/ins&g=08&a=ins-23
+      // new format:   #/anm/ins?g=08#ins-23
+      newHash = newHash.replace('&a=', '#');
+      newHash = newHash.replace('&', '?');
+    }
+
+    if (newHash !== window.location.hash) {
+      window.location.replace(newHash);
+    }
+  });
+}
+
 
 function NotFound() {
   return <>
