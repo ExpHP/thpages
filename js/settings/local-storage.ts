@@ -184,6 +184,7 @@ function upgradeLangSettingsToV1(language: LangV0, settings: SavedLangSettingsV0
           name: `old ${version} mapfile`,
           game: latestGameForVersionV0(language, version),
           mapfile: thisVersionSettings,
+          uploadDate: null,
         });
       }
     }

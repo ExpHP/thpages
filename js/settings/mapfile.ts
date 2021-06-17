@@ -20,10 +20,10 @@ export function parseMapfile(text: string, warn: (msg: string) => void): Mapfile
 
   const out = {
     ins: popKey(seqmaps, "ins_names") || new Map(),
-    insSignature: popKey(seqmaps, "gvar_names") || new Map(),
-    vars: popKey(seqmaps, "timeline_ins_names") || new Map(),
-    varType: popKey(seqmaps, "ins_signatures") || new Map(),
-    timelineIns: popKey(seqmaps, "gvar_types") || new Map(),
+    insSignature: popKey(seqmaps, "ins_signatures") || new Map(),
+    vars: popKey(seqmaps, "gvar_names") || new Map(),
+    varType: popKey(seqmaps, "gvar_types") || new Map(),
+    timelineIns: popKey(seqmaps, "timeline_ins_names") || new Map(),
     timelineInsSignature: popKey(seqmaps, "timeline_ins_signatures") || new Map(),
   };
 

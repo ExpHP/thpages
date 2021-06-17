@@ -44,22 +44,20 @@ export function GameSelector<D extends CommonData>({table, currentGame}: {table:
 }
 
 
-function ReferenceTable<D extends CommonData>({table, currentGame: game, setContentLoaded}: {table: TableDef<D>, currentGame: Game, setContentLoaded: (x: boolean) => void}}) {
+function ReferenceTable<D extends CommonData>({table, currentGame: game, setContentLoaded}: {table: TableDef<D>, currentGame: Game, setContentLoaded: (x: boolean) => void}) {
   const {getGroups, textBeforeTable, TableRow} = table;
   const instrCounts = getInstrCounts(table, game);
 
   const incrementalFuel = useIncremental({step: 1, max: instrCounts.total}, [table, game]);
   let remainingFuel = incrementalFuel;
 
-  // Implement hash scrolling by signaling when content has been generated.
-  // (TODO: make tables display incrementally and do this when done)
   React.useEffect(() => {
     if (incrementalFuel === instrCounts.total) {
       setContentLoaded(true);
       return () => setContentLoaded(false);
     }
     return undefined;
-  }, [remainingFuel, table, game, setContentLoaded]);
+  }, [incrementalFuel, table, game, setContentLoaded]);
 
   const groups = getGroups(game);
   const shouldHaveToc = groups.length > 1;
@@ -67,7 +65,7 @@ function ReferenceTable<D extends CommonData>({table, currentGame: game, setCont
   const contentSections = groups.map((group) => {
     let possibleHeader = null;
     if (shouldHaveToc && remainingFuel > 0) {
-      const anchor = groupAnchor(group)
+      const anchor = groupAnchor(group);
       possibleHeader = <h2 id={anchor}><HashLink className="self-link" hash={'#' + anchor}>
         {group.min}-{group.max}: {group.title}
       </HashLink></h2>;
@@ -128,7 +126,7 @@ function getInstrCounts<D extends CommonData>(table: TableDef<D>, game: Game) {
       documented += 1;
     }
   }
-  return {total: map.size, documented}
+  return {total: map.size, documented};
 }
 
 

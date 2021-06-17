@@ -80,7 +80,6 @@ const theme = createMuiTheme({
 
 function Content({setContentLoaded}: {setContentLoaded: React.Dispatch<boolean>}) {
   const [savedSettings, setSavedSettings] = useSavedSettingsState();
-  console.log('saved', savedSettings);
 
   return <NameSettingsProvider savedSettings={savedSettings} loading={"Loading mapfiles..."}><TipProvider>
     <Switch>
