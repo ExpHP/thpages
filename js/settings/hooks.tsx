@@ -15,7 +15,8 @@ export function useSavedSettingsState() {
 }
 
 export function NameSettingsProvider({savedSettings, loading, children}: {savedSettings: SavedSettings, loading: ReactNode, children: ReactNode}) {
-  return <Async promiseFn={nameSettingsPromiseFn} savedSettings={savedSettings}>
+  const promiseFn = React.useCallback(({}, abort) => nameSettingsPromiseFn({savedSettings}, abort), [savedSettings]);
+  return <Async promiseFn={promiseFn}>
     <Async.Loading>{loading}</Async.Loading>
     <Async.Fulfilled>{(data: NameSettings) => (
       <NameSettingsContext.Provider value={data}>{children}</NameSettingsContext.Provider>

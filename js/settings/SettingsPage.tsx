@@ -112,7 +112,6 @@ function SlidingDrawer({open, children}: {open: boolean, children: ReactNode}) {
   const classes = useStyles();
   const ref = React.useRef<HTMLDivElement | null>(null);
   const [contentHeight, setContentHeight] = React.useState(0);
-  console.log(contentHeight, ref.current?.offsetHeight, open);
 
   React.useLayoutEffect(() => {
     if (ref.current) {
