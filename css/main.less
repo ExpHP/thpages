@@ -57,6 +57,13 @@ body {
   z-index: 9;
 }
 
+// Navigating to an anchor link on a reference table could take a while to load the element that will be scrolled to.
+//
+// Help the user anticipate the scroll event in these circumstances by changing the cursor.
+.body-root.pending-scroll {
+  cursor: progress;
+}
+
 // =============================================================================
 
 .header-text {

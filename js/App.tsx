@@ -1,8 +1,9 @@
 import React from 'react';
+import clsx from 'clsx';
 import {StylesProvider, ThemeProvider, createMuiTheme} from '@material-ui/core/styles';
 import yellow from '@material-ui/core/colors/yellow';
 import pink from '@material-ui/core/colors/pink';
-import {HashRouter as Router, Switch, Route, Redirect, Link} from 'react-router-dom';
+import {HashRouter as Router, Switch, Route, Redirect} from 'react-router-dom';
 
 import {useScrollToAnchor} from './ScrollToAnchorHelper';
 import {ANM_INS_TABLE, ANM_VAR_TABLE, STD_TABLE, MSG_TABLE} from './tables';
@@ -32,8 +33,10 @@ export function App() {
 }
 
 export function AppBody() {
+  const {hasPendingScroll, setContentLoaded} = useScrollToAnchor();
+
   return (
-    <div className='page-width-controller'>
+    <div className={clsx('page-width-controller', 'body-root', {'pending-scroll': hasPendingScroll})}>
       <div className='header-pane'>
         <div className="header-text">{"ExpHP's Touhou pages"}</div>
       </div>
@@ -44,7 +47,7 @@ export function AppBody() {
         <div className='content-paper'>
           <ErrorBoundary>
             <CurrentPageProvider>
-              <Content/>
+              <Content setContentLoaded={setContentLoaded}/>
             </CurrentPageProvider>
           </ErrorBoundary>
         </div>
@@ -75,8 +78,7 @@ const theme = createMuiTheme({
 });
 
 
-function Content() {
-  const setContentLoaded = useScrollToAnchor();
+function Content({setContentLoaded}: {setContentLoaded: React.Dispatch<boolean>}) {
   const [savedSettings, setSavedSettings] = useSavedSettingsState();
   console.log('saved', savedSettings);
 

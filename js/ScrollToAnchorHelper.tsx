@@ -7,26 +7,35 @@ export function useScrollToAnchor() {
   const location = useLocation();
   const [traveled, setTraveled] = useDependentState(false, [location]);
 
-  // To see why this must be dependent state, try the following steps:
-  //  1. Go to /#/mods/bullet-cap
-  //  2. Enter /#/anm/interpolation#footnote-1 into the URL bar
-  // It should go to the anchor...
+  // This lets code outside of this hook indicate that all elements that could have meaningful IDs
+  // for navigation have been generated.  This can be used to disable a wait cursor for a scroll that will never happen.
   const [contentLoaded, setContentLoaded] = useDependentState(false, [location.search, location.pathname]);
 
   React.useLayoutEffect(() => {
-    if (contentLoaded && !traveled) {
-      const id = location.hash.substring(1);
-      if (id.length) {
-        const element = document.getElementById(id);
-        if (element) {
-          scrollToElement(element);
-        }
-      }
-      setTraveled(true);
-    }
-  }, [location, contentLoaded, traveled, setTraveled]);
+    const id = location.hash.substring(1);
+    if (id.length && !traveled) {
+      const intervalId = window.setInterval(() => scrollToElementIfLoaded(id, () => {
+        setTraveled(true);
+        clearInterval(intervalId);
+      }));
 
-  return React.useCallback(setContentLoaded, [setContentLoaded]);
+      window.setTimeout(() => clearInterval(intervalId), MAX_SCROLL_DELAY_SECONDS * 1000);
+      return () => clearInterval(intervalId);
+    }
+    return () => {};
+  }, [location, traveled, setTraveled]);
+
+  const hasPendingScroll = !contentLoaded && !traveled && location.hash.substring(1).length;
+  return {hasPendingScroll, setContentLoaded};
+}
+
+const MAX_SCROLL_DELAY_SECONDS = 20;
+function scrollToElementIfLoaded(id: string, onSuccess: () => void) {
+  const element = document.getElementById(id);
+  if (element) {
+    scrollToElement(element);
+    onSuccess();
+  }
 }
 
 function scrollToElement(element: HTMLElement) {
