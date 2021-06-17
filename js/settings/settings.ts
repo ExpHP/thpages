@@ -127,7 +127,7 @@ async function addNameSettingsFromTruth(out: NameSettings, lang: Lang, abort: Ab
 
   try {
     const mapSet = await loadMapSet({gamemapFilename, readFile, warn});
-    const mapfiles = mapSet.map(({game, mapfile}) => ({name: gamemapFilename, game, mapfile: loadedMapFromMapfile(mapfile)}));
+    const mapfiles = mapSet.map(({game, mapfile}) => ({name: gamemapFilename, game, mapfile: loadedMapFromMapfile(mapfile), uploadDate: null}));
     addNameSettingsFromMapfiles(out, lang, mapfiles, 'truth-mapfile');
   } catch (e) {
     console.error(`Ignoring truth mapfiles for '${lang}' due to an error.`, e);

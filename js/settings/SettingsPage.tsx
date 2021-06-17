@@ -7,35 +7,18 @@ import IconButton from '@material-ui/core/IconButton';
 import Switch from '@material-ui/core/Switch';
 import Radio from '@material-ui/core/Radio';
 import RadioGroup from '@material-ui/core/RadioGroup';
-import Select from '@material-ui/core/Select';
-import Table from '@material-ui/core/Table';
-import TableRow from '@material-ui/core/TableRow';
-import TableHead from '@material-ui/core/TableHead';
-import TableBody from '@material-ui/core/TableBody';
-import TableCell from '@material-ui/core/TableCell';
-import TableContainer from '@material-ui/core/TableContainer';
 import Snackbar from '@material-ui/core/Snackbar';
-import MenuItem from '@material-ui/core/MenuItem';
-import Paper from '@material-ui/core/Paper';
-import TextField from '@material-ui/core/TextField';
-import FormControl from '@material-ui/core/FormControl';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
-import InputLabel from '@material-ui/core/InputLabel';
-import ListItemText from '@material-ui/core/ListItemText';
 import Typography from '@material-ui/core/Typography';
-import ScopedCssBaseline from '@material-ui/core/ScopedCssBaseline';
 import {makeStyles, createStyles} from '@material-ui/core/styles';
 import KeyboardArrowDownIcon from '@material-ui/icons/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@material-ui/icons/KeyboardArrowUp';
-import RestoreIcon from '@material-ui/icons/Restore';
 import WarningIcon from '@material-ui/icons/Warning';
 import InfoIcon from '@material-ui/icons/InfoOutlined';
 import DeleteIcon from '@material-ui/icons/Delete';
 
-import {If} from '~/js/XUtil';
 import {Game, allGames} from '~/js/tables/game';
 import {Tip} from '~/js/Tip';
-import {Ref, getAllTables} from '~/js/tables';
 import {SavedSettings, loadMapFromFile, NameSettings, countNamesInLoadedMap} from './settings';
 import {saveNewSettings} from './local-storage';
 import {useSettingsPageStateReducer, newSettingsFromState, LangState, LangAction, CustomMapfileListItem, State} from './settings-page-state';
@@ -88,8 +71,7 @@ function SaveButton({state, onSave}: {state: State, onSave: (s: SavedSettings) =
           ? "An error occurred! Settings have not been saved."
           : "Settings saved!"
       }
-    >
-    </Snackbar>
+    />
   </>;
 }
 
@@ -106,7 +88,7 @@ function SingleLangSettings({state, dispatch}: {state: LangState, dispatch: Reac
         onChange={(ev: any) => dispatch({type: 'toggle-custom-maps', payload: {customEnabled: ev.target.checked}})}
       />
       <SlidingDrawer open={state.customEnabled}>
-        <CustomMapfileList list={state.customMapfileList} dispatch={dispatch} enabled={state.customEnabled}/>
+        <CustomMapfileList state={state} dispatch={dispatch} enabled={state.customEnabled} />
       </SlidingDrawer>
     </div>
   </>;
@@ -150,7 +132,7 @@ function SlidingDrawer({open, children}: {open: boolean, children: ReactNode}) {
   </div>;
 }
 
-function CustomMapfileList({list, dispatch, enabled}: {list: CustomMapfileListItem[], dispatch: React.Dispatch<LangAction>, enabled: boolean}) {
+function CustomMapfileList({state, dispatch, enabled}: {state: LangState, dispatch: React.Dispatch<LangAction>, enabled: boolean}) {
   const handleFile = (file: File) => {
     const uploadDate = new Date();
     loadMapFromFile(file)
@@ -161,13 +143,13 @@ function CustomMapfileList({list, dispatch, enabled}: {list: CustomMapfileListIt
 
   return <div className="mapfile-list">
     <FlipMove duration={200} >{[
-      ...list.map((item) => (
+      ...state.customMapfileList.map((item) => (
         <CustomMapfileListItem className="mapfile-list-item" key={item.id} {...{item, dispatch, enabled}}/>
       )),
 
       // Include this button in the same array so that it can keep its key for FlipMove when it turns into a real row.
-      <div className="mapfile-list-item" key={list.length}>
-        <Tip tip="Upload a mapfile for thtk or truth" tipProps={{placement: "top-start"}}>
+      <div className="mapfile-list-item" key={state.nextUnusedId}>
+        <Tip tip="Upload a mapfile for thtk or truth">
           <input type="file" onChange={(ev) => handleFile(ev.target.files![0])} disabled={!enabled} />
         </Tip>
       </div>,
@@ -183,14 +165,14 @@ type CustomMapfileListItemProps = {
 };
 
 // Bizarrely, Icons don't support color="info", or really, most of the useful colors in the palette.
-const useIconStyles = makeStyles((theme) =>
+const useIconStyles = makeStyles((theme) => (
   createStyles({
     success: {color: theme.palette.success.main},
     error: {color: theme.palette.error.main},
     warning: {color: theme.palette.warning.main},
     info: {color: theme.palette.info.main},
   })
-);
+));
 
 
 // The forwardRef is needed by <FlipMove>.
