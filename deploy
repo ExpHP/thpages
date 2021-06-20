@@ -1,0 +1,42 @@
+#!/usr/bin/env python3
+
+import shutil
+import subprocess
+import sys
+import os
+
+DIST = './dist'
+DESTDIR = '../exphp.github.io/thpages'
+BACKUPDIR = '../exphp.github.io/thpages.bak'
+
+if os.path.exists(BACKUPDIR):
+    shutil.rmtree(BACKUPDIR)
+if os.path.exists(DIST):
+    shutil.rmtree(DIST)
+subprocess.run(['npm', 'run', 'build'], check=True)
+
+def get_hashed_filenames(dir):
+    out = {}
+    for name in os.listdir(dir):
+        parts = name.split('.')
+        if len(parts) < 3: continue
+
+        if all(c in '0123456789abcdefABCDEF' for c in parts[1]):
+            del parts[1] # hash
+            out['.'.join(parts)] = name
+    return out
+
+# git mv files with hashed names to hopefully reduce commit object size
+dest_hashed = get_hashed_filenames(DESTDIR)
+tmp_hashed = get_hashed_filenames(DIST)
+
+for name in dest_hashed:
+    if name in tmp_hashed and tmp_hashed[name] != dest_hashed[name]:
+        if not name.endswith('.map'):  # source maps are hostile to git due to long lines that change frequently
+            subprocess.run(['git', 'mv', dest_hashed[name], tmp_hashed[name]], cwd=DESTDIR)
+
+os.rename(DESTDIR, BACKUPDIR)
+# copytree is borked on WSL
+shutil.move(DIST, DESTDIR)
+with open(os.path.join(DESTDIR, '.nojekyll'), 'w') as f:
+    f.write('Boo!\n')
