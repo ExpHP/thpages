@@ -50,6 +50,8 @@
     "less": "^3.12.2",
     "parcel-bundler": "^1.12.4",
     "parcel-plugin-static-files-copy": "^2.5.0",
+    "perfectionist": "^2.4.0",
+    "terser": "^3.17.0",
     "typescript": "^3.9.7"
   },
   "scripts": {
