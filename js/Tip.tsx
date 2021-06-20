@@ -1,65 +1,12 @@
 import React from 'react';
-import type {ReactNode, ReactElement, ReactChild} from 'react';
+import type {ReactNode, ReactElement} from 'react';
 import clsx from 'clsx';
 
-import Tooltip from '@material-ui/core/Tooltip';
-import type {TooltipProps} from '@material-ui/core/Tooltip';
+import {CurrentReferenceTableRowContext} from './InlineRef';
 
 const IsTipContext = React.createContext<boolean>(false);
 
 const DEFAULT_EMPTY_OBJECT = {};
-
-/**
- * Add a Material UI tooltip to an element.
- *
- * Note: This MUST be provided a single child so that event handlers can be added directly to the child
- * without having to wrap it in a div. (this lets you use `Tip` on things like `<td>`).  Text content
- * will be wrapped in a span.
- *
- * ---
- *
- * This has been superceded by a new Tip component, and has been left here "just in case" I need to bring it back
- * in one or more places for some reason.
- *
- * (TODO: delete once we're certain it's not needed)
- */
-export function MuiTip({tip, children, disable, tipProps = DEFAULT_EMPTY_OBJECT}: {
-    tip: ReactNode,
-    children: ReactChild, // DELIBERATELY not ReactNode
-    disable?: boolean,
-    tipProps?: Omit<TooltipProps, 'title' | 'children' | 'className'>,
-}): ReactElement {
-  if (typeof children === 'string' || typeof children === 'number') {
-    // Ensure it's an element.
-    children = <span>{children}</span>;
-  }
-  const isTip = React.useContext(IsTipContext);
-  if (disable) return children;
-  if (isTip) return children; // no nested tips!
-
-  tipProps = {
-    enterDelay: 0,
-    leaveDelay: 0,
-    placement: "top",
-    ...tipProps as object,
-    classes: {
-      ...tipProps.classes as object,
-      tooltip: clsx('tip', tipProps.classes?.tooltip),
-    },
-    TransitionProps: {
-      ...tipProps?.TransitionProps as object,
-      timeout: {
-        enter: 0,
-        exit: 0,
-        ...tipProps?.TransitionProps?.timeout as object,
-      },
-    },
-  };
-
-  return <IsTipContext.Provider value={true}>
-    <Tooltip title={tip as any} {...tipProps}>{children}</Tooltip>
-  </IsTipContext.Provider>;
-}
 
 /**
  * Add a tooltip to an element.
@@ -85,6 +32,8 @@ export function Tip({tip, children, disable, element = 'span', elementProps = DE
 
   const tipOkay = !isRecursivelyInsideTip && !disable;
 
+  tip = useForwardedContext(tip);
+
   React.useEffect(() => {
     if (!tipStore) return;
     if (!tipOkay) return;
@@ -100,6 +49,23 @@ export function Tip({tip, children, disable, element = 'span', elementProps = DE
   if (!tipOkay) tipId = undefined;
 
   return React.createElement(element, {...elementProps, 'data-tip': tipId}, children);
+}
+
+/**
+ * Wraps a tip body with some pieces of the current context that the tip body may be interested in.
+ *
+ * This is necessary because our tips are rendered in a shared div that lives outside the content area of the app,
+ * so they would not normally have access to the same context that is available to the <Tip> that defined them.
+ * (see https://github.com/ExpHP/thpages/issues/5)
+ **/
+function useForwardedContext(tip: ReactNode) {
+  const currentTableRow = React.useContext(CurrentReferenceTableRowContext);
+  return React.useMemo(
+    () => <CurrentReferenceTableRowContext.Provider value={currentTableRow}>
+      {tip}
+    </CurrentReferenceTableRowContext.Provider>,
+    [currentTableRow, tip],
+  );
 }
 
 const TipStoreContext = React.createContext<TipStore | null>(null);
