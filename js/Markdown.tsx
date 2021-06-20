@@ -46,14 +46,15 @@ function Ref({r, ...props}: {r: string} & RefProps) {
   return <InlineRef {...{r, tip, url}}/>;
 }
 
-function More({children}: {children: ReactNode}) {
-  const [visible, setVisible] = React.useState(false);
-  const display = visible ? 'initial' : 'none';
-  const text = visible ? 'Show less' : 'Show more';
-  return <div>
-    <a className='show-more clickable' onClick={() => setVisible(!visible)}>{text}</a>
-    <div style={{display: display}}>{children}</div>
-  </div>;
+function More({children}: {children: ReactNode} & React.DetailsHTMLAttributes<HTMLDetailsElement>) {
+  return <Details summary={} className={'show-more'} >{children}</Details>;
+}
+
+function Details({children, summary, ...props}: {children: ReactNode, summary: string} & React.DetailsHTMLAttributes<HTMLDetailsElement>) {
+  return <details {...props}>
+    <summary>{summary}</summary>
+    {children}
+  </details>;
 }
 
 function MdTip({tip, children, deco}: {children: ReactNode, tip: string, deco?: string}) {
@@ -72,19 +73,28 @@ function Weak({children}: {children: ReactNode}) {
   return <span className="weak">{children}</span>;
 }
 
-function FootRef({children}: {children: string | [string]}) {
+function FootRef({children}: {children: SingleChild<string>}) {
   const id = getSingleChild(children);
   return <sup className="footnote link"><HashLink hash={`#footnote-${id}`}>{id}</HashLink></sup>;
 }
 
-function FootDef({children}: {children: string | [string]}) {
+function FootDef({children}: {children: SingleChild<string>}) {
   const id = getSingleChild(children);
   return <sup className="footnote def" id={`footnote-${id}`}>{id}</sup>;
 }
 
 // download link with icon
-function Dl({href, children}: {href: string, children: string | [string]}) {
+function Dl({href, children}: {href: string, children: SingleChild<string>}) {
   return <a download className='download' href={href}>{children}</a>;
+}
+
+function Streamable({children}: {children: SingleChild<string>}) {
+  const id = getSingleChild(children);
+  return <div style={{width: 400}}>
+    <div style={{width: "100%", height: 0, position: 'relative', paddingBottom: '75.000%'}}>
+      <iframe src={`https://streamable.com/e/${id}`} frameBorder="0" width="100%" height="100%" allowFullScreen style={{width: '100%', height: '100%', position: 'absolute'}}/>
+    </div>
+  </div>;
 }
 
 function rehypeExtractTipContents() {
@@ -238,6 +248,8 @@ export const TrustedMarkdown = React.memo(function TrustedMarkdown({mdast, child
           'exp-headless-table': HeadlessTable,
           'exp-ref': Ref, 'exp-tip': MdTip,
           'exp-foot-ref': FootRef, 'exp-foot-def': FootDef,
+          'exp-details': Details,
+          'exp-streamable': Streamable,
         },
       });
 

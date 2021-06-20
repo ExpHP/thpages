@@ -85,9 +85,6 @@ a {
   }
 }
 
-// workaround for things using onclick instead of href
-a.clickable { cursor: pointer; }
-
 .isref,
 a code {
   color: mix(@text-color, @link-color, 65%);
@@ -349,4 +346,16 @@ a.download::before {
   border: dashed 1px #ff3c00a0;
   border-radius: 10px;
   padding: 10px;
+}
+
+details {
+  & > summary {
+    color: @link-color;
+    cursor: pointer;
+  }
+
+  &.show-more {
+    > summary::before { content: "Show more"; }
+    &[open] > summary::before { content: "Show less"; }
+  }
 }

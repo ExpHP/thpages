@@ -22,6 +22,8 @@ So obviously, there are anm scripts for each sprite in the game... but ANM is al
 * ANM is used by Seija to rotate the screen.  (on that note, there is a lot of *incredibly wild stuff* you can do to the game just by editing this one anm script!)
 * ...and a lot more!
 
+**HOWEVER.**  Whenever the game needs to run an ANM script, it needs to know that script's number in the ANM file.  *90% of the time, these script numbers are hardcoded.*  Furthermore, several types of things (most notably bullets) have weirdly defined sprite IDs which are also based on hardcoded tables.
+
 # Terminology {#jargon}
 
 On this site you'll see lots of words used that sound like they have similar meanings, but there are important nuances between them.  Here's an overview:
@@ -48,6 +50,8 @@ Anm files include version numbers that indicate when breaking changes are made t
 | v4 | :game[095], :game[10] | |
 | v7 | :game[11], :game[12], :game[125], :game[128] | anmmap-compatible with v4 (only container format changed) |
 | v8 | :game[13] onwards | |
+
+Because these version numbers are stored in the file, thanm doesn't even bother asking for the game number.  This actually leads to some trouble with a small number of files, notably `bestshot.anm` in :game[14], and `photo.anm` in :game[16].  For a more consistent experience, try [`truanm`](https://github.com/ExpHP/truth#readme).
 
 # Time labels {#time}
 

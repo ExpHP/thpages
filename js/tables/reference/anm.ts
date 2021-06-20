@@ -471,7 +471,7 @@ refByOpcode.set('17', new Map([...refByOpcode.get('165')!.entries()]));
 refByOpcode.get('17')!.delete(439);
 
 refByOpcode.set('18', new Map([...refByOpcode.get('17')!.entries(),
-  [439, {ref: 'anm:the-real-439'}],
+  [439, {ref: 'anm:fadeNearCamera'}],
   [614, {ref: 'anm:drawArc'}],
 ]));
 
@@ -1591,8 +1591,18 @@ mapAssign(byRefId, {
     increasing argument should lead to blinking.
     :::
   `},
-  'the-real-439': {
-    sig: 'Sff', args: ['a', 'b', 'c'], wip: 2, md: `
-    :wip2[Unknown. Added in :game[18].]
+  'fadeNearCamera': {
+    sig: 'Sff', args: ['enabled', 'far', 'near'], md: `
+    :tipshow[Makes a sprite fade to zero opacity as it approaches the camera.]
+
+    The object will have 100% opacity at a distance of \`far\` from the camera, and 0% opacity at a distance of \`near\`.
+
+    :::details{summary="Video by Dai"}
+    ~~~anm
+    :ref{r=anm:fadeNearCamera}(1, 600.0, 400.0);
+    ~~~
+
+    ::streamable[fw4vz3]
+    :::
   `},
 });
