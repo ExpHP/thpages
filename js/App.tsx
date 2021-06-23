@@ -8,10 +8,12 @@ import {HashRouter as Router, Switch, Route, Redirect} from 'react-router-dom';
 import {useScrollToAnchor} from './ScrollToAnchorHelper';
 import {ANM_INS_TABLE, ANM_VAR_TABLE, STD_TABLE, MSG_TABLE} from './tables';
 import {CurrentPageProvider} from './UrlTools';
+import {DarkBgProvider, useDarkBg} from './DarkenBg';
 import {ErrorBoundary} from './Error';
 import {Navbar} from './Navbar';
 import {MarkdownPage} from './MarkdownPage';
 import {LayerViewerPage} from './layer-viewer/LayerViewer';
+import {StructViewerPage} from './struct-viewer/StructViewer';
 import {StatsPage} from './Stats';
 import {useSavedSettingsState, NameSettingsProvider, SettingsPage} from './settings';
 import {ReferenceTablePage} from './ReferenceTable';
@@ -24,15 +26,24 @@ export function App() {
   return (
     <ThemeProvider theme={theme}>
       <StylesProvider injectFirst>
-        <Router>
-          <AppBody />
-        </Router>
+        <DarkBgProvider>
+          <Router>
+            <TopLevelSwitch/>
+          </Router>
+        </DarkBgProvider>
       </StylesProvider>
     </ThemeProvider>
   );
 }
 
-export function AppBody() {
+export function TopLevelSwitch() {
+  return <Switch>
+    <Route exact path="/struct"><StructAppBody /></Route>
+    <Route><NormalAppBody /></Route>
+  </Switch>;
+}
+
+export function NormalAppBody() {
   const {hasPendingScroll, setContentLoaded} = useScrollToAnchor();
 
   return (
@@ -55,6 +66,22 @@ export function AppBody() {
     </div>
   );
 }
+
+export function StructAppBody() {
+  useDarkBg();
+
+  return (
+    <div className={clsx('page-width-controller', 'body-root')}>
+      <nav className='navigation-pane'>
+        <ErrorBoundary><Navbar></Navbar></ErrorBoundary>
+      </nav>
+      <div className='content-pane'>
+        <StructViewerPage/>
+      </div>
+    </div>
+  );
+}
+
 
 
 const theme = createMuiTheme({
