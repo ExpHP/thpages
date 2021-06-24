@@ -1,20 +1,66 @@
+@import "defs.less";
+
 .struct-view {
+    display: grid;
+    grid-auto-flow: column;
+    font-family: @monospace;
+
+    &:extend(.noselect);
     .keyword {
         color: rgb(237, 223, 179);
         font-weight: normal;
     }
+
+    .col-offset {
+        padding-right: 1em;
+    }
+
+    .col-text { white-space: pre; }
+
+    .col-offset,
+    .col-text {
+        white-space: pre;
+        justify-self: start;
+        display: table-cell;
+    }
+
+    .col-offset { align-self: end; }
+    .col-text { align-self: start; }
+
     .struct-name,
     .field-type { color: rgb(237, 189, 129); }
-    .field-offset { color: rgb(88, 156, 104); }
     .field-name { color: rgb(170, 214, 221); }
     .field-gap { color: #6e6e6e; }
+    .field-offset-text {
+        color: rgb(98, 202, 123);
+        background-color: rgba(5, 70, 48, 0);
+        padding: 2px;
+        border-radius: 5px;
+        &:hover {
+            background-color: rgba(25, 199, 141, 0.1);
+        }
+    }
 
-    code {
-        background-color: inherit;
-        border: inherit;
+    [data-side='left'].diff-oneside,
+    [data-side='left'] .diff-oneside { background-color: rgba(255, 0, 0, 0.15); }
+    [data-side='right'].diff-oneside,
+    [data-side='right'] .diff-oneside { background-color: rgba(0, 255, 0, 0.1); }
+    .diff-changed { background-color: rgba(255, 255, 0, 0.125); }
+
+    span.diff-oneside,
+    span.diff-changed {
+        display: inline-block; // fill whole line-height
     }
 }
 
-.diff-left .struct-view .diff-oneside { background-color: rgba(255, 0, 0, 0.3); }
-.diff-right .struct-view .diff-oneside { background-color: rgba(0, 255, 0, 0.2); }
-.struct-view .diff-changed { background-color: rgba(255, 255, 0, 0.2); }
+
+
+.noselect {
+    -webkit-touch-callout: none; /* iOS Safari */
+      -webkit-user-select: none; /* Safari */
+       -khtml-user-select: none; /* Konqueror HTML */
+         -moz-user-select: none; /* Old versions of Firefox */
+          -ms-user-select: none; /* Internet Explorer/Edge */
+              user-select: none; /* Non-prefixed version, currently
+                                    supported by Chrome, Edge, Opera and Firefox */
+}

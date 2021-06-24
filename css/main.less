@@ -103,11 +103,10 @@ a code {
   text-underline-position: under;
 }
 
-code {
+code { font-family: @monospace; }
+
+.content-paper code {
   background: @code-block-bg;
-  font-family: @monospace;
-  border-radius: 5px;
-  display: inline;
 
   color: @code-color;
   padding: 4px 2px;
@@ -116,9 +115,7 @@ code {
 
   // don't have double backgrounds for nested <code> (typically crossrefs in code)
   code {
-    background: initial;
     font-family: @monospace;
-    border-radius: initial;
 
     color: initial;
     padding: initial;
@@ -147,16 +144,18 @@ blockquote {
 }
 
 // MD generates <pre><code></code></pre> for GHFM code fences
-pre > code { display: block; }
+.content-paper {
+  pre > code { display: block; }
 
-.hljs, pre > code {
-  font-family: @monospace;
-  border: 2px solid #12121280;
-  padding: 5px;
-  background: @code-block-bg;
-  overflow-x: auto;
-  white-space: pre;
-  margin: 10px;
+  .hljs, pre > code {
+    font-family: @monospace;
+    border: 2px solid #12121280;
+    padding: 5px;
+    background: @code-block-bg;
+    overflow-x: auto;
+    white-space: pre;
+    margin: 10px;
+  }
 }
 
 table, th, td, tr {
