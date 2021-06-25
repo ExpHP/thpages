@@ -105,3 +105,12 @@ const uniqueId = (() => {
 export function If({cond, children}: {cond: boolean, children: React.ReactNode}) {
   return (cond) ? <>{children}</> : null;
 }
+
+/**
+ * A component that just forwards its ref to its only child.
+ * This can let you apply a key to something without losing refs.
+ **/
+export const TrivialForwardRef = React.forwardRef(function TrivialForwardRef({children}: {children: JSX.Element}, ref: React.ForwardedRef<any>) {
+  const child = React.Children.only(children);
+  return <child.type ref={ref} {...child.props} />;
+});

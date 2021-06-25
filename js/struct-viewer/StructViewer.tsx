@@ -1,7 +1,9 @@
 import React from 'react';
+import type {ReactElement, ReactNode} from 'react';
 import clsx from 'clsx';
 
 import {unreachable} from '~/js/util';
+import {TrivialForwardRef} from '~/js/XUtil';
 
 import {Struct, StructRow, testStruct1, testStruct2, TypeName, FieldName, CTypeString} from './database';
 import {diffStructs} from './diff';
@@ -73,6 +75,8 @@ function toDisplayStruct(struct: Struct): DisplayStruct {
 }
 
 type Side = 'left' | 'right';
+
+const COLUMN_CLASSES = ['col-offset', 'col-text'];
 
 // function displayStructFromStruct(struct: Struct): DisplayStruct {
 //   function makeDisplayRow(row: StructField) {
@@ -157,49 +161,32 @@ function primitiveEqual<T extends number | string | null | undefined | boolean>(
 }
 
 export function StructViewerPage() {
-  const [diff1, diff2] = diffToDisplayStructs(testStruct1, testStruct2);
+  const [display1, display2] = diffToDisplayStructs(testStruct1, testStruct2);
+
+  const table1 = applyGridStyles(structCells(display1), {startColumn: 1});
+  const table2 = applyGridStyles(structCells(display2), {startColumn: 1 + COLUMN_CLASSES.length});
   return <div className='struct-view'>
     {[
-      ...structCells({struct: diff1, side: 'left'}),
-      ...structCells({struct: diff2, side: 'right'}),
+      ...table1.flat().map((elem) => mergeHtmlProps(elem, {'data-side': 'left'})).map((elem) => wrapWithPrefixedKey(elem, 'left-')),
+      ...table2.flat().map((elem) => mergeHtmlProps(elem, {'data-side': 'right'})).map((elem) => wrapWithPrefixedKey(elem, 'right-')),
     ]}
   </div>;
 }
 
-const StructKeyword = <span className='keyword'>{'struct'}</span>;
-const PackedKeyword = <span className='keyword'>{'__packed'}</span>;
-const OpenBrace = <span className='brace'>{'{'}</span>;
-const CloseBrace = <span className='brace'>{'}'}</span>;
+function applyGridStyles(elements: (JSX.Element | null)[][], options: {startRow?: number, startColumn?: number}): (JSX.Element | null)[][] {
+  const {startRow = 1, startColumn = 1} = options;
 
-// export function ShowStruct({struct, side}: {struct: DisplayStruct, side?: Side}) {
-//   const offsetPadding = struct.size.toString(16).length;
+  const getGridStyle =(rowI: number, colI: number) => ({
+    gridRow: startRow + rowI,
+    gridColumn: startColumn + colI,
+  });
 
-//   return <div className='struct-view'>
-//     <div className='struct-row'>
-//       <div className='col-offset'></div>
-//       <div className='col-text'>
-//         {StructKeyword} <span className='struct-name'>{struct.name}</span> {PackedKeyword} {OpenBrace}<br/>
-//       </div>
-//     </div>
-
-//     {struct.rows.map(({key, data}) => (
-//       <div key={key} className='struct-row'>
-//         <div className='col-offset'><FieldOffset offset={offset} padding={offsetPadding} data-side={side}/></div>
-//         <div className={clsx('col-text', {'diff-oneside': field?.diffKind === 'one-side'})} data-side={side}>
-//           {'  '}
-//           {field
-//             ? <FieldDef field={field}/>
-//             : <FieldGap size={size}/>}
-//         </div>
-//       </div>
-//     ))}
-
-//     <div className='struct-row'>
-//       <div className='col-offset'><FieldOffset offset={struct.size} padding={offsetPadding}/></div>
-//       <div className='col-text'>{CloseBrace}</div>
-//     </div>
-//   </div>;
-// }
+  return elements.map((row, rowI) => (
+    row.map((element, colI) => element && (
+      React.cloneElement(element, {style: {...element.props.style, ...getGridStyle(rowI, colI)}})
+    )
+  )));
+}
 
 // "Render" a single struct.
 //
@@ -209,60 +196,86 @@ const CloseBrace = <span className='brace'>{'}'}</span>;
 // * We can't just produce a grid in this function because this might only be one side of a diff.
 // * We can't even return a Fragment because FlipMove needs to be able to get refs to all child elements.
 //
-// So it's a function that returns a list of JSX elements that come with keys and grid positions.
-function structCells({struct, side}: {struct: DisplayStruct, side?: Side}): React.ReactElement[] {
+// So it's a function that returns a list of lists of JSX elements, indicating rows and columns.
+//
+// The elements will come with react keys, but will lack grid styles (which should be added as post-processing).
+function structCells(struct: DisplayStruct): (JSX.Element | null)[][] {
   const offsetPadding = struct.size.toString(16).length;
-
-  const {colText, colOffset} = columnIndices(side);
-
   return [
-    <div key={`${side}-name`} className='col-text' style={{gridRow: 1, gridColumn: colText}}>
-      {StructKeyword} <span className='struct-name'>{struct.name}</span> {PackedKeyword} {OpenBrace}<br/>
-    </div>,
-
-    ...struct.rows.flatMap((row, rowIndex) => (
-      structCellsForRowDispatch(row, {gridRow: rowIndex + 2, side, offsetPadding}))
-    ),
-
-    ...structCellsForRow(
-      CloseBrace, '-clbrace' as ReactKey,
-      {isChange: false, offset: struct.size},
-      {gridRow: 2 + struct.rows.length, side, offsetPadding},
-    ),
-  ];
+    structCellsForHeaderRow(struct),
+    ...struct.rows.map((row) => structCellsForRowDispatch(row, offsetPadding)),
+    structCellsForEndRow(struct, offsetPadding),
+  ].map((row) => {
+    console.assert(row.length === COLUMN_CLASSES.length, row);
+    return zip(row, COLUMN_CLASSES).map(([elem, cls]) => withClassName(elem, cls));
+  });
 }
 
-function structCellsForRowDispatch({key, data}: DisplayStructRow, forwarded: {gridRow: number, offsetPadding: number, side?: Side}) {
+function withClassName(elem: JSX.Element | null, newClass: string) {
+  return elem && mergeHtmlProps(elem, {className: clsx(elem.props.className, newClass)})
+}
+
+type MergeableHtmlProps = {
+  style?: React.CSSProperties;
+  className?: string;
+  [key: string]: any;
+}
+function mergeHtmlProps(elem: JSX.Element | null, props: MergeableHtmlProps) {
+  if (!elem) return null;
+  if (props.style) props.style = {...elem.props.style, ...props.style};
+  if (props.className) props.className = clsx(elem.props.className, props.className);
+  return elem && React.cloneElement(elem, props);
+}
+
+/** Apply a prefix to an element's existing key. */
+function wrapWithPrefixedKey(elem: JSX.Element | null, prefix: string) {
+  if (!elem) return null;
+  if (!elem.key) {
+    console.error(elem);
+    throw new Error(`missing key`);
+  }
+  // React.cloneElement doesn't change keys for some reason so instead we'll wrap it.
+  return elem && <TrivialForwardRef key={`${prefix}${elem.key}`}>{elem}</TrivialForwardRef>;
+}
+
+const STRUCT_INNER_INDENT = '  ';
+const StructKeyword = <span className='keyword'>{'struct'}</span>;
+const PackedKeyword = <span className='keyword'>{'__packed'}</span>;
+const OpenBrace = <span className='brace'>{'{'}</span>;
+const CloseBrace = <span className='brace'>{'}'}</span>;
+
+function structCellsForRowDispatch({key, data}: DisplayStructRow, offsetPadding: number): (JSX.Element | null)[] {
   switch (data.type) {
-    case 'spacer-for-diff': return [];
-    case 'field': return structCellsForRow(<FieldDef data={data}/>, key, data, forwarded);
-    case 'gap': return structCellsForRow(<FieldGap {...data}/>, key, data, forwarded);
+    case 'spacer-for-diff': return [null, null];
+    case 'field': return structCellsForRow(<FieldDef data={data}/>, key, data, offsetPadding);
+    case 'gap': return structCellsForRow(<FieldGap {...data}/>, key, data, offsetPadding);
   }
 }
 
-function structCellsForRow(text: React.ReactElement, key: ReactKey, data: {isChange: boolean, offset: number}, forwarded: {gridRow: number, side?: Side, offsetPadding: number}) {
-  const {gridRow, side, offsetPadding} = forwarded;
-  const {colText, colOffset} = columnIndices(side);
+function structCellsForHeaderRow(struct: DisplayStruct) {
   return [
-    <div
-      key={`${side}-o-${key}`}
-      style={{gridRow, gridColumn: colOffset}}
-      className='col-offset'
-    >
+    null, // offset
+    <div key={`name`} className='col-text'>
+      {StructKeyword} <span className='struct-name'>{struct.name}</span> {PackedKeyword} {OpenBrace}<br/>
+    </div>,
+  ];
+}
+
+function structCellsForRow(text: ReactNode, key: ReactKey, data: {isChange: boolean, offset: number}, offsetPadding: number) {
+  return [
+    <div key={`o-${key}`}>
       <FieldOffset offset={data.offset} padding={offsetPadding}/>
     </div>,
-    <div
-      key={`${side}-t-${key}`}
-      style={{gridRow, gridColumn: colText}}
-      className={clsx('col-text', diffClass(data.isChange))}
-      data-side={side}
-    >
+    <div key={`t-${key}`} className={diffClass(data.isChange)}>
       {text}
     </div>,
   ];
 }
 
-const STRUCT_INNER_INDENT = '  ';
+function structCellsForEndRow(struct: DisplayStruct, offsetPadding: number) {
+  const data = {isChange: false, offset: struct.size};
+  return structCellsForRow(CloseBrace, '#clbrace' as ReactKey, data, offsetPadding);
+}
 
 function FieldDef({data}: {data: {isChange: boolean, name: FieldName, ctype: DisplayCType}}) {
   return <>
@@ -291,12 +304,6 @@ function FieldOffset({offset, padding}: {offset: number, padding: number}) {
   const hex = offset.toString(16);
   const paddingStr = ' '.repeat(padding - hex.length);
   return <span className='field-offset-text'>{paddingStr}0x{hex}</span>;
-}
-
-function columnIndices(side?: Side): {colOffset: number, colText: number} {
-  const colOffset = side === 'right' ? 3 : 1; // note: undefined also maps to 1
-  const colText = colOffset + 1;
-  return {colOffset, colText};
 }
 
 /**
