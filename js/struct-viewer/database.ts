@@ -1,6 +1,6 @@
-import {Game, allGames} from '~/js/tables/game';
+import {Game} from '~/js/tables/game';
 
-/** Format of a struct to be displayed. */
+/** Format of a struct that has just been read from the database. */
 export type Struct = {
   name: TypeName,
   rows: StructRow[],
@@ -9,13 +9,18 @@ export type Struct = {
 
 export type StructRow = {
   offset: number,
-  field: StructField | null,
   size: number,
+  data: StructRowData,
 };
+
+export type StructRowData =
+  | {type: 'gap'}
+  | {type: 'field'} & StructField
+  ;
 
 export type StructField = {
   name: FieldName;
-  type: CTypeString;
+  ctype: CTypeString;
 };
 
 export type TypeName = string & { readonly __tag: unique symbol };
@@ -30,9 +35,9 @@ function structFromData(structName: string, data: [number, string, string | null
     const size = nextOffset - offset;
 
     if (type) {
-      rows.push({offset, size, field: {name: name as FieldName, type: type as CTypeString}});
+      rows.push({offset, size, data: {type: 'field', name: name as FieldName, ctype: type as CTypeString} as const});
     } else {
-      rows.push({offset, size, field: null});
+      rows.push({offset, size, data: {type: 'gap'} as const});
     }
   }
   const [size] = data[data.length - 1];

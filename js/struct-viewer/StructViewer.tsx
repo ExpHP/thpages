@@ -1,8 +1,10 @@
 import React from 'react';
 import clsx from 'clsx';
-import * as Diff from 'diff';
-import {Struct, StructField, testStruct1, testStruct2, TypeName, FieldName, CTypeString} from './database';
+
 import {unreachable} from '~/js/util';
+
+import {Struct, StructRow, testStruct1, testStruct2, TypeName, FieldName, CTypeString} from './database';
+import {diffStructs} from './diff';
 
 /** Format of a struct to be displayed. */
 export type DisplayStruct = {
@@ -31,54 +33,46 @@ type DisplayRowGapData = {
   offset: number;
   isChange: boolean;
   size: number;
+  sizeIsChange: boolean;
 };
 
 type DisplayCType = {
-  type: string;
+  type: CTypeString;
   isChange: boolean;
+}
+
+type DiffClass = string | undefined;
+function diffClass(isChanged: boolean): DiffClass {
+  return isChanged ? 'diff-oneside' : undefined;
 }
 
 type ReactKey = string & { readonly __tag: unique symbol };
 
-function displayStructFromStruct(struct: Struct): DisplayStruct {
-  const discriminators = new Map();
+function toDisplayStruct(struct: Struct): DisplayStruct {
+  const assignDiscriminator = makeDisambiguator();
   return {
     ...struct,
     rows: struct.rows.map((row) => {
-      if (row.field) {
-        const name = row.field.name;
-        if (!discriminators.has(name)) {
-          discriminators.set(name, 0);
-        }
-        const discriminator = discriminators.get(name);
-        discriminators.set(name, discriminator + 1);
+      if (row.data.type === 'field') {
+        const name = row.data.name;
+        const discriminator = assignDiscriminator(name);
 
         const key = `f-${name}-${discriminator}` as ReactKey;
-        let ctype = {type: row.field.type, isChange: false};
+        let ctype = {type: row.data.ctype, isChange: false};
         const data = {type: 'field', offset: row.offset, isChange: false, ctype, name} as const;
         return {key, data};
-      } else {
+      } else if (row.data.type === 'gap') {
         const key = `gap-${row.offset}` as ReactKey;
-        const data = {type: 'gap', offset: row.offset, isChange: false, size: row.size} as const;
+        const data = {type: 'gap', offset: row.offset, isChange: false, size: row.size, sizeIsChange: false} as const;
         return {key, data};
+      } else {
+        unreachable(row.data);
       }
     }),
   };
 }
 
 type Side = 'left' | 'right';
-
-type StructDiff = {
-  key: ReactKey,
-  side: 'left' | 'right' | 'both',
-};
-
-function doStructDiff(keysA: ReactKey[], keysB: ReactKey[]): StructDiff[] {
-  return Diff.diffArrays(keysA, keysB).flatMap((change) => change.value.map((key) => ({
-    key,
-    side: change.added ? 'right' : change.removed ? 'left' : 'both',
-  })));
-}
 
 // function displayStructFromStruct(struct: Struct): DisplayStruct {
 //   function makeDisplayRow(row: StructField) {
@@ -87,46 +81,63 @@ function doStructDiff(keysA: ReactKey[], keysB: ReactKey[]): StructDiff[] {
 //   return {...struct, fields: struct.fields.map(makeDisplayRow)};
 // }
 
-function diffDisplayStructs(structA: DisplayStruct, structB: DisplayStruct): [DisplayStruct, DisplayStruct] {
-  const structs = [structA, structB];
-  const rowMaps = structs.map((x) => new Map([...x.rows.map((row) => [row.key, row] as const)]));
+function zip<A, B>(as: A[], bs: B[]): [A, B][] {
+  return as.map((a, index) => [a, bs[index]]);
+}
 
-  const results: DisplayStruct[] = structs.map((struct) => ({...struct, rows: []}));
+function diffToDisplayStructs(structA: Struct, structB: Struct): [DisplayStruct, DisplayStruct] {
+  const structs = [structA, structB];
+  const displayStructs = [toDisplayStruct(structA), toDisplayStruct(structB)];
   const gapCounters = [0, 0];
 
-  const keysA = structA.rows.map((row) => row.key);
-  const keysB = structB.rows.map((row) => row.key);
-  console.log(structs);
-  for (const {key, side} of doStructDiff(keysA, keysB)) {
-    console.log(key);
-    if (side === 'both') {
-      const rows = rowMaps.map((map) => map.get(key)!);
+  // we need to build new lists of rows so we can insert spacers along the way
+  const results: DisplayStruct[] = displayStructs.map((displayStruct) => ({...displayStruct, rows: []}));
 
-      const [rowA, rowB] = rows; // help typescript out
+  type RowMap = Map<StructRow, DisplayStructRow>;
+  const rowMaps: RowMap[] = zip(structs, displayStructs).map(([struct, displayStruct]) => {
+    return new Map([...zip(struct.rows, displayStruct.rows)]);
+  });
+
+  // we currently have two DisplayStructs with empty diff information.  Update them in-place.
+  for (const diff of diffStructs(structA, structB)) {
+    const displayRowA = rowMaps[0].get((diff as any).left);
+    const displayRowB = rowMaps[1].get((diff as any).right);
+
+    if (diff.side === 'both') {
+      const {left: rowA, right: rowB} = diff;
+
+      // depending on row type, add more diff spans inside the content
       if (rowA.data.type === 'field' && rowB.data.type === 'field') {
-        const typeIsChange = rowA.data.ctype.type !== rowB.data.ctype.type;
-        const updatedRow = (row: any) => ({...row, data: {...row.data, ctype: {...row.data.ctype, isChange: typeIsChange}}});
-        results[0].rows.push(updatedRow(rowA));
-        results[1].rows.push(updatedRow(rowB));
+        if (!primitiveEqual(rowA.data.ctype, rowB.data.ctype)) {
+          (displayRowA!.data as DisplayRowFieldData).ctype.isChange = true;
+          (displayRowB!.data as DisplayRowFieldData).ctype.isChange = true;
+        }
+
       } else if (rowA.data.type === 'gap' && rowB.data.type === 'gap') {
-        results[0].rows.push(rowA);
-        results[1].rows.push(rowB);
+        if (!primitiveEqual(rowA.size, rowB.size)) {
+          (displayRowA!.data as DisplayRowGapData).sizeIsChange = true;
+          (displayRowB!.data as DisplayRowGapData).sizeIsChange = true;
+        }
+
       } else {
         throw new Error(`impossible match between ${rowA.data.type} and ${rowB.data.type}`)
       }
+      results[0].rows.push(displayRowA!);
+      results[1].rows.push(displayRowB!);
+
     } else {
       let indexWith;
-      if (side === 'left') indexWith = 0;
-      else if (side === 'right') indexWith = 1;
-      else unreachable(side);
+      if (diff.side === 'left') indexWith = 0;
+      else if (diff.side === 'right') indexWith = 1;
+      else unreachable(diff);
 
       // Side with the line
-      const row = {...rowMaps[indexWith].get(key)!};
-      console.log(row, side);
-      if (row.data.type !== 'spacer-for-diff') {
-        row.data.isChange = true;
+      const displayRow: DisplayStructRow = [displayRowA, displayRowB][indexWith]!;
+      if (displayRow.data.type === 'spacer-for-diff') {
+        throw new Error('impossible: a spacer already exists!');
       }
-      results[indexWith].rows.push(row);
+      displayRow.data.isChange = true;
+      results[indexWith].rows.push(displayRow);
 
       // Gap on the other side
       results[1 - indexWith].rows.push({
@@ -138,11 +149,15 @@ function diffDisplayStructs(structA: DisplayStruct, structB: DisplayStruct): [Di
   return [results[0], results[1]];
 }
 
+/**
+ * `===` but type-checked to forbid types that have reference equality. (for use in places
+ * where you fear a refactoring may eventually change the types to objects) */
+function primitiveEqual<T extends number | string | null | undefined | boolean>(a: T, b: T) {
+  return a === b;
+}
 
 export function StructViewerPage() {
-  const struct1 = displayStructFromStruct(testStruct1);
-  const struct2 = displayStructFromStruct(testStruct2);
-  const [diff1, diff2] = diffDisplayStructs(struct1, struct2);
+  const [diff1, diff2] = diffToDisplayStructs(testStruct1, testStruct2);
   return <div className='struct-view'>
     {[
       ...structCells({struct: diff1, side: 'left'}),
@@ -221,7 +236,7 @@ function structCellsForRowDispatch({key, data}: DisplayStructRow, forwarded: {gr
   switch (data.type) {
     case 'spacer-for-diff': return [];
     case 'field': return structCellsForRow(<FieldDef data={data}/>, key, data, forwarded);
-    case 'gap': return structCellsForRow(<FieldGap size={data.size}/>, key, data, forwarded);
+    case 'gap': return structCellsForRow(<FieldGap {...data}/>, key, data, forwarded);
   }
 }
 
@@ -239,7 +254,7 @@ function structCellsForRow(text: React.ReactElement, key: ReactKey, data: {isCha
     <div
       key={`${side}-t-${key}`}
       style={{gridRow, gridColumn: colText}}
-      className={clsx('col-text', {'diff-oneside': data.isChange})}
+      className={clsx('col-text', diffClass(data.isChange))}
       data-side={side}
     >
       {text}
@@ -261,11 +276,15 @@ function FieldDef({data}: {data: {isChange: boolean, name: FieldName, ctype: Dis
 
 function CType({ctype}: {ctype: DisplayCType}) {
   const {isChange, type} = ctype;
-  return <span className={clsx('field-type', {'diff-changed': isChange})}>{type}</span>;
+  return <span className={clsx('field-type', diffClass(isChange))}>{type}</span>;
 }
 
-function FieldGap({size}: {size: number}) {
-  return <span className='field-gap'>{STRUCT_INNER_INDENT}// 0x{size.toString(16)} bytes...</span>;
+function FieldGap({size, sizeIsChange}: DisplayRowGapData) {
+  return <span className='field-gap'>{STRUCT_INNER_INDENT}
+    {'// '}
+    <span className={diffClass(sizeIsChange)}>0x{size.toString(16)}</span>
+    {' bytes...'}
+  </span>;
 }
 
 function FieldOffset({offset, padding}: {offset: number, padding: number}) {
@@ -278,4 +297,28 @@ function columnIndices(side?: Side): {colOffset: number, colText: number} {
   const colOffset = side === 'right' ? 3 : 1; // note: undefined also maps to 1
   const colText = colOffset + 1;
   return {colOffset, colText};
+}
+
+/**
+ * Get a function that returns an index to distinguish between identical inputs,
+ * in a deterministic manner:
+ *
+ * The first time it sees any given value, it returns 0.
+ * The second time it sees a value, it will return 1.  Etc.
+ *
+ * Useful for generating react keys from things that may contain duplicates,
+ * as this will provide at least a decent heuristic for which duplicate in one set
+ * should be animated into which duplicate in another.
+ **/
+function makeDisambiguator<T>(): (x: T) => number {
+  const discriminators = new Map();
+  return (value: T) => {
+    if (!discriminators.has(value)) {
+      discriminators.set(value, 0);
+    }
+    const discriminator = discriminators.get(value);
+    discriminators.set(value, discriminator + 1);
+
+    return discriminator;
+  };
 }
