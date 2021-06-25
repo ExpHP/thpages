@@ -1,8 +1,12 @@
 @import "defs.less";
 
+// indent of wrapped lines for a field
+@field-hanging-indent: 3ch;
+// minimum columns of purely blank space to highlight at the end of a line
+@field-right-pad-hl: 1ch;
+
 .struct-view {
     display: grid;
-    grid-auto-flow: column;
     font-family: @monospace;
 
     &:extend(.noselect);
@@ -15,17 +19,27 @@
         padding-right: 1em;
     }
 
-    .col-text { white-space: pre; }
-
+    .col-text.indent {
+        margin-left: 2ch;
+    }
     .col-offset,
     .col-text {
-        white-space: pre;
-        justify-self: start;
+        align-self: start;
         display: table-cell;
     }
 
-    .col-offset { align-self: end; }
-    .col-text { align-self: start; }
+    .col-offset { justify-self: end; }
+
+    // hanging indent
+    .col-text {
+        text-indent: -4ch;
+        padding-left: 4ch;
+        padding-right: 1ch;
+        & > * { text-indent: 0; }
+    }
+
+    // get diff regions to highlight to end
+    .col-text { justify-self: stretch; }
 
     .struct-name,
     .field-type { color: rgb(237, 189, 129); }
@@ -42,9 +56,9 @@
     }
 
     [data-side='left'].diff-oneside,
-    [data-side='left'] .diff-oneside { background-color: rgba(255, 0, 0, 0.15); }
+    [data-side='left'] .diff-oneside { background-color: rgba(255, 0, 0, 0.20); }
     [data-side='right'].diff-oneside,
-    [data-side='right'] .diff-oneside { background-color: rgba(0, 255, 0, 0.1); }
+    [data-side='right'] .diff-oneside { background-color: rgba(0, 255, 0, 0.175); }
     .diff-changed { background-color: rgba(255, 255, 0, 0.125); }
 
     span.diff-oneside,

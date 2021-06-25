@@ -200,11 +200,10 @@ function applyGridStyles(elements: (JSX.Element | null)[][], options: {startRow?
 //
 // The elements will come with react keys, but will lack grid styles (which should be added as post-processing).
 function structCells(struct: DisplayStruct): (JSX.Element | null)[][] {
-  const offsetPadding = struct.size.toString(16).length;
   return [
     structCellsForHeaderRow(struct),
-    ...struct.rows.map((row) => structCellsForRowDispatch(row, offsetPadding)),
-    structCellsForEndRow(struct, offsetPadding),
+    ...struct.rows.map((row) => structCellsForRowDispatch(row)),
+    structCellsForEndRow(struct),
   ].map((row) => {
     console.assert(row.length === COLUMN_CLASSES.length, row);
     return zip(row, COLUMN_CLASSES).map(([elem, cls]) => withClassName(elem, cls));
@@ -244,11 +243,11 @@ const PackedKeyword = <span className='keyword'>{'__packed'}</span>;
 const OpenBrace = <span className='brace'>{'{'}</span>;
 const CloseBrace = <span className='brace'>{'}'}</span>;
 
-function structCellsForRowDispatch({key, data}: DisplayStructRow, offsetPadding: number): (JSX.Element | null)[] {
+function structCellsForRowDispatch({key, data}: DisplayStructRow): (JSX.Element | null)[] {
   switch (data.type) {
     case 'spacer-for-diff': return [null, null];
-    case 'field': return structCellsForRow(<FieldDef data={data}/>, key, data, offsetPadding);
-    case 'gap': return structCellsForRow(<FieldGap {...data}/>, key, data, offsetPadding);
+    case 'field': return structCellsForRow({text: <FieldDef data={data}/>, key, data, indent: true});
+    case 'gap': return structCellsForRow({text: <FieldGap data={data}/>, key, data, indent: true});
   }
 }
 
@@ -261,25 +260,25 @@ function structCellsForHeaderRow(struct: DisplayStruct) {
   ];
 }
 
-function structCellsForRow(text: ReactNode, key: ReactKey, data: {isChange: boolean, offset: number}, offsetPadding: number) {
+function structCellsForRow(args: {text: ReactNode, key: ReactKey, data: {isChange: boolean, offset: number}, indent?: boolean}) {
+  const {text, key, data, indent = false} = args;
   return [
     <div key={`o-${key}`}>
-      <FieldOffset offset={data.offset} padding={offsetPadding}/>
+      <FieldOffset offset={data.offset}/>
     </div>,
-    <div key={`t-${key}`} className={diffClass(data.isChange)}>
+    <div key={`t-${key}`} className={clsx({'indent': indent}, diffClass(data.isChange))}>
       {text}
     </div>,
   ];
 }
 
-function structCellsForEndRow(struct: DisplayStruct, offsetPadding: number) {
+function structCellsForEndRow(struct: DisplayStruct) {
   const data = {isChange: false, offset: struct.size};
-  return structCellsForRow(CloseBrace, '#clbrace' as ReactKey, data, offsetPadding);
+  return structCellsForRow({text: CloseBrace, key: '#clbrace' as ReactKey, data});
 }
 
-function FieldDef({data}: {data: {isChange: boolean, name: FieldName, ctype: DisplayCType}}) {
+function FieldDef({data}: {data: DisplayRowFieldData}) {
   return <>
-    {STRUCT_INNER_INDENT}
     <span className='field-name'>{data.name}</span>
     {' : '}
     <CType ctype={data.ctype}/>
@@ -292,18 +291,17 @@ function CType({ctype}: {ctype: DisplayCType}) {
   return <span className={clsx('field-type', diffClass(isChange))}>{type}</span>;
 }
 
-function FieldGap({size, sizeIsChange}: DisplayRowGapData) {
-  return <span className='field-gap'>{STRUCT_INNER_INDENT}
+function FieldGap({data: {size, sizeIsChange}}: {data: DisplayRowGapData}) {
+  return <span className='field-gap'>
     {'// '}
     <span className={diffClass(sizeIsChange)}>0x{size.toString(16)}</span>
     {' bytes...'}
   </span>;
 }
 
-function FieldOffset({offset, padding}: {offset: number, padding: number}) {
+function FieldOffset({offset}: {offset: number}) {
   const hex = offset.toString(16);
-  const paddingStr = ' '.repeat(padding - hex.length);
-  return <span className='field-offset-text'>{paddingStr}0x{hex}</span>;
+  return <span className='field-offset-text'>0x{hex}</span>;
 }
 
 /**
