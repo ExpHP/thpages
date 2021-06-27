@@ -1,7 +1,7 @@
 import React from 'react';
 import type {ReactElement, ReactNode} from 'react';
 import {Async} from 'react-async';
-// import FlipMove from 'react-flip-move';
+import FlipMove from 'react-flip-move';
 import clsx from 'clsx';
 
 import {unreachable} from '~/js/util';
@@ -27,7 +27,6 @@ export function StructViewerPageFromUrl() {
 }
 
 export function StructViewerPage({db, name, version}: {db: StructDatabase, name: TypeName, version: string}) {
-  console.log('StructViewerPage');
   const promiseFn = React.useCallback(async () => {
     const v1 = await db.parseVersion(version);
     if (!v1) throw new Error(`No such version: '${version}'`);
@@ -69,13 +68,12 @@ export function DiffViewerPage({db, name, version1, version2}: {db: StructDataba
 }
 
 export function StructViewerPageImpl({struct}: {struct: Struct}) {
-  console.log('StructViewerPageImpl', struct);
   const displayStruct = React.useMemo(() => toDisplayStruct(struct), [struct]);
 
-  const table = applyGridStyles(structCells(displayStruct), {startColumn: 1});
-  return <div className='struct-view'>
-    {table.flat()}
-  </div>;
+  const table = structCells(displayStruct);
+  return <FlipMove typeName='div' className={clsx('struct-view', 'use-table')} enterAnimation="fade" leaveAnimation="fade" duration={100} >
+    {table.map((elems) => <div key={elems[1]!.key} className='row'>{elems}</div>)}
+  </FlipMove>;
 }
 
 export function DiffViewerPageImpl({struct1, struct2}: {struct1: Struct, struct2: Struct}) {
@@ -83,7 +81,8 @@ export function DiffViewerPageImpl({struct1, struct2}: {struct1: Struct, struct2
 
   const table1 = applyGridStyles(structCells(display1), {startColumn: 1});
   const table2 = applyGridStyles(structCells(display2), {startColumn: 1 + COLUMN_CLASSES.length});
-  return <div className='struct-view'>
+
+  return <div className={clsx('struct-view', 'use-grid')}>
     {[
       ...table1.flat().map((elem) => mergeHtmlProps(elem, {'data-side': 'left'})).map((elem) => wrapWithPrefixedKey(elem, 'left-')),
       ...table2.flat().map((elem) => mergeHtmlProps(elem, {'data-side': 'right'})).map((elem) => wrapWithPrefixedKey(elem, 'right-')),
@@ -286,7 +285,7 @@ function applyGridStyles(elements: (JSX.Element | null)[][], options: {startRow?
 function structCells(struct: DisplayStruct): (JSX.Element | null)[][] {
   return [
     structCellsForHeaderRow(struct),
-    ...struct.rows.map((row) => structCellsForRowDispatch(row)),
+    ...struct.rows.map((row) => structCellsForRowDispatch(struct, row)),
     structCellsForEndRow(struct),
   ].map((row) => {
     console.assert(row.length === COLUMN_CLASSES.length, row);
@@ -327,38 +326,42 @@ const PackedKeyword = <span className='keyword'>{'__packed'}</span>;
 const OpenBrace = <span className='brace'>{'{'}</span>;
 const CloseBrace = <span className='brace'>{'}'}</span>;
 
-function structCellsForRowDispatch({key, data}: DisplayStructRow): (JSX.Element | null)[] {
+function structCellsForRowDispatch(struct: DisplayStruct, {key, data}: DisplayStructRow): (JSX.Element | null)[] {
   switch (data.type) {
     case 'spacer-for-diff': return [null, null];
-    case 'field': return structCellsForRow({text: <FieldDef data={data}/>, key, data, indent: true});
-    case 'gap': return structCellsForRow({text: <FieldGap data={data}/>, key, data, indent: true});
+    case 'field': return structCellsForRow({text: <FieldDef data={data}/>, key, struct, data, indent: true});
+    case 'gap': return structCellsForRow({text: <FieldGap data={data}/>, key, struct, data, indent: true});
   }
 }
 
 function structCellsForHeaderRow(struct: DisplayStruct) {
   return [
-    null, // offset
-    <div key={`name`} className='col-text'>
-      {StructKeyword} <span className='struct-name'>{struct.name}</span> {PackedKeyword} {OpenBrace}<br/>
+    <div key={`o-#name`}></div>, // offset
+    <div key={`t-#name`} className='col-text'>
+      <div className='col-text-wrapper'>
+        {StructKeyword} <span className='struct-name'>{struct.name}</span> {PackedKeyword} {OpenBrace}<br/>
+      </div>
     </div>,
   ];
 }
 
-function structCellsForRow(args: {text: ReactNode, key: ReactKey, data: {isChange: boolean, offset: number}, indent?: boolean}) {
-  const {text, key, data, indent = false} = args;
+function structCellsForRow(args: {text: ReactNode, key: ReactKey, struct: DisplayStruct, data: {isChange: boolean, offset: number}, indent?: boolean}) {
+  const {text, key, data, struct, indent = false} = args;
   return [
     <div key={`o-${key}`}>
-      <FieldOffset offset={data.offset}/>
+      <FieldOffset offset={data.offset} size={struct.size}/>
     </div>,
     <div key={`t-${key}`} className={clsx({'indent': indent}, diffClass(data.isChange))}>
-      {text}
+      <div className='col-text-wrapper'>
+        {text}
+      </div>
     </div>,
   ];
 }
 
 function structCellsForEndRow(struct: DisplayStruct) {
   const data = {isChange: false, offset: struct.size};
-  return structCellsForRow({text: CloseBrace, key: '#clbrace' as ReactKey, data});
+  return structCellsForRow({text: CloseBrace, struct, key: '#clbrace' as ReactKey, data});
 }
 
 function FieldDef({data}: {data: DisplayRowFieldData}) {
@@ -383,9 +386,12 @@ function FieldGap({data: {size, sizeIsChange}}: {data: DisplayRowGapData}) {
   </span>;
 }
 
-function FieldOffset({offset}: {offset: number}) {
+function FieldOffset({offset, size}: {offset: number, size: number}) {
+  // NOTE: Padding produces significantly better animations than e.g. 'text-align: right', because table rows
+  //       disappearing from FlipMove lose their auto-computed column widths.
   const hex = offset.toString(16);
-  return <span className='field-offset-text'>0x{hex}</span>;
+  const padding = ' '.repeat(size.toString(16).length - hex.length);
+  return <span className='field-offset-text'>{padding}0x{hex}</span>;
 }
 
 /**

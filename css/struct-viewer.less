@@ -1,10 +1,31 @@
 @import "defs.less";
 
-.struct-view {
+.struct-view.use-grid {
     display: grid;
-    font-family: @monospace;
+    .row { display: contents; }
+    .col-offset,
+    .col-text {
+        align-self: start;
+        display: inline-block;
+    }
+    // .col-offset { justify-self: end; }
+}
 
+.struct-view.use-table {
+    display: table;
+    .row { display: table-row; }
+    .col-offset,
+    .col-text {
+        vertical-align: top;
+        display: table-cell;
+    }
+    // .col-offset { text-align: right; }
+}
+
+.struct-view {
+    font-family: @monospace;
     &:extend(.noselect);
+
     .keyword {
         color: rgb(237, 223, 179);
         font-weight: normal;
@@ -14,19 +35,19 @@
         padding-right: 1em;
     }
 
-    .col-text.indent {
+    .col-offset {
+        white-space: pre;
+    }
+
+    // 'col-text-wrapper' inside 'col-text' because 'display: table-cell' can't have margins (?)
+    // .col-text-wrapper { width: 100%; }
+    .col-text.indent .col-text-wrapper {
+        // width: calc(100% - 2ch);
         margin-left: 2ch;
     }
-    .col-offset,
-    .col-text {
-        align-self: start;
-        display: table-cell;
-    }
-
-    .col-offset { justify-self: end; }
 
     // hanging indent
-    .col-text {
+    .col-text .col-text-wrapper {
         text-indent: -4ch;
         padding-left: 4ch;
         padding-right: 1ch;
@@ -54,10 +75,7 @@
     [data-side='left'] .diff-oneside { background-color: rgba(255, 0, 0, 0.20); }
     [data-side='right'].diff-oneside,
     [data-side='right'] .diff-oneside { background-color: rgba(0, 255, 0, 0.175); }
-    .diff-changed { background-color: rgba(255, 255, 0, 0.125); }
-
-    span.diff-oneside,
-    span.diff-changed {
+    span.diff-oneside {
         display: inline-block; // fill whole line-height
     }
 }
