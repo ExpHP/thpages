@@ -1,21 +1,120 @@
 import React from 'react';
 import type {ReactElement, ReactNode} from 'react';
+import {Async} from 'react-async';
+// import FlipMove from 'react-flip-move';
 import clsx from 'clsx';
 
 import {unreachable} from '~/js/util';
+import {Err} from '~/js/Error';
 import {TrivialForwardRef} from '~/js/XUtil';
+import {useSearchParams} from '~/js/UrlTools';
 
-import {Struct, StructRow, testStruct1, testStruct2, TypeName, FieldName, CTypeString} from './database';
+import {StructDatabase, Struct, StructRow, TypeName, FieldName, CTypeString, PathReader} from './database';
 import {diffStructs} from './diff';
 
+// =============================================================================
+
+export function StructViewerPageFromUrl() {
+  const db = useDb(defaultPathReader);
+  const searchParams = useSearchParams();
+  console.log(searchParams);
+  const tyName = searchParams.get('t');
+  const version = searchParams.get('v');
+  if (!tyName) return <Err>FIXME: Struct picker</Err>;
+  if (!version) return <Err>FIXME: Version picker</Err>;
+
+  return <StructViewerPage db={db} name={tyName as TypeName} version={version} />;
+}
+
+export function StructViewerPage({db, name, version}: {db: StructDatabase, name: TypeName, version: string}) {
+  console.log('StructViewerPage');
+  const promiseFn = React.useCallback(async () => {
+    const v1 = await db.parseVersion(version);
+    if (!v1) throw new Error(`No such version: '${version}'`);
+
+    console.log(db);
+    const struct = await db.getStructIfExists(name, v1);
+    if (!struct) throw new Error(`Struct '${name}' does not exist in version '${version}'`);
+
+    return struct;
+  }, [db, name, version]);
+
+  return <Async promiseFn={promiseFn}>
+    <Async.Initial persist><h1>Loading structs...</h1></Async.Initial>
+    <Async.Fulfilled persist>{(value) => <StructViewerPageImpl struct={value}/>}</Async.Fulfilled>
+    <Async.Rejected>{(err) => <Err>{err.message}</Err>}</Async.Rejected>
+  </Async>;
+}
+
+export function DiffViewerPage({db, name, version1, version2}: {db: StructDatabase, name: TypeName, version1: string, version2: string}) {
+  const asyncFn = React.useCallback(async () => {
+    const v1 = await db.parseVersion(version1);
+    const v2 = await db.parseVersion(version2);
+    if (!v1) throw new Error(`No such version: '${version1}'`);
+    if (!v2) throw new Error(`No such version: '${version2}'`);
+
+    const struct1 = await db.getStructIfExists(name, v1);
+    const struct2 = await db.getStructIfExists(name, v2);
+    if (!struct1) throw new Error(`Struct '${name}' does not exist in version '${version1}'`);
+    if (!struct2) throw new Error(`Struct '${name}' does not exist in version '${version2}'`);
+
+    return [struct1, struct2];
+  }, [db, name, version1, version2]);
+
+  return <Async asyncFn={asyncFn}>
+    <Async.Pending><h1>Loading structs...</h1></Async.Pending>
+    <Async.Fulfilled>{({value: [s1, s2]}) => <DiffViewerPageImpl struct1={s1} struct2={s2}/>}</Async.Fulfilled>
+    <Async.Rejected>{(err) => <Err>{err.message}</Err>}</Async.Rejected>
+  </Async>;
+}
+
+export function StructViewerPageImpl({struct}: {struct: Struct}) {
+  console.log('StructViewerPageImpl', struct);
+  const displayStruct = React.useMemo(() => toDisplayStruct(struct), [struct]);
+
+  const table = applyGridStyles(structCells(displayStruct), {startColumn: 1});
+  return <div className='struct-view'>
+    {table.flat()}
+  </div>;
+}
+
+export function DiffViewerPageImpl({struct1, struct2}: {struct1: Struct, struct2: Struct}) {
+  const [display1, display2] = React.useMemo(() => diffToDisplayStructs(struct1, struct2), [struct1, struct2]);
+
+  const table1 = applyGridStyles(structCells(display1), {startColumn: 1});
+  const table2 = applyGridStyles(structCells(display2), {startColumn: 1 + COLUMN_CLASSES.length});
+  return <div className='struct-view'>
+    {[
+      ...table1.flat().map((elem) => mergeHtmlProps(elem, {'data-side': 'left'})).map((elem) => wrapWithPrefixedKey(elem, 'left-')),
+      ...table2.flat().map((elem) => mergeHtmlProps(elem, {'data-side': 'right'})).map((elem) => wrapWithPrefixedKey(elem, 'right-')),
+    ]}
+  </div>;
+}
+
+// =============================================================================
+
+function defaultPathReader() {
+  return (path: string) => fetch(`./re-data/${path}`).then((x) => x.text());
+}
+
+function useDb(getReader: () => PathReader) {
+  const db = React.useRef<StructDatabase | null>(null);
+  if (!db.current) {
+    db.current = new StructDatabase(getReader());
+  }
+  return db.current;
+}
+
+// =============================================================================
+
 /** Format of a struct to be displayed. */
-export type DisplayStruct = {
+type DisplayStruct = {
   name: TypeName,
   rows: DisplayStructRow[],
   size: number,
 };
 
-export type DisplayStructRow = {
+type DisplayStructRow = {
   key: ReactKey;
   data:
     | {type: 'gap'} & DisplayRowGapData
@@ -73,8 +172,6 @@ function toDisplayStruct(struct: Struct): DisplayStruct {
     }),
   };
 }
-
-type Side = 'left' | 'right';
 
 const COLUMN_CLASSES = ['col-offset', 'col-text'];
 
@@ -158,19 +255,6 @@ function diffToDisplayStructs(structA: Struct, structB: Struct): [DisplayStruct,
  * where you fear a refactoring may eventually change the types to objects) */
 function primitiveEqual<T extends number | string | null | undefined | boolean>(a: T, b: T) {
   return a === b;
-}
-
-export function StructViewerPage() {
-  const [display1, display2] = diffToDisplayStructs(testStruct1, testStruct2);
-
-  const table1 = applyGridStyles(structCells(display1), {startColumn: 1});
-  const table2 = applyGridStyles(structCells(display2), {startColumn: 1 + COLUMN_CLASSES.length});
-  return <div className='struct-view'>
-    {[
-      ...table1.flat().map((elem) => mergeHtmlProps(elem, {'data-side': 'left'})).map((elem) => wrapWithPrefixedKey(elem, 'left-')),
-      ...table2.flat().map((elem) => mergeHtmlProps(elem, {'data-side': 'right'})).map((elem) => wrapWithPrefixedKey(elem, 'right-')),
-    ]}
-  </div>;
 }
 
 function applyGridStyles(elements: (JSX.Element | null)[][], options: {startRow?: number, startColumn?: number}): (JSX.Element | null)[][] {

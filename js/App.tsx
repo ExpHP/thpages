@@ -13,7 +13,7 @@ import {ErrorBoundary} from './Error';
 import {Navbar} from './Navbar';
 import {MarkdownPage} from './MarkdownPage';
 import {LayerViewerPage} from './layer-viewer/LayerViewer';
-import {StructViewerPage} from './struct-viewer/StructViewer';
+import {StructViewerPageFromUrl} from './struct-viewer/StructViewer';
 import {StatsPage} from './Stats';
 import {useSavedSettingsState, NameSettingsProvider, SettingsPage} from './settings';
 import {ReferenceTablePage} from './ReferenceTable';
@@ -28,7 +28,9 @@ export function App() {
       <StylesProvider injectFirst>
         <DarkBgProvider>
           <Router>
-            <TopLevelSwitch/>
+            <CurrentPageProvider>
+              <TopLevelSwitch/>
+            </CurrentPageProvider>
           </Router>
         </DarkBgProvider>
       </StylesProvider>
@@ -52,14 +54,12 @@ export function NormalAppBody() {
         <div className="header-text">{"ExpHP's Touhou pages"}</div>
       </div>
       <nav className='navigation-pane'>
-        <ErrorBoundary><Navbar></Navbar></ErrorBoundary>
+        <ErrorBoundary><Navbar/></ErrorBoundary>
       </nav>
       <div className='content-pane'>
         <div className='content-paper'>
           <ErrorBoundary>
-            <CurrentPageProvider>
-              <Content setContentLoaded={setContentLoaded}/>
-            </CurrentPageProvider>
+            <Content setContentLoaded={setContentLoaded}/>
           </ErrorBoundary>
         </div>
       </div>
@@ -76,7 +76,7 @@ export function StructAppBody() {
         <ErrorBoundary><Navbar></Navbar></ErrorBoundary>
       </nav>
       <div className='content-pane'>
-        <StructViewerPage/>
+        <StructViewerPageFromUrl/>
       </div>
     </div>
   );

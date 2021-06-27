@@ -1,11 +1,14 @@
-import {Game} from '~/js/tables/game';
+import * as JP from '~/js/jsonParse';
 
 /** Format of a struct that has just been read from the database. */
 export type Struct = {
   name: TypeName,
+  source: StructSource;
   rows: StructRow[],
   size: number,
 };
+
+type StructSource = 'user' | 'system';
 
 export type StructRow = {
   offset: number,
@@ -23,11 +26,184 @@ export type StructField = {
   ctype: CTypeString;
 };
 
+type DbHead = {
+  levels: VersionLevel[],
+  versions: Map<Version, VersionData>,
+};
+
+export type VersionData = {
+  level: VersionLevel,
+}
+export type VersionLevel = 'primary' | 'secondary'; // secondary versions can be hidden
+export const DEFAULT_VERSION_LEVELS: VersionLevel[] = ['primary', 'secondary'];
+
+/** Form of a VersionLevel that can be compared using `<`, `>`. */
+export type VersionLevelInt = number &  { readonly __tag: unique symbol };
+function versionLevelToInt(levels: VersionLevel[], level: VersionLevel): VersionLevelInt {
+  const index = levels.indexOf(level);
+  if (index === -1) {
+    throw new Error(`bad level: '${level}'`);
+  }
+  return -index as VersionLevelInt;
+}
+function versionLevelFromInt(levels: VersionLevel[], level: VersionLevelInt): VersionLevel {
+  return levels[-level];
+}
+
+export type Version = string & { readonly __tag: unique symbol };
 export type TypeName = string & { readonly __tag: unique symbol };
 export type FieldName = string & { readonly __tag: unique symbol };
 export type CTypeString = string & { readonly __tag: unique symbol };
 
-function structFromData(structName: string, data: [number, string, string | null][]): Struct {
+// =============================================================================
+
+export interface PathReader {
+  (path: string): Promise<string>;
+};
+
+export function makeCachedReader(reader: PathReader) {
+  const cache = new Map();
+  return (path: string) => {
+    if (!cache.has(path)) {
+      cache.set(path, reader(path));
+    }
+    return cache.get(path);
+  };
+}
+
+// =============================================================================
+
+export class StructDatabase {
+  private reader: PathReader;
+  private dbHead: Promise<DbHead>;
+  // NOTE: will always have an entry for each version as long as `dbHead` has resolved.
+  private structs: Map<Version, Map<TypeName, Struct>>;
+
+  private alreadyLoaded: Set<string>;
+
+  constructor(reader: PathReader) {
+    this.reader = reader;
+    this.structs = new Map();
+    this.dbHead = (async () => {
+      const text = await reader('db-head.json');
+      const dbHead = parseDbHeadFile(text);
+      this.doSideEffectsFromAwaitingDbHead(dbHead);
+      return dbHead;
+    })();
+    this.alreadyLoaded = new Set();
+  }
+
+  private doSideEffectsFromAwaitingDbHead(dbHead: DbHead) {
+    for (const version of dbHead.versions.keys()) {
+      this.structs.set(version, new Map());
+    }
+  }
+
+  async parseVersion(version: string): Promise<Version | null> {
+    for (const v of (await this.dbHead).versions.keys()) {
+      if (v === version) return v;
+    }
+    return null;
+  }
+
+  async getStructIfExists(name: TypeName, version: Version): Promise<Struct | undefined> {
+    await this.dbHead;  // guarantee inner maps
+    await this.ensureVersionStructsAreLoaded(version);
+    return this.structs.get(version)!.get(name);
+  }
+
+  async ensureVersionStructsAreLoaded(version: Version) {
+    await this.dbHead;  // guarantee inner maps
+    const path = `data/${version}/type-structs-own.json`;
+    console.debug(path);
+    console.debug(this.alreadyLoaded);
+
+    if (!this.alreadyLoaded.has(path)) {
+      console.debug('does not have');
+      // NOTE: this whole if block can run multiple times in race conditions on the 'await', so it must be idempotent.
+      const text = await this.reader(path);
+      const structsFromFile = parseStructsFile(text, 'user');
+      console.debug(structsFromFile);
+
+      const structsForVersion = this.structs.get(version)!;
+      console.debug(structsForVersion);
+      for (const [name, struct] of structsFromFile.entries()) {
+        structsForVersion.set(name, struct);
+      }
+      this.alreadyLoaded.add(path);
+    }
+  }
+
+  async getVersionsForStruct(name: TypeName, minLevel: VersionLevel): Promise<Version[]> {
+    const dbHead = await this.dbHead;
+    const minLevelInt = versionLevelToInt(dbHead.levels, minLevel);
+    const out = [];
+    for (const [version, {level}] of dbHead.versions.entries()) {
+      const levelInt = versionLevelToInt(dbHead.levels, level);
+      if (levelInt >= minLevelInt && this.getStructIfExists(name, version)) {
+        out.push(version);
+      }
+    }
+    return out;
+  }
+
+  async getStructsForVersion(version: Version): Promise<TypeName[]> {
+    await this.ensureVersionStructsAreLoaded(version);
+    return [...this.structs.get(version)!.keys()];
+  }
+}
+
+// =============================================================================
+
+function parseDbHeadFile(text: string): DbHead {
+  const json: unknown = JSON.parse(text);
+
+  const {version: formatVersion} = JP.object({version: JP.number}).parse(json);
+  if (formatVersion !== 1) {
+    console.warn(`unexpected db-head version: ${formatVersion}`)
+  }
+
+  const levels = DEFAULT_VERSION_LEVELS;
+
+  const {versions: versionsArray} = JP.object({
+    versions: JP.array(JP.object({
+      version: JP.string.then((s) => s as Version),
+      level: JP.string.then((level) => {
+        if (!levels.includes(level as VersionLevel)) {
+          console.error(`unknown level '${level}', defaulting to 'secondary'`);
+          level = 'secondary';
+        }
+        return level as VersionLevel;
+      }),
+    })),
+  }).parse(json);
+
+  const output: DbHead = {versions: new Map(), levels};
+  for (const {version, level} of versionsArray) {
+    if (output.versions.has(version)) {
+      throw new Error(`duplicate version '${version}'`);
+    }
+    output.versions.set(version as Version, {level});
+  }
+  return output;
+}
+
+function parseStructsFile(text: string, source: StructSource): Map<TypeName, Struct> {
+  const json = JSON.parse(text);
+  return JP.map((s) => s as TypeName, JP.array(JP.tuple([hexParser, JP.string, JP.or('a string or null', JP.string, JP.null_)])))
+    .then((map) => new Map([...map.entries()].map(([name, data]) => [name, structFromData(name, source, data)])))
+    .parse(json);
+}
+
+const hexParser: JP.Parser<number> = JP.or('a number or string', JP.number, JP.string.then((x) => {
+  const num = parseInt(x, 16);
+  if (num !== num) {
+    throw new Error(`invalid hex string: ${x}`)
+  }
+  return num;
+}));
+
+function structFromData(structName: string, source: StructSource, data: [number, string, string | null][]): Struct {
   const rows = [];
   for (let i = 0; i < data.length - 1; i++) {
     const [offset, name, type] = data[i];
@@ -41,73 +217,5 @@ function structFromData(structName: string, data: [number, string, string | null
     }
   }
   const [size] = data[data.length - 1];
-  return {rows, name: structName as TypeName, size};
+  return {rows, source, name: structName as TypeName, size};
 }
-
-class StructFieldDatabase {
-  constructor() {
-
-  }
-
-  getGamesForStruct(struct: string): Game[] {
-    throw new Error("TODO: getGamesForStruct");
-  }
-  getStructsForGame(game: Game): string[] {
-    throw new Error("TODO: getStructsForGame");
-  }
-}
-
-
-export const testStruct1 = structFromData('zAnmManager', [
-  [0x0, "__thread", "struct zThread"],
-  [0x1c, "__unknown", null],
-  [0xd8, "useless_count", "int32_t"],
-  [0xdc, "world_list_head", "struct zAnmVmList*"],
-  [0xe0, "world_list_tail", "struct zAnmVmList*"],
-  [0xe4, "ui_list_head", "struct zAnmVmList*"],
-  [0xe8, "ui_list_tail", "struct zAnmVmList*"],
-  [0xec, "fast_array", "struct zAnmFastVm[0x1fff]"],
-  [0xc27ad8, "__lolk_next_snapshot_fast_id", "int32_t"],
-  [0xc27adc, "__lolk_next_snapshot_discriminator", "int32_t"],
-  [0xc27ae0, "__lolk_vm_snapshot_list_head", "struct zAnmVmList"],
-  [0xc27af0, "__lolk_fast_snapshot_array", "struct zAnmFastVm[0x1fff]"],
-  [0x184f4dc, "freelist_head", "struct zAnmFastVmList"],
-  [0x184f4ec, "__unknown", null],
-  [0x184f4f0, "preloaded", "struct zAnmPreloadedArray"],
-  [0x184f56c, "__matrix_184f56c__used_during_rendering", "struct D3DMATRIX"],
-  [0x184f5ac, "__vm_184f5ac", "struct zAnmVm"],
-  [0x184fba8, "__unknown", null],
-  [0x184fc18, "vertex_buffers", "struct zAnmVertexBuffers"],
-  [0x1c6fc30, "layer_list_dummy_heads", "struct zAnmVm[0x2b]"],
-  [0x1c7fd84, "last_discriminator__19bit", "int32_t"],
-  [0x1c7fd88, "__unknown", null],
-  [0x1c7fd90, "__exact_size_known", "struct zCOMMENT[0x0]"],
-  [0x1c7fd90, "__end", null],
-]);
-
-export const testStruct2 = structFromData('zAnmManager', [
-  [0x0, "__unknown", null],
-  [0xd8, "__useless_count_of_render_loop_iterations", "int32_t"],
-  [0xdc, "__anm_vm_dc", "struct zAnmVm"],
-  [0x6dc, "world_list_head", "struct zAnmVmList*"],
-  [0x6e0, "world_list_tail", "struct zAnmVmList*"],
-  [0x6e4, "ui_list_head", "struct zAnmVmList*"],
-  [0x6e8, "ui_list_tail", "struct zAnmVmList*"],
-  [0x6ec, "fast_array", "struct zAnmFastVm[0x3fff]"],
-  [0x18600d4, "__lolk_next_snapshot_fast_id", "int32_t"],
-  [0x18600d8, "__lolk_next_snapshot_discriminator", "int32_t"],
-  [0x18600dc, "__lolk_vm_snapshot_list_head", "struct zAnmVmList"],
-  [0x18600ec, "freelist_head", "struct zAnmFastVmList"],
-  [0x18600fc, "__unknown", null],
-  [0x1860100, "preloaded", "struct zAnmPreloadedArray"],
-  [0x186017c, "__matrix_186017c", "struct D3DMATRIX"],
-  [0x18601bc, "__vm_18601bc", "struct zAnmVm"],
-  [0x18607bc, "__unknown", null],
-  [0x186082c, "vertex_buffers", "struct zAnmVertexBuffers"],
-  [0x1c80844, "layer_list_dummy_heads__unused_as_of_1.00b", "struct zAnmVm[0x2b]"],
-  [0x1c90a44, "last_discriminator__18bit", "int32_t"],
-  [0x1c90a48, "__color__1c90a48", "struct D3DCOLOR"],
-  [0x1c90a4c, "__unknown", null],
-  [0x1c90a50, "__exact_size_known", "struct zCOMMENT[0x0]"],
-  [0x1c90a50, "__end", null],
-]);

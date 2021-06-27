@@ -40,6 +40,10 @@ export function useCurrentPageGame(): Game {
   return React.useContext(CurrentPageGameContext);
 }
 
+export function useSearchParams(): URLSearchParams {
+  return React.useContext(CurrentPageSearchContext);
+}
+
 /** A link to an ID on the current page.  It only subscribes to changes in the pathname and search part of the URL; not the hash.  */
 export const HashLink = React.forwardRef(function HashLink(
     {hash, children, ...props}: {hash: string, children: React.ReactNode} & React.HTMLAttributes<HTMLAnchorElement>,

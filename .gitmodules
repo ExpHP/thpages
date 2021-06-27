@@ -1,0 +1,3 @@
+[submodule "static/re-data"]
+	path = static/re-data
+	url = https://github.com/exphp-share/th-re-data
