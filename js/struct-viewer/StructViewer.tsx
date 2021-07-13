@@ -1,33 +1,73 @@
 import React from 'react';
 import type {ReactElement, ReactNode} from 'react';
+import {useHistory} from 'react-router-dom';
+import type {History} from 'history';
 import {Async} from 'react-async';
 import FlipMove from 'react-flip-move';
 import clsx from 'clsx';
+import nearley from 'nearley';
+import grammar from './parse-ctype.ne';
 
 import {unreachable} from '~/js/util';
 import {Err} from '~/js/Error';
 import {TrivialForwardRef} from '~/js/XUtil';
 import {useSearchParams} from '~/js/UrlTools';
 
-import {StructDatabase, Struct, StructRow, TypeName, FieldName, CTypeString, PathReader} from './database';
+import {
+  StructDatabase, Struct, StructRow, TypeName, FieldName, CTypeString,
+  PathReader, Version, VersionLevel,
+} from './database';
 import {diffStructs} from './diff';
+import {Selectors} from './Selectors';
 
 // =============================================================================
 
 export function StructViewerPageFromUrl() {
   const db = useDb(defaultPathReader);
   const searchParams = useSearchParams();
-  console.log(searchParams);
-  const tyName = searchParams.get('t');
+  // console.debug(searchParams);
+  // const parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar));
+  // console.debug(parser.feed("int [5][6]"));
+  const struct = searchParams.get('t');
   const version = searchParams.get('v');
-  if (!tyName) return <Err>FIXME: Struct picker</Err>;
-  if (!version) return <Err>FIXME: Version picker</Err>;
 
-  return <StructViewerPage db={db} name={tyName as TypeName} version={version} />;
+  const history = useHistory();
+  const setStruct = React.useCallback((struct) => navigateToStruct(history, struct), [history]);
+  const setVersion = React.useCallback((version) => navigateToVersion(history, version), [history]);
+
+  return <StructViewerPage
+    db={db} name={struct as TypeName} version={version}
+    setName={setStruct} setVersion={setVersion}
+  />;
 }
 
-export function StructViewerPage({db, name, version}: {db: StructDatabase, name: TypeName, version: string}) {
+function navigateToStruct(history: History, struct: TypeName) {
+  const location = history.location;
+  const search = new URLSearchParams(location.search.substring(1));
+  search.set('t', struct);
+  history.push({search: search.toString()});
+}
+
+function navigateToVersion(history: History, version: Version) {
+  const location = history.location;
+  const search = new URLSearchParams(location.search.substring(1));
+  search.set('v', version);
+  history.push({search: search.toString()});
+}
+
+export function StructViewerPage(props: {
+  db: StructDatabase,
+  name: TypeName,
+  version: string,
+  setName: React.Dispatch<TypeName>,
+  setVersion: React.Dispatch<Version>,
+}) {
+  const {db, name, version, setName, setVersion} = props;
   const promiseFn = React.useCallback(async () => {
+    // Show placeholder text until everything is selected
+    if (!version) return null;
+    if (!name) return null;
+
     const v1 = await db.parseVersion(version);
     if (!v1) throw new Error(`No such version: '${version}'`);
 
@@ -38,11 +78,21 @@ export function StructViewerPage({db, name, version}: {db: StructDatabase, name:
     return struct;
   }, [db, name, version]);
 
-  return <Async promiseFn={promiseFn}>
-    <Async.Initial persist><h1>Loading structs...</h1></Async.Initial>
-    <Async.Fulfilled persist>{(value) => <StructViewerPageImpl struct={value}/>}</Async.Fulfilled>
-    <Async.Rejected>{(err) => <Err>{err.message}</Err>}</Async.Rejected>
-  </Async>;
+  return <>
+    <Selectors
+      // FIXME should use validated version
+      setStruct={setName} setVersion={setVersion} struct={name} version={version as Version} db={db}
+      minLevel='primary'
+    />
+    <Async promiseFn={promiseFn}>
+      <Async.Initial persist><h1>Loading structs...</h1></Async.Initial>
+      <Async.Fulfilled persist>{(value) => (
+        value ? <StructViewerPageImpl struct={value}/>
+          : <div>Please select a struct and version.</div>
+      )}</Async.Fulfilled>
+      <Async.Rejected>{(err) => <Err>{err.message}</Err>}</Async.Rejected>
+    </Async>
+  </>;
 }
 
 export function DiffViewerPage({db, name, version1, version2}: {db: StructDatabase, name: TypeName, version1: string, version2: string}) {

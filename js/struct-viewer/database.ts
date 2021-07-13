@@ -120,8 +120,10 @@ export class StructDatabase {
 
     if (!this.alreadyLoaded.has(path)) {
       console.debug('does not have');
-      // NOTE: this whole if block can run multiple times in race conditions on the 'await', so it must be idempotent.
       const text = await this.reader(path);
+      // another call could have beaten us
+      if (this.alreadyLoaded.has(path)) return;
+
       const structsFromFile = parseStructsFile(text, 'user');
       console.debug(structsFromFile);
 
@@ -134,13 +136,23 @@ export class StructDatabase {
     }
   }
 
-  async getVersionsForStruct(name: TypeName, minLevel: VersionLevel): Promise<Version[]> {
+  async getAllVersions(minLevel: VersionLevel): Promise<Version[]> {
     const dbHead = await this.dbHead;
     const minLevelInt = versionLevelToInt(dbHead.levels, minLevel);
     const out = [];
     for (const [version, {level}] of dbHead.versions.entries()) {
       const levelInt = versionLevelToInt(dbHead.levels, level);
-      if (levelInt >= minLevelInt && this.getStructIfExists(name, version)) {
+      if (levelInt >= minLevelInt) {
+        out.push(version);
+      }
+    }
+    return out;
+  }
+
+  async getVersionsForStruct(name: TypeName, minLevel: VersionLevel): Promise<Version[]> {
+    const out = [];
+    for (const version of await this.getAllVersions(minLevel)) {
+      if (await this.getStructIfExists(name, version)) {
         out.push(version);
       }
     }
@@ -150,6 +162,21 @@ export class StructDatabase {
   async getStructsForVersion(version: Version): Promise<TypeName[]> {
     await this.ensureVersionStructsAreLoaded(version);
     return [...this.structs.get(version)!.keys()];
+  }
+
+  async getAllStructs(): Promise<TypeName[]> {
+    const dbHead = await this.dbHead;
+
+    const set = new Set<TypeName>();
+    for (const version of dbHead.versions.keys()) {
+      for (const name of await this.getStructsForVersion(version)) {
+        set.add(name);
+      }
+    }
+
+    const sorted = [...set];
+    sorted.sort();
+    return sorted;
   }
 }
 
@@ -211,6 +238,8 @@ function structFromData(structName: string, source: StructSource, data: [number,
     const size = nextOffset - offset;
 
     if (type) {
+      console.debug(`typedef ${type} A;`);
+      // console.debug(cparse(`typedef ${type} A;`));
       rows.push({offset, size, data: {type: 'field', name: name as FieldName, ctype: type as CTypeString} as const});
     } else {
       rows.push({offset, size, data: {type: 'gap'} as const});
