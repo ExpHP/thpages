@@ -1,4 +1,4 @@
-import * as JP from '~/js/jsonParse';
+import * as JP from '../jsonParse';
 
 /** Format of a struct that has just been read from the database. */
 export type Struct = {
@@ -115,20 +115,15 @@ export class StructDatabase {
   async ensureVersionStructsAreLoaded(version: Version) {
     await this.dbHead;  // guarantee inner maps
     const path = `data/${version}/type-structs-own.json`;
-    console.debug(path);
-    console.debug(this.alreadyLoaded);
 
     if (!this.alreadyLoaded.has(path)) {
-      console.debug('does not have');
       const text = await this.reader(path);
       // another call could have beaten us
       if (this.alreadyLoaded.has(path)) return;
 
       const structsFromFile = parseStructsFile(text, 'user');
-      console.debug(structsFromFile);
 
       const structsForVersion = this.structs.get(version)!;
-      console.debug(structsForVersion);
       for (const [name, struct] of structsFromFile.entries()) {
         structsForVersion.set(name, struct);
       }
@@ -238,7 +233,7 @@ function structFromData(structName: string, source: StructSource, data: [number,
     const size = nextOffset - offset;
 
     if (type) {
-      console.debug(`typedef ${type} A;`);
+      // console.debug(`typedef ${type} A;`);
       // console.debug(cparse(`typedef ${type} A;`));
       rows.push({offset, size, data: {type: 'field', name: name as FieldName, ctype: type as CTypeString} as const});
     } else {

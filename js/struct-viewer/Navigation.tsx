@@ -1,5 +1,8 @@
 import React from 'react';
+import {useHistory, useLocation} from 'react-router-dom';
 import clsx from 'clsx';
+import history from 'history';
+import type {History} from 'history';
 import Checkbox from '@material-ui/core/Checkbox';
 import FormLabel from '@material-ui/core/FormLabel';
 import FormControl from '@material-ui/core/FormControl';
@@ -11,7 +14,24 @@ import Autocomplete from '@material-ui/lab/Autocomplete';
 
 import {StructDatabase, TypeName, Version, VersionLevel} from './database';
 
-export function Selectors(props: {
+export function useNavigationPropsFromUrl() {
+  const history = useHistory();
+  const location = useLocation();
+
+  console.debug(location);
+  const searchParams = new URLSearchParams(location.search.substring(1));
+  const struct = searchParams.get('t') as TypeName | null;
+  const version = searchParams.get('v') as Version | null;
+
+  const setStruct = React.useCallback((struct: TypeName | null) => navigateToStruct(history, struct), [history]);
+  const setVersion = React.useCallback((version: Version | null) => navigateToVersion(history, version), [history]);
+
+  return React.useMemo(() => ({
+    struct, version, setStruct, setVersion,
+  }), [struct, version, setStruct, setVersion]);
+}
+
+export function Navigation(props: {
   db: StructDatabase,
   setStruct: React.Dispatch<TypeName | null>,
   setVersion: React.Dispatch<Version | null>,
@@ -28,7 +48,7 @@ export function Selectors(props: {
   // FIXME: Error for incompatible struct/version
   const error = struct === null || version === null;
 
-  return <FormControl component="fieldset" error={error}>
+  return <FormControl component="fieldset" error={error} classes={{root: "struct-nav"}}>
     <FormLabel component="legend">Navigation</FormLabel>
     <FormControlLabel
       control={<Checkbox
@@ -43,6 +63,30 @@ export function Selectors(props: {
     <VersionPicker onChange={setVersion} {...{db, showUnavailable, struct, version, minLevel}}/>
     {error && <FormHelperText>Select a struct and version</FormHelperText>}
   </FormControl>;
+}
+
+function navigateToStruct(history: History, struct: TypeName) {
+  const location = history.location;
+  history.push(setOrDeleteSearchParam(location, 't', struct));
+  console.debug(history.location);
+}
+
+function navigateToVersion(history: History, version: Version) {
+  const location = history.location;
+  history.push(setOrDeleteSearchParam(location, 'v', version));
+  console.debug(history.location);
+}
+
+function setOrDeleteSearchParam<S extends history.State>(location: history.Location<S>, key: string, value: string | null): history.Location<S> {
+  const search = new URLSearchParams(location.search.substring(1));
+  if (value) {
+    search.set(key, value);
+  } else {
+    search.delete(key);
+  }
+
+  const string = search.toString();
+  return {...location, search: (string.length ? '?' : '') + string};
 }
 
 export function StructPicker(props: {
@@ -69,7 +113,7 @@ export function VersionPicker(props: {
   showUnavailable: boolean,
   struct: TypeName | null,
   version: Version | null,
-  minLevel: VersionLevel,
+  minLevel: VersionLevel
 }) {
   const {onChange, db, showUnavailable, version, struct, minLevel} = props;
   const optionsPromise = React.useMemo(() => (
@@ -98,47 +142,75 @@ type AsyncSelectorProps<T> = Omit<SelectorProps<T>, "options" | "loading"> & {
 
 function AsyncSelector<T extends string>(props: AsyncSelectorProps<T>) {
   const {optionsPromise} = props;
-  // Begin with an empty option list until the promise resolves.
-  const [options, setOptions] = React.useState<Option<T>[]>([]);
-  // FIXME: loading indicator never disappears after clearing one of the selectors.
-  const [loading, setLoading] = React.useState(false);
+
+  // Until we can upgrade to React 18 for update batching, we need a single
+  // combined State so that our updates can be atomic.
+  type State = { options: Option<T>[]; loading: boolean; };
+
+  const [state, setState] = React.useState<State>({
+    // Begin with an empty option list until the promise resolves.
+    options: [], loading: true,
+  });
 
   React.useEffect(() => {
     const abortController = new AbortController();
-    setLoading(true);
+    // set loading to true, being careful not to trigger unnecessary rerenders
+    setState((state) => state.loading ? state : {...state, loading: true});
     optionsPromise.then((options) => {
       if (!abortController.signal.aborted) {
-        setLoading(false);
-        setOptions(options);
+        setState({loading: false, options});
       }
     });
 
     return () => abortController.abort();
   }, [optionsPromise])
 
-  return <Selector {...props} {...{options, loading}} />
+  return <Selector {...props} {...state} />
 }
 
 function Selector<T extends string>(props: SelectorProps<T>) {
   const {onChange, options, current, loading, label} = props;
   const currentOption = useOptionFromLabel(options, ({value}) => value, current);
 
+  const handleChange = React.useCallback((_, option: null | Option<T> | string) => {
+    if (typeof option === 'string') {
+      // must be in freeSolo. Box is disabled during freeSolo so this call must be spurious.
+    } else {
+      onChange(option && option.value);
+    }
+  }, [onChange]);
+
+  const getOptionLabel = React.useCallback((option: Option<T> | string) => {
+    if (typeof option === 'string') {
+      return option;
+    } else {
+      return option.value;
+    }
+  }, [onChange]);
+
   return (
     <Autocomplete
+      // Autocomplete isn't designed to change between 'freeSolo' and normal mode,
+      // so change its key when it does.
+      key={`${loading}`}
+      classes={{root: "thing-selector"}}
       style={{ width: 300 }}
-      value={currentOption}
+      size="small"
+      disabled={loading}
+      freeSolo={loading}
+      value={loading ? current : currentOption}
+      {...(loading ? {inputValue: current || ""} : undefined)}
       getOptionSelected={(s: Option<T>) => s.value === current}
-      onChange={(_, option) => onChange(option && option.value as T)}
+      onChange={handleChange}
       options={options}
       renderOption={({available, value}) => (
         <span className={clsx({'unavailable': !available})}>{value}</span>
       )}
-      getOptionLabel={({value}) => value}
+      getOptionLabel={getOptionLabel}
       renderInput={(params) => (
         <TextField
           {...params}
           label={label}
-          size="small"
           variant="outlined"
           InputProps={{
             ...params.InputProps,

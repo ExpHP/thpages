@@ -1,5 +1,10 @@
 @import "defs.less";
 
+.struct-nav .thing-selector + .thing-selector {
+    // don't let the label and line overlap
+    margin-top: 6px;
+}
+
 .struct-view.use-grid {
     display: grid;
     .row { display: contents; }

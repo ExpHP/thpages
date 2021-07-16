@@ -18,49 +18,23 @@ import {
   PathReader, Version, VersionLevel,
 } from './database';
 import {diffStructs} from './diff';
-import {Selectors} from './Selectors';
+import {Navigation, useNavigationPropsFromUrl} from './Navigation';
 
 // =============================================================================
 
 export function StructViewerPageFromUrl() {
   const db = useDb(defaultPathReader);
-  const searchParams = useSearchParams();
-  // console.debug(searchParams);
-  // const parser = new nearley.Parser(nearley.Grammar.fromCompiled(grammar));
-  // console.debug(parser.feed("int [5][6]"));
-  const struct = searchParams.get('t');
-  const version = searchParams.get('v');
+  const {struct, version, setStruct, setVersion} = useNavigationPropsFromUrl();
 
-  const history = useHistory();
-  const setStruct = React.useCallback((struct) => navigateToStruct(history, struct), [history]);
-  const setVersion = React.useCallback((version) => navigateToVersion(history, version), [history]);
-
-  return <StructViewerPage
-    db={db} name={struct as TypeName} version={version}
-    setName={setStruct} setVersion={setVersion}
-  />;
+  return <StructViewerPage {...{db, version, setVersion}} name={struct} setName={setStruct} />;
 }
 
-function navigateToStruct(history: History, struct: TypeName) {
-  const location = history.location;
-  const search = new URLSearchParams(location.search.substring(1));
-  search.set('t', struct);
-  history.push({search: search.toString()});
-}
-
-function navigateToVersion(history: History, version: Version) {
-  const location = history.location;
-  const search = new URLSearchParams(location.search.substring(1));
-  search.set('v', version);
-  history.push({search: search.toString()});
-}
-
-export function StructViewerPage(props: {
+function StructViewerPage(props: {
   db: StructDatabase,
-  name: TypeName,
-  version: string,
-  setName: React.Dispatch<TypeName>,
-  setVersion: React.Dispatch<Version>,
+  name: TypeName | null,
+  version: string | null,
+  setName: React.Dispatch<TypeName | null>,
+  setVersion: React.Dispatch<Version | null>,
 }) {
   const {db, name, version, setName, setVersion} = props;
   const promiseFn = React.useCallback(async () => {
@@ -79,7 +53,7 @@ export function StructViewerPage(props: {
   }, [db, name, version]);
 
   return <>
-    <Selectors
+    <Navigation
       // FIXME should use validated version
       setStruct={setName} setVersion={setVersion} struct={name} version={version as Version} db={db}
       minLevel='primary'
