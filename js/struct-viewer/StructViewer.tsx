@@ -19,6 +19,7 @@ import {
 } from './database';
 import {diffStructs} from './diff';
 import {Navigation, useNavigationPropsFromUrl} from './Navigation';
+import {CType as CTypeImpl} from './CType';
 
 // =============================================================================
 
@@ -26,7 +27,11 @@ export function StructViewerPageFromUrl() {
   const db = useDb(defaultPathReader);
   const {struct, version, setStruct, setVersion} = useNavigationPropsFromUrl();
 
-  return <StructViewerPage {...{db, version, setVersion}} name={struct} setName={setStruct} />;
+  return <DbContext.Provider value={db}>
+    <VersionContext.Provider value={version}>
+      <StructViewerPage {...{db, version, setVersion}} name={struct} setName={setStruct} />
+    </VersionContext.Provider>
+  </DbContext.Provider>
 }
 
 function StructViewerPage(props: {
@@ -113,6 +118,11 @@ export function DiffViewerPageImpl({struct1, struct2}: {struct1: Struct, struct2
     ]}
   </div>;
 }
+
+// =============================================================================
+
+const VersionContext = React.createContext<Version | null>(null);
+const DbContext = React.createContext<StructDatabase>(null as any as StructDatabase);
 
 // =============================================================================
 
@@ -398,8 +408,16 @@ function FieldDef({data}: {data: DisplayRowFieldData}) {
 }
 
 function CType({ctype}: {ctype: DisplayCType}) {
+  const db = React.useContext(DbContext);
+  if (!db) throw new Error("FieldDef without db");
+
+  const version = React.useContext(VersionContext);
+  if (!version) throw new Error("FieldDef without version");
+
   const {isChange, type} = ctype;
-  return <span className={clsx('field-type', diffClass(isChange))}>{type}</span>;
+  return <span className={clsx('field-type', diffClass(isChange))}>
+    <CTypeImpl {...{db, version}} ctype={type}/>
+  </span>;
 }
 
 function FieldGap({data: {size, sizeIsChange}}: {data: DisplayRowGapData}) {

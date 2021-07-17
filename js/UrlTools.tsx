@@ -1,7 +1,7 @@
 import React from 'react';
 import {useLocation} from 'react-router-dom';
 import {parseGame, Game, latestGame} from './tables/game';
-import history, {createMemoryHistory} from 'history';
+import {createMemoryHistory, LocationDescriptorObject} from 'history';
 
 // URL tools - Wrappers and replacements for React Router things to significantly reduce the number of
 //             subscribers to changes in the location, so that clicking an intra-page anchor link
@@ -36,6 +36,10 @@ export function CurrentPageProvider({children}: {children: React.ReactNode}) {
   );
 }
 
+export function usePathname(): string {
+  return React.useContext(CurrentPageNameContext);
+}
+
 export function useCurrentPageGame(): Game {
   return React.useContext(CurrentPageGameContext);
 }
@@ -58,17 +62,19 @@ export const HashLink = React.forwardRef(function HashLink(
 });
 
 /**
- * Replacement for React Router's `<Link>` in cases where `to` is not a function.
+ * Alternative to React Router's `<Link>` in cases where `to` is not a function.
  *
  * In contrast to `<Link>`, this does not need to subscribe to any changes in the location.
+ *
+ * `to` can be omitted to produce a `<a>` with no `href`.
  */
 export const SimpleLink = React.forwardRef(function SimpleLink(
-    {to, children, ...props}: {to: history.To, children: React.ReactNode} & React.HTMLAttributes<HTMLAnchorElement>,
+    {to, children, ...props}: {to?: LocationDescriptorObject, children: React.ReactNode} & React.HTMLAttributes<HTMLAnchorElement>,
     ref?: React.Ref<HTMLAnchorElement>,
 ) {
-  return <a ref={ref} href={generateHrefForHashRouter(to)} {...props}>{children}</a>;
+  return <a ref={ref} href={to ? generateHrefForHashRouter(to) : undefined} {...props}>{children}</a>;
 });
 
-function generateHrefForHashRouter(to: history.To) {
+function generateHrefForHashRouter(to: LocationDescriptorObject) {
   return '#' + dummyHistory.createHref(to);
 }

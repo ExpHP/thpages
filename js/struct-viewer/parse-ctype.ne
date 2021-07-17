@@ -2,86 +2,9 @@
 
 @{%
 import moo from "moo";
+import {createLexer} from "./c-lexer";
 
-const lexer = moo.compile({
-  WS: { match: /[ \t\n\r]+/, lineBreaks: true },
-  __LPAREN: "(",
-  __RPAREN: ")",
-  __COMMA: ",",
-  __LBRACKET: "[",
-  __RBRACKET: "]",
-  __LBRACE: "{",
-  __RBRACE: "}",
-  __SPLAT: "*",
-  INTEGER: {
-    match: /[0-9]+(?:\.[0-9a-zA-Z]+)?/,
-    value: s => Number(s),
-  },
-  IDENT: {
-    match: /[a-z_][a-z_0-9]*/,
-    type: moo.keywords({
-      // A.1.2 in http://www.open-std.org/jtc1/sc22/wg14/www/docs/n1570.pdf
-      auto: "auto",
-      break: "break",
-      case: "case",
-      char: "char",
-      const: "const",
-      continue: "continue",
-      default: "default",
-      do: "do",
-      double: "double",
-      else: "else",
-      enum: "enum",
-      extern: "extern",
-      float: "float",
-      for: "for",
-      goto: "goto",
-      if: "if",
-      inline: "inline",
-      int: "int",
-      long: "long",
-      register: "register",
-      restrict: "restrict",
-      return: "return",
-      short: "short",
-      signed: "signed",
-      sizeof: "sizeof",
-      static: "static",
-      struct: "struct",
-      switch: "switch",
-      typedef: "typedef",
-      union: "union",
-      unsigned: "unsigned",
-      void: "void",
-      volatile: "volatile",
-      while: "while",
-      _Alignas: "_Alignas",
-      _Alignof: "_Alignof",
-      _Atomic: "_Atomic",
-      _Bool: "_Bool",
-      _Complex: "_Complex",
-      _Generic: "_Generic",
-      _Imaginary: "_Imaginary",
-      _Noreturn: "_Noreturn",
-      _Static_assert: "_Static_assert",
-      _Thread_local: "_Thread_local",
-    })
-  },
-});
-
-
-
-const oldLexerNext = lexer.next.bind(lexer);
-lexer.next = () => {
-  let tok;
-  while (tok = oldLexerNext()) {
-    if (tok.type === 'WS') continue;
-    break;
-  }
-  if (!tok) return tok;
-
-  return tok;
-};
+const lexer = createLexer();
 
 function convertToken(tok) {
   const {line, col, value, text, type} = tok;
