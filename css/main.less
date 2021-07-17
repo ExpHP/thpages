@@ -5,6 +5,10 @@
   --dark-bg-color-zeroalpha: fade(@dark-bg-color, 0);
 }
 
+html { height: 100%; }
+body { height: 100%; }
+#root { height: 100%; }
+
 body {
   /* padding:0px 0 20px 0px;
   margin: 0px; */
@@ -69,6 +73,8 @@ body {
   cursor: progress;
 }
 
+code { font-family: @monospace; }
+
 // =============================================================================
 
 .header-text {
@@ -79,75 +85,74 @@ body {
   font-weight: bold;
 }
 
-a {
-  color: @link-color;
-  text-decoration: none;
-  &:hover { color: @link-color-hover; }
-  // don't color self-links
-  &.self-link {
-    color: inherit;
-    &:hover { color: inherit; }
+a { text-decoration: none; }
+
+.markdown-styling {
+  a {
+    color: @link-color;
+    &:hover { color: @link-color-hover; }
+    // don't color self-links
+    &.self-link {
+      color: inherit;
+      &:hover { color: inherit; }
+    }
   }
-}
 
-.isref,
-a code {
-  color: mix(@text-color, @link-color, 65%);
-}
+  .isref,
+  a code {
+    color: mix(@text-color, @link-color, 65%);
+  }
 
-// give non-ref tooltips a visual cue
-.tip-deco {
-  text-decoration: underline;
-  text-decoration-style: dashed;
-  -webkit-text-underline-position: under;
-  text-underline-position: under;
-}
+  // give non-ref tooltips a visual cue
+  .tip-deco {
+    text-decoration: underline;
+    text-decoration-style: dashed;
+    -webkit-text-underline-position: under;
+    text-underline-position: under;
+  }
 
-code { font-family: @monospace; }
-
-.content-paper code {
-  background: @code-block-bg;
-
-  color: @code-color;
-  padding: 4px 2px;
-  margin-left: 0px;
-  margin-right: 0px;
-
-  // don't have double backgrounds for nested <code> (typically crossrefs in code)
   code {
-    font-family: @monospace;
+    background: @code-block-bg;
 
-    color: initial;
-    padding: initial;
-    margin-left: initial;
-    margin-right: initial;
+    color: @code-color;
+    padding: 4px 2px;
+    margin-left: 0px;
+    margin-right: 0px;
+
+    // don't have double backgrounds for nested <code> (typically crossrefs in code)
+    code {
+      font-family: @monospace;
+
+      color: initial;
+      padding: initial;
+      margin-left: initial;
+      margin-right: initial;
+    }
   }
-}
 
-.content-paper li {
-  margin-bottom: 0.5625em;
-  margin-top: 0.5625em;
-}
+  li {
+    margin-bottom: 0.5625em;
+    margin-top: 0.5625em;
+  }
 
-.toc li, // compress table of contents lists
-.tip li // tip is smol, let lists fit better
-{
-  margin-bottom: 0px;
-  margin-top: 0px;
-}
+  .toc li, // compress table of contents lists
+  .tip li // tip is smol, let lists fit better
+  {
+    margin-bottom: 0px;
+    margin-top: 0px;
+  }
 
-blockquote {
-  border: 1px dashed rgba(255, 255, 255, 0.3);
-  border-radius: 8px;
-  background: rgba(90, 155, 90, 0.2);
-  padding: 5px;
-}
+  blockquote {
+    border: 1px dashed rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    background: rgba(90, 155, 90, 0.2);
+    padding: 5px;
+  }
 
-// MD generates <pre><code></code></pre> for GHFM code fences
-.content-paper {
+  // MD generates <pre><code></code></pre> for GHFM code fences
   pre > code { display: block; }
 
-  .hljs, pre > code {
+  pre > code {
     font-family: @monospace;
     border: 2px solid #12121280;
     padding: 5px;
@@ -156,25 +161,24 @@ blockquote {
     white-space: pre;
     margin: 10px;
   }
-}
 
-table, th, td, tr {
-  border: 1px solid @table-border-color;
-  padding: 5px;
-}
-
-table {
-  border-collapse: collapse;
-}
-
-tfoot {
-  font-size: 0.9em;
-  &, th, td, tr {
-    border-left-style: hidden;
-    border-right-style: hidden;
+  table, th, td, tr {
+    border: 1px solid @table-border-color;
+    padding: 5px;
   }
-  // move text closer to bottom border
-  td { transform: translate(0, 3px); }
+  table {
+    border-collapse: collapse;
+  }
+
+  tfoot {
+    font-size: 0.9em;
+    &, th, td, tr {
+      border-left-style: hidden;
+      border-right-style: hidden;
+    }
+    // move text closer to bottom border
+    td { transform: translate(0, 3px); }
+  }
 }
 
 // Reset all styling done by MuiTooltip-tooltip (Material UI)
@@ -237,129 +241,122 @@ tfoot {
   }
 }
 
-.headless-table > table > thead {
-  display: none;
-}
-
-// TODO: needs moar display: grid
-.ins-table {
-  // disable borders on THIS table only
-  //
-  // FIXME: this seems awfully delicate, maybe ins-table should be using divs with
-  //        display: table etc. instead of an actual table
-  &,
-  >tbody >tr,
-  >tbody >tr >td {
-    border: none;
+.markdown-styling {
+  .headless-table > table > thead {
+    display: none;
   }
 
-  // (note: present on priw's site, uncertain of purpose...)
-  * { box-sizing: border-box; }
-
-  .col-name .ins-siggy-wrapper .punct { color: #ffffff30; }
-
-  td { vertical-align: text-top; }
-
-  // wide screen: table-like
-  @media screen and (min-width: 601px) {
-    display: table;
-    width: 100%;
-    .ins-table-entry { display: table-row; }
-    .col-id { width: 3em; }
-    .col-name { width: 20%; min-width: 10em; }
-    .col-desc { width: 85%; }
-  }
-
-  // small screen: instruction and name as headers
-  @media screen and (max-width: 600px) {
-    display: block;
-    >tbody { display: contents; }
-    .ins-table-entry {
-      display: block;
-      white-space: nowrap; // prevent the name div itself from being wrapped to the line after the opcode number
-      >* { white-space: initial; } // but allow text wrapping inside
+  // TODO: needs moar display: grid
+  .ins-table {
+    // disable borders on THIS table only
+    //
+    // FIXME: this seems awfully delicate, maybe ins-table should be using divs with
+    //        display: table etc. instead of an actual table
+    &,
+    >tbody >tr,
+    >tbody >tr >td {
+      border: none;
     }
-    .col-id { display: inline-block; margin-left: -1em; }
-    .col-name { display: inline-block; }
-    .col-desc { display: block; width: 100%; }
-    // make headings closer to their content than to the previous item
-    .col-desc >:first-child { margin-top: 0; }  // default was 1em
-    .col-desc >:last-child { margin-bottom: 0.5em; }  // default was 1em
-    .col-id { min-width: 1em; }
+
+    // (note: present on priw's site, uncertain of purpose...)
+    * { box-sizing: border-box; }
+
+    .col-name .ins-siggy-wrapper .punct { color: #ffffff30; }
+
+    td { vertical-align: text-top; }
+
+    // wide screen: table-like
+    @media screen and (min-width: 601px) {
+      display: table;
+      width: 100%;
+      .ins-table-entry { display: table-row; }
+      .col-id { width: 3em; }
+      .col-name { width: 20%; min-width: 10em; }
+      .col-desc { width: 85%; }
+    }
+
+    // small screen: instruction and name as headers
+    @media screen and (max-width: 600px) {
+      display: block;
+      >tbody { display: contents; }
+      .ins-table-entry {
+        display: block;
+        white-space: nowrap; // prevent the name div itself from being wrapped to the line after the opcode number
+        >* { white-space: initial; } // but allow text wrapping inside
+      }
+      .col-id { display: inline-block; margin-left: -1em; }
+      .col-name { display: inline-block; }
+      .col-desc { display: block; width: 100%; }
+      // make headings closer to their content than to the previous item
+      .col-desc >:first-child { margin-top: 0; }  // default was 1em
+      .col-desc >:last-child { margin-bottom: 0.5em; }  // default was 1em
+      .col-id { min-width: 1em; }
+    }
   }
-}
 
-.ins-siggy-wrapper {
-  font-family: @monospace;
+  .ins-siggy-wrapper {
+    font-family: @monospace;
 
-  text-indent: -2em;
-  margin-left: 2em;
+    text-indent: -2em;
+    margin-left: 2em;
 
-  .ins-name {
-    &[data-wip="0"] { color: @text-color; }
+    .ins-name {
+      &[data-wip="0"] { color: @text-color; }
+      font-weight: bold;
+      font-size: 1.1em;
+    }
+
+    .ins-params {
+      font-size: 0.91em;
+      // .type.mut { font-weight: bold; } // eh.
+      .type.float { color: #32e875; }
+      .type.int { color: #53ceff; }
+      .type.string { color: #f382f3; }
+      .type.unknown { color: @wip-2-color; }
+    }
+  }
+
+  .var-header {
+    font-family: @monospace;
     font-weight: bold;
     font-size: 1.1em;
   }
 
-  .ins-params {
-    font-size: 0.91em;
-    // .type.mut { font-weight: bold; } // eh.
-    .type.float { color: #32e875; }
-    .type.int { color: #53ceff; }
-    .type.string { color: #f382f3; }
-    .type.unknown { color: @wip-2-color; }
+  [data-wip="1"] {
+    color: @wip-1-color;
   }
-}
+  [data-wip="2"], .weak {
+    color: @wip-2-color;
+    code { color: @wip-2-color; }
 
-.var-header {
-  font-family: @monospace;
-  font-weight: bold;
-  font-size: 1.1em;
-}
-
-[data-wip="1"] {
-  color: @wip-1-color;
-}
-[data-wip="2"], .weak {
-  color: @wip-2-color;
-  code { color: @wip-2-color; }
-
-  &:hover {
-    color: @wip-2-color-hover;
-    code { color: @wip-2-color-hover; }
-  }
-}
-
-a.download::before {
-  content: ' ';
-  display: inline-block;
-  position: relative;
-  height: 1.2em;
-  width: 1.2em;
-  margin-right: 0.3em;
-  margin-top: -0.2em;
-  top: 0.3em;
-  background-image: url("/img/download.svg");
-  background-size: 1.2em 1.2em;
-}
-
-.error-box {
-  margin-left: 10%;
-  margin-right: 10%;
-  background-color: #ff3c0034;
-  border: dashed 1px #ff3c00a0;
-  border-radius: 10px;
-  padding: 10px;
-}
-
-details {
-  & > summary {
-    color: @link-color;
-    cursor: pointer;
+    &:hover {
+      color: @wip-2-color-hover;
+      code { color: @wip-2-color-hover; }
+    }
   }
 
-  &.show-more {
-    > summary::before { content: "Show more"; }
-    &[open] > summary::before { content: "Show less"; }
+  a.download::before {
+    content: ' ';
+    display: inline-block;
+    position: relative;
+    height: 1.2em;
+    width: 1.2em;
+    margin-right: 0.3em;
+    margin-top: -0.2em;
+    top: 0.3em;
+    background-image: url("/img/download.svg");
+    background-size: 1.2em 1.2em;
+  }
+
+  details {
+    & > summary {
+      color: @link-color;
+      cursor: pointer;
+    }
+
+    &.show-more {
+      > summary::before { content: "Show more"; }
+      &[open] > summary::before { content: "Show less"; }
+    }
   }
 }

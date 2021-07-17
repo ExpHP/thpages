@@ -1,0 +1,88 @@
+// This file contains regression tests for CSS bugs that have occurred at
+// some point during the construction of the website.
+// (e.g. where a selector was changed to be more specific and this accidentally
+// made it begin to override something else.)
+//
+// It does contain some hardcoded values copied from CSS, including e.g. colors.
+// This does make the tests a bit fragile. This is a price we're willing to pay
+// for *some* sense of protection against repeating past mistakes.
+
+
+import { Builder, By, Key, until, WebDriver } from 'selenium-webdriver';
+
+jest.setTimeout(30000);
+
+describe('ref color', function() {
+  let driver: WebDriver = null as any as WebDriver;
+
+  async function waitForElement(selector: By) {
+    await driver.wait(until.elementLocated(selector), 15000);
+    return await driver.findElement(selector);
+  }
+
+  async function visitPage(path: string) {
+    await driver.get(`http://localhost:1234/#${path}`);
+  }
+
+  // use for the initial navigation event in a test to prevent tests from
+  // affecting each other
+  async function startAtPage(path: string) {
+    await visitPage(path);
+    await driver.navigate().refresh();
+  }
+
+  async function getMaxPageScrollY() {
+    return await driver.executeScript(`
+      window.scrollBy(0, document.body.scrollHeight);
+      return window.scrollY;
+    `) as number;
+  }
+
+  beforeAll(async function() {
+    driver = await new Builder().forBrowser('chrome').build();
+  });
+  afterAll(async function() {
+    await driver.quit();
+  });
+
+  test('ref color', async function() {
+    await startAtPage("/anm/ins");
+    await driver.manage().window().setRect(1920, 1200);
+
+    const element = await waitForElement(By.css("code.language-anm .isref"));
+    const color = await element.getCssValue("color");
+    expect(color).toBe("#ffcc00");
+  });
+
+  // FIXME: Test not verified to work yet due to WSL troubles...
+  test('can scroll', async function() {
+    await startAtPage("/anm/stages-of-rendering");
+    await driver.manage().window().setRect(1920, 1200);
+
+    await waitForElement(By.css("img[src*='koishi']"));
+    const maxScrollY = await getMaxPageScrollY();
+    expect(maxScrollY).toBeGreaterThan(1000);
+  });
+
+  // FIXME: Test not verified to work yet due to WSL troubles...
+  //
+  // This test ensures that the BG for the struct viewer has 100% height, which is an easy
+  // thing to break because all elements between it and the root must also be 100% height.
+  test('struct page bg fills screen', async function() {
+    // Pick a tiny struct that won't force scrolling
+    await startAtPage("/struct?t=zAnmId&v=th10.v1.00a");
+    await driver.manage().window().setRect(1920, 1200);
+
+    // wait for the struct to render by looking for the `int32_t` or `i32` token
+    await waitForElement(By.css(".type.primitive"));
+
+    // Verify that the content is smaller than the viewport, so that the test is actually meaningful.
+    const maxScrollY = await getMaxPageScrollY();
+    expect(maxScrollY).toBe(0);
+
+    const maxHeight = await driver.executeScript(`return document.body.clientHeight;`);
+    const bgElement = await waitForElement(By.css("[data-testid='darken-bg']"));
+    const actualHeight = await bgElement.getAttribute('offsetHeight');
+    expect(actualHeight).toBe(maxHeight);
+  });
+});

@@ -1,5 +1,7 @@
 @import "defs.less";
 
+@span-border-radius: 5px;
+
 .struct-nav .thing-selector + .thing-selector {
     // don't let the label and line overlap
     margin-top: 6px;
@@ -35,6 +37,26 @@
         color: rgb(237, 223, 179);
         font-weight: normal;
     }
+    .number { color: rgb(162, 217, 175); }
+    .type.primitive { color: rgb(162, 217, 175); }
+    .type.user { color: rgb(142, 230, 237); }
+
+    .type.user {
+        display: inline-block;
+    }
+    a[href].type.user,
+    a[href] > .type.user {
+        // transition: background-color 0.25s;
+        transition: background-color 0.1s;
+        // make bg extend a little bit past the characters
+        padding: 2px 0.5ch;
+        margin: -2px -0.5ch;
+        border-radius: @span-border-radius;
+        &:hover {
+            transition: background-color 0.2s;
+            background-color: rgba(204, 204, 204, 0.1);
+        }
+    }
 
     .col-offset {
         padding-right: 1em;
@@ -63,14 +85,14 @@
     .col-text { justify-self: stretch; }
 
     .struct-name,
-    .field-type { color: rgb(237, 189, 129); }
+    .type.user { color: rgb(237, 189, 129); }
     .field-name { color: rgb(170, 214, 221); }
     .field-gap { color: #6e6e6e; }
     .field-offset-text {
         color: rgb(98, 202, 123);
         background-color: rgba(5, 70, 48, 0);
         padding: 2px;
-        border-radius: 5px;
+        border-radius: @span-border-radius;
         &:hover {
             background-color: rgba(25, 199, 141, 0.1);
         }
@@ -84,8 +106,6 @@
         display: inline-block; // fill whole line-height
     }
 }
-
-
 
 .noselect {
     -webkit-touch-callout: none; /* iOS Safari */

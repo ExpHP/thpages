@@ -57,7 +57,7 @@ export function NormalAppBody() {
         <ErrorBoundary><Navbar/></ErrorBoundary>
       </nav>
       <div className='content-pane'>
-        <div className='content-paper'>
+        <div className='content-paper markdown-styling'>
           <ErrorBoundary>
             <Content setContentLoaded={setContentLoaded}/>
           </ErrorBoundary>

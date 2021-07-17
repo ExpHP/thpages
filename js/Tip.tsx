@@ -159,7 +159,7 @@ export function TipProviderImpl({children, tipStore}: {children: ReactNode, tipS
 type Position = {top: number, left: number};
 const Popper = React.forwardRef(function Popper({children, pos, className}: {children: ReactNode, pos: Position | null, className?: string}, ref: React.ForwardedRef<HTMLDivElement>) {
   return <div
-    className={clsx('tip', className)}
+    className={clsx('tip', 'markdown-styling', className)}
     ref={ref}
     style={pos
         ? {position: 'absolute', top: pos.top, left: pos.left}

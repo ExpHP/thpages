@@ -7,12 +7,11 @@ const DarkBgStateSetterContext = React.createContext<null | React.Dispatch<boole
 
 const useStyles = makeStyles(() => ({
   bodyFiller: {
-    position: "fixed",
     height: "100%",
     width: "100%",
     opacity: "100%",
     backgroundColor: "var(--dark-bg-color-zeroalpha)",
-    transition: "background-color 1s",
+    transition: "background-color 0.25s",
     "&.active": {
       backgroundColor: "var(--dark-bg-color)",
     },
@@ -27,7 +26,7 @@ export function DarkBgProvider({children}: {children: ReactNode}) {
   const [darkBgState, setDarkBgState] = React.useState(false);
   const classes = useStyles();
 
-  return <div className={clsx(classes.bodyFiller, {'active': darkBgState})}>
+  return <div className={clsx(classes.bodyFiller, {'active': darkBgState})} data-testid="darken-bg">
     <DarkBgStateSetterContext.Provider value={setDarkBgState}>
       {children}
     </DarkBgStateSetterContext.Provider>
