@@ -18,7 +18,6 @@ export function useNavigationPropsFromUrl() {
   const history = useHistory();
   const location = useLocation();
 
-  console.debug(location);
   const searchParams = new URLSearchParams(location.search.substring(1));
   const struct = searchParams.get('t') as TypeName | null;
   const version = searchParams.get('v') as Version | null;
@@ -68,16 +67,14 @@ export function Navigation(props: {
 function navigateToStruct(history: History, struct: TypeName) {
   const location = history.location;
   history.push(setOrDeleteSearchParam(location, 't', struct));
-  console.debug(history.location);
 }
 
 function navigateToVersion(history: History, version: Version) {
   const location = history.location;
   history.push(setOrDeleteSearchParam(location, 'v', version));
-  console.debug(history.location);
 }
 
-function setOrDeleteSearchParam<S extends history.State>(location: history.Location<S>, key: string, value: string | null): history.Location<S> {
+function setOrDeleteSearchParam<S>(location: history.Location<S>, key: string, value: string | null): history.Location<S> {
   const search = new URLSearchParams(location.search.substring(1));
   if (value) {
     search.set(key, value);

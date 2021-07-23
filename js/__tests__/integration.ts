@@ -9,8 +9,10 @@
 
 
 import { Builder, By, Key, until, WebDriver } from 'selenium-webdriver';
+import rgba from 'color-rgba';
 
 jest.setTimeout(30000);
+
 
 describe('ref color', function() {
   let driver: WebDriver = null as any as WebDriver;
@@ -47,31 +49,26 @@ describe('ref color', function() {
 
   test('ref color', async function() {
     await startAtPage("/anm/ins");
-    await driver.manage().window().setRect(1920, 1200);
+    await driver.manage().window().setRect({width: 1920, height: 1200});
 
     const element = await waitForElement(By.css("code.language-anm .isref"));
-    const color = await element.getCssValue("color");
-    expect(color).toBe("#ffcc00");
+    const color = rgba(await element.getCssValue("color"));
+    expect(color).toEqual([245, 227, 156, 1]);
   });
 
-  // FIXME: Test not verified to work yet due to WSL troubles...
   test('can scroll', async function() {
     await startAtPage("/anm/stages-of-rendering");
-    await driver.manage().window().setRect(1920, 1200);
+    await driver.manage().window().setRect({width: 1920, height: 1200});
 
     await waitForElement(By.css("img[src*='koishi']"));
     const maxScrollY = await getMaxPageScrollY();
     expect(maxScrollY).toBeGreaterThan(1000);
   });
 
-  // FIXME: Test not verified to work yet due to WSL troubles...
-  //
-  // This test ensures that the BG for the struct viewer has 100% height, which is an easy
-  // thing to break because all elements between it and the root must also be 100% height.
   test('struct page bg fills screen', async function() {
     // Pick a tiny struct that won't force scrolling
     await startAtPage("/struct?t=zAnmId&v=th10.v1.00a");
-    await driver.manage().window().setRect(1920, 1200);
+    await driver.manage().window().setRect({width: 1920, height: 1200});
 
     // wait for the struct to render by looking for the `int32_t` or `i32` token
     await waitForElement(By.css(".type.primitive"));
@@ -82,7 +79,7 @@ describe('ref color', function() {
 
     const maxHeight = await driver.executeScript(`return document.body.clientHeight;`);
     const bgElement = await waitForElement(By.css("[data-testid='darken-bg']"));
-    const actualHeight = await bgElement.getAttribute('offsetHeight');
+    const actualHeight = (await bgElement.getRect()).height;
     expect(actualHeight).toBe(maxHeight);
   });
 });
