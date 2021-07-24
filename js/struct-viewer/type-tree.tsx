@@ -27,16 +27,16 @@ type StructTypeDefinition = {
   packed?: boolean; // default: false
   members: {offset: Integer, name: string, type: TypeTree}[];
 };
-const parseStructTypeDefinition = JP.object({
+const parseStructTypeDefinition = JP.lazy(() => JP.object({
   size: parseInteger,
   align: parseInteger,
   packed: JP.withDefault(false, JP.boolean),
   members: JP.array(JP.object({
     offset: parseInteger,
     name: JP.string,
-    type: () => parseTypeTree,
+    type: parseTypeTree,
   })),
-});
+}));
 
 type EnumTypeDefinition = {
   size: Integer;
@@ -57,25 +57,25 @@ type UnionTypeDefinition = {
   align: Integer;
   members: {name: string, type: TypeTree}[];
 };
-const parseUnionTypeDefinition = JP.object({
+const parseUnionTypeDefinition = JP.lazy(() => JP.object({
   size: parseInteger,
   align: parseInteger,
   members: JP.array(JP.object({
     name: JP.string,
-    type: () => parseTypeTree,
+    type: parseTypeTree,
   })),
-});
+}));
 
 type TypedefTypeDefinition = {
   size: Integer;
   align: Integer;
   type: TypeTree;
 };
-const parseTypedefTypeDefinition = JP.object({
+const parseTypedefTypeDefinition = JP.lazy(() => JP.object({
   size: parseInteger,
   align: parseInteger,
-  type: () => parseTypeTree,
-});
+  type: parseTypeTree,
+}));
 
 type FunctionTypeDefinition = {
   ret: TypeTree,
@@ -84,16 +84,16 @@ type FunctionTypeDefinition = {
   variadic?: boolean,
   diverges?: boolean,
 };
-const parseFunctionTypeDefinition = JP.object({
-  ret: () => parseTypeTree,
+const parseFunctionTypeDefinition = JP.lazy(() => JP.object({
+  ret: parseTypeTree,
   abi: JP.optional(JP.string),
   params: JP.optional(JP.array(JP.object({
     name: JP.optional(JP.string),
-    type: () => parseTypeTree,
+    type: parseTypeTree,
   }))),
   variadic: JP.optional(JP.boolean),
   diverges: JP.optional(JP.boolean),
-});
+}));
 
 type TypeTree =
   | {is: "int", signed: boolean, size: Integer, alignment?: Integer}
@@ -109,7 +109,7 @@ type TypeTree =
   | {is: "enum"} & EnumTypeDefinition
   ;
 
-const parseTypeTree: JP.Parser<TypeTree> = (
+const parseTypeTree: JP.Parser<TypeTree> = JP.lazy(() => (
   JP.tagged<TypeTree>("is", {
     "int": (
       JP.object({signed: JP.boolean, size: parseInteger, alignment: JP.optional(parseInteger)})
@@ -120,11 +120,11 @@ const parseTypeTree: JP.Parser<TypeTree> = (
         .then(({size, precision=8 * size, alignment=size}) => ({is: "float", size, precision, alignment}))
     ),
     "array": (
-      JP.object({len: parseInteger, inner: () => parseTypeTree})
+      JP.object({len: parseInteger, inner: parseTypeTree})
         .then(({len, inner}) => ({is: "array", len, inner}))
     ),
     "ptr": (
-      JP.object({inner: () => parseTypeTree})
+      JP.object({inner: parseTypeTree})
         .then(({inner}) => ({is: "ptr", inner}))
     ),
     "named": (
@@ -137,6 +137,4 @@ const parseTypeTree: JP.Parser<TypeTree> = (
     "union": parseUnionTypeDefinition.then((props) => ({is: "union", ...props})),
     "enum": parseEnumTypeDefinition.then((props) => ({is: "enum", ...props})),
   })
-);
-
-
+));

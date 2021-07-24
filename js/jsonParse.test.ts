@@ -61,12 +61,12 @@ describe('tuple length warning', () => {
 describe('recursive parser', () => {
   test('it works', () => {
     type BinaryTree = null | [BinaryTree, BinaryTree];
-    const binaryTree: JP.Parser<BinaryTree> = (
+    const binaryTree: JP.Parser<BinaryTree> = JP.deferConstruction(() => (
       JP.or("binary tree of lists",
         JP.null_,
-        JP.tuple([() => binaryTree, () => binaryTree]),
+        JP.tuple([binaryTree, binaryTree]),
       )
-    );
+    ));
 
     const goodBinaryTree = [null, [[[null, null], [null, null]], null]];
     const badBinaryTree1 = [null];
@@ -80,8 +80,8 @@ describe('recursive parser', () => {
     type Tree = null | Node;
     type Node = Tree[];
 
-    const node: JP.Parser<Node> = JP.array(() => tree);
-    const tree: JP.Parser<Tree> = JP.or("tree", JP.null_, () => node);
+    const node: JP.Parser<Node> = JP.deferConstruction(() => JP.array(tree));
+    const tree: JP.Parser<Tree> = JP.deferConstruction(() => JP.or("tree", JP.null_, node));
 
     const goodTree = [null, [[null, null, [null, null]], null]];
     const badTree = [null, [[null, null, [1, null]], null]];
@@ -90,15 +90,14 @@ describe('recursive parser', () => {
     expect(() => tree.parse(badTree)).toThrow(JP.JsonError);
   });
 
-  // want to make sure '.then' is not implemented in a way that calls '.then'
   test('it is safe to call .then at recursion sites', () => {
-    const doubleChain: JP.Parser<number> = (
+    const doubleChain: JP.Parser<number> = JP.deferConstruction(() => (
       JP.tagged("type", {
         leaf: JP.object(({x: JP.number})),
         // this is the .then() call that we are testing
-        double: JP.object(({x: () => doubleChain.then((x) => 2*x)})),
-      }).then(({x}) => x)
-    );
+        double: JP.object(({x: doubleChain.then((x) => 2*x)})),
+      }).then(({x}) => x)  // and this one is to encourage chaos
+    ));
 
     const value = doubleChain.parse({type: "double", x: {type: "double", x: {type: "leaf", x: 10}}});
     expect(value).toBe(40);
