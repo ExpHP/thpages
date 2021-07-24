@@ -8,21 +8,21 @@ export interface Parser<T> {
 // a class so we can provide methods like '.map()' on all parsers and take care of default
 // context initialization in one place
 class ParserImpl<T> {
-  private func: (x: unknown, context: ParsingContext) => T;
+  #func: (x: unknown, context: ParsingContext) => T;
 
   constructor(func: (x: unknown, context: ParsingContext) => T) {
-    this.func = func;
+    this.#func = func;
     this.parse = this.parse.bind(this);
   }
 
   parse(json: unknown, context: ParsingContext = new ParsingContext(json)): T {
-    return this.func(json, context);
+    return this.#func(json, context);
   }
 
   then<U>(mapper: (x: T) => U): Parser<U> {
     return new ParserImpl((json, context) => {
       try {
-        return mapper(this.func(json, context))
+        return mapper(this.#func(json, context))
       } catch (e) {
         if (e instanceof UserJsonError) {
           fail(json, context, e.message);
@@ -30,6 +30,37 @@ class ParserImpl<T> {
         throw e;
       }
     });
+  }
+}
+
+/**
+ * A Parser or a parser factory.
+ *
+ * Generic combinators primarily take these as their arguments.  Taking a factory aids in the
+ * construction of recursive or mutually recursive parsers, allowing you to pass in `() => someParser`
+ * where `someParser` may not yet be defined.  The factory will be called the very first time that the
+ * parser is needed to actually parse something (i.e. in the `parse` method), after which it may be
+ * cached. (thus, the factory should be pure!)
+ **/
+export type ChildParser<T> = Parser<T> | (() => Parser<T>);
+
+/**
+ * Given a parser that might be lazily constructed, produce a lazily constructed
+ * parser that is only computed on the first call.
+ */
+ function memoizeChild<T>(input: ChildParser<T>): () => Parser<T> {
+  if (typeof input !== "function") {
+    return () => input;
+  } else {
+    const parserConstructor = input;
+    const emptyCacheMarker = {};
+    let cache: {} | Parser<T> = emptyCacheMarker;
+    return () => {
+      if (cache === emptyCacheMarker) {
+        cache = parserConstructor();
+      }
+      return cache as Parser<T>;
+    };
   }
 }
 
@@ -73,93 +104,118 @@ export const null_: Parser<null> = new ParserImpl((json: unknown, context: Parsi
   return json;
 });
 
-export function array<T>(itemParser: Parser<T>): Parser<T[]> {
+export function array<T>(itemParser: ChildParser<T>): Parser<T[]> {
+  const itemParserMemo = memoizeChild(itemParser);
+
   return new ParserImpl((json: unknown, context: ParsingContext) => {
     if (!Array.isArray(json)) {
       fail(json, context, `expected an array`);
     }
-    return json.map((x, index) => context.inPath(index, (context) => itemParser.parse(x, context)));
+    return json.map((x, index) => context.inPath(index, (context) => itemParserMemo().parse(x, context)));
   });
 }
 
 // I can't believe this signature actually *works* in practice.
 // Sometimes, TS is amazing.
-export function object<P>(parsers: {[key in keyof P]: Parser<P[key]>}): Parser<P> {
+export function object<P>(parsers: {[key in keyof P]: ChildParser<P[key]>}): Parser<P> {
+  // @ts-ignore  ...I said "sometimes".
+  const parserMemos = Object.fromEntries(Object.entries(parsers).map(([key, parser]) => [key, memoizeChild(parser)]));
+
   return new ParserImpl((json: unknown, context: ParsingContext) => {
     if (!(json && typeof json === 'object')) {
       fail(json, context, `expected an object`);
     }
     const out = {} as any;
-    for (const [key, valueParser] of Object.entries(parsers)) {
-      out[key] = context.inPath(key, (context) => valueParser.parse(json[key], context));
+    for (const [key, valueParserMemo] of Object.entries(parserMemos)) {
+      // @ts-ignore
+      out[key] = context.inPath(key, (context) => valueParserMemo().parse(json[key], context));
     }
     return out;
   });
 }
 
-export function map<K, V>(keyFn: (k: string) => K, valueParser: Parser<V>): Parser<Map<K, V>> {
+export function map<K, V>(keyFn: (k: string) => K, valueParser: ChildParser<V>): Parser<Map<K, V>> {
+  const valueParserMemo = memoizeChild(valueParser);
+
   return new ParserImpl((json: unknown, context: ParsingContext) => {
     if (!(json && typeof json === 'object')) {
       fail(json, context, `expected an object`);
     }
     const out = new Map();
     for (const [key, value] of Object.entries(json)) {
-      out.set(keyFn(key), context.inPath(key, (context) => valueParser.parse(value, context)));
+      out.set(keyFn(key), context.inPath(key, (context) => valueParserMemo().parse(value, context)));
     }
     return out;
   });
 }
 
-export function optional<T>(valueParser: Parser<T>): Parser<T | undefined> {
+/** Allows an object property to be omitted.  It returns `undefined` when the input is `undefined`. */
+export function optional<T>(valueParser: ChildParser<T>): Parser<T | undefined> {
+  return withDefault(undefined, valueParser);
+}
+
+/** Allows a member to be omitted, by returning a default value when the input is `undefined`. */
+export function withDefault<T, D>(def: D, valueParser: ChildParser<T>): Parser<T | D> {
+  const valueParserMemo = memoizeChild(valueParser);
+
   return new ParserImpl((json: unknown, context: ParsingContext) => {
-    if (json === undefined) return undefined;
-    return valueParser.parse(json, context);
+    if (json === undefined) return def;
+    return valueParserMemo().parse(json, context);
   });
 }
 
 // no variadics, Parcel 1 is still on Typescript 3...
 export interface TupleCombinator {
-  (tuple: []): Parser<[]>;
-  <A>(tuple: [Parser<A>]): Parser<[A]>;
-  <A, B>(tuple: [Parser<A>, Parser<B>]): Parser<[A, B]>;
-  <A, B, C>(tuple: [Parser<A>, Parser<B>, Parser<C>]): Parser<[A, B, C]>;
-  <A, B, C, D>(tuple: [Parser<A>, Parser<B>, Parser<C>, Parser<D>]): Parser<[A, B, C, D]>;
-  <A, B, C, D, E>(tuple: [Parser<A>, Parser<B>, Parser<C>, Parser<D>, Parser<E>]): Parser<[A, B, C, D, E]>;
+  (tuple: readonly []): Parser<[]>;
+  <A>(tuple: readonly [ChildParser<A>]): Parser<[A]>;
+  <A, B>(tuple: readonly [ChildParser<A>, ChildParser<B>]): Parser<[A, B]>;
+  <A, B, C>(tuple: readonly [ChildParser<A>, ChildParser<B>, ChildParser<C>]): Parser<[A, B, C]>;
+  <A, B, C, D>(tuple: readonly [ChildParser<A>, ChildParser<B>, ChildParser<C>, ChildParser<D>]): Parser<[A, B, C, D]>;
+  <A, B, C, D, E>(tuple: readonly [ChildParser<A>, ChildParser<B>, ChildParser<C>, ChildParser<D>, ChildParser<E>]): Parser<[A, B, C, D, E]>;
 }
 
 // @ts-ignore (variadics memes)
-export const tuple: TupleCombinator = (tuple: Parser<any>[]) => {
+export const tuple: TupleCombinator = (parsers: ChildParser<any>[]) => {
+  let parserMemos = parsers.map(memoizeChild);
+
   let warningShown = false;
   return new ParserImpl((json: unknown, context: ParsingContext) => {
     if (!Array.isArray(json)) {
       fail(json, context, `expected a tuple`);
     }
-    if (json.length > tuple.length && !warningShown) {
-      console.warn(`ignoring extra elements in tuple (expected ${tuple.length}, got ${json.length})`, tuple);
+
+    // compute result so we can fail before checking for warnings
+    const result = parserMemos.map((parserMemo, index) => (
+      context.inPath(index, (context) => parserMemo().parse(json[index], context))
+    ));
+
+    if (json.length > parsers.length && !warningShown) {
+      console.warn(`ignoring extra elements in tuple (expected ${parsers.length}, got ${json.length})`, json);
       warningShown = true;
     }
-
-    return tuple.map((parser, index) => context.inPath(index, (context) => parser.parse(json[index], context)));
+    return result;
   });
 };
 
 // no variadics, Parcel 1 is still on Typescript 3...
 export interface OrCombinator {
   (expected: string): Parser<never>;
-  <A>(expected: string, a: Parser<A>): Parser<A>;
-  <A, B>(expected: string, a: Parser<A>, b: Parser<B>): Parser<A | B>;
-  <A, B, C>(expected: string, a: Parser<A>, b: Parser<B>, c: Parser<C>): Parser<A | B | C>;
-  <A, B, C, D>(expected: string, a: Parser<A>, b: Parser<B>, c: Parser<C>, d: Parser<D>): Parser<A | B | C | D>;
-  <A, B, C, D, E>(expected: string, a: Parser<A>, b: Parser<B>, c: Parser<C>, d: Parser<D>, e: Parser<E>): Parser<A | B | C | D | E>;
+  <A>(expected: string, a: ChildParser<A>): Parser<A>;
+  <A, B>(expected: string, a: ChildParser<A>, b: ChildParser<B>): Parser<A | B>;
+  <A, B, C>(expected: string, a: ChildParser<A>, b: ChildParser<B>, c: ChildParser<C>): Parser<A | B | C>;
+  <A, B, C, D>(expected: string, a: ChildParser<A>, b: ChildParser<B>, c: ChildParser<C>, d: ChildParser<D>): Parser<A | B | C | D>;
+  <A, B, C, D, E>(expected: string, a: ChildParser<A>, b: ChildParser<B>, c: ChildParser<C>, d: ChildParser<D>, e: ChildParser<E>): Parser<A | B | C | D | E>;
 }
 
 /** Construct a parser from an alternative of other parsers, returning the first result that doesn't throw `JsonError`. */
 // @ts-ignore (variadics memes)
-export const or: OrCombinator = (expected: string, ...parsers: Parser<any>[]) => {
+export const or: OrCombinator = (expected: string, ...parsers: ChildParser<any>[]) => {
+  let parserMemos = parsers.map(memoizeChild);
+
   return new ParserImpl((json: unknown, context: ParsingContext) => {
-    for (const parser of parsers) {
+    for (const parserMemo of parserMemos) {
       try {
-        return parser.parse(json, context);
+        return parserMemo().parse(json, context);
       } catch (e) {
         if (e instanceof JsonError) {
           // ignore
@@ -170,12 +226,33 @@ export const or: OrCombinator = (expected: string, ...parsers: Parser<any>[]) =>
   });
 };
 
+/** Parse an object that is a tagged variant, where one of the properties acts as a discriminant. */
+// @ts-ignore (variadics memes)
+export function tagged<T>(tagAttr: string, parsers: Record<string, ChildParser<T>>): Parser<T> {
+  const parserMemos = Object.fromEntries(Object.entries(parsers).map(([k, v]) => [k, memoizeChild(v)]));
+
+  // construct a dedicated object parser to extract the tag with proper errors
+  const tagParserAttrs: Record<string, Parser<string>> = {};
+  tagParserAttrs[tagAttr] = string;
+  const tagParser = object(tagParserAttrs);
+
+  return new ParserImpl((json: unknown, context: ParsingContext) => {
+    const objectWithTag = tagParser.parse(json, context);
+    const tag = objectWithTag[tagAttr];
+
+    const parser = parserMemos[tag]();
+    if (!parser) {
+      fail(json, context, `unrecognized variant '${tag}'`);
+    }
+    return parser.parse(json, context);
+  });
+}
 
 // =============================================================================
 // Error handling
 
-class JsonError extends Error {
-  message_: string;
+export class JsonError extends Error {
+  #message: string;
   fullJson: unknown;
   badPart: unknown;
   path: (string | number)[];
@@ -184,11 +261,11 @@ class JsonError extends Error {
     this.fullJson = context.fullJson;
     this.path = [...context.path];
     this.badPart = json;
-    this.message_ = message;
+    this.#message = message;
   }
 
   get message() {
-    return `at ${this.path.join('.')}: ${this.message_}`;
+    return `at ${this.path.join('.')}: ${this.#message}`;
   }
 }
 
@@ -201,47 +278,20 @@ function fail(json: unknown, context: ParsingContext, message: string): never {
 
 class ParsingContext {
   fullJson: unknown;
-  private path_: (string | number)[];
+  #path: (string | number)[];
 
   /** Obtain a copy of the full path. */
-  get path() { return [...this.path_]; }
+  get path() { return [...this.#path]; }
 
   constructor(json: unknown) {
-    this.path_ = [];
+    this.#path = [];
     this.fullJson = json;
   }
 
   inPath<T>(segment: number | string, cont: (ctx: ParsingContext) => T): T {
-    this.path_.push(segment);
+    this.#path.push(segment);
     const out = cont(this);
-    this.path_.pop();
+    this.#path.pop();
     return out;
   }
-}
-
-// =============================================================================
-
-function _typeCheckTest() {
-  const parser = object({
-    version: number,
-    sillyFeature: optional(string),
-    things: array(object({
-      mapped: number.then((x) => [x, 2 * x]),
-      triple: tuple([number, number, array(number)]),
-    })),
-  });
-
-  type Output = {
-    version: number,
-    sillyFeature?: string,
-    things: {
-      mapped: [number, number];
-      triple: [number, number, number[]];
-    }[];
-  }
-  const value: Object = parser.parse(JSON.parse(JSON.stringify({
-    version: 1,
-    things: [{mapped: 3, triple: [1, 2, [3]]}]
-  })));
-  return value;
 }
