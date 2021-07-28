@@ -13,7 +13,6 @@ export type VersionData = {
 
 type Integer = number;
 const parseInteger = JP.or(
-  "a (possibly string) integer",
   JP.int,
   JP.string.then((s: string) => {
     if (s.match(/^-?(?:0|[1-9][0-9]*|0[xX][0-9a-fA-F]+|0[bB][01]+)$/)) {
@@ -22,6 +21,7 @@ const parseInteger = JP.or(
     }
     throw new JP.UserJsonError();
   }),
+  JP.fail("expected a (possibly string) integer"),
 );
 
 export type VersionProps = {
@@ -112,7 +112,7 @@ const parseStructTypeDefinition = JP.lazy(() => JP.object({
   members: JP.array(JP.object({
     offset: parseInteger,
     name: JP.string,
-    type: JP.or("type tree or null", JP.null_, parseTypeTree),
+    type: JP.or(JP.null_, parseTypeTree),
   })),
 })).then((defn) => {
   // classify the fields and validate redundant information

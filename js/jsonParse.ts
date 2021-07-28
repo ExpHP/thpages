@@ -25,7 +25,7 @@ class ParserImpl<T> {
         return mapper(this.#func(json, context))
       } catch (e) {
         if (e instanceof UserJsonError) {
-          fail(json, context, e.message);
+          _fail(json, context, e.message);
         }
         throw e;
       }
@@ -62,35 +62,35 @@ export const any: Parser<unknown> = new ParserImpl((json: unknown) => json);
 
 export const number: Parser<number> = new ParserImpl((json: unknown, context: ParsingContext) => {
   if (typeof json !== 'number') {
-    fail(json, context, `expected a number`);
+    _fail(json, context, `expected a number`);
   }
   return json;
 });
 
 export const int: Parser<number> = new ParserImpl((json: unknown, context: ParsingContext) => {
   if (typeof json !== 'number' || !Number.isInteger(json)) {
-    fail(json, context, `expected an integer`);
+    _fail(json, context, `expected an integer`);
   }
   return json;
 });
 
 export const string: Parser<string> = new ParserImpl((json: unknown, context: ParsingContext) => {
   if (typeof json !== 'string') {
-    fail(json, context, `expected a string`);
+    _fail(json, context, `expected a string`);
   }
   return json;
 });
 
 export const boolean: Parser<boolean> = new ParserImpl((json: unknown, context: ParsingContext) => {
   if (typeof json !== 'boolean') {
-    fail(json, context, `expected a boolean`);
+    _fail(json, context, `expected a boolean`);
   }
   return json;
 });
 
 export const null_: Parser<null> = new ParserImpl((json: unknown, context: ParsingContext) => {
   if (json !== null) {
-    fail(json, context, `expected null`);
+    _fail(json, context, `expected null`);
   }
   return json;
 });
@@ -98,7 +98,7 @@ export const null_: Parser<null> = new ParserImpl((json: unknown, context: Parsi
 export function array<T>(itemParser: Parser<T>): Parser<T[]> {
   return new ParserImpl((json: unknown, context: ParsingContext) => {
     if (!Array.isArray(json)) {
-      fail(json, context, `expected an array`);
+      _fail(json, context, `expected an array`);
     }
     return json.map((x, index) => context.inPath(index, (context) => itemParser.parse(x, context)));
   });
@@ -109,7 +109,7 @@ export function array<T>(itemParser: Parser<T>): Parser<T[]> {
 export function object<P>(parsers: {[key in keyof P]: Parser<P[key]>}): Parser<P> {
   return new ParserImpl((json: unknown, context: ParsingContext) => {
     if (!(json && typeof json === 'object')) {
-      fail(json, context, `expected an object`);
+      _fail(json, context, `expected an object`);
     }
     const out = {} as any;
     for (const [key, valueParser] of Object.entries(parsers)) {
@@ -123,7 +123,7 @@ export function object<P>(parsers: {[key in keyof P]: Parser<P[key]>}): Parser<P
 export function map<K, V>(keyFn: (k: string) => K, valueParser: Parser<V>): Parser<Map<K, V>> {
   return new ParserImpl((json: unknown, context: ParsingContext) => {
     if (!(json && typeof json === 'object')) {
-      fail(json, context, `expected an object`);
+      _fail(json, context, `expected an object`);
     }
     const out = new Map();
     for (const [key, value] of Object.entries(json)) {
@@ -161,7 +161,7 @@ export const tuple: TupleCombinator = (parsers: Parser<any>[]) => {
   let warningShown = false;
   return new ParserImpl((json: unknown, context: ParsingContext) => {
     if (!Array.isArray(json)) {
-      fail(json, context, `expected a tuple`);
+      _fail(json, context, `expected a tuple`);
     }
 
     // compute result so we can fail before checking for warnings
@@ -179,28 +179,32 @@ export const tuple: TupleCombinator = (parsers: Parser<any>[]) => {
 
 // no variadics, Parcel 1 is still on Typescript 3...
 export interface OrCombinator {
-  (expected: string): Parser<never>;
-  <A>(expected: string, a: Parser<A>): Parser<A>;
-  <A, B>(expected: string, a: Parser<A>, b: Parser<B>): Parser<A | B>;
-  <A, B, C>(expected: string, a: Parser<A>, b: Parser<B>, c: Parser<C>): Parser<A | B | C>;
-  <A, B, C, D>(expected: string, a: Parser<A>, b: Parser<B>, c: Parser<C>, d: Parser<D>): Parser<A | B | C | D>;
-  <A, B, C, D, E>(expected: string, a: Parser<A>, b: Parser<B>, c: Parser<C>, d: Parser<D>, e: Parser<E>): Parser<A | B | C | D | E>;
+  (): Parser<never>;
+  <A>(a: Parser<A>): Parser<A>;
+  <A, B>(a: Parser<A>, b: Parser<B>): Parser<A | B>;
+  <A, B, C>(a: Parser<A>, b: Parser<B>, c: Parser<C>): Parser<A | B | C>;
+  <A, B, C, D>(a: Parser<A>, b: Parser<B>, c: Parser<C>, d: Parser<D>): Parser<A | B | C | D>;
+  <A, B, C, D, E>(a: Parser<A>, b: Parser<B>, c: Parser<C>, d: Parser<D>, e: Parser<E>): Parser<A | B | C | D | E>;
 }
 
-/** Construct a parser from an alternative of other parsers, returning the first result that doesn't throw `JsonError`. */
+/**
+ * Construct a parser from an alternative of other parsers, returning the first result that doesn't throw `JsonError`.
+ *
+ * If all of them fail, the error message will be from the final parser.  If none of the parsers seem that they
+ * would produce a suitable message, simply use `JP.fail` as the final parser to supply a custom message.
+ **/
 // @ts-ignore (variadics memes)
-export const or: OrCombinator = (expected: string, ...parsers: Parser<any>[]) => {
+export const or: OrCombinator = (...parsers: Parser<any>[]) => {
   return new ParserImpl((json: unknown, context: ParsingContext) => {
-    for (const parser of parsers) {
+    for (let i=0; i < parsers.length; i++) {
       try {
-        return parser.parse(json, context);
+        return parsers[i].parse(json, context);
       } catch (e) {
-        if (e instanceof JsonError) {
+        if (e instanceof JsonError && i !== parsers.length - 1) {
           // ignore
         } else throw e;
       }
     }
-    fail(json, context, `expected ${expected}`);
   });
 };
 
@@ -218,9 +222,16 @@ export function tagged<T>(tagAttr: string, parsers: Record<string, Parser<T>>): 
 
     const parser = parsers[tag];
     if (!parser) {
-      fail(json, context, `unrecognized variant '${tag}'`);
+      _fail(json, context, `unrecognized variant '${tag}'`);
     }
     return parser.parse(json, context);
+  });
+}
+
+/** A parser that always fails. */
+export function fail(message: string): Parser<never> {
+  return new ParserImpl((json: unknown, context: ParsingContext) => {
+    _fail(json, context, message);
   });
 }
 
@@ -248,7 +259,7 @@ export class JsonError extends Error {
 /** This can be thrown inside the callback to `then` to be transformed into a more descriptive `JsonError`. */
 export class UserJsonError extends Error {}
 
-function fail(json: unknown, context: ParsingContext, message: string): never {
+function _fail(json: unknown, context: ParsingContext, message: string): never {
   throw new JsonError(json, context, message);
 }
 

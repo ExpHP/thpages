@@ -26,9 +26,7 @@ export function StructViewerPageFromUrl() {
   const {typeName, version, setTypeName, setVersion} = useNavigationPropsFromUrl();
 
   return <DbContext.Provider value={db}>
-    <VersionContext.Provider value={version}>
-      <StructViewerPage {...{db, version, setVersion}} name={typeName} setName={setTypeName} />
-    </VersionContext.Provider>
+    <StructViewerPage {...{db, version, setVersion}} name={typeName} setName={setTypeName} />
   </DbContext.Provider>
 }
 
@@ -42,8 +40,8 @@ function StructViewerPage(props: {
   const {db, name, version, setName, setVersion} = props;
   const promiseFn = React.useCallback(async () => {
     // Show placeholder text until everything is selected
-    if (!version) return null;
-    if (!name) return null;
+    if (!version) return {defn: null, version: null};
+    if (!name) return {defn: null, version: null};
 
     const v1 = await db.parseVersion(version);
     if (!v1) throw new Error(`No such version: '${version}'`);
@@ -55,7 +53,8 @@ function StructViewerPage(props: {
     // FIXME
     if (defn.is !== 'struct') throw new Error(`non-structs not yet supported in viewer`);
 
-    return defn;
+    // also return version so it can be persisted in the still-rendered struct when the version box is cleared
+    return {defn, version};
   }, [db, name, version]);
 
   return <>
@@ -66,9 +65,11 @@ function StructViewerPage(props: {
     />
     <Async promiseFn={promiseFn}>
       <Async.Initial persist><h1>Loading structs...</h1></Async.Initial>
-      <Async.Fulfilled persist>{(value) => (
-        value ? <StructViewerPageImpl struct={value}/>
-          : <div>Please select a struct and version.</div>
+      <Async.Fulfilled persist>{({struct, version: persistedVersion}) => (
+        <VersionContext.Provider value={persistedVersion}>
+          struct ? <StructViewerPageImpl struct={struct}/>
+            : <div>Please select a struct and version.</div>
+        </VersionContext.Provider>
       )}</Async.Fulfilled>
       <Async.Rejected>{(err) => <Err>{err.message}</Err>}</Async.Rejected>
     </Async>

@@ -22,8 +22,8 @@ export function useNavigationPropsFromUrl() {
   const typeName = searchParams.get('t') as TypeName | null;
   const version = searchParams.get('v') as Version | null;
 
-  const setTypeName = React.useCallback((typeName: TypeName | null) => typeName && navigateToType(history, typeName), [history]);
-  const setVersion = React.useCallback((version: Version | null) => version && navigateToVersion(history, version), [history]);
+  const setTypeName = React.useCallback((typeName: TypeName | null) => navigateToType(history, typeName), [history]);
+  const setVersion = React.useCallback((version: Version | null) => navigateToVersion(history, version), [history]);
 
   return React.useMemo(() => ({
     typeName, version, setTypeName, setVersion,
@@ -64,12 +64,12 @@ export function Navigation(props: {
   </FormControl>;
 }
 
-function navigateToType(history: History, typeName: TypeName) {
+function navigateToType(history: History, typeName: TypeName | null) {
   const location = history.location;
   history.push(setOrDeleteSearchParam(location, 't', typeName));
 }
 
-function navigateToVersion(history: History, version: Version) {
+function navigateToVersion(history: History, version: Version | null) {
   const location = history.location;
   history.push(setOrDeleteSearchParam(location, 'v', version));
 }

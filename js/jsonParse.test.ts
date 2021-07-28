@@ -62,9 +62,10 @@ describe('recursive parser', () => {
   test('it works', () => {
     type BinaryTree = null | [BinaryTree, BinaryTree];
     const binaryTree: JP.Parser<BinaryTree> = JP.lazy(() => (
-      JP.or("binary tree of lists",
+      JP.or(
         JP.null_,
         JP.tuple([binaryTree, binaryTree]),
+        JP.fail("expected binary tree of lists"),
       )
     ));
 
@@ -81,7 +82,7 @@ describe('recursive parser', () => {
     type Node = Tree[];
 
     const node: JP.Parser<Node> = JP.lazy(() => JP.array(tree));
-    const tree: JP.Parser<Tree> = JP.lazy(() => JP.or("tree", JP.null_, node));
+    const tree: JP.Parser<Tree> = JP.lazy(() => JP.or(JP.null_, node, JP.fail("expected tree")));
 
     const goodTree = [null, [[null, null, [null, null]], null]];
     const badTree = [null, [[null, null, [1, null]], null]];

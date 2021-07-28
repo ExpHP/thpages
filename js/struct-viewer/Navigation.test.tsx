@@ -14,59 +14,71 @@ import {Navigation, useNavigationPropsFromUrl} from './Navigation';
 
 const PROMISE_THAT_NEVER_RESOLVES = new Promise<never>(() => {});
 
-const SIMPLE_STRUCT = [
-  ['0x0', 'number', 'int32_t'],
-  ['0x4', '__end', null],
-];
-const DEFAULT_DB_DATA: Record<string, any> = {
-  'db-head.json': {
-    'version': 1,
+const SIMPLE_STRUCT = {
+  is: 'struct',
+  size: '0x4',
+  align: '0x4',
+  members: [
+    {offset: '0x0', name: 'number', type: {is: 'int', signed: true, size: 4}},
+    {offset: '0x4', name: '__end', type: null},
+  ]
+};
+
+type Matchable = string | RegExp;
+type DbData = [Matchable, unknown][];
+const DEFAULT_DB_DATA: DbData = [
+  ['db-head.json', {
+    'version': 2,
+    'common-modules': [],
     'versions': [
       {version: 'v1.0', level: 'primary'},
       {version: 'v2.0-pre', level: 'secondary'},
       {version: 'v2.0', level: 'primary'},
     ],
-  },
-  'data/v1.0/type-structs-own.json': {
+  }],
+  [new RegExp("data/[^/]+/version-props.json"), {'pointer-size': 4}],
+  [new RegExp("data/[^/]+/types-ext.json"), {}],
+  ['data/v1.0/types-own.json', {
     'Common': SIMPLE_STRUCT,
     'OnlyInV1': SIMPLE_STRUCT,
-  },
-  'data/v2.0-pre/type-structs-own.json': {
+  }],
+  ['data/v2.0-pre/types-own.json', {
     'Common': SIMPLE_STRUCT,
     'OnlyInPre': SIMPLE_STRUCT,
-  },
-  'data/v2.0/type-structs-own.json': {
+  }],
+  ['data/v2.0/types-own.json', {
     'Common': SIMPLE_STRUCT,
     'OnlyInV2': SIMPLE_STRUCT,
-  },
-};
+  }],
+];
 
-function testPathReader(data: Record<string, any>) {
+function testPathReader(data: DbData) {
   return async (path: string) => {
-    if (path in data) {
-      return JSON.stringify(data[path]);
-    } else {
-      throw new Error(`no such file: '${path}'`)
+    for (const [pattern, json] of data) {
+      if (path.match(pattern))  {
+        return JSON.stringify(json);
+      }
     }
+    throw new Error(`no such file: '${path}'`)
   };
 }
 
-function pathReaderThatNeverLoads(data: Record<string, any>) {
+function pathReaderThatNeverLoads(data: DbData) {
   return async (path: string) => {
     if (path === 'db-head.json') {
-      return JSON.stringify(data[path]);
+      return await testPathReader(data)(path);
     } else {
       return await PROMISE_THAT_NEVER_RESOLVES;
     }
   };
 }
 
-const getTestDb = (data: Record<string, any>) => new TypeDatabase(testPathReader(data));
-const getDbThatNeverLoads = (data: Record<string, any> = DEFAULT_DB_DATA) => new TypeDatabase(pathReaderThatNeverLoads(data));
+const getTestDb = (data: DbData) => new TypeDatabase(testPathReader(data));
+const getDbThatNeverLoads = (data: DbData = DEFAULT_DB_DATA) => new TypeDatabase(pathReaderThatNeverLoads(data));
 
 // =============================================================================
 
-const LABEL_STRUCT = 'Struct';
+const LABEL_STRUCT = 'Type';
 const LABEL_VERSION = 'Version';
 type Label = typeof LABEL_STRUCT | typeof LABEL_VERSION;
 function getUnavailableCheckbox() {
@@ -107,7 +119,7 @@ function waitForLoad() {
 function TestNavigation(props: {
   db?: TypeDatabase,
   history?: History,
-  dbData?: Record<string, any>,
+  dbData?: DbData,
   versionFromUrl?: string | null,
   structFromUrl?: string | null,
   minLevel?: VersionLevel,
