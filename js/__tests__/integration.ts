@@ -14,7 +14,7 @@ import rgba from 'color-rgba';
 jest.setTimeout(30000);
 
 
-describe('ref color', function() {
+describe('browser tests', function() {
   let driver: WebDriver = null as any as WebDriver;
 
   async function waitForElement(selector: By) {
@@ -33,7 +33,7 @@ describe('ref color', function() {
     await driver.navigate().refresh();
   }
 
-  async function getMaxPageScrollY() {
+  async function getMaxPageScrollYByActuallyScrolling() {
     return await driver.executeScript(`
       window.scrollBy(0, document.body.scrollHeight);
       return window.scrollY;
@@ -49,7 +49,7 @@ describe('ref color', function() {
 
   test('ref color', async function() {
     await startAtPage("/anm/ins");
-    await driver.manage().window().setRect({width: 1920, height: 1200});
+    await driver.manage().window().setRect({width: 1920, height: 1000});
 
     const element = await waitForElement(By.css("code.language-anm .isref"));
     const color = rgba(await element.getCssValue("color"));
@@ -58,28 +58,50 @@ describe('ref color', function() {
 
   test('can scroll', async function() {
     await startAtPage("/anm/stages-of-rendering");
-    await driver.manage().window().setRect({width: 1920, height: 1200});
+    await driver.manage().window().setRect({width: 1920, height: 1000});
 
     await waitForElement(By.css("img[src*='koishi']"));
-    const maxScrollY = await getMaxPageScrollY();
+    const maxScrollY = await getMaxPageScrollYByActuallyScrolling();
     expect(maxScrollY).toBeGreaterThan(1000);
   });
+
+  async function checkStructBgFillsScreen() {
+    const maxHeight = await driver.executeScript(`return document.body.scrollHeight;`);
+    const bgElement = await waitForElement(By.css("[data-testid='darken-bg']"));
+    const actualHeight = (await bgElement.getRect()).height;
+    expect(actualHeight).toBe(maxHeight);
+  }
 
   test('struct page bg fills screen', async function() {
     // Pick a tiny struct that won't force scrolling
     await startAtPage("/struct?t=zAnmId&v=th10.v1.00a");
-    await driver.manage().window().setRect({width: 1920, height: 1200});
+    await driver.manage().window().setRect({width: 1920, height: 1000});
 
     // wait for the struct to render by looking for the `int32_t` or `i32` token
     await waitForElement(By.css(".type.primitive"));
 
     // Verify that the content is smaller than the viewport, so that the test is actually meaningful.
-    const maxScrollY = await getMaxPageScrollY();
+    const maxScrollY = await getMaxPageScrollYByActuallyScrolling();
     expect(maxScrollY).toBe(0);
 
-    const maxHeight = await driver.executeScript(`return document.body.clientHeight;`);
-    const bgElement = await waitForElement(By.css("[data-testid='darken-bg']"));
-    const actualHeight = (await bgElement.getRect()).height;
-    expect(actualHeight).toBe(maxHeight);
+    await checkStructBgFillsScreen();
+  });
+
+  test('struct page bg can grow past screen', async function() {
+    // Pick a biiiig struct that won't force scrolling
+    await startAtPage("/struct?t=zAnmVm&v=th11.v1.00a");
+    await driver.manage().window().setRect({width: 1920, height: 1000});
+
+    // FIXME: would be more robust to search for the text "0x434" (the end offset)
+    //        but the xpath-based solution for text searching didn't work for me.
+    //
+    //        The nth child picked here is one that's reasonably far while giving wiggle room.
+    await waitForElement(By.css(".struct-view >.row:nth-child(46)"));
+
+    // Verify that the content is large enough that the test is actually meaningful.
+    const maxScrollY = await getMaxPageScrollYByActuallyScrolling();
+    expect(maxScrollY).toBeGreaterThan(0);
+
+    await checkStructBgFillsScreen();
   });
 });

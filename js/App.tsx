@@ -8,7 +8,7 @@ import {HashRouter as Router, Switch, Route, Redirect} from 'react-router-dom';
 import {useScrollToAnchor} from './ScrollToAnchorHelper';
 import {ANM_INS_TABLE, ANM_VAR_TABLE, STD_TABLE, MSG_TABLE} from './tables';
 import {CurrentPageProvider} from './UrlTools';
-import {DarkBgProvider, useDarkBg} from './DarkenBg';
+import {BackgroundProvider, useDarkBg} from './Background';
 import {ErrorBoundary} from './Error';
 import {Navbar} from './Navbar';
 import {MarkdownPage} from './MarkdownPage';
@@ -26,13 +26,13 @@ export function App() {
   return (
     <ThemeProvider theme={theme}>
       <StylesProvider injectFirst>
-        <DarkBgProvider>
+        <BackgroundProvider>
           <Router>
             <CurrentPageProvider>
               <TopLevelSwitch/>
             </CurrentPageProvider>
           </Router>
-        </DarkBgProvider>
+        </BackgroundProvider>
       </StylesProvider>
     </ThemeProvider>
   );

@@ -10,4 +10,4 @@ import {settingsPreAppInit} from "./settings/index.ts";
 settingsPreAppInit();
 redirectPreAppInit();
 
-ReactDOM.render(React.createElement(App), document.getElementById("root"));
+ReactDOM.render(React.createElement(App), document.getElementById("app-root"));
