@@ -65,10 +65,10 @@ function StructViewerPage(props: {
     />
     <Async promiseFn={promiseFn}>
       <Async.Initial persist><h1>Loading structs...</h1></Async.Initial>
-      <Async.Fulfilled persist>{({struct, version: persistedVersion}) => (
+      <Async.Fulfilled persist>{({defn, version: persistedVersion}) => (
         <VersionContext.Provider value={persistedVersion}>
-          struct ? <StructViewerPageImpl struct={struct}/>
-            : <div>Please select a struct and version.</div>
+          {defn ? <StructViewerPageImpl struct={defn}/>
+            : <div>Please select a struct and version.</div>}
         </VersionContext.Provider>
       )}</Async.Fulfilled>
       <Async.Rejected>{(err) => <Err>{err.message}</Err>}</Async.Rejected>
