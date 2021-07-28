@@ -40,6 +40,9 @@ function StructViewerPage(props: {
   const {db, name, version, setName, setVersion} = props;
   const promiseFn = React.useCallback(async () => {
     // Show placeholder text until everything is selected
+    //
+    // FIXME: Thanks to this early return, we're not actually persisting the struct as intended
+    //        when a nav box is cleared...
     if (!version) return {defn: null, version: null};
     if (!name) return {defn: null, version: null};
 
@@ -54,7 +57,7 @@ function StructViewerPage(props: {
     if (defn.is !== 'struct') throw new Error(`non-structs not yet supported in viewer`);
 
     // also return version so it can be persisted in the still-rendered struct when the version box is cleared
-    return {defn, version};
+    return {defn, name, version};
   }, [db, name, version]);
 
   return <>
@@ -65,9 +68,9 @@ function StructViewerPage(props: {
     />
     <Async promiseFn={promiseFn}>
       <Async.Initial persist><h1>Loading structs...</h1></Async.Initial>
-      <Async.Fulfilled persist>{({defn, version: persistedVersion}) => (
+      <Async.Fulfilled persist>{({defn, version: persistedVersion, name: persistedName}) => (
         <VersionContext.Provider value={persistedVersion}>
-          {defn ? <StructViewerPageImpl struct={defn}/>
+          {defn ? <StructViewerPageImpl name={persistedName} struct={defn}/>
             : <div>Please select a struct and version.</div>}
         </VersionContext.Provider>
       )}</Async.Fulfilled>
@@ -96,7 +99,7 @@ export function DiffViewerPage({db, name, version1, version2}: {db: TypeDatabase
 
   return <Async asyncFn={asyncFn}>
     <Async.Pending><h1>Loading structs...</h1></Async.Pending>
-    <Async.Fulfilled>{({value: [s1, s2]}) => <DiffViewerPageImpl struct1={s1} struct2={s2}/>}</Async.Fulfilled>
+    <Async.Fulfilled>{({value: [s1, s2]}) => <DiffViewerPageImpl name={name} struct1={s1} struct2={s2}/>}</Async.Fulfilled>
     <Async.Rejected>{(err) => <Err>{err.message}</Err>}</Async.Rejected>
   </Async>;
 }
