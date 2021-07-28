@@ -12,40 +12,40 @@ import TextField from '@material-ui/core/TextField';
 import CircularProgress from '@material-ui/core/CircularProgress';
 import Autocomplete from '@material-ui/lab/Autocomplete';
 
-import {StructDatabase, TypeName, Version, VersionLevel} from './database';
+import {TypeDatabase, TypeName, Version, VersionLevel} from './database';
 
 export function useNavigationPropsFromUrl() {
   const history = useHistory();
   const location = useLocation();
 
   const searchParams = new URLSearchParams(location.search.substring(1));
-  const struct = searchParams.get('t') as TypeName | null;
+  const typeName = searchParams.get('t') as TypeName | null;
   const version = searchParams.get('v') as Version | null;
 
-  const setStruct = React.useCallback((struct: TypeName | null) => navigateToStruct(history, struct), [history]);
-  const setVersion = React.useCallback((version: Version | null) => navigateToVersion(history, version), [history]);
+  const setTypeName = React.useCallback((typeName: TypeName | null) => typeName && navigateToType(history, typeName), [history]);
+  const setVersion = React.useCallback((version: Version | null) => version && navigateToVersion(history, version), [history]);
 
   return React.useMemo(() => ({
-    struct, version, setStruct, setVersion,
-  }), [struct, version, setStruct, setVersion]);
+    typeName, version, setTypeName, setVersion,
+  }), [typeName, version, setTypeName, setVersion]);
 }
 
 export function Navigation(props: {
-  db: StructDatabase,
-  setStruct: React.Dispatch<TypeName | null>,
+  db: TypeDatabase,
+  setTypeName: React.Dispatch<TypeName | null>,
   setVersion: React.Dispatch<Version | null>,
   minLevel: VersionLevel,
-  struct: TypeName | null,
+  typeName: TypeName | null,
   version: Version | null,
 }) {
-  const {setStruct, setVersion, minLevel, db, version, struct} = props;
+  const {setTypeName, setVersion, minLevel, db, version, typeName} = props;
   const [showUnavailable, setShowUnavailable] = React.useState(false);
   const handleUnavailableCheck = React.useCallback((ev: React.ChangeEvent<HTMLInputElement>) => {
     setShowUnavailable(ev.target.checked)
   }, [setShowUnavailable]);
 
   // FIXME: Error for incompatible struct/version
-  const error = struct === null || version === null;
+  const error = typeName === null || version === null;
 
   return <FormControl component="fieldset" error={error} classes={{root: "struct-nav"}}>
     <FormLabel component="legend">Navigation</FormLabel>
@@ -58,15 +58,15 @@ export function Navigation(props: {
       label="Show unavailable"
       labelPlacement="end"
     />
-    <StructPicker onChange={setStruct} {...{db, showUnavailable, struct, version}}/>
-    <VersionPicker onChange={setVersion} {...{db, showUnavailable, struct, version, minLevel}}/>
-    {error && <FormHelperText>Select a struct and version</FormHelperText>}
+    <StructPicker onChange={setTypeName} {...{db, showUnavailable, typeName, version}}/>
+    <VersionPicker onChange={setVersion} {...{db, showUnavailable, typeName, version, minLevel}}/>
+    {error && <FormHelperText>Select a type and version</FormHelperText>}
   </FormControl>;
 }
 
-function navigateToStruct(history: History, struct: TypeName) {
+function navigateToType(history: History, typeName: TypeName) {
   const location = history.location;
-  history.push(setOrDeleteSearchParam(location, 't', struct));
+  history.push(setOrDeleteSearchParam(location, 't', typeName));
 }
 
 function navigateToVersion(history: History, version: Version) {
@@ -88,34 +88,34 @@ function setOrDeleteSearchParam<S>(location: history.Location<S>, key: string, v
 
 export function StructPicker(props: {
   onChange: React.Dispatch<TypeName | null>,
-  db: StructDatabase,
+  db: TypeDatabase,
   showUnavailable: boolean,
-  struct: TypeName | null,
+  typeName: TypeName | null,
   version: Version | null,
 }) {
-  const {onChange, db, showUnavailable, version, struct} = props;
+  const {onChange, db, showUnavailable, version, typeName} = props;
   const optionsPromise = React.useMemo(() => (
     getStructOptions({db, showUnavailable, version})
   ), [db, showUnavailable, version]);
 
   return <AsyncSelector
-    label="Struct" onChange={onChange} optionsPromise={optionsPromise}
-    current={struct}
+    label="Type" onChange={onChange} optionsPromise={optionsPromise}
+    current={typeName}
   />;
 }
 
 export function VersionPicker(props: {
   onChange: React.Dispatch<Version | null>,
-  db: StructDatabase,
+  db: TypeDatabase,
   showUnavailable: boolean,
-  struct: TypeName | null,
+  typeName: TypeName | null,
   version: Version | null,
   minLevel: VersionLevel
 }) {
-  const {onChange, db, showUnavailable, version, struct, minLevel} = props;
+  const {onChange, db, showUnavailable, version, typeName, minLevel} = props;
   const optionsPromise = React.useMemo(() => (
-    getVersionOptions({db, showUnavailable, struct, minLevel})
-  ), [db, showUnavailable, struct, minLevel]);
+    getVersionOptions({db, showUnavailable, typeName, minLevel})
+  ), [db, showUnavailable, typeName, minLevel]);
 
   return <AsyncSelector
     label="Version" onChange={onChange} optionsPromise={optionsPromise}
@@ -237,30 +237,30 @@ function useOptionFromLabel<T>(options: T[], getLabel: (option: T) => string, la
 }
 
 async function getStructOptions(args: {
-  db: StructDatabase,
+  db: TypeDatabase,
   showUnavailable: boolean,
   version: Version | null,
 }) {
   const {db, showUnavailable, version} = args;
   return getOptions({
     getAll: async () => await db.getAllStructs(),
-    getAvailable: async (version) => await db.getStructsForVersion(version),
+    getAvailable: async (version) => await db.getTypeNamesForVersion(version),
     filterValue: version,
     showUnavailable,
   });
 }
 
 async function getVersionOptions(args: {
-  db: StructDatabase,
+  db: TypeDatabase,
   showUnavailable: boolean,
-  struct: TypeName | null,
+  typeName: TypeName | null,
   minLevel: VersionLevel,
 }) {
-  const {db, showUnavailable, struct, minLevel} = args;
+  const {db, showUnavailable, typeName, minLevel} = args;
   return getOptions({
     getAll: async () => await db.getAllVersions(minLevel),
-    getAvailable: async (struct) => await db.getVersionsForStruct(struct, minLevel),
-    filterValue: struct,
+    getAvailable: async (typeName) => await db.getVersionsForStruct(typeName, minLevel),
+    filterValue: typeName,
     showUnavailable,
   });
 }

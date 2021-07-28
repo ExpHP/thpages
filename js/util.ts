@@ -203,3 +203,19 @@ export function stableSort<T, U>(array: T[], {cmp = defaultCmp, key = (x: any) =
 
   return array;
 }
+
+/** Iterate over overlapping windows of 2 items from an iterator.
+ *
+ * E.g. turns `[a, b, c, d]` into `[[a, b], [b, c], [c, d]`.
+ */
+export function* window2<T>(iter: Iterable<T>): Generator<[T, T]> {
+  let first = true;
+  let prev: T | undefined;
+  for (const item of iter) {
+    if (!first) {
+      yield [prev!, item]
+    }
+    first = false;
+    prev = item;
+  }
+}

@@ -3,13 +3,13 @@
  */
 
 import React from 'react';
-import {MemoryRouter, Router, useHistory} from 'react-router-dom';
+import {Router} from 'react-router-dom';
 import {createMemoryHistory} from 'history';
 import type {History} from 'history';
 import {render, fireEvent, waitFor, screen, act, within} from '@testing-library/react';
 import '@testing-library/jest-dom/extend-expect';
 
-import {StructDatabase, TypeName, Version, VersionLevel} from './database';
+import {TypeDatabase, TypeName, Version, VersionLevel} from './database';
 import {Navigation, useNavigationPropsFromUrl} from './Navigation';
 
 const PROMISE_THAT_NEVER_RESOLVES = new Promise<never>(() => {});
@@ -61,8 +61,8 @@ function pathReaderThatNeverLoads(data: Record<string, any>) {
   };
 }
 
-const getTestDb = (data: Record<string, any>) => new StructDatabase(testPathReader(data));
-const getDbThatNeverLoads = (data: Record<string, any> = DEFAULT_DB_DATA) => new StructDatabase(pathReaderThatNeverLoads(data));
+const getTestDb = (data: Record<string, any>) => new TypeDatabase(testPathReader(data));
+const getDbThatNeverLoads = (data: Record<string, any> = DEFAULT_DB_DATA) => new TypeDatabase(pathReaderThatNeverLoads(data));
 
 // =============================================================================
 
@@ -105,7 +105,7 @@ function waitForLoad() {
 }
 
 function TestNavigation(props: {
-  db?: StructDatabase,
+  db?: TypeDatabase,
   history?: History,
   dbData?: Record<string, any>,
   versionFromUrl?: string | null,
@@ -128,14 +128,14 @@ function TestNavigation(props: {
   </Router>;
 }
 
-function TestNavigationInner({minLevel, db}: {minLevel: VersionLevel, db: StructDatabase}) {
-  const {version, setVersion, struct, setStruct} = useNavigationPropsFromUrl();
-  return <Navigation {...{version, setVersion, struct, setStruct, minLevel, db}} />;
+function TestNavigationInner({minLevel, db}: {minLevel: VersionLevel, db: TypeDatabase}) {
+  const {version, setVersion, typeName, setTypeName} = useNavigationPropsFromUrl();
+  return <Navigation {...{version, setVersion, typeName, setTypeName, minLevel, db}} />;
 }
 
-function urlFromParts(struct: TypeName | null, version: Version | null) {
+function urlFromParts(typeName: TypeName | null, version: Version | null) {
   const search = new URLSearchParams();
-  if (struct) search.set('t', struct);
+  if (typeName) search.set('t', typeName);
   if (version) search.set('v', version);
   return `/struct?${search.toString()}`;
 }

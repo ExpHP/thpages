@@ -3,6 +3,8 @@ import {useLocation} from 'react-router-dom';
 import {parseGame, Game, latestGame} from './tables/game';
 import {createMemoryHistory, LocationDescriptorObject} from 'history';
 
+export {LocationDescriptorObject as LinkDest};
+
 // URL tools - Wrappers and replacements for React Router things to significantly reduce the number of
 //             subscribers to changes in the location, so that clicking an intra-page anchor link
 //             can be instant instead of 800ms.

@@ -44,7 +44,7 @@ class ParserImpl<T> {
  * - *Mutually* recursive parsers.
  * - Writing definitions top-down. (a.k.a. The Right Way)
  */
- export function deferConstruction<T>(factory: () => Parser<T>): Parser<T> {
+ export function lazy<T>(factory: () => Parser<T>): Parser<T> {
   const emptyCacheMarker = {};
   let cache: {} | Parser<T> = emptyCacheMarker;
   return new ParserImpl((json: unknown, context: ParsingContext) => {
@@ -241,7 +241,7 @@ export class JsonError extends Error {
   }
 
   get message() {
-    return `at ${this.path.join('.')}: ${this.#message}`;
+    return `at ${this.path.join('.')}: ${this.#message} (got ${JSON.stringify(this.badPart)})`;
   }
 }
 

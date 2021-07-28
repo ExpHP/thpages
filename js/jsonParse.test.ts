@@ -61,7 +61,7 @@ describe('tuple length warning', () => {
 describe('recursive parser', () => {
   test('it works', () => {
     type BinaryTree = null | [BinaryTree, BinaryTree];
-    const binaryTree: JP.Parser<BinaryTree> = JP.deferConstruction(() => (
+    const binaryTree: JP.Parser<BinaryTree> = JP.lazy(() => (
       JP.or("binary tree of lists",
         JP.null_,
         JP.tuple([binaryTree, binaryTree]),
@@ -80,8 +80,8 @@ describe('recursive parser', () => {
     type Tree = null | Node;
     type Node = Tree[];
 
-    const node: JP.Parser<Node> = JP.deferConstruction(() => JP.array(tree));
-    const tree: JP.Parser<Tree> = JP.deferConstruction(() => JP.or("tree", JP.null_, node));
+    const node: JP.Parser<Node> = JP.lazy(() => JP.array(tree));
+    const tree: JP.Parser<Tree> = JP.lazy(() => JP.or("tree", JP.null_, node));
 
     const goodTree = [null, [[null, null, [null, null]], null]];
     const badTree = [null, [[null, null, [1, null]], null]];
@@ -91,7 +91,7 @@ describe('recursive parser', () => {
   });
 
   test('it is safe to call .then at recursion sites', () => {
-    const doubleChain: JP.Parser<number> = JP.deferConstruction(() => (
+    const doubleChain: JP.Parser<number> = JP.lazy(() => (
       JP.tagged("type", {
         leaf: JP.object(({x: JP.number})),
         // this is the .then() call that we are testing

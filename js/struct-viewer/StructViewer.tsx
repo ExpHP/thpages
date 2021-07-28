@@ -1,41 +1,39 @@
 import React from 'react';
 import type {ReactElement, ReactNode} from 'react';
-import {useHistory} from 'react-router-dom';
-import type {History} from 'history';
 import {Async} from 'react-async';
 import FlipMove from 'react-flip-move';
 import clsx from 'clsx';
 import nearley from 'nearley';
 import grammar from './parse-ctype.ne';
 
-import {unreachable} from '~/js/util';
+import {unreachable, deepEqual, window2} from '~/js/util';
+import {useSearchParams} from '~/js/UrlTools';
 import {Err} from '~/js/Error';
 import {TrivialForwardRef} from '~/js/XUtil';
-import {useSearchParams} from '~/js/UrlTools';
 
 import {
-  StructDatabase, Struct, StructRow, TypeName, FieldName, CTypeString,
-  PathReader, Version, VersionLevel,
+  TypeDatabase, StructTypeDefinition, StructTypeMember, TypeName, FieldName,
+  PathReader, Version, VersionLevel, TypeTree,
 } from './database';
 import {diffStructs} from './diff';
 import {Navigation, useNavigationPropsFromUrl} from './Navigation';
-import {CType as CTypeImpl} from './CType';
+import {RustType as FieldTypeImpl} from './render-type/Rust';
 
 // =============================================================================
 
 export function StructViewerPageFromUrl() {
   const db = useDb(defaultPathReader);
-  const {struct, version, setStruct, setVersion} = useNavigationPropsFromUrl();
+  const {typeName, version, setTypeName, setVersion} = useNavigationPropsFromUrl();
 
   return <DbContext.Provider value={db}>
     <VersionContext.Provider value={version}>
-      <StructViewerPage {...{db, version, setVersion}} name={struct} setName={setStruct} />
+      <StructViewerPage {...{db, version, setVersion}} name={typeName} setName={setTypeName} />
     </VersionContext.Provider>
   </DbContext.Provider>
 }
 
 function StructViewerPage(props: {
-  db: StructDatabase,
+  db: TypeDatabase,
   name: TypeName | null,
   version: string | null,
   setName: React.Dispatch<TypeName | null>,
@@ -51,16 +49,19 @@ function StructViewerPage(props: {
     if (!v1) throw new Error(`No such version: '${version}'`);
 
     console.log(db);
-    const struct = await db.getStructIfExists(name, v1);
-    if (!struct) throw new Error(`Struct '${name}' does not exist in version '${version}'`);
+    const defn = await db.getTypeIfExists(name, v1);
+    if (!defn) throw new Error(`Struct '${name}' does not exist in version '${version}'`);
 
-    return struct;
+    // FIXME
+    if (defn.is !== 'struct') throw new Error(`non-structs not yet supported in viewer`);
+
+    return defn;
   }, [db, name, version]);
 
   return <>
     <Navigation
       // FIXME should use validated version
-      setStruct={setName} setVersion={setVersion} struct={name} version={version as Version} db={db}
+      setTypeName={setName} setVersion={setVersion} typeName={name} version={version as Version} db={db}
       minLevel='primary'
     />
     <Async promiseFn={promiseFn}>
@@ -74,17 +75,20 @@ function StructViewerPage(props: {
   </>;
 }
 
-export function DiffViewerPage({db, name, version1, version2}: {db: StructDatabase, name: TypeName, version1: string, version2: string}) {
+export function DiffViewerPage({db, name, version1, version2}: {db: TypeDatabase, name: TypeName, version1: string, version2: string}) {
   const asyncFn = React.useCallback(async () => {
     const v1 = await db.parseVersion(version1);
     const v2 = await db.parseVersion(version2);
     if (!v1) throw new Error(`No such version: '${version1}'`);
     if (!v2) throw new Error(`No such version: '${version2}'`);
 
-    const struct1 = await db.getStructIfExists(name, v1);
-    const struct2 = await db.getStructIfExists(name, v2);
+    const struct1 = await db.getTypeIfExists(name, v1);
+    const struct2 = await db.getTypeIfExists(name, v2);
     if (!struct1) throw new Error(`Struct '${name}' does not exist in version '${version1}'`);
     if (!struct2) throw new Error(`Struct '${name}' does not exist in version '${version2}'`);
+    // FIXME: support non-structs
+    if (struct1.is !== 'struct') throw new Error(`'${name}' is not a struct in version '${version1}'`);
+    if (struct2.is !== 'struct') throw new Error(`'${name}' is not a struct in version '${version2}'`);
 
     return [struct1, struct2];
   }, [db, name, version1, version2]);
@@ -96,8 +100,8 @@ export function DiffViewerPage({db, name, version1, version2}: {db: StructDataba
   </Async>;
 }
 
-export function StructViewerPageImpl({struct}: {struct: Struct}) {
-  const displayStruct = React.useMemo(() => toDisplayStruct(struct), [struct]);
+export function StructViewerPageImpl({name, struct}: {name: TypeName, struct: StructTypeDefinition}) {
+  const displayStruct = React.useMemo(() => toDisplayStruct(name, struct), [struct]);
 
   const table = structCells(displayStruct);
   return <FlipMove typeName='div' className={clsx('struct-view', 'use-table')} enterAnimation="fade" leaveAnimation="fade" duration={100} >
@@ -105,8 +109,8 @@ export function StructViewerPageImpl({struct}: {struct: Struct}) {
   </FlipMove>;
 }
 
-export function DiffViewerPageImpl({struct1, struct2}: {struct1: Struct, struct2: Struct}) {
-  const [display1, display2] = React.useMemo(() => diffToDisplayStructs(struct1, struct2), [struct1, struct2]);
+export function DiffViewerPageImpl({name, struct1, struct2}: {name: TypeName, struct1: StructTypeDefinition, struct2: StructTypeDefinition}) {
+  const [display1, display2] = React.useMemo(() => diffToDisplayStructs(name, struct1, struct2), [struct1, struct2]);
 
   const table1 = applyGridStyles(structCells(display1), {startColumn: 1});
   const table2 = applyGridStyles(structCells(display2), {startColumn: 1 + COLUMN_CLASSES.length});
@@ -122,7 +126,7 @@ export function DiffViewerPageImpl({struct1, struct2}: {struct1: Struct, struct2
 // =============================================================================
 
 const VersionContext = React.createContext<Version | null>(null);
-const DbContext = React.createContext<StructDatabase>(null as any as StructDatabase);
+const DbContext = React.createContext<TypeDatabase>(null as any as TypeDatabase);
 
 // =============================================================================
 
@@ -131,9 +135,9 @@ function defaultPathReader() {
 }
 
 function useDb(getReader: () => PathReader) {
-  const db = React.useRef<StructDatabase | null>(null);
+  const db = React.useRef<TypeDatabase | null>(null);
   if (!db.current) {
-    db.current = new StructDatabase(getReader());
+    db.current = new TypeDatabase(getReader());
   }
   return db.current;
 }
@@ -142,25 +146,28 @@ function useDb(getReader: () => PathReader) {
 
 /** Format of a struct to be displayed. */
 type DisplayStruct = {
-  name: TypeName,
-  rows: DisplayStructRow[],
-  size: number,
+  name: TypeName;
+  rows: DisplayStructRow[];
+  size: number;
 };
 
 type DisplayStructRow = {
   key: ReactKey;
-  data:
-    | {type: 'gap'} & DisplayRowGapData
-    | {type: 'field'} & DisplayRowFieldData
-    | {type: 'spacer-for-diff'}
-    ;
+  data: DisplayStructRowData,
 };
+
+type DisplayStructRowData =
+  | {is: 'gap'} & DisplayRowGapData
+  | {is: 'field'} & DisplayRowFieldData
+  | {is: 'spacer-for-diff'}
+  ;
 
 type DisplayRowFieldData = {
   offset: number;
   isChange: boolean;
   name: FieldName;
-  ctype: DisplayCType;
+  type: DisplayFieldType;
+  _originatingObject: StructTypeMember;
 };
 
 type DisplayRowGapData = {
@@ -168,12 +175,13 @@ type DisplayRowGapData = {
   isChange: boolean;
   size: number;
   sizeIsChange: boolean;
+  _originatingObject: StructTypeMember;
 };
 
-type DisplayCType = {
-  type: CTypeString;
+type DisplayFieldType = {
+  type: TypeTree;
   isChange: boolean;
-}
+};
 
 type DiffClass = string | undefined;
 function diffClass(isChanged: boolean): DiffClass {
@@ -182,25 +190,39 @@ function diffClass(isChanged: boolean): DiffClass {
 
 type ReactKey = string & { readonly __tag: unique symbol };
 
-function toDisplayStruct(struct: Struct): DisplayStruct {
+function toDisplayStruct(typeName: TypeName, struct: StructTypeDefinition): DisplayStruct {
   const assignDiscriminator = makeDisambiguator();
   return {
-    ...struct,
-    rows: struct.rows.map((row) => {
-      if (row.data.type === 'field') {
-        const name = row.data.name;
+    name: typeName,
+    size: struct.size,
+    // @ts-ignore bug; TS ignores the ': DisplayStructRowData' annotations and assigns overly specific types...
+    rows: [...window2(struct.members)].flatMap(([row, nextRow]) => {
+
+      if (row.classification === 'field') {
+        const name = row.name;
         const discriminator = assignDiscriminator(name);
 
         const key = `f-${name}-${discriminator}` as ReactKey;
-        let ctype = {type: row.data.ctype, isChange: false};
-        const data = {type: 'field', offset: row.offset, isChange: false, ctype, name} as const;
-        return {key, data};
-      } else if (row.data.type === 'gap') {
+        let type = {type: row.type, isChange: false};
+        const data: DisplayStructRowData = {
+          is: 'field', offset: row.offset, isChange: false, type, name: name as FieldName,
+          _originatingObject: row,
+        };
+        return [{key, data}];
+
+      } else if (row.classification === 'gap') {
+        const size = nextRow.offset - row.offset;
         const key = `gap-${row.offset}` as ReactKey;
-        const data = {type: 'gap', offset: row.offset, isChange: false, size: row.size, sizeIsChange: false} as const;
-        return {key, data};
+        const data: DisplayStructRowData = {
+          is: 'gap', offset: row.offset, isChange: false, size, sizeIsChange: false,
+          _originatingObject: row,
+        };
+        return [{key, data}];
+
+      } else if (row.classification === 'padding' || row.classification === 'end') {
+        return [];
       } else {
-        unreachable(row.data);
+        unreachable(row);
       }
     }),
   };
@@ -208,28 +230,28 @@ function toDisplayStruct(struct: Struct): DisplayStruct {
 
 const COLUMN_CLASSES = ['col-offset', 'col-text'];
 
-// function displayStructFromStruct(struct: Struct): DisplayStruct {
-//   function makeDisplayRow(row: StructField) {
-//     return {...row, field: row.field && {...row.field, diffKind: null}}
-//   }
-//   return {...struct, fields: struct.fields.map(makeDisplayRow)};
-// }
-
 function zip<A, B>(as: A[], bs: B[]): [A, B][] {
   return as.map((a, index) => [a, bs[index]]);
 }
 
-function diffToDisplayStructs(structA: Struct, structB: Struct): [DisplayStruct, DisplayStruct] {
+function diffToDisplayStructs(name: TypeName, structA: StructTypeDefinition, structB: StructTypeDefinition): [DisplayStruct, DisplayStruct] {
   const structs = [structA, structB];
-  const displayStructs = [toDisplayStruct(structA), toDisplayStruct(structB)];
+  const displayStructs = [toDisplayStruct(name, structA), toDisplayStruct(name, structB)];
   const gapCounters = [0, 0];
 
-  // we need to build new lists of rows so we can insert spacers along the way
+  // we need to build new lists of rows so we can insert spacers for things only on one side
   const results: DisplayStruct[] = displayStructs.map((displayStruct) => ({...displayStruct, rows: []}));
 
-  type RowMap = Map<StructRow, DisplayStructRow>;
-  const rowMaps: RowMap[] = zip(structs, displayStructs).map(([struct, displayStruct]) => {
-    return new Map([...zip(struct.rows, displayStruct.rows)]);
+  // The diffing is defined on the "source of truth" types rather than our display types,
+  // so we need some mapping between them.
+  type RowMap = Map<StructTypeMember, DisplayStructRow>;
+  const rowMaps: RowMap[] = displayStructs.map((displayStruct) => {
+    return new Map(displayStruct.rows.map((row) => {
+      if (!('_originatingObject' in row.data)) {
+        throw Error("unexpected 'extra' row in initial DisplayStruct during diff render");
+      }
+      return [row.data._originatingObject, row];
+    }));
   });
 
   // we currently have two DisplayStructs with empty diff information.  Update them in-place.
@@ -241,20 +263,20 @@ function diffToDisplayStructs(structA: Struct, structB: Struct): [DisplayStruct,
       const {left: rowA, right: rowB} = diff;
 
       // depending on row type, add more diff spans inside the content
-      if (rowA.data.type === 'field' && rowB.data.type === 'field') {
-        if (!primitiveEqual(rowA.data.ctype, rowB.data.ctype)) {
-          (displayRowA!.data as DisplayRowFieldData).ctype.isChange = true;
-          (displayRowB!.data as DisplayRowFieldData).ctype.isChange = true;
+      if (rowA.data.is === 'field' && rowB.data.is === 'field') {
+        if (!deepEqual(rowA.data.type, rowB.data.type)) {
+          (displayRowA!.data as DisplayRowFieldData).type.isChange = true;
+          (displayRowB!.data as DisplayRowFieldData).type.isChange = true;
         }
 
-      } else if (rowA.data.type === 'gap' && rowB.data.type === 'gap') {
+      } else if (rowA.data.is === 'gap' && rowB.data.is === 'gap') {
         if (!primitiveEqual(rowA.size, rowB.size)) {
           (displayRowA!.data as DisplayRowGapData).sizeIsChange = true;
           (displayRowB!.data as DisplayRowGapData).sizeIsChange = true;
         }
 
       } else {
-        throw new Error(`impossible match between ${rowA.data.type} and ${rowB.data.type}`)
+        throw new Error(`impossible diff couple between ${rowA.data.is} and ${rowB.data.is}`)
       }
       results[0].rows.push(displayRowA!);
       results[1].rows.push(displayRowB!);
@@ -267,7 +289,7 @@ function diffToDisplayStructs(structA: Struct, structB: Struct): [DisplayStruct,
 
       // Side with the line
       const displayRow: DisplayStructRow = [displayRowA, displayRowB][indexWith]!;
-      if (displayRow.data.type === 'spacer-for-diff') {
+      if (displayRow.data.is === 'spacer-for-diff') {
         throw new Error('impossible: a spacer already exists!');
       }
       displayRow.data.isChange = true;
@@ -276,7 +298,7 @@ function diffToDisplayStructs(structA: Struct, structB: Struct): [DisplayStruct,
       // Gap on the other side
       results[1 - indexWith].rows.push({
         key: `xx-${gapCounters[1 - indexWith]++}` as ReactKey,
-        data: {type: 'spacer-for-diff'},
+        data: {is: 'spacer-for-diff'},
       })
     }
   }
@@ -361,7 +383,7 @@ const OpenBrace = <span className='brace'>{'{'}</span>;
 const CloseBrace = <span className='brace'>{'}'}</span>;
 
 function structCellsForRowDispatch(struct: DisplayStruct, {key, data}: DisplayStructRow): (JSX.Element | null)[] {
-  switch (data.type) {
+  switch (data.is) {
     case 'spacer-for-diff': return [null, null];
     case 'field': return structCellsForRow({text: <FieldDef data={data}/>, key, struct, data, indent: true});
     case 'gap': return structCellsForRow({text: <FieldGap data={data}/>, key, struct, data, indent: true});
@@ -402,21 +424,30 @@ function FieldDef({data}: {data: DisplayRowFieldData}) {
   return <>
     <span className='field-name'>{data.name}</span>
     {' : '}
-    <CType ctype={data.ctype}/>
+    <FieldType type={data.type}/>
     {';'}
   </>;
 }
 
-function CType({ctype}: {ctype: DisplayCType}) {
+function FieldType({type}: {type: DisplayFieldType}) {
   const db = React.useContext(DbContext);
   if (!db) throw new Error("FieldDef without db");
 
   const version = React.useContext(VersionContext);
   if (!version) throw new Error("FieldDef without version");
 
-  const {isChange, type} = ctype;
-  return <span className={clsx('field-type', diffClass(isChange))}>
-    <CTypeImpl {...{db, version}} ctype={type}/>
+  // FIXME: There's some duplicated logic between here and setTypeName.
+  //        But we don't just want to use setTypeName in a callback because
+  //        we want to be able to generate bona-fide <a> element hyperlinks.
+  const searchParams = useSearchParams();
+  const getTypeUrl = React.useCallback((name: TypeName) => {
+    const searchParamsCopy = new URLSearchParams(searchParams);
+    searchParamsCopy.set('t', name);
+    return {pathname: '/struct', search: '?' + searchParamsCopy.toString()};
+  }, [searchParams])
+
+  return <span className={clsx('field-type', diffClass(type.isChange))}>
+    <FieldTypeImpl {...{db, version, getTypeUrl}} type={type.type}/>
   </span>;
 }
 
