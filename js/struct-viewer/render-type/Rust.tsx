@@ -18,12 +18,11 @@ export const InlineType = React.memo(function InlineType({type, ...props}: {type
 
 // =============================================================================
 
-const NewLineInText = <>{"\n"}<br/></>; // the \n is for getTextContent() (to copy text eventually)
-
 function RustTypeRow({row}: {row: DisplayTypeRowData, }) {
   switch (row.is) {
     case "field": return <RustField row={row}/>;
     case "gap": return <RustRowGap row={row}/>;
+    case "enum-value": return <RustEnumValue row={row}/>;
     case "begin-page-type": return <RustPageTypeHeader row={row}/>;
     case "begin-anon-type": return <RustAnonTypeHeader row={row}/>;
     case "end-type": return <RustRowTypeEnd row={row}/>;
@@ -88,14 +87,27 @@ function RustField({row: {name, type}}: {row: DisplayTypeRowData & {is: 'field'}
 }
 
 function RustRowGap({row: {size}}: {row: DisplayTypeRowData & {is: 'gap'}}) {
-  return <span className='field-gap'>
+  return <span className='comment field-gap'>
     {'// '}
     0x{size.toString(16)}
     {' bytes...'}
   </span>;
 }
 
+function RustEnumValue({row: {name, value}}: {row: DisplayTypeRowData & {is: 'enum-value'}}) {
+  return <>
+    <span className='field-name'>{name}</span>
+    {' = '}
+    {<IntLiteral value={value}/>}
+    {',  '}
+    <span className='comment'>// 0x{value.toString(16)}</span>
+  </>;
+}
+
 function RustRowTypeEnd({row}: {row: DisplayTypeRowData & {is: 'end-type'}}) {
+  if (row._beginning.data.is === 'begin-page-type' && row._beginning.data.type.is === 'typedef') {
+    return null;
+  }
   const semi = row._beginning.data.is !== 'begin-page-type';
   return <>{"}"}{semi ? ';' : null}</>;
 }

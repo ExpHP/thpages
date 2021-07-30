@@ -13,6 +13,7 @@ import {TrivialForwardRef} from '~/js/XUtil';
 
 import {
   TypeDatabase, StructTypeDefinition, StructTypeMember, UnionTypeDefinition, UnionTypeMember, TypeName, FieldName,
+  TypedefTypeDefinition, EnumTypeDefinition, EnumTypeValue,
   PathReader, Version, VersionLevel, TypeTree, TypeDefinition,
 } from './database';
 import {diffStructs} from './diff';
@@ -53,9 +54,6 @@ function StructViewerPage(props: {
     console.log(db);
     const defn = await db.getTypeIfExists(name, v1);
     if (!defn) throw new Error(`Struct '${name}' does not exist in version '${version}'`);
-
-    // FIXME
-    if (defn.is !== 'struct') throw new Error(`non-structs not yet supported in viewer`);
 
     // also return version so it can be persisted in the still-rendered struct when the version box is cleared
     return {defn, name, version};
@@ -184,6 +182,10 @@ export type DisplayTypeRowData =
     is: 'gap';
     size: number;
   } | {
+    is: 'enum-value'
+    name: FieldName;
+    value: number;
+  } | {
     /** Line with the opening brace for the outermost struct on the page. */
     is: 'begin-page-type';
     typeName: TypeName;
@@ -223,20 +225,20 @@ function toDisplayType(
     keyPrefix: "",
   };
 
-  if (defn.is === 'struct' || defn.is === 'union') {
-    const begin = {
-      key: TYPE_BEGIN_KEY,
-      offset: null,  // suppress the initial 0x0
-      nestingLevel: 0,
-      data: {is: 'begin-page-type', typeName, type: defn} as const,
-    } as const;
-    const end = {
-      key: TYPE_END_KEY,
-      offset: defn.size,
-      nestingLevel: 0,
-      data: {is: 'end-type', _beginning: begin} as const,
-    } as const;
+  const begin = {
+    key: TYPE_BEGIN_KEY,
+    offset: null,  // suppress the initial 0x0
+    nestingLevel: 0,
+    data: {is: 'begin-page-type', typeName, type: defn} as const,
+  } as const;
+  const end = {
+    key: TYPE_END_KEY,
+    offset: defn.size,
+    nestingLevel: 0,
+    data: {is: 'end-type', _beginning: begin} as const,
+  } as const;
 
+  if (defn.is === 'struct' || defn.is === 'union') {
     if (defn.is === 'struct') {
       return [begin, ...getDisplayRowsForStructMembers(defn.members, recurseProps), end];
     } else if (defn.is === 'union') {
@@ -244,12 +246,10 @@ function toDisplayType(
     } else unreachable(defn);
 
   } else if (defn.is === 'enum') {
-    TODO();
-    throw new Error("TODO");
+    return [begin, ...getDisplayRowsForEnumValues(defn.values, recurseProps), end];
 
   } else if (defn.is === 'typedef') {
-    TODO();
-    throw new Error("TODO");
+    return [begin, end];
 
   } else unreachable(defn);
 }
@@ -301,7 +301,6 @@ function getDisplayRowsForUnionMembers(members: UnionTypeMember[], recurseProps:
   })
 }
 
-
 /**
  * Shared logic between both structs and unions for displaying a single "true" member. (i.e. one that isn't a gap)
  *
@@ -343,19 +342,38 @@ function getDisplayRowsForTypedMember(
     } else if (type.is === 'union') {
       return [begin, ...getDisplayRowsForUnionMembers(type.members, innerRecurseProps), end];
     } else if (type.is === 'enum') {
-      // FIXME
-      throw new Error('anonymous enum not yet supported');
+      return [begin, ...getDisplayRowsForEnumValues(type.values, innerRecurseProps), end];
     } else {
       unreachable(type);
     }
 
   } else {
-    const key = `f-${name}-${assignDiscriminator(name)}` as ReactKey;
+    const key = `${keyPrefix}f-${name}-${assignDiscriminator(name)}` as ReactKey;
     const data: DisplayTypeRowData = {
       is: 'field', type, name: name as FieldName,
     };
     return [{key, nestingLevel, offset, data}];
   }
+}
+
+/**
+ * Shared logic between both structs and unions for displaying a single "true" member. (i.e. one that isn't a gap)
+ *
+ * (this field could itself be a struct/union/enum type that gets expanded into multiple rows...)
+ */
+function getDisplayRowsForEnumValues(
+  values: EnumTypeValue[],
+  recurseProps: RecurseProps,
+): DisplayTypeRow[] {
+  const assignDiscriminator = makeDisambiguator();
+  const {nestingLevel, keyPrefix} = recurseProps;
+  const offset = null;  // don't display offsets on enum values
+  return values.map(({name, value}) => {
+    const key = `${keyPrefix}v-${name}-${assignDiscriminator(name)}` as ReactKey;
+    return {key, nestingLevel, offset, data: {
+      is: 'enum-value', name: name as FieldName, value,
+    }};
+  });
 }
 
 function zip<A, B>(as: A[], bs: B[]): [A, B][] {
