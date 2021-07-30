@@ -12,12 +12,13 @@ import {Err} from '~/js/Error';
 import {TrivialForwardRef} from '~/js/XUtil';
 
 import {
-  TypeDatabase, StructTypeDefinition, StructTypeMember, TypeName, FieldName,
-  PathReader, Version, VersionLevel, TypeTree,
+  TypeDatabase, StructTypeDefinition, StructTypeMember, UnionTypeDefinition, UnionTypeMember, TypeName, FieldName,
+  PathReader, Version, VersionLevel, TypeTree, TypeDefinition,
 } from './database';
 import {diffStructs} from './diff';
 import {Navigation, useNavigationPropsFromUrl} from './Navigation';
-import {RustType as FieldTypeImpl} from './render-type/Rust';
+import * as Rust from './render-type/Rust';
+import {CommonLangToolsProps} from './render-type/Common';
 
 // =============================================================================
 
@@ -70,7 +71,7 @@ function StructViewerPage(props: {
       <Async.Initial persist><h1>Loading structs...</h1></Async.Initial>
       <Async.Fulfilled persist>{({defn, version: persistedVersion, name: persistedName}) => (
         <VersionContext.Provider value={persistedVersion}>
-          {defn ? <StructViewerPageImpl name={persistedName} struct={defn}/>
+          {defn ? <StructViewerPageImpl name={persistedName} defn={defn}/>
             : <div>Please select a struct and version.</div>}
         </VersionContext.Provider>
       )}</Async.Fulfilled>
@@ -104,10 +105,10 @@ export function DiffViewerPage({db, name, version1, version2}: {db: TypeDatabase
   </Async>;
 }
 
-export function StructViewerPageImpl({name, struct}: {name: TypeName, struct: StructTypeDefinition}) {
-  const displayStruct = React.useMemo(() => toDisplayStruct(name, struct), [struct]);
+export function StructViewerPageImpl({name, defn}: {name: TypeName, defn: TypeDefinition}) {
+  const displayStruct = React.useMemo(() => toDisplayType(name, defn), [defn]);
 
-  const table = structCells(displayStruct);
+  const table = getTypeCells(displayStruct);
   return <FlipMove typeName='div' className={clsx('struct-view', 'use-table')} enterAnimation="fade" leaveAnimation="fade" duration={100} >
     {table.map((elems) => <div key={elems[1]!.key} className='row'>{elems}</div>)}
   </FlipMove>;
@@ -116,8 +117,8 @@ export function StructViewerPageImpl({name, struct}: {name: TypeName, struct: St
 export function DiffViewerPageImpl({name, struct1, struct2}: {name: TypeName, struct1: StructTypeDefinition, struct2: StructTypeDefinition}) {
   const [display1, display2] = React.useMemo(() => diffToDisplayStructs(name, struct1, struct2), [struct1, struct2]);
 
-  const table1 = applyGridStyles(structCells(display1), {startColumn: 1});
-  const table2 = applyGridStyles(structCells(display2), {startColumn: 1 + COLUMN_CLASSES.length});
+  const table1 = applyGridStyles(getTypeCells(display1), {startColumn: 1});
+  const table2 = applyGridStyles(getTypeCells(display2), {startColumn: 1 + COLUMN_CLASSES.length});
 
   return <div className={clsx('struct-view', 'use-grid')}>
     {[
@@ -147,45 +148,59 @@ function useDb(getReader: () => PathReader) {
 }
 
 // =============================================================================
+// Row-generation pass
+//
+// This pass implements a lot of language-independent rendering logic, like collecting
+// lines for all of the fields that will be displayed, identifying which lines are
+// interactive/expandable, and computing their associated struct offsets.
 
-/** Format of a struct to be displayed. */
-type DisplayStruct = {
-  name: TypeName;
-  rows: DisplayStructRow[];
-  size: number;
-};
+/** Format of the main struct/union/enum to be displayed in the type viewer. */
+export type DisplayType = DisplayTypeRow[];
 
-type DisplayStructRow = {
+/**
+ * Represents a single line of text (if shown) inside a single struct in the struct viewer.
+ * E.g. a struct member, a closing brace, etc.
+ *
+ * Different kinds of lines contain different kinds of information.  The data is in a
+ * language-independent format that can be rendered into various syntaxes.
+*/
+export type DisplayTypeRow = {
   key: ReactKey;
-  data: DisplayStructRowData,
+  /**
+   * Value to display in the offset column. (left gutter)
+   * Null means to not display any offset. (e.g. enums)
+   */
+  offset: number | null;
+  nestingLevel: number;  // indentation level
+  data: DisplayTypeRowData;
 };
 
-type DisplayStructRowData =
-  | {is: 'gap'} & DisplayRowGapData
-  | {is: 'field'} & DisplayRowFieldData
-  | {is: 'spacer-for-diff'}
+export type DisplayTypeRowData =
+  | {
+    is: 'field'
+    name: FieldName;
+    type: TypeTree;
+  } | {
+    is: 'gap';
+    size: number;
+  } | {
+    /** Line with the opening brace for the outermost struct on the page. */
+    is: 'begin-page-type';
+    typeName: TypeName;
+    type: TypeDefinition; // for grabbing things like '.packed'
+  } | {
+    /** Line with the opening brace for an inner anonymous struct/union. */
+    is: 'begin-anon-type';
+    fieldName: FieldName;
+    kind: 'struct' | 'union' | 'enum';
+  } | {
+    is: 'end-type';
+    /** The opening row that is closed by this.  Might be needed by a C declaration renderer to
+     *  put a field name for an anonymous type, or may be used to write ending array dimensions for
+     *  an array of structs.  Who knows. */
+    _beginning: DisplayTypeRow & {data: {is: 'begin-page-type' | 'begin-anon-type'}};
+  }
   ;
-
-type DisplayRowFieldData = {
-  offset: number;
-  isChange: boolean;
-  name: FieldName;
-  type: DisplayFieldType;
-  _originatingObject: StructTypeMember;
-};
-
-type DisplayRowGapData = {
-  offset: number;
-  isChange: boolean;
-  size: number;
-  sizeIsChange: boolean;
-  _originatingObject: StructTypeMember;
-};
-
-type DisplayFieldType = {
-  type: TypeTree;
-  isChange: boolean;
-};
 
 type DiffClass = string | undefined;
 function diffClass(isChanged: boolean): DiffClass {
@@ -194,119 +209,233 @@ function diffClass(isChanged: boolean): DiffClass {
 
 type ReactKey = string & { readonly __tag: unique symbol };
 
-function toDisplayStruct(typeName: TypeName, struct: StructTypeDefinition): DisplayStruct {
-  const assignDiscriminator = makeDisambiguator();
-  return {
-    name: typeName,
-    size: struct.size,
-    // @ts-ignore bug; TS ignores the ': DisplayStructRowData' annotations and assigns overly specific types...
-    rows: [...window2(struct.members)].flatMap(([row, nextRow]) => {
+// React keys used for the beginning and end lines of a struct.
+const TYPE_BEGIN_KEY = "@{" as ReactKey;
+const TYPE_END_KEY = "@}" as ReactKey;
 
-      if (row.classification === 'field') {
-        const name = row.name;
-        const discriminator = assignDiscriminator(name);
-
-        const key = `f-${name}-${discriminator}` as ReactKey;
-        let type = {type: row.type, isChange: false};
-        const data: DisplayStructRowData = {
-          is: 'field', offset: row.offset, isChange: false, type, name: name as FieldName,
-          _originatingObject: row,
-        };
-        return [{key, data}];
-
-      } else if (row.classification === 'gap') {
-        const size = nextRow.offset - row.offset;
-        const key = `gap-${row.offset}` as ReactKey;
-        const data: DisplayStructRowData = {
-          is: 'gap', offset: row.offset, isChange: false, size, sizeIsChange: false,
-          _originatingObject: row,
-        };
-        return [{key, data}];
-
-      } else if (row.classification === 'padding' || row.classification === 'end') {
-        return [];
-      } else {
-        unreachable(row);
-      }
-    }),
+function toDisplayType(
+  typeName: TypeName,
+  defn: TypeDefinition,
+): DisplayTypeRow[] {
+  const recurseProps = {
+    startOffset: 0,
+    nestingLevel: 1,
+    keyPrefix: "",
   };
+
+  if (defn.is === 'struct' || defn.is === 'union') {
+    const begin = {
+      key: TYPE_BEGIN_KEY,
+      offset: null,  // suppress the initial 0x0
+      nestingLevel: 0,
+      data: {is: 'begin-page-type', typeName, type: defn} as const,
+    } as const;
+    const end = {
+      key: TYPE_END_KEY,
+      offset: defn.size,
+      nestingLevel: 0,
+      data: {is: 'end-type', _beginning: begin} as const,
+    } as const;
+
+    if (defn.is === 'struct') {
+      return [begin, ...getDisplayRowsForStructMembers(defn.members, recurseProps), end];
+    } else if (defn.is === 'union') {
+      return [begin, ...getDisplayRowsForUnionMembers(defn.members, recurseProps), end];
+    } else unreachable(defn);
+
+  } else if (defn.is === 'enum') {
+    TODO();
+    throw new Error("TODO");
+
+  } else if (defn.is === 'typedef') {
+    TODO();
+    throw new Error("TODO");
+
+  } else unreachable(defn);
 }
 
-const COLUMN_CLASSES = ['col-offset', 'col-text'];
+/** Additional context during row generation pass that is mainly used
+ *  to implement recursive calls for inner types. */
+type RecurseProps = {
+  // a number to be added to all member offsets (essentially, the offset of the containing struct)
+  startOffset: number;
+  // how many structs deep we are. (mainly used to determine indentation)
+  nestingLevel: number;
+  // because we ultimately may generate a flat table or grid, members of inner structs need to have their keys prefixed
+  keyPrefix: string;
+};
+
+function getDisplayRowsForStructMembers(members: StructTypeMember[], recurseProps: RecurseProps): DisplayTypeRow[] {
+  const {startOffset, nestingLevel, keyPrefix} = recurseProps;
+
+  const assignDiscriminator = makeDisambiguator();
+  // @ts-ignore bug; TS ignores the ': DisplayStructRowData' annotations and assigns overly specific types...
+  return [...window2(members)].flatMap(([row, nextRow]) => {
+    const offset = row.offset + startOffset;
+    if (row.classification === 'field') {
+      return getDisplayRowsForTypedMember(row, assignDiscriminator, recurseProps);
+
+    } else if (row.classification === 'gap') {
+      const size = nextRow.offset - row.offset;
+      const key = `${keyPrefix}gap-${row.offset}` as ReactKey;
+      return [{key, nestingLevel, data: {
+        is: 'gap', offset, size,
+      }}];
+
+    } else if (row.classification === 'padding') {
+      return [];
+
+    } else if (row.classification === 'end') {
+      return [];  // the opening and closing rows are the caller's responsibility
+
+    } else {
+      unreachable(row);
+    }
+  })
+}
+
+function getDisplayRowsForUnionMembers(members: UnionTypeMember[], recurseProps: RecurseProps): DisplayTypeRow[] {
+  const assignDiscriminator = makeDisambiguator();
+  return members.flatMap((member) => {
+    return getDisplayRowsForTypedMember({...member, offset: 0}, assignDiscriminator, recurseProps);
+  })
+}
+
+
+/**
+ * Shared logic between both structs and unions for displaying a single "true" member. (i.e. one that isn't a gap)
+ *
+ * (this field could itself be a struct/union/enum type that gets expanded into multiple rows...)
+ */
+function getDisplayRowsForTypedMember(
+    member: {offset: number, name: string, type: TypeTree},
+    // the field disambiguator that is scoped to the immediate struct/union with this member
+    assignDiscriminator: (x: unknown) => number,
+    recurseProps: RecurseProps,
+): DisplayTypeRow[] {
+  const {name, type} = member;
+  const {startOffset, nestingLevel, keyPrefix} = recurseProps;
+  const offset = member.offset + startOffset;
+
+  if (type.is === 'struct' || type.is === 'union' || type.is === 'enum') {
+    const innerKeyPrefix = `${keyPrefix}f-${member.name}-${assignDiscriminator(member.name)}#`;
+    const innerRecurseProps = {
+      startOffset: offset,  // inner type begins where this field begins...
+      nestingLevel: nestingLevel + 1,
+      keyPrefix: innerKeyPrefix,
+    };
+    // The opening and closing rows for this type
+    const begin = {
+      nestingLevel,
+      offset,  // do show offset for opening line since the type is also a field itself
+      key: `${innerKeyPrefix}${TYPE_BEGIN_KEY}` as ReactKey,
+      data: {is: "begin-anon-type", type, fieldName: name as FieldName, kind: type.is} as const,
+    };
+    const end = {
+      nestingLevel,
+      offset: offset + type.size,
+      key: `${innerKeyPrefix}${TYPE_END_KEY}` as ReactKey,
+      data: {is: "end-type", _beginning: begin} as const,
+    };
+
+    if (type.is === 'struct') {
+      return [begin, ...getDisplayRowsForStructMembers(type.members, innerRecurseProps), end];
+    } else if (type.is === 'union') {
+      return [begin, ...getDisplayRowsForUnionMembers(type.members, innerRecurseProps), end];
+    } else if (type.is === 'enum') {
+      // FIXME
+      throw new Error('anonymous enum not yet supported');
+    } else {
+      unreachable(type);
+    }
+
+  } else {
+    const key = `f-${name}-${assignDiscriminator(name)}` as ReactKey;
+    const data: DisplayTypeRowData = {
+      is: 'field', type, name: name as FieldName,
+    };
+    return [{key, nestingLevel, offset, data}];
+  }
+}
 
 function zip<A, B>(as: A[], bs: B[]): [A, B][] {
   return as.map((a, index) => [a, bs[index]]);
 }
 
-function diffToDisplayStructs(name: TypeName, structA: StructTypeDefinition, structB: StructTypeDefinition): [DisplayStruct, DisplayStruct] {
-  const structs = [structA, structB];
-  const displayStructs = [toDisplayStruct(name, structA), toDisplayStruct(name, structB)];
-  const gapCounters = [0, 0];
+function diffToDisplayStructs(name: TypeName, structA: StructTypeDefinition, structB: StructTypeDefinition): [DisplayType, DisplayType] {
+  // The addition of embedded types did not play well with the _originalObject fields that the original
+  // implementation relied on.  It will be necessary to revisit the question of how a diff could be
+  // performed in a way that can be converted into meaningful styling in the diff display.
+  throw new Error('diffToDisplayStructs is pending re-implementation');
 
-  // we need to build new lists of rows so we can insert spacers for things only on one side
-  const results: DisplayStruct[] = displayStructs.map((displayStruct) => ({...displayStruct, rows: []}));
+  // const structs = [structA, structB];
+  // const displayStructs = [toDisplayStruct(name, structA), toDisplayStruct(name, structB)];
+  // const gapCounters = [0, 0];
 
-  // The diffing is defined on the "source of truth" types rather than our display types,
-  // so we need some mapping between them.
-  type RowMap = Map<StructTypeMember, DisplayStructRow>;
-  const rowMaps: RowMap[] = displayStructs.map((displayStruct) => {
-    return new Map(displayStruct.rows.map((row) => {
-      if (!('_originatingObject' in row.data)) {
-        throw Error("unexpected 'extra' row in initial DisplayStruct during diff render");
-      }
-      return [row.data._originatingObject, row];
-    }));
-  });
+  // // we need to build new lists of rows so we can insert spacers for things only on one side
+  // const results: DisplayStruct[] = displayStructs.map((displayStruct) => ({...displayStruct, rows: []}));
 
-  // we currently have two DisplayStructs with empty diff information.  Update them in-place.
-  for (const diff of diffStructs(structA, structB)) {
-    const displayRowA = rowMaps[0].get((diff as any).left);
-    const displayRowB = rowMaps[1].get((diff as any).right);
+  // // The diffing is defined on the "source of truth" types rather than our display types,
+  // // so we need some mapping between them.
+  // type RowMap = Map<StructTypeMember, DisplayStructRow>;
+  // const rowMaps: RowMap[] = displayStructs.map((displayStruct) => {
+  //   return new Map(displayStruct.rows.map((row) => {
+  //     if (!('_originatingObject' in row.data)) {
+  //       throw Error("unexpected 'extra' row in initial DisplayStruct during diff render");
+  //     }
+  //     return [row.data._originatingObject, row];
+  //   }));
+  // });
 
-    if (diff.side === 'both') {
-      const {left: rowA, right: rowB} = diff;
+  // // we currently have two DisplayStructs with empty diff information.  Update them in-place.
+  // for (const diff of diffStructs(structA, structB)) {
+  //   const displayRowA = rowMaps[0].get((diff as any).left);
+  //   const displayRowB = rowMaps[1].get((diff as any).right);
 
-      // depending on row type, add more diff spans inside the content
-      if (rowA.data.is === 'field' && rowB.data.is === 'field') {
-        if (!deepEqual(rowA.data.type, rowB.data.type)) {
-          (displayRowA!.data as DisplayRowFieldData).type.isChange = true;
-          (displayRowB!.data as DisplayRowFieldData).type.isChange = true;
-        }
+  //   if (diff.side === 'both') {
+  //     const {left: rowA, right: rowB} = diff;
 
-      } else if (rowA.data.is === 'gap' && rowB.data.is === 'gap') {
-        if (!primitiveEqual(rowA.size, rowB.size)) {
-          (displayRowA!.data as DisplayRowGapData).sizeIsChange = true;
-          (displayRowB!.data as DisplayRowGapData).sizeIsChange = true;
-        }
+  //     // depending on row type, add more diff spans inside the content
+  //     if (rowA.data.is === 'field' && rowB.data.is === 'field') {
+  //       if (!deepEqual(rowA.data.type, rowB.data.type)) {
+  //         (displayRowA!.data as DisplayRowFieldData).type.isChange = true;
+  //         (displayRowB!.data as DisplayRowFieldData).type.isChange = true;
+  //       }
 
-      } else {
-        throw new Error(`impossible diff couple between ${rowA.data.is} and ${rowB.data.is}`)
-      }
-      results[0].rows.push(displayRowA!);
-      results[1].rows.push(displayRowB!);
+  //     } else if (rowA.data.is === 'gap' && rowB.data.is === 'gap') {
+  //       if (!primitiveEqual(rowA.size, rowB.size)) {
+  //         (displayRowA!.data as DisplayRowGapData).sizeIsChange = true;
+  //         (displayRowB!.data as DisplayRowGapData).sizeIsChange = true;
+  //       }
 
-    } else {
-      let indexWith;
-      if (diff.side === 'left') indexWith = 0;
-      else if (diff.side === 'right') indexWith = 1;
-      else unreachable(diff);
+  //     } else {
+  //       throw new Error(`impossible diff couple between ${rowA.data.is} and ${rowB.data.is}`)
+  //     }
+  //     results[0].rows.push(displayRowA!);
+  //     results[1].rows.push(displayRowB!);
 
-      // Side with the line
-      const displayRow: DisplayStructRow = [displayRowA, displayRowB][indexWith]!;
-      if (displayRow.data.is === 'spacer-for-diff') {
-        throw new Error('impossible: a spacer already exists!');
-      }
-      displayRow.data.isChange = true;
-      results[indexWith].rows.push(displayRow);
+  //   } else {
+  //     let indexWith;
+  //     if (diff.side === 'left') indexWith = 0;
+  //     else if (diff.side === 'right') indexWith = 1;
+  //     else unreachable(diff);
 
-      // Gap on the other side
-      results[1 - indexWith].rows.push({
-        key: `xx-${gapCounters[1 - indexWith]++}` as ReactKey,
-        data: {is: 'spacer-for-diff'},
-      })
-    }
-  }
-  return [results[0], results[1]];
+  //     // Side with the line
+  //     const displayRow: DisplayStructRow = [displayRowA, displayRowB][indexWith]!;
+  //     if (displayRow.data.is === 'spacer-for-diff') {
+  //       throw new Error('impossible: a spacer already exists!');
+  //     }
+  //     displayRow.data.isChange = true;
+  //     results[indexWith].rows.push(displayRow);
+
+  //     // Gap on the other side
+  //     results[1 - indexWith].rows.push({
+  //       key: `xx-${gapCounters[1 - indexWith]++}` as ReactKey,
+  //       data: {is: 'spacer-for-diff'},
+  //     })
+  //   }
+  // }
+  // return [results[0], results[1]];
 }
 
 /**
@@ -331,6 +460,13 @@ function applyGridStyles(elements: (JSX.Element | null)[][], options: {startRow?
   )));
 }
 
+// =============================================================================
+// Rendering pass
+
+const CLASS_COL_OFFSET = 'col-offset';
+const CLASS_COL_TEXT = 'col-text';
+const COLUMN_CLASSES = [CLASS_COL_OFFSET, CLASS_COL_TEXT];
+
 // "Render" a single struct.
 //
 // * We need some kind of tabular layout in order to correctly align rows in diff output.
@@ -342,31 +478,39 @@ function applyGridStyles(elements: (JSX.Element | null)[][], options: {startRow?
 // So it's a function that returns a list of lists of JSX elements, indicating rows and columns.
 //
 // The elements will come with react keys, but will lack grid styles (which should be added as post-processing).
-function structCells(struct: DisplayStruct): (JSX.Element | null)[][] {
-  return [
-    structCellsForHeaderRow(struct),
-    ...struct.rows.map((row) => structCellsForRowDispatch(struct, row)),
-    structCellsForEndRow(struct),
-  ].map((row) => {
-    console.assert(row.length === COLUMN_CLASSES.length, row);
-    return zip(row, COLUMN_CLASSES).map(([elem, cls]) => withClassName(elem, cls));
+function getTypeCells(rows: DisplayTypeRow[]): JSX.Element[][] {
+  const maxOffset = rows.reduce((acc, {offset}) => Math.max(acc, offset || 0), 0);
+
+  return rows.map((row) => {
+    const {key, offset, nestingLevel, data} = row;
+    const offsetCell = <div key={`o-${key}`} className={CLASS_COL_OFFSET}>
+      {offset != null ? <FieldOffset offset={offset} size={maxOffset}/> : null}
+    </div>;
+    const textCell = <div key={`t-${key}`} className={CLASS_COL_TEXT}>
+      {/* this flex wrapper helps ensure that the hanging indent increases with inner structs */}
+      <div className='col-text-flex'>
+        <div className='indent'>{'\u00a0\u00a0'.repeat(nestingLevel)}</div>
+        <div className='col-text-wrapper'>{
+          <LangRenderRow row={data} Lang={Rust}/>
+        }</div>
+      </div>
+    </div>;
+    return [offsetCell, textCell];
   });
 }
 
-function withClassName(elem: JSX.Element | null, newClass: string) {
-  return elem && mergeHtmlProps(elem, {className: clsx(elem.props.className, newClass)})
-}
-
+// Util for adding HTML attributes to existing JSX.  Used mostly to help decouple
+// the code that renders structs from the gritty details of how it will ultimately be laid out.
+// (e.g. display="table", display="grid", are there multiple structs side-by-side, etc.)
 type MergeableHtmlProps = {
   style?: React.CSSProperties;
   className?: string;
   [key: string]: any;
 }
-function mergeHtmlProps(elem: JSX.Element | null, props: MergeableHtmlProps) {
-  if (!elem) return null;
+function mergeHtmlProps(elem: JSX.Element, props: MergeableHtmlProps) {
   if (props.style) props.style = {...elem.props.style, ...props.style};
   if (props.className) props.className = clsx(elem.props.className, props.className);
-  return elem && React.cloneElement(elem, props);
+  return React.cloneElement(elem, props);
 }
 
 /** Apply a prefix to an element's existing key. */
@@ -380,60 +524,12 @@ function wrapWithPrefixedKey(elem: JSX.Element | null, prefix: string) {
   return elem && <TrivialForwardRef key={`${prefix}${elem.key}`}>{elem}</TrivialForwardRef>;
 }
 
-const STRUCT_INNER_INDENT = '  ';
-const StructKeyword = <span className='keyword'>{'struct'}</span>;
-const PackedKeyword = <span className='keyword'>{'__packed'}</span>;
-const OpenBrace = <span className='brace'>{'{'}</span>;
-const CloseBrace = <span className='brace'>{'}'}</span>;
-
-function structCellsForRowDispatch(struct: DisplayStruct, {key, data}: DisplayStructRow): (JSX.Element | null)[] {
-  switch (data.is) {
-    case 'spacer-for-diff': return [null, null];
-    case 'field': return structCellsForRow({text: <FieldDef data={data}/>, key, struct, data, indent: true});
-    case 'gap': return structCellsForRow({text: <FieldGap data={data}/>, key, struct, data, indent: true});
-  }
+export interface LangRenderer {
+  TypeRow: React.ComponentType<{row: DisplayTypeRowData} & CommonLangToolsProps>;
+  InlineType: React.ComponentType<{type: TypeTree} & CommonLangToolsProps>;
 }
 
-function structCellsForHeaderRow(struct: DisplayStruct) {
-  return [
-    <div key={`o-#name`}></div>, // offset
-    <div key={`t-#name`} className='col-text'>
-      <div className='col-text-wrapper'>
-        {StructKeyword} <span className='struct-name'>{struct.name}</span> {PackedKeyword} {OpenBrace}<br/>
-      </div>
-    </div>,
-  ];
-}
-
-function structCellsForRow(args: {text: ReactNode, key: ReactKey, struct: DisplayStruct, data: {isChange: boolean, offset: number}, indent?: boolean}) {
-  const {text, key, data, struct, indent = false} = args;
-  return [
-    <div key={`o-${key}`}>
-      <FieldOffset offset={data.offset} size={struct.size}/>
-    </div>,
-    <div key={`t-${key}`} className={clsx({'indent': indent}, diffClass(data.isChange))}>
-      <div className='col-text-wrapper'>
-        {text}
-      </div>
-    </div>,
-  ];
-}
-
-function structCellsForEndRow(struct: DisplayStruct) {
-  const data = {isChange: false, offset: struct.size};
-  return structCellsForRow({text: CloseBrace, struct, key: '#clbrace' as ReactKey, data});
-}
-
-function FieldDef({data}: {data: DisplayRowFieldData}) {
-  return <>
-    <span className='field-name'>{data.name}</span>
-    {' : '}
-    <FieldType type={data.type}/>
-    {';'}
-  </>;
-}
-
-function FieldType({type}: {type: DisplayFieldType}) {
+function LangRenderRow({row, Lang}: {row: DisplayTypeRowData, Lang: LangRenderer}) {
   const db = React.useContext(DbContext);
   if (!db) throw new Error("FieldDef without db");
 
@@ -450,17 +546,7 @@ function FieldType({type}: {type: DisplayFieldType}) {
     return {pathname: '/struct', search: '?' + searchParamsCopy.toString()};
   }, [searchParams])
 
-  return <span className={clsx('field-type', diffClass(type.isChange))}>
-    <FieldTypeImpl {...{db, version, getTypeUrl}} type={type.type}/>
-  </span>;
-}
-
-function FieldGap({data: {size, sizeIsChange}}: {data: DisplayRowGapData}) {
-  return <span className='field-gap'>
-    {'// '}
-    <span className={diffClass(sizeIsChange)}>0x{size.toString(16)}</span>
-    {' bytes...'}
-  </span>;
+  return <Lang.TypeRow {...{db, version, getTypeUrl}} row={row}/>;
 }
 
 function FieldOffset({offset, size}: {offset: number, size: number}) {

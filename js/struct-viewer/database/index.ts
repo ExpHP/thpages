@@ -6,11 +6,11 @@ import {deepInequalityWitness, unreachable} from '~/js/util';
 
 import {
   TypeTree, TypeDefinition, TypedefTypeDefinition, StructTypeDefinition, UnionTypeDefinition, EnumTypeDefinition,
-  FunctionTypeDefinition, StructTypeMember,
+  FunctionTypeDefinition, StructTypeMember, UnionTypeMember, EnumTypeValue,
 } from "./json-types";
 export {
   TypeTree, TypeDefinition, TypedefTypeDefinition, StructTypeDefinition, UnionTypeDefinition, EnumTypeDefinition,
-  FunctionTypeDefinition, StructTypeMember,
+  FunctionTypeDefinition, StructTypeMember, UnionTypeMember, EnumTypeValue,
 };
 
 export const CURRENT_FORMAT_VERSION = 2;

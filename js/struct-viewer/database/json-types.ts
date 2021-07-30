@@ -146,8 +146,9 @@ const parseStructTypeDefinition = JP.lazy(() => JP.object({
 export type EnumTypeDefinition = {
   size: Integer;
   align: Integer;
-  values: {name: string, value: Integer}[];
+  values: EnumTypeValue[];
 };
+export type EnumTypeValue = {name: string, value: Integer};
 const parseEnumTypeDefinition = JP.object({
   size: parseInteger,
   align: parseInteger,
@@ -160,8 +161,9 @@ const parseEnumTypeDefinition = JP.object({
 export type UnionTypeDefinition = {
   size: Integer;
   align: Integer;
-  members: {name: string, type: TypeTree}[];
+  members: UnionTypeMember[];
 };
+export type UnionTypeMember = {name: string, type: TypeTree};
 const parseUnionTypeDefinition = JP.lazy(() => JP.object({
   size: parseInteger,
   align: parseInteger,

@@ -15,7 +15,7 @@ export function CType(props: {db: TypeDatabase, ctype: string, version: Version,
  * (would like to replace this with a type-tree renderer that can produce
  * C declarations, C types or rust types at some point)
  */
-function* renderCType(db: TypeDatabase, ctype: string, version: Version, getTypeUrl: GetTypeUrl) {
+function* renderCType(ctype: string) {
   const lexer = createRoundtripLexer();
   lexer.reset(ctype);
   const tokens = [...lexer];
@@ -27,7 +27,7 @@ function* renderCType(db: TypeDatabase, ctype: string, version: Version, getType
     const token = tokens[i];
     const expectingTypeName = typeKeywords.includes(prevToken && prevToken.type);
     if (token.type === 'IDENT' && expectingTypeName) {
-      yield <NamedTypeLink key={i} db={db} name={token.text as TypeName} version={version} getTypeUrl={getTypeUrl}/>;
+      yield <NamedTypeLink key={i} name={token.text as TypeName} version={version} getTypeUrl={getTypeUrl}/>;
     } else {
       yield <BasicToken key={i} type={token.type || ''} text={token.text}/>;
     }

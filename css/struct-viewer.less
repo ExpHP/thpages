@@ -66,11 +66,12 @@
         white-space: pre;
     }
 
-    // 'col-text-wrapper' inside 'col-text' because 'display: table-cell' can't have margins (?)
-    // .col-text-wrapper { width: 100%; }
-    .col-text.indent .col-text-wrapper {
-        // width: calc(100% - 2ch);
-        margin-left: 2ch;
+    .col-text > .col-text-flex {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        align-items: start;
+        & > * { display: block; }
     }
 
     // hanging indent
@@ -79,6 +80,15 @@
         padding-left: 4ch;
         padding-right: 1ch;
         & > * { text-indent: 0; }
+        // HACK: a workaround for rare instances where one row in the language-independent format
+        //       wants to render multiple lines of text.  This enables the row to use <p>s inside
+        //       its text column that each line receives the correction to remove the hanging indent.
+        & > p {
+            text-indent: -4ch;
+            > * { text-indent: 0; }
+            margin-block-start: 0;
+            margin-block-end: 0;
+        }
     }
 
     // get diff regions to highlight to end

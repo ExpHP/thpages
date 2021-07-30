@@ -5,10 +5,37 @@ import {SimpleLink, LinkDest} from '~/js/UrlTools';
 export type GetTypeUrl = (name: TypeName) => LinkDest | null;
 
 /**
- * A crossref link to a named type, which is initially disabled but will be given an href attribute
- * once the existence of the type can be confirmed.
+ * Allows NamedTypeLink to be used.
+ */
+export function CommonLangToolsProvider(props: {children: React.ReactNode} & CommonLangToolsProps) {
+  const {db, version, getTypeUrl, children} = props;
+  const context = React.useMemo(() => ({db, version, getTypeUrl}), [db, version, getTypeUrl]);
+
+  return <CommonContext.Provider value={context}>
+    {children}
+  </CommonContext.Provider>;
+}
+
+export type CommonLangToolsProps = {
+  db: TypeDatabase,
+  version: Version,
+  getTypeUrl: GetTypeUrl,
+};
+const CommonContext = React.createContext<CommonLangToolsProps | null>(null);
+
+/**
+ * A crossref link to a named type in the current database and version. It is initially
+ * disabled but will be given an href attribute once the existence of the type can be confirmed.
+ *
+ * Requires CommonLangToolsProvider in order to be used.
  **/
-export function NamedTypeLink({db, name, version, getTypeUrl}: {db: TypeDatabase, name: TypeName, version: Version, getTypeUrl: GetTypeUrl}) {
+export function NamedTypeLink({name}: {name: TypeName}) {
+  const context = React.useContext(CommonContext);
+  if (!context) {
+    throw new Error("NamedTypeLink requires CommonLangToolsProvider");
+  }
+  const {db, version, getTypeUrl} = context;
+
   const [linked, setLinked] = React.useState(false);
 
   React.useEffect(() => {

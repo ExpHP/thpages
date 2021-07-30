@@ -1,33 +1,108 @@
 import React from 'react';
 
-import {createRoundtripLexer, isKeyword, isPrimitiveType, isIgnorable, Token} from '../c-lexer';
-import {TypeDatabase, Version, TypeName, TypeTree} from '../database';
-import {useSearchParams, usePathname, SimpleLink, LinkDest} from '~/js/UrlTools';
+import {TypeTree} from '../database';
 import {unreachable} from '~/js/util';
-import {NamedTypeLink, GetTypeUrl} from './Common';
+import {DisplayTypeRowData} from '../StructViewer';
+import {CommonLangToolsProvider, NamedTypeLink, CommonLangToolsProps} from './Common';
 
-export const RustType = React.memo(function RustType(props: {
-    db: TypeDatabase,
-    type: TypeTree,
-    version: Version,
-    getTypeUrl: GetTypeUrl,
-}) {
-  const {db, type, version, getTypeUrl} = props;
-  return <TypeRenderContext.Provider value={{db, version, getTypeUrl}}>
-    <RustAnyType {...{type}}/>
-  </TypeRenderContext.Provider>;
+export const TypeRow = React.memo(function TypeRow({row, ...props}: {row: DisplayTypeRowData} & CommonLangToolsProps) {
+  return <CommonLangToolsProvider {...props}>
+    <RustTypeRow row={row}/>
+  </CommonLangToolsProvider>;
+});
+export const InlineType = React.memo(function InlineType({type, ...props}: {type: TypeTree} & CommonLangToolsProps) {
+  return <CommonLangToolsProvider {...props}>
+    <RustInlineType type={type}/>
+  </CommonLangToolsProvider>;
 });
 
-// This is only null for a brief moment in RustType so we type it as non-null.
-const TypeRenderContext = React.createContext<{
-  db: TypeDatabase,
-  version: Version,
-  getTypeUrl: GetTypeUrl,
-}>(null as any);
+// =============================================================================
 
-export const RustAnyType = React.memo(function RustType(props: {type: TypeTree}) {
-  const {type} = props;
+const NewLineInText = <>{"\n"}<br/></>; // the \n is for getTextContent() (to copy text eventually)
 
+function RustTypeRow({row}: {row: DisplayTypeRowData, }) {
+  switch (row.is) {
+    case "field": return <RustField row={row}/>;
+    case "gap": return <RustRowGap row={row}/>;
+    case "begin-page-type": return <RustPageTypeHeader row={row}/>;
+    case "begin-anon-type": return <RustAnonTypeHeader row={row}/>;
+    case "end-type": return <RustRowTypeEnd row={row}/>;
+  }
+}
+
+const TYPE_KIND_DATA = {
+  struct: {keyword: "struct"},
+  enum: {keyword: "enum"},
+  union: {keyword: "union"},
+  typedef: {keyword: "type"},
+};
+
+function RustPageTypeHeader({row}: {row: DisplayTypeRowData & {is: 'begin-page-type'}}) {
+  if (row.type.is === 'typedef') {
+    // @ts-ignore  it's not applying the intersection to row.type...
+    return <RustPageTypeAlias row={row}/>;
+  }
+  const {typeName, type} = row;
+  const {keyword} = TYPE_KIND_DATA[type.is];
+
+  const packed = type.is === 'struct' && type.packed;
+  return <>
+    <p>#[repr(C{packed ? ", packed" : ""})]</p>
+    <p>
+      <span className='keyword'>{keyword}</span>
+      {' '}
+      <span className='struct-name'>{typeName}</span>
+      {' {'}
+    </p>
+  </>;
+}
+
+function RustPageTypeAlias({row: {typeName, type}}: {row: DisplayTypeRowData & {is: 'begin-page-type', type: {is: 'typedef'}}}) {
+  return <>
+    <span className='keyword'>type</span>
+    {' '}
+    <span className='struct-name'>{typeName}</span>
+    {' = '}
+    <RustInlineType type={type.type}/>
+    {';'}
+  </>;
+}
+
+function RustAnonTypeHeader({row: {fieldName, kind}}: {row: DisplayTypeRowData & {is: 'begin-anon-type'}}) {
+  const {keyword} = TYPE_KIND_DATA[kind];
+  return <>
+    <span className='field-name'>{fieldName}</span>
+    {' : '}
+    <span className='keyword'>{keyword}</span>
+    {' {'}
+  </>;
+}
+
+function RustField({row: {name, type}}: {row: DisplayTypeRowData & {is: 'field'}}) {
+  return <>
+    <span className='field-name'>{name}</span>
+    {' : '}
+    {<RustInlineType type={type}/>}
+    {';'}
+  </>;
+}
+
+function RustRowGap({row: {size}}: {row: DisplayTypeRowData & {is: 'gap'}}) {
+  return <span className='field-gap'>
+    {'// '}
+    0x{size.toString(16)}
+    {' bytes...'}
+  </span>;
+}
+
+function RustRowTypeEnd({row}: {row: DisplayTypeRowData & {is: 'end-type'}}) {
+  const semi = row._beginning.data.is !== 'begin-page-type';
+  return <>{"}"}{semi ? ';' : null}</>;
+}
+
+// =============================================================================
+
+function RustInlineType({type}: {type: TypeTree}) {
   switch (type.is) {
     case "int": return <RustInt type={type}/>;
     case "float": return <RustFloat type={type}/>;
@@ -42,7 +117,7 @@ export const RustAnyType = React.memo(function RustType(props: {type: TypeTree})
     case "unsupported": return <RustUnsupportedType type={type}/>;
     default: unreachable(type)
   }
-});
+}
 
 const TokenStruct = <span className="keyword">struct</span>;
 const TokenUnion = <span className="keyword">union</span>;
@@ -88,12 +163,12 @@ function RustUnit({type}: {type: TypeTree & {is: "void"}}) {
 
 function RustPointer({type}: {type: TypeTree & {is: "ptr"}}) {
   const {inner} = type;
-  return <>{TokenMutPtr} <RustAnyType type={inner}/></>;
+  return <>{TokenMutPtr} <RustInlineType type={inner}/></>;
 }
 
 function RustArray(props: {type: TypeTree & {is: "array"}}) {
   const {type: {len, inner: type}} = props;
-  return <>[<RustAnyType type={type}/>; <IntLiteral value={len}/>]</>;
+  return <>[<RustInlineType type={type}/>; <IntLiteral value={len}/>]</>;
 }
 
 function RustFnPointer({type}: {type: TypeTree & {is: "fn-ptr"}}) {
@@ -126,16 +201,16 @@ function RustFnReturn({type}: {type: TypeTree & {is: "fn-ptr"}}) {
   const arrow = <>{"->"}</>;
   if (diverges) {
     if (ret.is === 'void') {
-      return <>{arrow} {TokenNever}</>;
+      return <> {arrow} {TokenNever}</>;
     } else {
       console.warn("TODO: tooltip to tell true type and mention that it may affect ABI");
-      return <>{arrow} {TokenNever}</>;
+      return <> {arrow} {TokenNever}</>;
     }
   } else {
     if (ret.is === 'void') {
       return null;  // implicit unit return
     } else {
-      return <>{arrow} <RustAnyType type={ret}/></>;
+      return <> {arrow} <RustInlineType type={ret}/></>;
     }
   }
 }
@@ -149,21 +224,21 @@ function RustFnParams({type}: {type: TypeTree & {is: "fn-ptr"}}) {
   }
 
 
-  const out = intersperse(parts, (i) => <React.Fragment key={`comma-${i}`}>{", "}</React.Fragment>);
+  const out = [...intersperse(parts, (i) => <React.Fragment key={`comma-${i}`}>{", "}</React.Fragment>)];
   return <>{out}</>
 }
 
 function RustFnParam({name, type}: {name?: string, type: TypeTree}) {
+  console.log(name, type);
   return <>
     {name ? <>{name}: </> : null}
-    <RustAnyType type={type}/>
+    <RustInlineType type={type}/>
   </>;
 }
 
 function RustNamedType({type}: {type: TypeTree & {is: "named"}}) {
-  const {db, version, getTypeUrl} = React.useContext(TypeRenderContext);
   const {name} = type;
-  return <NamedTypeLink {...{name, db, version, getTypeUrl}}/>;
+  return <NamedTypeLink {...{name}}/>;
 }
 
 function RustInlineStruct({type}: {type: TypeTree & {is: "struct"}}) {
@@ -206,7 +281,7 @@ function HexLiteral({value}: {value: number}) {
 
 function* intersperse<T>(iter: Iterable<T>, sep: (index: number) => T) {
   let i = 0;
-  for (const item in iter) {
+  for (const item of iter) {
     if (i !== 0) yield sep(i);
     yield item;
     i++;
