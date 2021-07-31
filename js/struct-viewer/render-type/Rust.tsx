@@ -1,9 +1,10 @@
 import React from 'react';
+import clsx from 'clsx';
 
 import {TypeTree} from '../database';
 import {unreachable} from '~/js/util';
-import {DisplayTypeRowData} from '../StructViewer';
-import {CommonLangToolsProvider, NamedTypeLink, CommonLangToolsProps} from './Common';
+import {DisplayTypeRowData} from '../display-type';
+import {CommonLangToolsProvider, NamedTypeLink, CommonLangToolsProps, classes} from './Common';
 
 export const TypeRow = React.memo(function TypeRow({row, ...props}: {row: DisplayTypeRowData} & CommonLangToolsProps) {
   return <CommonLangToolsProvider {...props}>
@@ -48,9 +49,9 @@ function RustPageTypeHeader({row}: {row: DisplayTypeRowData & {is: 'begin-page-t
   return <>
     <p>#[repr(C{packed ? ", packed" : ""})]</p>
     <p>
-      <span className='keyword'>{keyword}</span>
+      <span className={classes.keyword}>{keyword}</span>
       {' '}
-      <span className='struct-name'>{typeName}</span>
+      <span className={classes.currentTypeName}>{typeName}</span>
       {' {'}
     </p>
   </>;
@@ -58,9 +59,9 @@ function RustPageTypeHeader({row}: {row: DisplayTypeRowData & {is: 'begin-page-t
 
 function RustPageTypeAlias({row: {typeName, type}}: {row: DisplayTypeRowData & {is: 'begin-page-type', type: {is: 'typedef'}}}) {
   return <>
-    <span className='keyword'>type</span>
+    <span className={classes.keyword}>type</span>
     {' '}
-    <span className='struct-name'>{typeName}</span>
+    <span className={classes.currentTypeName}>{typeName}</span>
     {' = '}
     <RustInlineType type={type.type}/>
     {';'}
@@ -70,16 +71,16 @@ function RustPageTypeAlias({row: {typeName, type}}: {row: DisplayTypeRowData & {
 function RustAnonTypeHeader({row: {fieldName, kind}}: {row: DisplayTypeRowData & {is: 'begin-anon-type'}}) {
   const {keyword} = TYPE_KIND_DATA[kind];
   return <>
-    <span className='field-name'>{fieldName}</span>
+    <span className={classes.fieldName}>{fieldName}</span>
     {' : '}
-    <span className='keyword'>{keyword}</span>
+    <span className={classes.keyword}>{keyword}</span>
     {' {'}
   </>;
 }
 
 function RustField({row: {name, type}}: {row: DisplayTypeRowData & {is: 'field'}}) {
   return <>
-    <span className='field-name'>{name}</span>
+    <span className={classes.fieldName}>{name}</span>
     {' : '}
     {<RustInlineType type={type}/>}
     {';'}
@@ -87,7 +88,7 @@ function RustField({row: {name, type}}: {row: DisplayTypeRowData & {is: 'field'}
 }
 
 function RustRowGap({row: {size}}: {row: DisplayTypeRowData & {is: 'gap'}}) {
-  return <span className='comment field-gap'>
+  return <span className={clsx([classes.comment, classes.gap])}>
     {'// '}
     0x{size.toString(16)}
     {' bytes...'}
@@ -96,11 +97,11 @@ function RustRowGap({row: {size}}: {row: DisplayTypeRowData & {is: 'gap'}}) {
 
 function RustEnumValue({row: {name, value}}: {row: DisplayTypeRowData & {is: 'enum-value'}}) {
   return <>
-    <span className='field-name'>{name}</span>
+    <span className={classes.enumValueName}>{name}</span>
     {' = '}
     {<IntLiteral value={value}/>}
     {',  '}
-    <span className='comment'>// 0x{value.toString(16)}</span>
+    <span className={classes.comment}>// 0x{value.toString(16)}</span>
   </>;
 }
 
@@ -131,13 +132,13 @@ function RustInlineType({type}: {type: TypeTree}) {
   }
 }
 
-const TokenStruct = <span className="keyword">struct</span>;
-const TokenUnion = <span className="keyword">union</span>;
-const TokenEnum = <span className="keyword">enum</span>;
-const TokenExtern = <span className="keyword">extern</span>;
-const TokenMutPtr = <span className="keyword">*mut</span>;
-const TokenFn = <span className="keyword">fn</span>;
-const TokenNever = <span className="type primitive">!</span>;
+const TokenStruct = <span className={classes.keyword}>struct</span>;
+const TokenUnion = <span className={classes.keyword}>union</span>;
+const TokenEnum = <span className={classes.keyword}>enum</span>;
+const TokenExtern = <span className={classes.keyword}>extern</span>;
+const TokenMutPtr = <span className={classes.keyword}>*mut</span>;
+const TokenFn = <span className={classes.keyword}>fn</span>;
+const TokenNever = <span className={classes.primitiveType}>!</span>;
 const TokenVariadic = <>...</>;
 
 function RustInt({type}: {type: TypeTree & {is: "int"}}) {
@@ -201,7 +202,7 @@ function RustFnPointer({type}: {type: TypeTree & {is: "fn-ptr"}}) {
   }
 
   return <>
-    {abi ? <>{TokenExtern}{" "}<span className='string'>{abi}</span>{" "}</> : null}
+    {abi ? <>{TokenExtern}{" "}<span className={classes.string}>{abi}</span>{" "}</> : null}
     {TokenFn}{"("}<RustFnParams type={type}/>{")"}
     <RustFnReturn type={type}/>
   </>;
@@ -272,7 +273,7 @@ function RustInlineEnum({type}: {type: TypeTree & {is: "enum"}}) {
 function RustUnsupportedType({type}: {type: TypeTree & {is: "unsupported"}}) {
   const {size, align} = type;
   return <>
-    <span className='type error'>UNKNOWN</span>
+    <span className={classes.unsupported}>UNKNOWN</span>
     {"<"}{"size"}{"="}<HexLiteral value={size}/>
     {", "}{"align"}{"="}<IntLiteral value={align}/>
     {">"}
@@ -280,15 +281,15 @@ function RustUnsupportedType({type}: {type: TypeTree & {is: "unsupported"}}) {
 }
 
 function PrimitiveType({children}: {children: React.ReactNode}) {
-  return <span className="type primitive">{children}</span>;
+  return <span className={classes.primitiveType}>{children}</span>;
 }
 
 function IntLiteral({value}: {value: number}) {
-  return <span className='number'>{value}</span>;
+  return <span className={classes.integer}>{value}</span>;
 }
 
 function HexLiteral({value}: {value: number}) {
-  return <span className='number'>0x{value.toString(16)}</span>;
+  return <span className={classes.integer}>0x{value.toString(16)}</span>;
 }
 
 function* intersperse<T>(iter: Iterable<T>, sep: (index: number) => T) {
