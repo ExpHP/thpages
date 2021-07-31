@@ -137,6 +137,11 @@ export class TypeDatabase {
     return [...inner.typeNames()];
   }
 
+  async getTypeLookupFunction(version: Version): Promise<TypeLookupFunction> {
+    const inner = await this.getTypeDbForVersion(version);
+    return (name) => inner.getNamedType(name) || null;
+  }
+
   async getAllStructs(): Promise<TypeName[]> {
     const dbHead = await this.#dbHead;
 
@@ -177,6 +182,9 @@ async function loadTypeCollection(reader: PathReader, version: Version, commonTy
   const allTypes = mergeTypes(commonTypes, versionTypes, 'expect-matching-layout');
   return new TypeCollection(allTypes, versionProps);
 }
+
+/** Type of a function for looking up named types in a fixed version. */
+export type TypeLookupFunction = (name: TypeName) => TypeDefinition | null;
 
 /**
  * A collection of type definitions for a single version, providing synchronous operations.

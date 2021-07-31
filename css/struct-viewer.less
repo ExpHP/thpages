@@ -115,6 +115,48 @@
     span.diff-oneside {
         display: inline-block; // fill whole line-height
     }
+
+    .col-text {
+        &:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        &.expandable {
+            &::before {
+                position: absolute;
+                margin-left: -0.5ch;
+                display: inline-block;
+                content: ">";
+                font-size: 0.7em;
+                font-weight: bold;
+                transition:
+                    transform 0.2s ease-in-out,
+                    font-size 0.05s linear,
+                    color 0.2s linear
+                    ;
+                color: rgba(255, 255, 255, 0);
+            }
+
+            &.expanded::before {
+                transform: rotate(90deg);
+                color: rgba(255, 255, 255, 0.3);
+            }
+            &:hover::before {
+                font-size: 1.1em;
+                transition:
+                    transform 0.2s ease-in-out,
+                    ;
+                color: rgba(255, 255, 60, 0.6);
+            }
+        }
+    }
+
+    .col-text {
+        // expand the mouseover highlight to the left to include the expandable caret
+        position: relative;
+        left: -1ch;
+        margin-left: -1ch;
+        padding-left: 1ch;
+    }
 }
 
 .noselect {

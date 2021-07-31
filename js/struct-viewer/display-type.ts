@@ -2,7 +2,7 @@ import {unreachable, window2} from '~/js/util';
 
 import {diffStructs} from './diff';
 import {
-  TypeTree, TypeDefinition, TypeName, FieldName,
+  TypeTree, TypeDefinition, TypeName, FieldName, TypeLookupFunction,
   StructTypeDefinition, StructTypeMember,
   UnionTypeDefinition, UnionTypeMember,
   EnumTypeDefinition, EnumTypeValue,
@@ -32,8 +32,13 @@ export type DisplayTypeRow = {
    */
   offset: number | null;
   nestingLevel: number;  // indentation level
+  expandableKey?: ExpandableKey;
   data: DisplayTypeRowData;
 };
+
+/** Uniquely (within a DisplayType) identifies a line that can be expanded by the user into multiple lines.
+ */
+export type ExpandableKey = string & { readonly __tag: unique symbol; };
 
 export type DisplayTypeRowData =
   | {
@@ -53,16 +58,17 @@ export type DisplayTypeRowData =
     typeName: TypeName;
     type: TypeDefinition; // for grabbing things like '.packed'
   } | {
-    /** Line with the opening brace for an inner anonymous struct/union. */
-    is: 'begin-anon-type';
+    /** Line with the opening brace for an inner struct/union that is either anonymous, or expanded by the user. */
+    is: 'begin-inner-type';
     fieldName: FieldName;
+    typeName?: TypeName;
     kind: 'struct' | 'union' | 'enum';
   } | {
     is: 'end-type';
     /** The opening row that is closed by this.  Might be needed by a C declaration renderer to
      *  put a field name for an anonymous type, or may be used to write ending array dimensions for
      *  an array of structs.  Who knows. */
-    _beginning: DisplayTypeRow & {data: {is: 'begin-page-type' | 'begin-anon-type'}};
+    _beginning: DisplayTypeRow & {data: {is: 'begin-page-type' | 'begin-inner-type'}};
   }
   ;
 
@@ -77,10 +83,19 @@ type ReactKey = string & { readonly __tag: unique symbol };
 const TYPE_BEGIN_KEY = "@{" as ReactKey;
 const TYPE_END_KEY = "@}" as ReactKey;
 
+/** Bag of common arguments to functions in this module which never need to change. */
+type Context = {
+  expandedItems: Set<ExpandableKey>;
+  lookupType: TypeLookupFunction;
+};
+
 export function toDisplayType(
   typeName: TypeName,
   defn: TypeDefinition,
+  expandedItems: Set<ExpandableKey>,
+  lookupType: (name: TypeName) => TypeDefinition | null,
 ): DisplayTypeRow[] {
+  const context = {expandedItems, lookupType};
   const recurseProps = {
     startOffset: 0,
     nestingLevel: 1,
@@ -102,9 +117,9 @@ export function toDisplayType(
 
   if (defn.is === 'struct' || defn.is === 'union') {
     if (defn.is === 'struct') {
-      return [begin, ...getDisplayRowsForStructMembers(defn.members, recurseProps), end];
+      return [begin, ...getDisplayRowsForStructMembers(defn.members, recurseProps, {expandedItems, lookupType}), end];
     } else if (defn.is === 'union') {
-      return [begin, ...getDisplayRowsForUnionMembers(defn.members, recurseProps), end];
+      return [begin, ...getDisplayRowsForUnionMembers(defn.members, recurseProps, {expandedItems, lookupType}), end];
     } else unreachable(defn);
 
   } else if (defn.is === 'enum') {
@@ -127,7 +142,7 @@ type RecurseProps = {
   keyPrefix: string;
 };
 
-function getDisplayRowsForStructMembers(members: StructTypeMember[], recurseProps: RecurseProps): DisplayTypeRow[] {
+function getDisplayRowsForStructMembers(members: StructTypeMember[], recurseProps: RecurseProps, context: Context): DisplayTypeRow[] {
   const {startOffset, nestingLevel, keyPrefix} = recurseProps;
 
   const assignDiscriminator = makeDisambiguator();
@@ -135,7 +150,7 @@ function getDisplayRowsForStructMembers(members: StructTypeMember[], recurseProp
   return [...window2(members)].flatMap(([row, nextRow]) => {
     const offset = row.offset + startOffset;
     if (row.classification === 'field') {
-      return getDisplayRowsForTypedMember(row, assignDiscriminator, recurseProps);
+      return getDisplayRowsForTypedMember(row, assignDiscriminator, recurseProps, context);
 
     } else if (row.classification === 'gap') {
       const size = nextRow.offset - row.offset;
@@ -156,10 +171,10 @@ function getDisplayRowsForStructMembers(members: StructTypeMember[], recurseProp
   })
 }
 
-function getDisplayRowsForUnionMembers(members: UnionTypeMember[], recurseProps: RecurseProps): DisplayTypeRow[] {
+function getDisplayRowsForUnionMembers(members: UnionTypeMember[], recurseProps: RecurseProps, context: Context): DisplayTypeRow[] {
   const assignDiscriminator = makeDisambiguator();
   return members.flatMap((member) => {
-    return getDisplayRowsForTypedMember({...member, offset: 0}, assignDiscriminator, recurseProps);
+    return getDisplayRowsForTypedMember({...member, offset: 0}, assignDiscriminator, recurseProps, context);
   })
 }
 
@@ -173,13 +188,28 @@ function getDisplayRowsForTypedMember(
     // the field disambiguator that is scoped to the immediate struct/union with this member
     assignDiscriminator: (x: unknown) => number,
     recurseProps: RecurseProps,
+    context: Context,
 ): DisplayTypeRow[] {
   const {name, type} = member;
   const {startOffset, nestingLevel, keyPrefix} = recurseProps;
   const offset = member.offset + startOffset;
 
-  if (type.is === 'struct' || type.is === 'union' || type.is === 'enum') {
-    const innerKeyPrefix = `${keyPrefix}f-${member.name}-${assignDiscriminator(member.name)}#`;
+  // key for the line representing this field.
+  const ownKey = `${keyPrefix}f-${name}-${assignDiscriminator(name)}` as ReactKey;
+
+  const expandableDefn = getExpandableDefn(type, context);
+  const expandableKey = ownKey as string as ExpandableKey;
+
+  // the field may be one or more lines, but these properties will always be true about the first line.
+  const ownLineProps = {
+    nestingLevel,
+    expandableKey: expandableDefn ? expandableKey : undefined,
+    offset,
+    key: ownKey,
+  };
+
+  function generateExpandedInnerRows(defn: ExpandedType) {
+    const innerKeyPrefix = `${ownKey}#`;
     const innerRecurseProps = {
       startOffset: offset,  // inner type begins where this field begins...
       nestingLevel: nestingLevel + 1,
@@ -187,35 +217,50 @@ function getDisplayRowsForTypedMember(
     };
     // The opening and closing rows for this type
     const begin = {
-      nestingLevel,
-      offset,  // do show offset for opening line since the type is also a field itself
-      key: `${innerKeyPrefix}${TYPE_BEGIN_KEY}` as ReactKey,
-      data: {is: "begin-anon-type", type, fieldName: name as FieldName, kind: type.is} as const,
+      ...ownLineProps,
+      data: {is: "begin-inner-type", type, fieldName: name as FieldName, kind: defn.is, typeName: defn.typeName} as const,
     };
     const end = {
       nestingLevel,
-      offset: offset + type.size,
+      offset: offset + defn.size,
       key: `${innerKeyPrefix}${TYPE_END_KEY}` as ReactKey,
       data: {is: "end-type", _beginning: begin} as const,
     };
 
-    if (type.is === 'struct') {
-      return [begin, ...getDisplayRowsForStructMembers(type.members, innerRecurseProps), end];
-    } else if (type.is === 'union') {
-      return [begin, ...getDisplayRowsForUnionMembers(type.members, innerRecurseProps), end];
-    } else if (type.is === 'enum') {
-      return [begin, ...getDisplayRowsForEnumValues(type.values, innerRecurseProps), end];
+    if (defn.is === 'struct') {
+      return [begin, ...getDisplayRowsForStructMembers(defn.members, innerRecurseProps, context), end];
+    } else if (defn.is === 'union') {
+      return [begin, ...getDisplayRowsForUnionMembers(defn.members, innerRecurseProps, context), end];
+    } else if (defn.is === 'enum') {
+      return [begin, ...getDisplayRowsForEnumValues(defn.values, innerRecurseProps), end];
     } else {
-      unreachable(type);
+      unreachable(defn);
     }
+  }
+
+  if (expandableDefn && context.expandedItems.has(expandableKey)) {
+    return generateExpandedInnerRows(expandableDefn);
+
+  } else if (type.is === 'struct' || type.is === 'union' || type.is === 'enum') {
+    return generateExpandedInnerRows(type);
 
   } else {
-    const key = `${keyPrefix}f-${name}-${assignDiscriminator(name)}` as ReactKey;
-    const data: DisplayTypeRowData = {
+    return [{...ownLineProps, data: {
       is: 'field', type, name: name as FieldName,
-    };
-    return [{key, nestingLevel, offset, data}];
+    }}];
   }
+}
+
+/** If this type is user-expandable, get the definition that should be used to generate the inner rows when expanded. */
+type ExpandedType = TypeDefinition & {is: 'struct' | 'union' | 'enum', typeName?: TypeName};
+function getExpandableDefn(type: TypeTree, context: Context): ExpandedType | null {
+  if (type.is !== 'named') return null;
+
+  const defn = context.lookupType(type.name);
+  if (!defn) return null;
+  if (defn.is === 'typedef') return null;
+
+  return {...defn, typeName: type.name};
 }
 
 /**

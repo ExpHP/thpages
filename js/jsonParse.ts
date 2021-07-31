@@ -146,14 +146,11 @@ export function withDefault<T, D>(def: D, valueParser: Parser<T>): Parser<T | D>
   });
 }
 
-// no variadics, Parcel 1 is still on Typescript 3...
 export interface TupleCombinator {
-  (tuple: readonly []): Parser<[]>;
-  <A>(tuple: readonly [Parser<A>]): Parser<[A]>;
-  <A, B>(tuple: readonly [Parser<A>, Parser<B>]): Parser<[A, B]>;
-  <A, B, C>(tuple: readonly [Parser<A>, Parser<B>, Parser<C>]): Parser<[A, B, C]>;
-  <A, B, C, D>(tuple: readonly [Parser<A>, Parser<B>, Parser<C>, Parser<D>]): Parser<[A, B, C, D]>;
-  <A, B, C, D, E>(tuple: readonly [Parser<A>, Parser<B>, Parser<C>, Parser<D>, Parser<E>]): Parser<[A, B, C, D, E]>;
+  // ([Parser<A>, Parser<B>, Parser<C>]): Parser<[A, B, C]>
+  <T extends readonly Parser<unknown>[]>(tuple: T | []): Parser<{
+    [key in keyof T]: T[key] extends Parser<infer U> ? U : never
+  }>;
 }
 
 // @ts-ignore (variadics memes)
@@ -177,14 +174,10 @@ export const tuple: TupleCombinator = (parsers: Parser<any>[]) => {
   });
 };
 
-// no variadics, Parcel 1 is still on Typescript 3...
 export interface OrCombinator {
+  // (Parser<A>, Parser<B>, Parser<C>): Parser<A | B | C>
   (): Parser<never>;
-  <A>(a: Parser<A>): Parser<A>;
-  <A, B>(a: Parser<A>, b: Parser<B>): Parser<A | B>;
-  <A, B, C>(a: Parser<A>, b: Parser<B>, c: Parser<C>): Parser<A | B | C>;
-  <A, B, C, D>(a: Parser<A>, b: Parser<B>, c: Parser<C>, d: Parser<D>): Parser<A | B | C | D>;
-  <A, B, C, D, E>(a: Parser<A>, b: Parser<B>, c: Parser<C>, d: Parser<D>, e: Parser<E>): Parser<A | B | C | D | E>;
+  <A extends Parser<unknown>[]>(...test: A): A extends Parser<infer U>[] ? Parser<U> : never;
 }
 
 /**

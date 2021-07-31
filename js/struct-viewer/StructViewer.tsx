@@ -9,11 +9,11 @@ import {TrivialForwardRef} from '~/js/XUtil';
 
 import {
   TypeDatabase, TypeName, TypeDefinition,
-  PathReader, Version, TypeTree,
+  PathReader, Version, TypeTree, TypeLookupFunction,
 } from './database';
 import {Navigation, useNavigationPropsFromUrl} from './Navigation';
 import * as Rust from './render-type/Rust';
-import {DisplayTypeRow, DisplayTypeRowData, toDisplayType, diffToDisplayTypes} from './display-type';
+import {DisplayTypeRow, DisplayTypeRowData, ExpandableKey, toDisplayType, diffToDisplayTypes} from './display-type';
 import {CommonLangToolsProps} from './render-type/Common';
 
 // =============================================================================
@@ -50,8 +50,10 @@ function StructViewerPage(props: {
     const defn = await db.getTypeIfExists(name, v1);
     if (!defn) throw new Error(`Struct '${name}' does not exist in version '${version}'`);
 
-    // also return version so it can be persisted in the still-rendered struct when the version box is cleared
-    return {defn, name, version};
+    const lookupType = await db.getTypeLookupFunction(v1);
+
+    // also return name so it can be persisted in the still-rendered struct when the version box is cleared
+    return {defn, name, lookupType};
   }, [db, name, version]);
 
   return <>
@@ -62,11 +64,9 @@ function StructViewerPage(props: {
     />
     <Async promiseFn={promiseFn}>
       <Async.Initial persist><h1>Loading structs...</h1></Async.Initial>
-      <Async.Fulfilled persist>{({defn, version: persistedVersion, name: persistedName}) => (
-        <VersionContext.Provider value={persistedVersion}>
-          {defn ? <StructViewerPageImpl name={persistedName} defn={defn}/>
-            : <div>Please select a struct and version.</div>}
-        </VersionContext.Provider>
+      <Async.Fulfilled persist>{({defn, lookupType, name: persistedName}) => (
+          defn ? <StructViewerPageImpl name={persistedName} defn={defn} lookupType={lookupType}/>
+            : <div>Please select a struct and version.</div>
       )}</Async.Fulfilled>
       <Async.Rejected>{(err) => <Err>{err.message}</Err>}</Async.Rejected>
     </Async>
@@ -98,10 +98,20 @@ export function DiffViewerPage({db, name, version1, version2}: {db: TypeDatabase
   </Async>;
 }
 
-export function StructViewerPageImpl({name, defn}: {name: TypeName, defn: TypeDefinition}) {
-  const displayStruct = React.useMemo(() => toDisplayType(name, defn), [defn]);
+export function StructViewerPageImpl({name, defn, lookupType}: {name: TypeName, defn: TypeDefinition, lookupType: TypeLookupFunction}) {
+  const [expandedKeys, setExpandedKeys] = React.useState(new Set<ExpandableKey>());
+  const displayType = React.useMemo(() => toDisplayType(name, defn, expandedKeys, lookupType), [name, defn, expandedKeys, lookupType]);
 
-  const table = getTypeCells(displayStruct);
+  const toggleExpansion = React.useCallback((key: ExpandableKey) => {
+    setExpandedKeys((expandedKeys) => {
+      const newKeys = new Set([...expandedKeys]);
+      newKeys.delete(key) || newKeys.add(key);
+      return newKeys;
+    });
+  }, [expandedKeys, setExpandedKeys]);
+  const isExpanded = React.useCallback((key: ExpandableKey) => expandedKeys.has(key), [expandedKeys]);
+
+  const table = getTypeCells(displayType, lookupType, isExpanded, toggleExpansion);
   return <FlipMove typeName='div' className={clsx('struct-view', 'use-table')} enterAnimation="fade" leaveAnimation="fade" duration={100} >
     {table.map((elems) => <div key={elems[1]!.key} className='row'>{elems}</div>)}
   </FlipMove>;
@@ -175,20 +185,21 @@ const COLUMN_CLASSES = [CLASS_COL_OFFSET, CLASS_COL_TEXT];
 // So it's a function that returns a list of lists of JSX elements, indicating rows and columns.
 //
 // The elements will come with react keys, but will lack grid styles (which should be added as post-processing).
-function getTypeCells(rows: DisplayTypeRow[]): JSX.Element[][] {
+function getTypeCells(rows: DisplayTypeRow[], lookupType: TypeLookupFunction, isExpanded: (key: ExpandableKey) => boolean, toggleExpansion: React.Dispatch<ExpandableKey>): JSX.Element[][] {
   const maxOffset = rows.reduce((acc, {offset}) => Math.max(acc, offset || 0), 0);
 
   return rows.map((row) => {
-    const {key, offset, nestingLevel, data} = row;
+    const {key, offset, nestingLevel, expandableKey, data} = row;
     const offsetCell = <div key={`o-${key}`} className={CLASS_COL_OFFSET}>
       {offset != null ? <FieldOffset offset={offset} size={maxOffset}/> : null}
     </div>;
-    const textCell = <div key={`t-${key}`} className={CLASS_COL_TEXT}>
+    const onClick = expandableKey ? (() => toggleExpansion(expandableKey)) : undefined;
+    const textCell = <div key={`t-${key}`} className={clsx(CLASS_COL_TEXT, expandableKey && {'expandable': expandableKey, 'expanded': isExpanded(expandableKey)})} onClick={onClick}>
       {/* this flex wrapper helps ensure that the hanging indent increases with inner structs */}
       <div className='col-text-flex'>
         <div className='indent'>{'\u00a0\u00a0'.repeat(nestingLevel)}</div>
         <div className='col-text-wrapper'>{
-          <LangRenderRow row={data} Lang={Rust}/>
+          <LangRenderRow row={data} Lang={Rust} lookupType={lookupType}/>
         }</div>
       </div>
     </div>;
@@ -226,13 +237,7 @@ export interface LangRenderer {
   InlineType: React.ComponentType<{type: TypeTree} & CommonLangToolsProps>;
 }
 
-function LangRenderRow({row, Lang}: {row: DisplayTypeRowData, Lang: LangRenderer}) {
-  const db = React.useContext(DbContext);
-  if (!db) throw new Error("FieldDef without db");
-
-  const version = React.useContext(VersionContext);
-  if (!version) throw new Error("FieldDef without version");
-
+function LangRenderRow({row, Lang, lookupType}: {row: DisplayTypeRowData, Lang: LangRenderer, lookupType: TypeLookupFunction}) {
   // FIXME: There's some duplicated logic between here and setTypeName.
   //        But we don't just want to use setTypeName in a callback because
   //        we want to be able to generate bona-fide <a> element hyperlinks.
@@ -243,7 +248,7 @@ function LangRenderRow({row, Lang}: {row: DisplayTypeRowData, Lang: LangRenderer
     return {pathname: '/struct', search: '?' + searchParamsCopy.toString()};
   }, [searchParams])
 
-  return <Lang.TypeRow {...{db, version, getTypeUrl}} row={row}/>;
+  return <Lang.TypeRow {...{lookupType, getTypeUrl}} row={row}/>;
 }
 
 function FieldOffset({offset, size}: {offset: number, size: number}) {

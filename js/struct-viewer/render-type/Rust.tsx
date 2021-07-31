@@ -25,7 +25,7 @@ function RustTypeRow({row}: {row: DisplayTypeRowData, }) {
     case "gap": return <RustRowGap row={row}/>;
     case "enum-value": return <RustEnumValue row={row}/>;
     case "begin-page-type": return <RustPageTypeHeader row={row}/>;
-    case "begin-anon-type": return <RustAnonTypeHeader row={row}/>;
+    case "begin-inner-type": return <RustInnerTypeHeader row={row}/>;
     case "end-type": return <RustRowTypeEnd row={row}/>;
   }
 }
@@ -68,12 +68,13 @@ function RustPageTypeAlias({row: {typeName, type}}: {row: DisplayTypeRowData & {
   </>;
 }
 
-function RustAnonTypeHeader({row: {fieldName, kind}}: {row: DisplayTypeRowData & {is: 'begin-anon-type'}}) {
+function RustInnerTypeHeader({row: {fieldName, typeName, kind}}: {row: DisplayTypeRowData & {is: 'begin-inner-type'}}) {
   const {keyword} = TYPE_KIND_DATA[kind];
   return <>
     <span className={classes.fieldName}>{fieldName}</span>
     {' : '}
     <span className={classes.keyword}>{keyword}</span>
+    {typeName && <>{' '}<NamedTypeLink name={typeName}/></>}
     {' {'}
   </>;
 }

@@ -1,5 +1,5 @@
 import React from 'react';
-import {TypeDatabase, TypeName, Version} from '../database';
+import {TypeDatabase, TypeName, Version, TypeLookupFunction} from '../database';
 import {SimpleLink, LinkDest} from '~/js/UrlTools';
 
 export type GetTypeUrl = (name: TypeName) => LinkDest | null;
@@ -8,8 +8,8 @@ export type GetTypeUrl = (name: TypeName) => LinkDest | null;
  * Allows NamedTypeLink to be used.
  */
 export function CommonLangToolsProvider(props: {children: React.ReactNode} & CommonLangToolsProps) {
-  const {db, version, getTypeUrl, children} = props;
-  const context = React.useMemo(() => ({db, version, getTypeUrl}), [db, version, getTypeUrl]);
+  const {lookupType, getTypeUrl, children} = props;
+  const context = React.useMemo(() => ({lookupType, getTypeUrl}), [lookupType, getTypeUrl]);
 
   return <CommonContext.Provider value={context}>
     {children}
@@ -17,8 +17,7 @@ export function CommonLangToolsProvider(props: {children: React.ReactNode} & Com
 }
 
 export type CommonLangToolsProps = {
-  db: TypeDatabase,
-  version: Version,
+  lookupType: TypeLookupFunction,
   getTypeUrl: GetTypeUrl,
 };
 const CommonContext = React.createContext<CommonLangToolsProps | null>(null);
@@ -61,13 +60,18 @@ export function NamedTypeLink({name}: {name: TypeName}) {
   if (!context) {
     throw new Error("NamedTypeLink requires CommonLangToolsProvider");
   }
-  const {db, version, getTypeUrl} = context;
+  const {lookupType, getTypeUrl} = context;
+
+  // NOTE: Now that this takes a synchronous lookup function there is no longer any need to be
+  //       async.  However, I'm going to keep the async stuff here until the dust settles, because
+  //       ripping out the async logic is easy, while putting it back would be annoying.
+  const fakePromise = React.useMemo(() => Promise.resolve(lookupType(name)), [name]);
 
   const [linked, setLinked] = React.useState(false);
 
   React.useEffect(() => {
     const abortController = new AbortController();
-    db.getTypeIfExists(name, version)
+    fakePromise
       .then((type) => {
         if (abortController.signal.aborted) return;
         if (type) setLinked(true);
@@ -77,7 +81,7 @@ export function NamedTypeLink({name}: {name: TypeName}) {
       abortController.abort();
       setLinked(false);
     };
-  }, [db, name]);
+  }, [fakePromise, name]);
 
   const to = React.useMemo(() => getTypeUrl(name), [getTypeUrl, name]);
 
