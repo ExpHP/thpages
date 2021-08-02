@@ -1,5 +1,5 @@
 import * as JP from '~/js/jsonParse';
-import {CURRENT_FORMAT_VERSION, DEFAULT_VERSION_LEVELS, Version, VersionLevel, TypeName} from './index';
+import {CURRENT_FORMAT_VERSION, DEFAULT_VERSION_LEVELS, Version, VersionLevel, TypeName, FieldName} from './index';
 
 export type DbHeadJson = {
   levels: VersionLevel[];
@@ -81,12 +81,14 @@ export type TypeDefinition =
   | {is: "union"} & UnionTypeDefinition
   | {is: "enum"} & EnumTypeDefinition
   | {is: "typedef"} & TypedefTypeDefinition
+  // | {is: "bitfields"} & BitfieldsTypeDefinition
   ;
 const parseTypeDefinition = JP.lazy(() => JP.tagged<TypeDefinition>("is", {
   "struct": parseStructTypeDefinition.then((props) => ({is: "struct", ...props})),
   "union": parseUnionTypeDefinition.then((props) => ({is: "union", ...props})),
   "enum": parseEnumTypeDefinition.then((props) => ({is: "enum", ...props})),
   "typedef": parseTypedefTypeDefinition.then((props) => ({is: "typedef", ...props})),
+  // "bitfields": parseBitfieldsTypeDefinition.then((props) => ({is: "bitfields", ...props})),
 }));
 
 export type StructTypeDefinition = {
@@ -95,7 +97,6 @@ export type StructTypeDefinition = {
   packed: boolean; // default: false
   members: StructTypeMember[];
 };
-
 export type StructTypeMember = {
   offset: Integer;
 } & (
@@ -111,7 +112,7 @@ const parseStructTypeDefinition = JP.lazy(() => JP.object({
   packed: JP.withDefault(false, JP.boolean),
   members: JP.array(JP.object({
     offset: parseInteger,
-    name: JP.string,
+    name: JP.string.then((x) => x as FieldName),
     type: JP.or(JP.null_, parseTypeTree),
   })),
 })).then((defn) => {
@@ -142,6 +143,61 @@ const parseStructTypeDefinition = JP.lazy(() => JP.object({
   });
   return {...defn, members};
 });
+
+// export type BitfieldsTypeDefinition = {
+//   size: Integer;
+//   /**
+//    * In bitfields, the viewer will also use this to control the display of when the offset changes.
+//    * E.g. for `align: 1` you can have a bitfield at `0x36[3:5]`, but for `align: 4` this would
+//    * instead display as `0x34[19:21]`.
+//    */
+//   align: Integer;
+//   members: StructTypeMember[];
+// };
+// export type BitfieldsTypeMember =  {
+//   start: Integer;
+// } & (
+//   | {classification: 'field', name: FieldName, signed: boolean}
+//   | {classification: 'unused'}
+//   | {classification: 'gap'}
+//   | {classification: 'end'}
+// );
+
+// const parseBitfieldsTypeDefinition = JP.lazy(() => JP.object({
+//   size: parseInteger,
+//   align: parseInteger,
+//   members: JP.array(JP.object({
+//     start: parseInteger,
+//     signed: JP.boolean,
+//     name: JP.optional(JP.string.then((x) => x as FieldName)),
+//     length: parseInteger,
+//   })),
+// })).then((defn) => {
+//   // add dummy end member
+//   const effectiveMembers = [...defn.members, {start: defn.size * 8}];
+
+//   let prevEnd = 0;
+//   let outMembers: BitfieldsTypeMember[] = [];
+//   for (const row of effectiveMembers) {
+//     if (prevEnd < row.start) {
+//       throw Error('bitfields are overlapping or otherwise not sorted');
+//     }
+//     if (row.start > prevEnd) {
+//       outMembers.push({classification: 'gap', start: prevEnd});
+//     }
+
+//     if (!("signed" in row)) {
+//       outMembers.push({classification: 'end', start: row.start});
+//     } else if (!row.name) {
+//       outMembers.push({classification: 'unused', start: row.start});
+//     } else {
+//       const {signed, name, length} = row;
+//       outMembers.push({classification: 'field', start: row.start, name, signed});
+//       prevEnd = row.start + length;
+//     }
+//   }
+//   return {...defn, members: outMembers};
+// });
 
 export type EnumTypeDefinition = {
   size: Integer;
@@ -210,8 +266,11 @@ export type TypeTree =
   | {is: "named", name: TypeName}
   | {is: "void"}
   | {is: "fn-ptr"} & FunctionTypeDefinition
+  /** Anonymous inline struct.  (a proper, named struct will use "named") */
   | {is: "struct"} & StructTypeDefinition
+  /** Anonymous inline union.  (a proper, named union will use "named") */
   | {is: "union"} & UnionTypeDefinition
+  /** Anonymous inline enum.  (a proper, named enum will use "named") */
   | {is: "enum"} & EnumTypeDefinition
   | {is: "unsupported", size: Integer, align: Integer, comment?: string}
   ;

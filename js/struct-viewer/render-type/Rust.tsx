@@ -4,7 +4,7 @@ import clsx from 'clsx';
 import {TypeTree} from '../database';
 import {unreachable} from '~/js/util';
 import {DisplayTypeRowData} from '../display-type';
-import {CommonLangToolsProvider, NamedTypeLink, CommonLangToolsProps, classes} from './Common';
+import {CommonLangToolsProvider, NamedTypeLink, CommonLangToolsProps, classes, ElidedArray} from './Common';
 
 export const TypeRow = React.memo(function TypeRow({row, ...props}: {row: DisplayTypeRowData} & CommonLangToolsProps) {
   return <CommonLangToolsProvider {...props}>
@@ -19,7 +19,7 @@ export const InlineType = React.memo(function InlineType({type, ...props}: {type
 
 // =============================================================================
 
-function RustTypeRow({row}: {row: DisplayTypeRowData, }) {
+function RustTypeRow({row}: {row: DisplayTypeRowData}) {
   switch (row.is) {
     case "field": return <RustField row={row}/>;
     case "gap": return <RustRowGap row={row}/>;
@@ -27,6 +27,7 @@ function RustTypeRow({row}: {row: DisplayTypeRowData, }) {
     case "begin-page-type": return <RustPageTypeHeader row={row}/>;
     case "begin-inner-type": return <RustInnerTypeHeader row={row}/>;
     case "end-type": return <RustRowTypeEnd row={row}/>;
+    case "expanded-array-ellipsis": return <ElidedArray row={row}/>;
   }
 }
 
@@ -35,12 +36,15 @@ const TYPE_KIND_DATA = {
   enum: {keyword: "enum"},
   union: {keyword: "union"},
   typedef: {keyword: "type"},
+  bitfields: {keyword: "struct"},
 };
 
 function RustPageTypeHeader({row}: {row: DisplayTypeRowData & {is: 'begin-page-type'}}) {
   if (row.type.is === 'typedef') {
     // @ts-ignore  it's not applying the intersection to row.type...
     return <RustPageTypeAlias row={row}/>;
+  // } else if (row.type.is === 'bitfields') {
+  //   return <RustPageBitfieldsHeader row={row}/>;
   }
   const {typeName, type} = row;
   const {keyword} = TYPE_KIND_DATA[type.is];
@@ -56,6 +60,19 @@ function RustPageTypeHeader({row}: {row: DisplayTypeRowData & {is: 'begin-page-t
     </p>
   </>;
 }
+
+// function RustPageBitfieldsHeader({row}: {row: DisplayTypeRowData & {is: 'begin-page-type'}}) {
+//   return <>
+//     <p>#[repr(align = "{row.type.align}")]</p>
+//     <p>#[bitfields]</p>
+//     <p>
+//       <span className={classes.keyword}>struct</span>
+//       {' '}
+//       <span className={classes.currentTypeName}>{row.typeName}</span>
+//       {' {'}
+//     </p>
+//   </>;
+// }
 
 function RustPageTypeAlias({row: {typeName, type}}: {row: DisplayTypeRowData & {is: 'begin-page-type', type: {is: 'typedef'}}}) {
   return <>

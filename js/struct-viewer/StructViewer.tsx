@@ -9,7 +9,7 @@ import {TrivialForwardRef} from '~/js/XUtil';
 
 import {
   TypeDatabase, TypeName, TypeDefinition,
-  PathReader, Version, TypeTree, TypeLookupFunction,
+  PathReader, Version, TypeTree, TypeLookupFunction, TypeCollection,
 } from './database';
 import {Navigation, useNavigationPropsFromUrl} from './Navigation';
 import * as Rust from './render-type/Rust';
@@ -22,9 +22,7 @@ export function StructViewerPageFromUrl() {
   const db = useDb(defaultPathReader);
   const {typeName, version, setTypeName, setVersion} = useNavigationPropsFromUrl();
 
-  return <DbContext.Provider value={db}>
-    <StructViewerPage {...{db, version, setVersion}} name={typeName} setName={setTypeName} />
-  </DbContext.Provider>
+  return <StructViewerPage {...{db, version, setVersion}} name={typeName} setName={setTypeName} />;
 }
 
 function StructViewerPage(props: {
@@ -50,10 +48,10 @@ function StructViewerPage(props: {
     const defn = await db.getTypeIfExists(name, v1);
     if (!defn) throw new Error(`Struct '${name}' does not exist in version '${version}'`);
 
-    const lookupType = await db.getTypeLookupFunction(v1);
+    const typeCollection = await db.getTypeCollection(v1);
 
     // also return name so it can be persisted in the still-rendered struct when the version box is cleared
-    return {defn, name, lookupType};
+    return {defn, name, typeCollection};
   }, [db, name, version]);
 
   return <>
@@ -64,8 +62,8 @@ function StructViewerPage(props: {
     />
     <Async promiseFn={promiseFn}>
       <Async.Initial persist><h1>Loading structs...</h1></Async.Initial>
-      <Async.Fulfilled persist>{({defn, lookupType, name: persistedName}) => (
-          defn ? <StructViewerPageImpl name={persistedName} defn={defn} lookupType={lookupType}/>
+      <Async.Fulfilled persist>{({defn, typeCollection, name: persistedName}) => (
+          defn ? <StructViewerPageImpl name={persistedName} defn={defn} typeCollection={typeCollection}/>
             : <div>Please select a struct and version.</div>
       )}</Async.Fulfilled>
       <Async.Rejected>{(err) => <Err>{err.message}</Err>}</Async.Rejected>
@@ -98,9 +96,10 @@ export function DiffViewerPage({db, name, version1, version2}: {db: TypeDatabase
   </Async>;
 }
 
-export function StructViewerPageImpl({name, defn, lookupType}: {name: TypeName, defn: TypeDefinition, lookupType: TypeLookupFunction}) {
+export function StructViewerPageImpl({name, defn, typeCollection}: {name: TypeName, defn: TypeDefinition, typeCollection: TypeCollection}) {
   const [expandedKeys, setExpandedKeys] = React.useState(new Set<ExpandableKey>());
-  const displayType = React.useMemo(() => toDisplayType(name, defn, expandedKeys, lookupType), [name, defn, expandedKeys, lookupType]);
+  const displayType = React.useMemo(() => toDisplayType(name, defn, expandedKeys, typeCollection), [name, defn, expandedKeys, typeCollection]);
+  const lookupType = React.useCallback(typeCollection.getNamedType.bind(typeCollection), [typeCollection]);
 
   const toggleExpansion = React.useCallback((key: ExpandableKey) => {
     setExpandedKeys((expandedKeys) => {

@@ -1,8 +1,7 @@
 import React from 'react';
-import {TypeDatabase, TypeName, Version, TypeLookupFunction} from '../database';
+import {TypeDefinition, TypeName} from '../database';
 import {SimpleLink, LinkDest} from '~/js/UrlTools';
-
-export type GetTypeUrl = (name: TypeName) => LinkDest | null;
+import {DisplayTypeRow} from '../display-type';
 
 /**
  * Allows NamedTypeLink to be used.
@@ -15,6 +14,10 @@ export function CommonLangToolsProvider(props: {children: React.ReactNode} & Com
     {children}
   </CommonContext.Provider>;
 }
+
+/** Type of a function for looking up named types in a fixed version. */
+export type TypeLookupFunction = (name: TypeName) => TypeDefinition | undefined;
+export type GetTypeUrl = (name: TypeName) => LinkDest;
 
 export type CommonLangToolsProps = {
   lookupType: TypeLookupFunction,
@@ -29,6 +32,8 @@ export const classes = {
   comment: 'comment',
   /** typically used in combination with the `comment` class for a comment representing a gap */
   gap: 'field-gap',
+  /** used on the '...' in the middle of an expanded array */
+  elided: 'elided',
   /** a type like 'int' */
   primitiveType: 'type primitive',
   /** name of a struct/enum/union/typedef.  Typically `<NamedTypeLink>` should be used instead. */
@@ -88,4 +93,8 @@ export function NamedTypeLink({name}: {name: TypeName}) {
   return <SimpleLink to={(linked && to) ? to : undefined} className={classes.userType}>
     {name}
   </SimpleLink>;
+}
+
+export function ElidedArray(row: DisplayTypeRow & {data: {is: 'expanded-array-ellipsis'}}) {
+  return <span className={classes.elided}>...</span>;
 }

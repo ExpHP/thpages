@@ -2,7 +2,7 @@ import {unreachable, window2} from '~/js/util';
 
 import {diffStructs} from './diff';
 import {
-  TypeTree, TypeDefinition, TypeName, FieldName, TypeLookupFunction,
+  TypeCollection, TypeTree, TypeDefinition, TypeName, FieldName,
   StructTypeDefinition, StructTypeMember,
   UnionTypeDefinition, UnionTypeMember,
   EnumTypeDefinition, EnumTypeValue,
@@ -30,11 +30,18 @@ export type DisplayTypeRow = {
    * Value to display in the offset column. (left gutter)
    * Null means to not display any offset. (e.g. enums)
    */
-  offset: number | null;
+  offset: Offset | null;
   nestingLevel: number;  // indentation level
   expandableKey?: ExpandableKey;
   data: DisplayTypeRowData;
 };
+
+export type Offset = number;
+// export type Offset = {
+//   byte: number;
+//   /** Semi-inclusive bit range occupied by a bitfield. */
+//   bits?: [number, number];
+// };
 
 /** Uniquely (within a DisplayType) identifies a line that can be expanded by the user into multiple lines.
  */
@@ -53,6 +60,14 @@ export type DisplayTypeRowData =
     name: FieldName;
     value: number;
   } | {
+    is: 'bitfield'
+    name: FieldName;
+    value: number;
+  } | {
+    is: 'bitfield-gap'
+    unused: boolean;
+    length: number;
+  } | {
     /** Line with the opening brace for the outermost struct on the page. */
     is: 'begin-page-type';
     typeName: TypeName;
@@ -64,10 +79,12 @@ export type DisplayTypeRowData =
     typeName?: TypeName;
     kind: 'struct' | 'union' | 'enum';
   } | {
+    /** Unexpanded middle portion of an expanded array. */
+    is: 'expanded-array-ellipsis';
+  } | {
     is: 'end-type';
     /** The opening row that is closed by this.  Might be needed by a C declaration renderer to
-     *  put a field name for an anonymous type, or may be used to write ending array dimensions for
-     *  an array of structs.  Who knows. */
+     *  put a field name for an anonymous type. Who knows. */
     _beginning: DisplayTypeRow & {data: {is: 'begin-page-type' | 'begin-inner-type'}};
   }
   ;
@@ -86,16 +103,16 @@ const TYPE_END_KEY = "@}" as ReactKey;
 /** Bag of common arguments to functions in this module which never need to change. */
 type Context = {
   expandedItems: Set<ExpandableKey>;
-  lookupType: TypeLookupFunction;
+  typeCollection: TypeCollection;
 };
 
 export function toDisplayType(
   typeName: TypeName,
   defn: TypeDefinition,
   expandedItems: Set<ExpandableKey>,
-  lookupType: (name: TypeName) => TypeDefinition | null,
+  typeCollection: TypeCollection,
 ): DisplayTypeRow[] {
-  const context = {expandedItems, lookupType};
+  const context = {expandedItems, typeCollection};
   const recurseProps = {
     startOffset: 0,
     nestingLevel: 1,
@@ -117,13 +134,16 @@ export function toDisplayType(
 
   if (defn.is === 'struct' || defn.is === 'union') {
     if (defn.is === 'struct') {
-      return [begin, ...getDisplayRowsForStructMembers(defn.members, recurseProps, {expandedItems, lookupType}), end];
+      return [begin, ...getDisplayRowsForStructMembers(defn.members, recurseProps, context), end];
     } else if (defn.is === 'union') {
-      return [begin, ...getDisplayRowsForUnionMembers(defn.members, recurseProps, {expandedItems, lookupType}), end];
+      return [begin, ...getDisplayRowsForUnionMembers(defn.members, recurseProps, context), end];
     } else unreachable(defn);
 
   } else if (defn.is === 'enum') {
     return [begin, ...getDisplayRowsForEnumValues(defn.values, recurseProps), end];
+
+  // } else if (defn.is === 'bitfields') {
+  //   return [begin, ...getDisplayRowsForBitfieldsMembers(defn.members, recurseProps), end];
 
   } else if (defn.is === 'typedef') {
     return [begin, end];
@@ -186,7 +206,7 @@ function getDisplayRowsForUnionMembers(members: UnionTypeMember[], recurseProps:
 function getDisplayRowsForTypedMember(
     member: {offset: number, name: string, type: TypeTree},
     // the field disambiguator that is scoped to the immediate struct/union with this member
-    assignDiscriminator: (x: unknown) => number,
+    assignDiscriminator: (x: string) => number,
     recurseProps: RecurseProps,
     context: Context,
 ): DisplayTypeRow[] {
@@ -194,27 +214,34 @@ function getDisplayRowsForTypedMember(
   const {startOffset, nestingLevel, keyPrefix} = recurseProps;
   const offset = member.offset + startOffset;
 
-  // key for the line representing this field.
-  const ownKey = `${keyPrefix}f-${name}-${assignDiscriminator(name)}` as ReactKey;
-
+  // Check for a user-expandable "inner definition" (struct/union/enum).
+  // (These lines are interesting because the first line needs to change from ';' to ' {' when they're expanded)
   const expandableDefn = getExpandableDefn(type, context);
-  const expandableKey = ownKey as string as ExpandableKey;
+
+  // Other reasons a line might be expandable.
+  const asExpandableArray = (type.is === 'array' && type.len > 0) ? type : null;
+  const asExpandablePointer = (type.is === 'ptr') ? type : null;
 
   // the field may be one or more lines, but these properties will always be true about the first line.
+  const ownKey = `${keyPrefix}f-${name}-${assignDiscriminator(name)}` as ReactKey;
+  const expandableKey = ownKey as string as ExpandableKey;
   const ownLineProps = {
     nestingLevel,
-    expandableKey: expandableDefn ? expandableKey : undefined,
+    expandableKey: (expandableDefn || asExpandableArray || asExpandablePointer) ? expandableKey : undefined,
     offset,
     key: ownKey,
   };
 
-  function generateExpandedInnerRows(defn: ExpandedType) {
-    const innerKeyPrefix = `${ownKey}#`;
-    const innerRecurseProps = {
-      startOffset: offset,  // inner type begins where this field begins...
-      nestingLevel: nestingLevel + 1,
-      keyPrefix: innerKeyPrefix,
-    };
+  const innerKeyPrefix = `${ownKey}#`;
+  const commonInnerRecurseProps = {
+    nestingLevel: nestingLevel + 1,
+    keyPrefix: innerKeyPrefix,
+  };
+
+  // Helper to generate rows for a "inner definition" (struct/union/enum) regardless of whether it is anonymous.
+  function generateExpandedDefnRows(defn: ExpandedType) {
+    const innerRecurseProps = {...commonInnerRecurseProps, startOffset: offset};  // inner type begins where this field begins...
+
     // The opening and closing rows for this type
     const begin = {
       ...ownLineProps,
@@ -238,16 +265,33 @@ function getDisplayRowsForTypedMember(
     }
   }
 
+  // Now check if there's going to be an expanded inner definition
   if (expandableDefn && context.expandedItems.has(expandableKey)) {
-    return generateExpandedInnerRows(expandableDefn);
+    return generateExpandedDefnRows(expandableDefn);
 
   } else if (type.is === 'struct' || type.is === 'union' || type.is === 'enum') {
-    return generateExpandedInnerRows(type);
+    return generateExpandedDefnRows(type);
 
   } else {
-    return [{...ownLineProps, data: {
-      is: 'field', type, name: name as FieldName,
-    }}];
+    // No expanded inner definition.  Produce a standard row for the field.
+    const ownRow = {...ownLineProps, data: {
+      is: 'field' as const, type, name: name as FieldName,
+    }};
+
+    // Now check for the other expandable things which don't influence the field's own row.
+    let extraRows: DisplayTypeRow[] = [];
+    if (context.expandedItems.has(expandableKey)) {
+      if (asExpandableArray) {
+        const innerRecurseProps = {...commonInnerRecurseProps, startOffset: offset};
+        extraRows = getDisplayRowsForExpandedArray(asExpandableArray, innerRecurseProps, context);
+
+      } else if (asExpandablePointer) {
+        const innerRecurseProps = {...commonInnerRecurseProps, startOffset: 0};
+        extraRows = getDisplayRowsForExpandedPointer(asExpandablePointer, innerRecurseProps, context);
+
+      }
+    }
+    return [ownRow, ...extraRows];
   }
 }
 
@@ -256,7 +300,7 @@ type ExpandedType = TypeDefinition & {is: 'struct' | 'union' | 'enum', typeName?
 function getExpandableDefn(type: TypeTree, context: Context): ExpandedType | null {
   if (type.is !== 'named') return null;
 
-  const defn = context.lookupType(type.name);
+  const defn = context.typeCollection.getNamedType(type.name);
   if (!defn) return null;
   if (defn.is === 'typedef') return null;
 
@@ -278,9 +322,66 @@ function getDisplayRowsForEnumValues(
   return values.map(({name, value}) => {
     const key = `${keyPrefix}v-${name}-${assignDiscriminator(name)}` as ReactKey;
     return {key, nestingLevel, offset, data: {
-      is: 'enum-value', name: name as FieldName, value,
+      is: 'enum-value', name, value,
     }};
   });
+}
+
+function getDisplayRowsForExpandedArray(
+  type: TypeTree & {is: 'array'},
+  recurseProps: RecurseProps,
+  context: Context,
+): DisplayTypeRow[] {
+  const {startOffset, keyPrefix, nestingLevel} = recurseProps;
+  const itemSize = context.typeCollection.getLayout(type.inner).size;
+
+  const makeFieldForElement = (index: number) => {
+    const member = {
+      offset: startOffset + index * itemSize,
+      name: `_${index}` as FieldName,
+      type: type.inner,
+    };
+    const assignDiscriminator = () => 0; // these generated field names will already be unique...
+    return getDisplayRowsForTypedMember(member, assignDiscriminator, recurseProps, context);
+  };
+
+  const defaultLeadingRows = 2;
+  const defaultTrailingRows = 2;
+  const maxRowsToShow = defaultLeadingRows + defaultTrailingRows + 1;
+  const {numLeadingRows, numTrailingRows, hasEllipsis} = (
+    type.len <= maxRowsToShow
+      ? {numLeadingRows: type.len, numTrailingRows: 0, hasEllipsis: false}
+      : {numLeadingRows: defaultLeadingRows, numTrailingRows: defaultTrailingRows, hasEllipsis: true}
+  );
+
+  let rows = [];
+  for (let i = 0; i < numLeadingRows; i++) {
+    rows.push(...makeFieldForElement(i));
+  }
+  if (hasEllipsis) {
+    rows.push({
+      key: `${keyPrefix}_${numLeadingRows}` as ReactKey,
+      offset: startOffset + numLeadingRows * itemSize,
+      nestingLevel,
+      data: {is: 'expanded-array-ellipsis' as const},
+    });
+  }
+  for (let i = type.len - numTrailingRows; i < type.len; i++) {
+    rows.push(...makeFieldForElement(i));
+  }
+
+  return rows;
+}
+
+function getDisplayRowsForExpandedPointer(
+  type: TypeTree & {is: 'ptr'},
+  recurseProps: RecurseProps,
+  context: Context,
+): DisplayTypeRow[] {
+  // just print as the body of a struct with one field
+  const member = {offset: 0, name: `_` as FieldName, type: type.inner};
+  const assignDiscriminator = () => 0;  // collisions are impossible with only one field...
+  return getDisplayRowsForTypedMember(member, assignDiscriminator, recurseProps, context);
 }
 
 /**

@@ -99,11 +99,11 @@ export class TypeDatabase {
 
   async getTypeIfExists(name: TypeName, version: Version): Promise<TypeDefinition | undefined> {
     await this.#dbHead;  // guarantee inner maps
-    const typeDb = await this.getTypeDbForVersion(version);
+    const typeDb = await this.getTypeCollection(version);
     return typeDb.getNamedType(name);
   }
 
-  async getTypeDbForVersion(version: Version) {
+  async getTypeCollection(version: Version): Promise<TypeCollection> {
     await this.#dbHead;  // guarantee inner maps
     return await this.#byVersion.get(version)!;
   }
@@ -124,7 +124,7 @@ export class TypeDatabase {
   async getVersionsForStruct(name: TypeName, minLevel: VersionLevel): Promise<Version[]> {
     const out = [];
     for (const version of await this.getAllVersions(minLevel)) {
-      const typeDb = await this.getTypeDbForVersion(version);
+      const typeDb = await this.getTypeCollection(version);
       if (typeDb.getNamedType(name)) {
         out.push(version);
       }
@@ -133,13 +133,8 @@ export class TypeDatabase {
   }
 
   async getTypeNamesForVersion(version: Version): Promise<TypeName[]> {
-    const inner = await this.getTypeDbForVersion(version);
+    const inner = await this.getTypeCollection(version);
     return [...inner.typeNames()];
-  }
-
-  async getTypeLookupFunction(version: Version): Promise<TypeLookupFunction> {
-    const inner = await this.getTypeDbForVersion(version);
-    return (name) => inner.getNamedType(name) || null;
   }
 
   async getAllStructs(): Promise<TypeName[]> {
@@ -183,13 +178,10 @@ async function loadTypeCollection(reader: PathReader, version: Version, commonTy
   return new TypeCollection(allTypes, versionProps);
 }
 
-/** Type of a function for looking up named types in a fixed version. */
-export type TypeLookupFunction = (name: TypeName) => TypeDefinition | null;
-
 /**
  * A collection of type definitions for a single version, providing synchronous operations.
  **/
-class TypeCollection {
+export class TypeCollection {
   #versionProps: VersionProps;
   #types: Map<TypeName, TypeDefinition>;
 
@@ -198,7 +190,7 @@ class TypeCollection {
     this.#types = types;
   }
 
-  private getTypeLayout(ttree: TypeTree): Layout {
+  getLayout(ttree: TypeTree): Layout {
     switch (ttree.is) {
       case "int":
       case "float":
@@ -212,17 +204,15 @@ class TypeCollection {
         return {size: this.#versionProps.pointerSize, align: this.#versionProps.pointerSize};
       case "void":
         return {size: 0, align: 1};
-      case "array":
-        const {size, align} = this.getTypeLayout(ttree.inner);
+      case "array": {
+        const {size, align} = this.getLayout(ttree.inner);
         return {size: size * ttree.len, align};
-      case "named":
-        return this.getNamedTypeLayout(ttree.name);
+      }
+      case "named": {
+        const {size, align} = this.#types.get(ttree.name)!;
+        return {size, align};
+      }
     }
-  }
-
-  private getNamedTypeLayout(name: TypeName): Layout {
-    const {size, align} = this.#types.get(name)!;
-    return {size, align};
   }
 
   structHasNaturalOffsets(struct: StructTypeDefinition) {
