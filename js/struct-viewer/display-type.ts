@@ -6,6 +6,7 @@ import {
   StructTypeDefinition, StructTypeMember,
   UnionTypeDefinition, UnionTypeMember,
   EnumTypeDefinition, EnumTypeValue,
+  BitfieldsTypeDefinition, BitfieldsTypeMember,
 } from './database';
 
 // Row-generation pass
@@ -36,12 +37,11 @@ export type DisplayTypeRow = {
   data: DisplayTypeRowData;
 };
 
-export type Offset = number;
-// export type Offset = {
-//   byte: number;
-//   /** Semi-inclusive bit range occupied by a bitfield. */
-//   bits?: [number, number];
-// };
+export type Offset = {
+  byte: number;
+  /** Semi-inclusive bit range occupied by a bitfield. */
+  bits?: [number, number];
+};
 
 /** Uniquely (within a DisplayType) identifies a line that can be expanded by the user into multiple lines.
  */
@@ -62,7 +62,8 @@ export type DisplayTypeRowData =
   } | {
     is: 'bitfield'
     name: FieldName;
-    value: number;
+    length: number;
+    signed: boolean;
   } | {
     is: 'bitfield-gap'
     unused: boolean;
@@ -127,7 +128,7 @@ export function toDisplayType(
   } as const;
   const end = {
     key: TYPE_END_KEY,
-    offset: defn.size,
+    offset: {byte: defn.size},
     nestingLevel: 0,
     data: {is: 'end-type', _beginning: begin} as const,
   } as const;
@@ -142,8 +143,8 @@ export function toDisplayType(
   } else if (defn.is === 'enum') {
     return [begin, ...getDisplayRowsForEnumValues(defn.values, recurseProps), end];
 
-  // } else if (defn.is === 'bitfields') {
-  //   return [begin, ...getDisplayRowsForBitfieldsMembers(defn.members, recurseProps), end];
+  } else if (defn.is === 'bitfields') {
+    return [begin, ...getDisplayRowsForBitfieldsMembers(defn, recurseProps), end];
 
   } else if (defn.is === 'typedef') {
     return [begin, end];
@@ -176,7 +177,7 @@ function getDisplayRowsForStructMembers(members: StructTypeMember[], recurseProp
       const size = nextRow.offset - row.offset;
       const key = `${keyPrefix}gap-${row.offset}` as ReactKey;
       return [{key, nestingLevel, data: {
-        is: 'gap', offset, size,
+        is: 'gap', offset: {byte: offset}, size,
       }}];
 
     } else if (row.classification === 'padding') {
@@ -204,7 +205,7 @@ function getDisplayRowsForUnionMembers(members: UnionTypeMember[], recurseProps:
  * (this field could itself be a struct/union/enum type that gets expanded into multiple rows...)
  */
 function getDisplayRowsForTypedMember(
-    member: {offset: number, name: string, type: TypeTree},
+    member: {offset: number, name: FieldName, type: TypeTree},
     // the field disambiguator that is scoped to the immediate struct/union with this member
     assignDiscriminator: (x: string) => number,
     recurseProps: RecurseProps,
@@ -228,7 +229,7 @@ function getDisplayRowsForTypedMember(
   const ownLineProps = {
     nestingLevel,
     expandableKey: (expandableDefn || asExpandableArray || asExpandablePointer) ? expandableKey : undefined,
-    offset,
+    offset: {byte: offset},
     key: ownKey,
   };
 
@@ -249,7 +250,7 @@ function getDisplayRowsForTypedMember(
     };
     const end = {
       nestingLevel,
-      offset: offset + defn.size,
+      offset: {byte: offset + defn.size},
       key: `${innerKeyPrefix}${TYPE_END_KEY}` as ReactKey,
       data: {is: "end-type", _beginning: begin} as const,
     };
@@ -361,7 +362,7 @@ function getDisplayRowsForExpandedArray(
   if (hasEllipsis) {
     rows.push({
       key: `${keyPrefix}_${numLeadingRows}` as ReactKey,
-      offset: startOffset + numLeadingRows * itemSize,
+      offset: {byte: startOffset + numLeadingRows * itemSize},
       nestingLevel,
       data: {is: 'expanded-array-ellipsis' as const},
     });
@@ -382,6 +383,49 @@ function getDisplayRowsForExpandedPointer(
   const member = {offset: 0, name: `_` as FieldName, type: type.inner};
   const assignDiscriminator = () => 0;  // collisions are impossible with only one field...
   return getDisplayRowsForTypedMember(member, assignDiscriminator, recurseProps, context);
+}
+
+function getDisplayRowsForBitfieldsMembers(defn: BitfieldsTypeDefinition, recurseProps: RecurseProps): DisplayTypeRow[] {
+  const {startOffset, nestingLevel, keyPrefix} = recurseProps;
+
+  const assignDiscriminator = makeDisambiguator();
+  return [...window2(defn.members)].flatMap(([row, nextRow]) => {
+    // For the byte part of the offset, choose the closest multiple of alignment without going over.
+    const singleByteOffset = startOffset + Math.floor(row.start / 8);
+    const byteOffset = singleByteOffset - singleByteOffset % defn.align;
+    // The bit index in row.start was relative to startOffset.
+    // The offset increased, so the bit index decreases.
+    const actualStart = row.start - 8 * (byteOffset - startOffset);
+    const length = nextRow.start - row.start;
+    const offset: Offset = {
+      byte: byteOffset,
+      bits: [actualStart, actualStart + length],
+    };
+
+    if (row.classification === 'field') {
+      const {name, signed} = row;
+      const key = `${keyPrefix}f-${name}-${assignDiscriminator(name)}` as ReactKey;
+
+      const outRow: DisplayTypeRow = {key, nestingLevel, offset, data: {
+        is: 'bitfield', name, signed, length,
+      }};
+      return [outRow];
+
+    } else if (row.classification === 'gap') {
+      // key uses row.start instead of actualStart because actualStart is not unique
+      const key = `${keyPrefix}g-${row.start}` as ReactKey;
+      const outRow: DisplayTypeRow = {key, nestingLevel, offset, data: {
+        is: 'bitfield-gap', length, unused: row.unused,
+      }};
+      return [outRow];
+
+    } else if (row.classification === 'end') {
+      return [];  // the opening and closing rows are the caller's responsibility
+
+    } else {
+      unreachable(row);
+    }
+  })
 }
 
 /**

@@ -6,6 +6,7 @@ import clsx from 'clsx';
 import {useSearchParams} from '~/js/UrlTools';
 import {Err} from '~/js/Error';
 import {TrivialForwardRef} from '~/js/XUtil';
+import groupBy from '~/js/util/group-by';
 
 import {
   TypeDatabase, TypeName, TypeDefinition,
@@ -13,7 +14,7 @@ import {
 } from './database';
 import {Navigation, useNavigationPropsFromUrl} from './Navigation';
 import * as Rust from './render-type/Rust';
-import {DisplayTypeRow, DisplayTypeRowData, ExpandableKey, toDisplayType, diffToDisplayTypes} from './display-type';
+import {DisplayTypeRow, DisplayTypeRowData, ExpandableKey, Offset, toDisplayType, diffToDisplayTypes} from './display-type';
 import {CommonLangToolsProps} from './render-type/Common';
 
 // =============================================================================
@@ -185,22 +186,17 @@ const COLUMN_CLASSES = [CLASS_COL_OFFSET, CLASS_COL_TEXT];
 //
 // The elements will come with react keys, but will lack grid styles (which should be added as post-processing).
 function getTypeCells(rows: DisplayTypeRow[], lookupType: TypeLookupFunction, isExpanded: (key: ExpandableKey) => boolean, toggleExpansion: React.Dispatch<ExpandableKey>): JSX.Element[][] {
-  const maxOffset = rows.reduce((acc, {offset}) => Math.max(acc, offset || 0), 0);
-
-  return rows.map((row) => {
-    const {key, offset, nestingLevel, expandableKey, data} = row;
+  const gutterRows = [...getGutterTextLines(rows)];
+  return rows.map((row, rowIndex) => {
+    const {key, nestingLevel, expandableKey, data} = row;
     const offsetCell = <div key={`o-${key}`} className={CLASS_COL_OFFSET}>
-      {offset != null ? <FieldOffset offset={offset} size={maxOffset}/> : null}
+      {gutterRows[rowIndex]}
     </div>;
     const onClick = expandableKey ? (() => toggleExpansion(expandableKey)) : undefined;
     const textCell = <div key={`t-${key}`} className={clsx(CLASS_COL_TEXT, expandableKey && {'expandable': expandableKey, 'expanded': isExpanded(expandableKey)})} onClick={onClick}>
-      {/* this flex wrapper helps ensure that the hanging indent increases with inner structs */}
-      <div className='col-text-flex'>
-        <div className='indent'>{'\u00a0\u00a0'.repeat(nestingLevel)}</div>
-        <div className='col-text-wrapper'>{
-          <LangRenderRow row={data} Lang={Rust} lookupType={lookupType}/>
-        }</div>
-      </div>
+      <div className='col-text-wrapper'>{
+        <LangRenderRow row={data} Lang={Rust} lookupType={lookupType}/>
+      }</div>
     </div>;
     return [offsetCell, textCell];
   });
@@ -250,10 +246,101 @@ function LangRenderRow({row, Lang, lookupType}: {row: DisplayTypeRowData, Lang: 
   return <Lang.TypeRow {...{lookupType, getTypeUrl}} row={row}/>;
 }
 
-function FieldOffset({offset, size}: {offset: number, size: number}) {
-  // NOTE: Padding produces significantly better animations than e.g. 'text-align: right', because table rows
-  //       disappearing from FlipMove lose their auto-computed column widths.
-  const hex = offset.toString(16);
-  const padding = ' '.repeat(size.toString(16).length - hex.length);
-  return <span className='field-offset-text'>{padding}0x{hex}</span>;
+function* getGutterTextLines(rows: DisplayTypeRow[]): Generator<JSX.Element> {
+  // Byte offsets are padded to the max length across the entire type.
+  const maxOffset = rows.reduce(((acc, {offset}) => Math.max(acc, offset ? offset.byte : 0)), 0);
+  const bytePadLen = maxOffset.toString(16).length;
+
+  // As for bit offsets, we will pad these on the right so that the minimum separation
+  // between the offset and field within a given bitfields struct is always 2ch.
+  //
+  // e.g.
+  //
+  //  |            struct Thing {
+  //  |0x76543210    struct Whatever {
+  //  |  0x76543210    x : int;
+  //  |  0x76543214    flags : struct {
+  //  |    0x76543214[1:6]    y: i5;
+  //  |    0x76543214[21:26]  z: i5;
+  //  |  0x76543218    }
+  //  |0x76543218    }
+  //  |0x76543218  }
+  //
+  //  |            struct Thing {
+  //  |0x76543210    struct Whatever {
+  //  |  0x76543210    x : int;
+  //  |  0x76543214    flags : struct {
+  //  |    0x76543214[1:6]  y: i5;
+  //  |    0x76543214[6:8]  z: i5;
+  //  |  0x76543218    }
+  //  |0x76543218    }
+  //  |0x76543218  }
+
+  // Identify groups of consecutive offsets with bits; these will all belong to the same bitfields struct.
+  //
+  // There may be some lines in-between which don't have an offset (e.g. comments); these will use
+  // groupBy.any so that they don't impact the grouping.
+  const groups = groupBy(rows, ({offset}) => (offset ? 'bits' in offset : groupBy.any));
+
+  for (const group of groups) {
+    if (group.key === groupBy.any) {
+      // there is always at least one offset (the type's size) so this shouldn't happen
+      throw Error('no offsets at all!?');
+    }
+
+    if (group.key === false) {
+      // only a byte offset
+      // the first nesting level pads the right; the rest pad the left.
+      for (const {nestingLevel, offset} of group.values) {
+        const padAfter = '  ' + ('  '.repeat(nestingLevel ? 1 : 0));
+        const padBefore = '  '.repeat(nestingLevel ? nestingLevel - 1 : 0);
+        if (offset) {
+          yield (<>{padBefore}<FieldOffset byte={offset.byte} bytePadLen={bytePadLen}/>{padAfter}</>);
+        } else {
+          yield (<>{padBefore}{' '.repeat(bytePadLen + '0x'.length)}{padAfter}</>);
+        }
+      }
+
+    } else {
+      // offset has bits
+      // determine the max length of the bits part
+      const bitsPadLen = (
+        group.values.filter(({offset}) => offset)
+          .map(({offset}) => formatBits(offset!.bits!).length)
+          .reduce((acc, b) => Math.max(acc, b), 0)
+      );
+      for (const {nestingLevel, offset} of group.values) {
+        const padAfter = '  '.repeat(nestingLevel ? 1 : 0);
+        const padBefore = '  '.repeat(nestingLevel ? nestingLevel - 1 : 0);
+        if (offset) {
+          const [byte, bits] = [offset.byte, offset.bits!];
+          yield (<>{padBefore}<FieldOffsetWithBits {...{byte, bits, bytePadLen, bitsPadLen}}/>{padAfter}</>);
+        } else {
+          yield (<>{padBefore}{' '.repeat('0x'.length + bytePadLen + bitsPadLen)}{padAfter}</>);
+        }
+      }
+    }
+  }
+}
+
+
+function FieldOffset({byte, bytePadLen}: {byte: number, bytePadLen: number}) {
+  const byteStr = formatOffsetByte({byte, bytePadLen});
+  return <span className='field-offset-text'>{byteStr}</span>;
+}
+
+function FieldOffsetWithBits({byte, bits, bytePadLen, bitsPadLen}: {byte: number, bits: [number, number], bytePadLen: number, bitsPadLen: number}) {
+  const byteStr = formatOffsetByte({byte, bytePadLen});
+  const bitsStr = formatBits(bits);
+  const padding = ' '.repeat(bitsPadLen - bitsStr.length);
+  return <span className='field-offset-text'>{byteStr}{bitsStr}{padding}</span>;
+}
+
+function formatOffsetByte({byte, bytePadLen}: {byte: number, bytePadLen: number}) {
+  const bytesHex = byte.toString(16);
+  const leftPadding = ' '.repeat(bytePadLen - bytesHex.length);
+  return `${leftPadding}0x${bytesHex}`;
+}
+function formatBits([start, end]: [number, number]) {
+  return `[${start}:${end}]`;
 }

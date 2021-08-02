@@ -1,7 +1,7 @@
 import React from 'react';
 import {TypeDefinition, TypeName} from '../database';
 import {SimpleLink, LinkDest} from '~/js/UrlTools';
-import {DisplayTypeRow} from '../display-type';
+import {DisplayTypeRowData} from '../display-type';
 
 /**
  * Allows NamedTypeLink to be used.
@@ -30,8 +30,8 @@ const CommonContext = React.createContext<CommonLangToolsProps | null>(null);
 export const classes = {
   /** used on comment syntax in the language */
   comment: 'comment',
-  /** typically used in combination with the `comment` class for a comment representing a gap */
-  gap: 'field-gap',
+  /** used for a comment representing a gap */
+  gap: 'comment field-gap',
   /** used on the '...' in the middle of an expanded array */
   elided: 'elided',
   /** a type like 'int' */
@@ -95,6 +95,6 @@ export function NamedTypeLink({name}: {name: TypeName}) {
   </SimpleLink>;
 }
 
-export function ElidedArray(row: DisplayTypeRow & {data: {is: 'expanded-array-ellipsis'}}) {
+export function ElidedArray(props: {row: DisplayTypeRowData & {is: 'expanded-array-ellipsis'}}) {
   return <span className={classes.elided}>...</span>;
 }

@@ -1,6 +1,12 @@
 import * as JP from '~/js/jsonParse';
 import {CURRENT_FORMAT_VERSION, DEFAULT_VERSION_LEVELS, Version, VersionLevel, TypeName, FieldName} from './index';
 
+// This file contains "source of truth" types for the type database.
+//
+// These types have the least amount of redundant information contained within them,
+// compared to the display types or the actual JSON data; this is intended to make
+// them more suitable to live editing.
+
 export type DbHeadJson = {
   levels: VersionLevel[];
   commonModules: Map<string, {}>;
@@ -81,14 +87,14 @@ export type TypeDefinition =
   | {is: "union"} & UnionTypeDefinition
   | {is: "enum"} & EnumTypeDefinition
   | {is: "typedef"} & TypedefTypeDefinition
-  // | {is: "bitfields"} & BitfieldsTypeDefinition
+  | {is: "bitfields"} & BitfieldsTypeDefinition
   ;
 const parseTypeDefinition = JP.lazy(() => JP.tagged<TypeDefinition>("is", {
   "struct": parseStructTypeDefinition.then((props) => ({is: "struct", ...props})),
   "union": parseUnionTypeDefinition.then((props) => ({is: "union", ...props})),
   "enum": parseEnumTypeDefinition.then((props) => ({is: "enum", ...props})),
   "typedef": parseTypedefTypeDefinition.then((props) => ({is: "typedef", ...props})),
-  // "bitfields": parseBitfieldsTypeDefinition.then((props) => ({is: "bitfields", ...props})),
+  "bitfields": parseBitfieldsTypeDefinition.then((props) => ({is: "bitfields", ...props})),
 }));
 
 export type StructTypeDefinition = {
@@ -100,7 +106,7 @@ export type StructTypeDefinition = {
 export type StructTypeMember = {
   offset: Integer;
 } & (
-  | {classification: 'field', name: string, type: TypeTree}
+  | {classification: 'field', name: FieldName, type: TypeTree}
   | {classification: 'gap'}
   | {classification: 'end'}
   | {classification: 'padding'}
@@ -144,72 +150,71 @@ const parseStructTypeDefinition = JP.lazy(() => JP.object({
   return {...defn, members};
 });
 
-// export type BitfieldsTypeDefinition = {
-//   size: Integer;
-//   /**
-//    * In bitfields, the viewer will also use this to control the display of when the offset changes.
-//    * E.g. for `align: 1` you can have a bitfield at `0x36[3:5]`, but for `align: 4` this would
-//    * instead display as `0x34[19:21]`.
-//    */
-//   align: Integer;
-//   members: StructTypeMember[];
-// };
-// export type BitfieldsTypeMember =  {
-//   start: Integer;
-// } & (
-//   | {classification: 'field', name: FieldName, signed: boolean}
-//   | {classification: 'unused'}
-//   | {classification: 'gap'}
-//   | {classification: 'end'}
-// );
+export type BitfieldsTypeDefinition = {
+  size: Integer;
+  /**
+   * In bitfields, the viewer will also use this to control the display of when the offset changes.
+   * E.g. for `align: 1` you can have a bitfield at `0x36[3:5]`, but for `align: 4` this would
+   * instead display as `0x34[19:21]`.
+   */
+  align: Integer;
+  members: BitfieldsTypeMember[];
+};
+export type BitfieldsTypeMember =  {
+  start: Integer;
+} & (
+  | {classification: 'field', name: FieldName, signed: boolean}
+  | {classification: 'gap', unused: boolean}
+  | {classification: 'end'}
+);
 
-// const parseBitfieldsTypeDefinition = JP.lazy(() => JP.object({
-//   size: parseInteger,
-//   align: parseInteger,
-//   members: JP.array(JP.object({
-//     start: parseInteger,
-//     signed: JP.boolean,
-//     name: JP.optional(JP.string.then((x) => x as FieldName)),
-//     length: parseInteger,
-//   })),
-// })).then((defn) => {
-//   // add dummy end member
-//   const effectiveMembers = [...defn.members, {start: defn.size * 8}];
+const parseBitfieldsTypeDefinition = JP.lazy(() => JP.object({
+  size: parseInteger,
+  align: parseInteger,
+  members: JP.array(JP.object({
+    start: parseInteger,
+    signed: JP.boolean,
+    name: JP.optional(JP.string.then((x) => x as FieldName)),
+    length: parseInteger,
+  })),
+})).then((defn) => {
+  // add dummy end member
+  const effectiveMembers = [...defn.members, {start: defn.size * 8}];
 
-//   let prevEnd = 0;
-//   let outMembers: BitfieldsTypeMember[] = [];
-//   for (const row of effectiveMembers) {
-//     if (prevEnd < row.start) {
-//       throw Error('bitfields are overlapping or otherwise not sorted');
-//     }
-//     if (row.start > prevEnd) {
-//       outMembers.push({classification: 'gap', start: prevEnd});
-//     }
+  let prevEnd = 0;
+  let outMembers: BitfieldsTypeMember[] = [];
+  for (const row of effectiveMembers) {
+    if (prevEnd < row.start) {
+      throw Error('bitfields are overlapping or otherwise not sorted');
+    }
+    if (row.start > prevEnd) {
+      outMembers.push({classification: 'gap', start: prevEnd, unused: false});
+    }
 
-//     if (!("signed" in row)) {
-//       outMembers.push({classification: 'end', start: row.start});
-//     } else if (!row.name) {
-//       outMembers.push({classification: 'unused', start: row.start});
-//     } else {
-//       const {signed, name, length} = row;
-//       outMembers.push({classification: 'field', start: row.start, name, signed});
-//       prevEnd = row.start + length;
-//     }
-//   }
-//   return {...defn, members: outMembers};
-// });
+    if (!("signed" in row)) {
+      outMembers.push({classification: 'end', start: row.start});
+    } else if (!row.name) {
+      outMembers.push({classification: 'gap', start: row.start, unused: true});
+    } else {
+      const {signed, name, length} = row;
+      outMembers.push({classification: 'field', start: row.start, name, signed});
+      prevEnd = row.start + length;
+    }
+  }
+  return {...defn, members: outMembers};
+});
 
 export type EnumTypeDefinition = {
   size: Integer;
   align: Integer;
   values: EnumTypeValue[];
 };
-export type EnumTypeValue = {name: string, value: Integer};
+export type EnumTypeValue = {name: FieldName, value: Integer};
 const parseEnumTypeDefinition = JP.object({
   size: parseInteger,
   align: parseInteger,
   values: JP.array(JP.object({
-    name: JP.string,
+    name: JP.string.then((x) => x as FieldName),
     value: parseInteger,
   })),
 });
@@ -219,12 +224,12 @@ export type UnionTypeDefinition = {
   align: Integer;
   members: UnionTypeMember[];
 };
-export type UnionTypeMember = {name: string, type: TypeTree};
+export type UnionTypeMember = {name: FieldName, type: TypeTree};
 const parseUnionTypeDefinition = JP.lazy(() => JP.object({
   size: parseInteger,
   align: parseInteger,
   members: JP.array(JP.object({
-    name: JP.string,
+    name: JP.string.then((x) => x as FieldName),
     type: parseTypeTree,
   })),
 }));

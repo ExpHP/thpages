@@ -5,12 +5,14 @@ import {
 import {deepInequalityWitness, unreachable} from '~/js/util';
 
 import {
-  TypeTree, TypeDefinition, TypedefTypeDefinition, StructTypeDefinition, UnionTypeDefinition, EnumTypeDefinition,
-  FunctionTypeDefinition, StructTypeMember, UnionTypeMember, EnumTypeValue,
+  TypeTree, TypeDefinition,
+  TypedefTypeDefinition, StructTypeDefinition, UnionTypeDefinition, EnumTypeDefinition, BitfieldsTypeDefinition,
+  FunctionTypeDefinition, StructTypeMember, UnionTypeMember, EnumTypeValue, BitfieldsTypeMember,
 } from "./json-types";
 export {
-  TypeTree, TypeDefinition, TypedefTypeDefinition, StructTypeDefinition, UnionTypeDefinition, EnumTypeDefinition,
-  FunctionTypeDefinition, StructTypeMember, UnionTypeMember, EnumTypeValue,
+  TypeTree, TypeDefinition,
+  TypedefTypeDefinition, StructTypeDefinition, UnionTypeDefinition, EnumTypeDefinition, BitfieldsTypeDefinition,
+  FunctionTypeDefinition, StructTypeMember, UnionTypeMember, EnumTypeValue, BitfieldsTypeMember,
 };
 
 export const CURRENT_FORMAT_VERSION = 2;
