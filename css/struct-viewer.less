@@ -19,12 +19,16 @@
 }
 
 .struct-view.use-table {
-    // display: table;
-    // .row { display: table-row; }
-    .col-offset,
+    // display: flex;
+    .row { display: flex; }
+    .col-offset {
+        flex-grow: 0;
+    }
     .col-text {
-        vertical-align: top;
-        display: table-cell;
+        flex-grow: 1;
+        justify-self: flex-start;
+        // vertical-align: top;
+        display: inline-block;
     }
     // .col-offset { text-align: right; }
 }
@@ -56,10 +60,6 @@
             transition: background-color 0.2s;
             background-color: rgba(204, 204, 204, 0.1);
         }
-    }
-
-    .col-offset {
-        padding-right: 1em;
     }
 
     .col-offset {
@@ -102,6 +102,7 @@
         color: rgb(98, 202, 123);
         background-color: rgba(5, 70, 48, 0);
         padding: 2px;
+        margin: -2px;
         border-radius: @span-border-radius;
         &:hover {
             background-color: rgba(25, 199, 141, 0.1);
@@ -116,46 +117,55 @@
         display: inline-block; // fill whole line-height
     }
 
-    .col-text {
+    .row {
         &:hover {
             background-color: rgba(255, 255, 255, 0.1);
         }
-        &.expandable {
-            &::before {
-                position: absolute;
-                margin-left: -0.5ch;
-                display: inline-block;
-                content: ">";
-                font-size: 0.7em;
-                font-weight: bold;
-                transition:
-                    transform 0.2s ease-in-out,
-                    font-size 0.05s linear,
-                    color 0.2s linear
-                    ;
-                color: rgba(255, 255, 255, 0);
-            }
-
-            &.expanded::before {
-                transform: rotate(90deg);
-                color: rgba(255, 255, 255, 0.3);
-            }
-            &:hover::before {
-                font-size: 1.1em;
-                transition:
-                    transform 0.2s ease-in-out,
-                    ;
-                color: rgba(255, 255, 60, 0.6);
-            }
-        }
     }
 
-    .col-text {
-        // expand the mouseover highlight to the left to include the expandable caret
-        position: relative;
-        left: -1ch;
-        margin-left: -1ch;
-        padding-left: 1ch;
+    .expander {
+        z-index: 1;
+        position: absolute;
+        display: inline-block;
+        font-weight: bold;
+        margin-left: -2ch;
+        text-align: center;
+        width: 4ch;
+    }
+    .expander::before {
+        display: inline-block;
+        font-weight: bold;
+        vertical-align: middle;
+
+        font-size: 0.7em;
+        color: rgba(255, 255, 255, 0);
+        transition:
+            transform 0.2s ease-in-out,
+            font-size 0.05s linear,
+            color 0.2s linear
+            ;
+        content: ">";
+    }
+    .expander.expanded::before {
+        transform: rotate(90deg);
+        color: rgba(255, 255, 128, 0.3);
+    }
+    .row:hover .expander::before {
+        // Make the font-color transition instantaneous when moving onto a row, so that
+        // if the pointer quickly moves between rows, all of the expanders will briefly appear.
+        // TODO: It would be easier to conditionally disable certain transitions
+        //       if we had them on individual elements in a chain of nested spans...
+        transition:
+            transform 0.2s ease-in-out,
+            font-size 0.05s linear
+            ;
+        color: rgba(255, 255, 60, 0.6);
+    }
+    .row:hover .expander:hover {
+        cursor: pointer;
+        &::before {
+            font-size: 1.1em;
+        }
     }
 }
 

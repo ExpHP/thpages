@@ -111,7 +111,7 @@ export function StructViewerPageImpl({name, defn, typeCollection}: {name: TypeNa
   }, [expandedKeys, setExpandedKeys]);
   const isExpanded = React.useCallback((key: ExpandableKey) => expandedKeys.has(key), [expandedKeys]);
 
-  const table = getTypeCells(displayType, lookupType, isExpanded, toggleExpansion);
+  const table = getTypeCells(displayType, lookupType, (row) => getExpander(row, isExpanded, toggleExpansion));
   return <FlipMove typeName='div' className={clsx('struct-view', 'use-table')} enterAnimation="fade" leaveAnimation="fade" duration={100} >
     {table.map((elems) => <div key={elems[1]!.key} className='row'>{elems}</div>)}
   </FlipMove>;
@@ -176,7 +176,7 @@ const COLUMN_CLASSES = [CLASS_COL_OFFSET, CLASS_COL_TEXT];
 
 // "Render" a single struct.
 //
-// * We need some kind of tabular layout in order to correctly align rows in diff output.
+// * We need some kind of tabular layout in order to have horizontal alignment in diff output.
 // * It has to be a grid instead of a table because we want to animate vertical motion of items
 //   within a struct using FlipMove.
 // * We can't just produce a grid in this function because this might only be one side of a diff.
@@ -185,15 +185,15 @@ const COLUMN_CLASSES = [CLASS_COL_OFFSET, CLASS_COL_TEXT];
 // So it's a function that returns a list of lists of JSX elements, indicating rows and columns.
 //
 // The elements will come with react keys, but will lack grid styles (which should be added as post-processing).
-function getTypeCells(rows: DisplayTypeRow[], lookupType: TypeLookupFunction, isExpanded: (key: ExpandableKey) => boolean, toggleExpansion: React.Dispatch<ExpandableKey>): JSX.Element[][] {
-  const gutterRows = [...getGutterTextLines(rows)];
+function getTypeCells(rows: DisplayTypeRow[], lookupType: TypeLookupFunction, getExpander: (row: DisplayTypeRow) => JSX.Element): JSX.Element[][] {
+  const gutterRows = [...getGutterTextLines(rows, getExpander)];
   return rows.map((row, rowIndex) => {
-    const {key, nestingLevel, expandableKey, data} = row;
+    const {key, data} = row;
     const offsetCell = <div key={`o-${key}`} className={CLASS_COL_OFFSET}>
       {gutterRows[rowIndex]}
     </div>;
-    const onClick = expandableKey ? (() => toggleExpansion(expandableKey)) : undefined;
-    const textCell = <div key={`t-${key}`} className={clsx(CLASS_COL_TEXT, expandableKey && {'expandable': expandableKey, 'expanded': isExpanded(expandableKey)})} onClick={onClick}>
+
+    const textCell = <div key={`t-${key}`} className={CLASS_COL_TEXT}>
       <div className='col-text-wrapper'>{
         <LangRenderRow row={data} Lang={Rust} lookupType={lookupType}/>
       }</div>
@@ -246,7 +246,7 @@ function LangRenderRow({row, Lang, lookupType}: {row: DisplayTypeRowData, Lang: 
   return <Lang.TypeRow {...{lookupType, getTypeUrl}} row={row}/>;
 }
 
-function* getGutterTextLines(rows: DisplayTypeRow[]): Generator<JSX.Element> {
+function* getGutterTextLines(rows: DisplayTypeRow[], getExpander: (row: DisplayTypeRow) => JSX.Element): Generator<JSX.Element> {
   // Byte offsets are padded to the max length across the entire type.
   const maxOffset = rows.reduce(((acc, {offset}) => Math.max(acc, offset ? offset.byte : 0)), 0);
   const bytePadLen = maxOffset.toString(16).length;
@@ -291,13 +291,16 @@ function* getGutterTextLines(rows: DisplayTypeRow[]): Generator<JSX.Element> {
     if (group.key === false) {
       // only a byte offset
       // the first nesting level pads the right; the rest pad the left.
-      for (const {nestingLevel, offset} of group.values) {
-        const padAfter = '  ' + ('  '.repeat(nestingLevel ? 1 : 0));
-        const padBefore = '  '.repeat(nestingLevel ? nestingLevel - 1 : 0);
+      for (const row of group.values) {
+        const {nestingLevel, offset} = row;
+        const padAfter = '\xa0\xa0'.repeat(nestingLevel ? 1 : 0);
+        const padBefore = '\xa0\xa0'.repeat(nestingLevel ? nestingLevel - 1 : 0);
+        console.log({nestingLevel, padAfter, padBefore});
+
         if (offset) {
-          yield (<>{padBefore}<FieldOffset byte={offset.byte} bytePadLen={bytePadLen}/>{padAfter}</>);
+          yield (<>{padBefore}<FieldOffset byte={offset.byte} bytePadLen={bytePadLen}/>{'\xa0\xa0'}{getExpander(row)}{padAfter}</>);
         } else {
-          yield (<>{padBefore}{' '.repeat(bytePadLen + '0x'.length)}{padAfter}</>);
+          yield (<>{padBefore}{'\xa0'.repeat(bytePadLen + '0x'.length)}{'\xa0\xa0'}{getExpander(row)}{padAfter}</>);
         }
       }
 
@@ -309,20 +312,38 @@ function* getGutterTextLines(rows: DisplayTypeRow[]): Generator<JSX.Element> {
           .map(({offset}) => formatBits(offset!.bits!).length)
           .reduce((acc, b) => Math.max(acc, b), 0)
       );
-      for (const {nestingLevel, offset} of group.values) {
-        const padAfter = '  '.repeat(nestingLevel ? 1 : 0);
-        const padBefore = '  '.repeat(nestingLevel ? nestingLevel - 1 : 0);
+      for (const row of group.values) {
+        if (getExpander(row)) {
+          // we can't position an expander here easily
+          console.error('unexpected expander on row with bit offset');
+        }
+        const {nestingLevel, offset} = row;
+        const padAfter = '\xa0\xa0'.repeat(nestingLevel ? 1 : 0);
+        const padBefore = '\xa0\xa0'.repeat(nestingLevel ? nestingLevel - 1 : 0);
+        console.log({nestingLevel, padAfter, padBefore});
         if (offset) {
           const [byte, bits] = [offset.byte, offset.bits!];
           yield (<>{padBefore}<FieldOffsetWithBits {...{byte, bits, bytePadLen, bitsPadLen}}/>{padAfter}</>);
         } else {
-          yield (<>{padBefore}{' '.repeat('0x'.length + bytePadLen + bitsPadLen)}{padAfter}</>);
+          yield (<>{padBefore}{'\xa0'.repeat('0x'.length + bytePadLen + bitsPadLen)}{padAfter}</>);
         }
       }
     }
   }
 }
 
+function getExpander(row: DisplayTypeRow, isExpanded: (key: ExpandableKey) => boolean, toggleExpansion: React.Dispatch<ExpandableKey>) {
+  const {expandableKey} = row;
+  if (expandableKey) {
+    const onClick = expandableKey ? (() => toggleExpansion(expandableKey)) : undefined;
+    return <span
+      className={clsx('expander', {'expanded': isExpanded(expandableKey)})}
+      onClick={onClick}
+    />;
+  } else {
+    return null;
+  }
+}
 
 function FieldOffset({byte, bytePadLen}: {byte: number, bytePadLen: number}) {
   const byteStr = formatOffsetByte({byte, bytePadLen});

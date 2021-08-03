@@ -2,6 +2,7 @@ const groupByAny: unique symbol = Symbol();
 export type GroupByAny = typeof groupByAny;
 export interface GroupByFn {
   <T, K>(array: T[], keyFn: (item: T) => K): IterableIterator<{key: K, values: T[]}>;
+  // This overload technically shouldn't be necesssary (it's a subset of the other), but it makes TS happier.
   <T, K>(array: T[], keyFn: (item: T) => K | GroupByAny): IterableIterator<{key: K | GroupByAny, values: T[]}>;
   any: GroupByAny;
 }
@@ -16,7 +17,7 @@ export interface GroupByFn {
  * This will only happen in the case where every single item produced `groupBy.any`
  * (and there was at least one item).
  **/
-const groupBy: GroupByFn = function* <T, K>(array: T[], keyFn: (item: T) => K | GroupByAny): Generator<{key: K | GroupByAny, values: T[]}> {
+const groupBy: GroupByFn = function* <T, K>(array: T[], keyFn: (item: T) => K | GroupByAny) {
   let groupKey: K | GroupByAny = groupBy.any;
   let groupValues: T[] = [];
   for (const x of array) {
@@ -29,9 +30,7 @@ const groupBy: GroupByFn = function* <T, K>(array: T[], keyFn: (item: T) => K | 
       continue;
     }
 
-    if (groupValues.length > 0) {
-      yield {key: groupKey, values: groupValues};
-    }
+    yield {key: groupKey, values: groupValues};
     groupValues = [x];
     groupKey = newKey;
   }
