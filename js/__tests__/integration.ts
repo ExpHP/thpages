@@ -74,7 +74,7 @@ describe('browser tests', function() {
 
   test('struct page bg fills screen', async function() {
     // Pick a tiny struct that won't force scrolling
-    await startAtPage("/struct?t=zAnmId&v=th10.v1.00a");
+    await startAtPage("/struct-testpage?t=zAnmId&v=th10.v1.00a");
     await driver.manage().window().setRect({width: 1920, height: 1000});
 
     // wait for the struct to render by looking for the `int32_t` or `i32` token
@@ -89,7 +89,7 @@ describe('browser tests', function() {
 
   test('struct page bg can grow past screen', async function() {
     // Pick a biiiig struct that won't force scrolling
-    await startAtPage("/struct?t=zAnmVm&v=th11.v1.00a");
+    await startAtPage("/struct-testpage?t=zAnmVm&v=th11.v1.00a");
     await driver.manage().window().setRect({width: 1920, height: 1000});
 
     // FIXME: would be more robust to search for the text "0x434" (the end offset)

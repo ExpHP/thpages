@@ -240,7 +240,7 @@ function LangRenderRow({row, Lang, lookupType}: {row: DisplayTypeRowData, Lang: 
   const getTypeUrl = React.useCallback((name: TypeName) => {
     const searchParamsCopy = new URLSearchParams(searchParams);
     searchParamsCopy.set('t', name);
-    return {pathname: '/struct', search: '?' + searchParamsCopy.toString()};
+    return {pathname: '/struct-testpage', search: '?' + searchParamsCopy.toString()};
   }, [searchParams])
 
   return <Lang.TypeRow {...{lookupType, getTypeUrl}} row={row}/>;

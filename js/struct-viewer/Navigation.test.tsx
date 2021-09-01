@@ -149,7 +149,7 @@ function urlFromParts(typeName: TypeName | null, version: Version | null) {
   const search = new URLSearchParams();
   if (typeName) search.set('t', typeName);
   if (version) search.set('v', version);
-  return `/struct?${search.toString()}`;
+  return `/struct-testpage?${search.toString()}`;
 }
 
 // =============================================================================

@@ -40,7 +40,7 @@ export function App() {
 
 export function TopLevelSwitch() {
   return <Switch>
-    <Route exact path="/struct"><StructAppBody /></Route>
+    <Route exact path="/struct-testpage"><StructAppBody /></Route>
     <Route><NormalAppBody /></Route>
   </Switch>;
 }
