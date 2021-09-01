@@ -254,6 +254,9 @@ mapAssign(byRefId, {
     * Interrupt 3 seems to highlight a speaker as active.
     * Interrupt 4 is used to darken a portrait as inactive.
     * Interrupt 5 makes a portrait disappear.
+
+    **Note:** This code also contains deliberate support for using \`who\` = 2 or 3 to trigger an interrupt on one of the lines of text.
+    This might be leftover from an earlier design, and is unused.
   `},
   'eosd-music': {
     sig: 'S', args: ['arg'], wip: 1, md: `
@@ -263,7 +266,7 @@ mapAssign(byRefId, {
     sig: 'ssm', args: ['who', 'line', 'text'], wip: 1, succ: 'in-intro', md: `
     :tipshow[Used to display the enemy name and flavor text.]
 
-    :wip[Oddly enough, the \`who\` argument **is** read, but I can't imagine what it uses it for.]
+    The \`who\` argument is used to select text color.
   `},
   'in-intro': {
     sig: 'ssm', args: ['un', 'us', 'ed'], md: `
