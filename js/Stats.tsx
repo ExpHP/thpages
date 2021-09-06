@@ -8,7 +8,8 @@ import {GameTh} from './Game';
 import {InlineRef} from './InlineRef';
 import {Tip} from './Tip';
 import {Ref, TableDef, CommonData, ANM_INS_TABLE, ANM_VAR_TABLE, STD_TABLE, MSG_TABLE} from './tables';
-import {Title} from './XUtil';
+import {Title, useIncremental} from './XUtil';
+import {unreachable, deepEqual} from '~/js/util';
 
 type CellData = {
   opcode: number, // opcode in this game
@@ -42,23 +43,152 @@ export function StatsPage() {
     {(() => {
       if (isPending) return <strong>Loading stats tables...</strong>;
       if (error) return `Something went wrong: ${error.message}`;
-
-      if (data) {
-        return <>
-          <h2>Anm instructions</h2>
-          <StatsTable statsRaw={data} dataSubkey={['anm', 'ins']} table={ANM_INS_TABLE} />
-          <h2>Anm variables</h2>
-          <StatsTable statsRaw={data} dataSubkey={['anm', 'var']} table={ANM_VAR_TABLE} />
-          <h2>Std instructions</h2>
-          <StatsTable statsRaw={data} dataSubkey={['std', 'ins']} table={STD_TABLE} />
-          <h2>Msg (stage) instructions</h2>
-          <StatsTable statsRaw={data} dataSubkey={['msg', 'ins']} table={MSG_TABLE} />
-        </>;
-      }
+      if (data) return <StatsPageMainContent data={data} />;
       return null;
     })()}
   </>;
 }
+
+type StatsTableListEntry = {
+  heading: string,
+  dataSubkey: [string, 'ins' | 'var'],
+  table: TableDef<any>,
+};
+
+const STATS_TABLES_LIST: StatsTableListEntry[] = [{
+  heading: "Anm instructions",
+  dataSubkey: ['anm', 'ins'],
+  table: ANM_INS_TABLE,
+}, {
+  heading: "Anm variables",
+  dataSubkey: ['anm', 'var'],
+  table: ANM_VAR_TABLE,
+}, {
+  heading: "Std instructions",
+  dataSubkey: ['std', 'ins'],
+  table: STD_TABLE,
+}, {
+  heading: "Msg (stage) instructions",
+  dataSubkey: ['msg', 'ins'],
+  table: MSG_TABLE,
+}];
+
+export function StatsPageMainContent({data}: {data: StatsJson}) {
+  // need to gather info on all rows upfront so that we can properly incrementalize their rendering
+  const allRowsOfAllTables = React.useMemo(() => (
+    STATS_TABLES_LIST.map(({dataSubkey: [lang, subkey], table}) => (
+      getStatsRows(data[lang][subkey], table)
+    ))
+  ), [STATS_TABLES_LIST, data]);
+
+  // get a possibly shorter list of tables, with rows possibly missing
+  const tablesToDisplay = useStatsTableIncrementalization(allRowsOfAllTables);
+
+  return <>
+    {tablesToDisplay.map((dataByRow, tableIndex) => {
+      const {heading, dataSubkey, table} = STATS_TABLES_LIST[tableIndex];
+      const [lang] = dataSubkey;
+      const numFiles = data[lang]['num-files'];
+      return <React.Fragment key={tableIndex}>
+        <h2>{heading}</h2>
+        <StatsTable {...{dataByRow, numFiles, table}} />
+      </React.Fragment>;
+    })}
+  </>;
+}
+
+// =============================================================================
+// Incrementalization
+
+/**
+ * Produces a truncated form of stats tables that grows incrementally on each render.
+ */
+function useStatsTableIncrementalization(allRowsOfAllTables: StatsByRef[]): StatsByRef[] {
+  const totalNumTables = allRowsOfAllTables.length;
+  const maxTableSizes = React.useMemo(() => allRowsOfAllTables.map((x) => x.size), [allRowsOfAllTables]);
+
+  const initialGoal = 10;
+
+  type State = {
+    displayCounts: number[],  // note: can exceed map length
+    lastIncrementedIndex: number,
+    earlyPhase: boolean,
+  };
+
+  const init = React.useMemo<State>(() => ({
+    displayCounts: [1],
+    lastIncrementedIndex: 0,
+    earlyPhase: true,
+  }), []);
+
+  const stopWhen = React.useCallback(({displayCounts}: State) => (
+    displayCounts.every((count, index) => count >= maxTableSizes[index])
+  ), [maxTableSizes]);
+
+  const step = React.useCallback((state: State) => {
+    const {earlyPhase, displayCounts, lastIncrementedIndex} = state;
+
+    if (earlyPhase) {
+      // Early on: Make each table long enough to require a scrollbar before adding the next.
+      const index = displayCounts.length - 1;
+      if (displayCounts[index] < Math.min(maxTableSizes[index], initialGoal)) {
+        const modifiedCounts = [...displayCounts];
+        modifiedCounts[index] += 1;
+        return {...state, displayCounts: modifiedCounts};
+      }
+
+      // Make a new table appear if possible.
+      if (displayCounts.length < totalNumTables) {
+        return {...state, displayCounts: [...displayCounts, 1]};
+      }
+
+      // All tables are long enough to have scrollbars.  Move to the next phase.
+      return {...state, earlyPhase: false};
+    }
+
+    // All tables exist. Add rows in round robin order.
+    // Some tables may be done; find the next that isn't.
+    let incrementIndex = (lastIncrementedIndex + 1) % totalNumTables;
+    while (state.displayCounts[incrementIndex] >= allRowsOfAllTables[incrementIndex].size) {
+      if (incrementIndex == lastIncrementedIndex) {
+        // We are back where we started and have not found an incomplete table.
+        // The stopWhen callback should've prevented this function from being called...
+        throw new Error("all tables full?");
+      }
+      incrementIndex = (incrementIndex + 1) % totalNumTables;
+    }
+
+    const modifiedCounts = [...displayCounts];
+    modifiedCounts[incrementIndex] += 1;
+    return {...state, lastIncrementedIndex: incrementIndex, displayCounts: modifiedCounts};
+  }, [allRowsOfAllTables, totalNumTables]);
+
+  const state = useIncremental({init, step, stopWhen}, []);
+
+  // Truncate the tables to the given lengths.
+  // state.displayCounts.map is used instead of allRowsOfAllTables.map to allow
+  // the list to become shorter (i.e. don't show all tables)
+  const output = React.useMemo(() => (
+    state.displayCounts.map((count, index) => truncateMap(allRowsOfAllTables[index], count))
+  ), [state.displayCounts, allRowsOfAllTables])
+  return output;
+}
+
+/**
+ * If a map is longer than `size`, produce a new Map of length `size`.
+ * Otherwise, the original object is returned.
+ **/
+function truncateMap<K, V>(map: Map<K, V>, size: number): Map<K, V> {
+  if (map.size <= size) {
+    return map;
+  }
+  const entries = [...map];
+  entries.length = size;
+  return new Map(entries);
+}
+
+// =============================================================================
+// Sticky styling
 
 // styles to make sticky header and column work
 const useStyles = makeStyles({
@@ -86,18 +216,7 @@ const useStyles = makeStyles({
   },
 });
 
-function StatsTable<D extends CommonData>({dataSubkey: [lang, subkey], table, statsRaw}: {
-  dataSubkey: [string, 'ins' | 'var'],
-  table: TableDef<D>,
-  statsRaw: StatsJson,
-}) {
-  const dataByRow = React.useMemo(() => getStatsRows(statsRaw[lang][subkey], table), [lang, subkey, table, statsRaw]);
-  const numFiles = statsRaw[lang]['num-files'];
-
-  return <StatsTable_ {...{table, numFiles, dataByRow}} />;
-}
-
-const StatsTable_ = React.memo(function StatsTable_<D extends CommonData>(props: {
+function StatsTable<D extends CommonData>(props: {
     numFiles: NumFiles,
     dataByRow: StatsByRef,
     table: TableDef<D>,
@@ -113,15 +232,18 @@ const StatsTable_ = React.memo(function StatsTable_<D extends CommonData>(props:
   const tableRef = React.useRef<HTMLTableElement>(null);
   React.useLayoutEffect(() => {
     if (tableRef.current) {
-      setTableSize({
+      const newSize = {
         width: tableRef.current.offsetWidth + scrollbarWidth,
         height: tableRef.current.offsetHeight,
-      });
+      };
+      if (!deepEqual(newSize, tableSize)) {
+        setTableSize(newSize);
+      }
     }
-  }, [scrollbarWidth]);
+  });
 
   const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
-  const games = [...allGames()].filter((game) => numFiles[game] > 0);
+  const games = React.useMemo(() => [...allGames()].filter((game) => numFiles[game] > 0), [numFiles]);
 
   return <div className={clsx('stats-table', classes.container)} style={tableSize ? {maxWidth: tableSize.width, maxHeight: tableSize.height} : undefined}>
     <table ref={tableRef} className={classes.table} >
@@ -135,32 +257,38 @@ const StatsTable_ = React.memo(function StatsTable_<D extends CommonData>(props:
       </thead>
 
       <tbody>
-        {[...dataByRow.entries()].map(([ref, rowData]) => (
-          <tr key={ref}>
-            <th className={classes.stickyStart}><InlineRef r={ref} /></th>
-
-            {games.map((game) => {
-              const cellData = rowData.get(game);
-              return <Tip
-                key={game}
-                disable={!(cellData)}
-                tip={<TipBody {...{game, cellData: cellData!, numFiles}} />}
-                element='td' elementProps={{
-                  className: clsx({
-                    na: cellData == null,
-                    zero: cellData?.total === 0,
-                  }),
-                }}
-              >
-                {/* Note: the <span> is used to apply opacity styling to the text */}
-                <span>{cellData ? `${cellData.total}` : ''}</span>
-              </Tip>;
-            })}
-          </tr>
+        {[...dataByRow.entries()].map(([xref, rowData]) => (
+          <StatsTableRow key={xref} {...{xref, rowData, games, numFiles}} />
         ))}
       </tbody>
     </table>
   </div>;
+}
+
+const StatsTableRow = React.memo(function StatsTableRow({xref, rowData, games, numFiles}: {xref: string, rowData: Map<Game, CellData>, games: Game[], numFiles: NumFiles}) {
+  const classes = useStyles();
+
+  return <tr>
+    <th className={classes.stickyStart}><InlineRef r={xref} /></th>
+
+    {games.map((game) => {
+      const cellData = rowData.get(game);
+      return <Tip
+        key={game}
+        disable={!(cellData)}
+        tip={<TipBody {...{game, cellData: cellData!, numFiles}} />}
+        element='td' elementProps={{
+          className: clsx({
+            na: cellData == null,
+            zero: cellData?.total === 0,
+          }),
+        }}
+      >
+        {/* Note: the <span> is used to apply opacity styling to the text */}
+        <span>{cellData ? `${cellData.total}` : ''}</span>
+      </Tip>;
+    })}
+  </tr>;
 });
 
 function getStatsRows<D extends CommonData>(statsByOpcode: StatsByOpcodeJson, tableHandlers: TableDef<D>): StatsByRef {

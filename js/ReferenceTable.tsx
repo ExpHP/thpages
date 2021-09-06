@@ -8,7 +8,7 @@ import {TrustedMarkdown} from './Markdown';
 import {gameData, Game} from './tables/game';
 import {GameThLong} from './Game';
 import {range} from './util';
-import {Wip as Wip1, Wip2, useIncremental} from './XUtil';
+import {Wip as Wip1, Wip2, useIncrementalCounter} from './XUtil';
 import {VarHeader, InsSiggy} from './InsAndVar';
 
 export function ReferenceTablePage<D extends CommonData>({table, setContentLoaded}: {table: TableDef<D>, setContentLoaded: (x: boolean) => void}) {
@@ -48,7 +48,7 @@ function ReferenceTable<D extends CommonData>({table, currentGame: game, setCont
   const {getGroups, textBeforeTable, TableRow} = table;
   const instrCounts = getInstrCounts(table, game);
 
-  const incrementalFuel = useIncremental({step: 1, max: instrCounts.total}, [table, game]);
+  const incrementalFuel = useIncrementalCounter({step: 1, max: instrCounts.total}, [table, game]);
   let remainingFuel = incrementalFuel;
 
   React.useEffect(() => {
