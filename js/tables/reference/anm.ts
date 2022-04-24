@@ -33,15 +33,15 @@ refByOpcode.set('06', new Map([
   [9, {ref: 'anm:rotate'}],
   [10, {ref: 'anm:angleVel'}],
   [11, {ref: 'anm:scaleGrowth'}],
-  [12, {ref: 'anm:alphaTimeLinear'}],
+  [12, {ref: 'anm:v0-alphaTimeLinear'}],
   [13, {ref: 'anm:blendAdditive'}],
   [14, {ref: 'anm:blendAlpha'}],
   [15, {ref: 'anm:static'}],
   [16, {ref: 'anm:spriteRand'}],
   [17, {ref: 'anm:pos'}],
-  [18, {ref: 'anm:posTimeLinear'}], // seets 0b00
-  [19, {ref: 'anm:posTimeEaseout'}], // posTimeDecel // sets 0b01
-  [20, {ref: 'anm:posTimeEaseout4'}], // posTimeAccel // sets 0b10
+  [18, {ref: 'anm:v0-posTimeLinear'}], // seets 0b00
+  [19, {ref: 'anm:v0-posTimeEaseout'}], // posTimeDecel // sets 0b01
+  [20, {ref: 'anm:v0-posTimeEaseout4'}], // posTimeAccel // sets 0b10
   [21, {ref: 'anm:stop'}],
   [22, {ref: 'anm:case'}],
   [23, {ref: 'anm:anchorTopLeft'}],
@@ -51,7 +51,7 @@ refByOpcode.set('06', new Map([
   [27, {ref: 'anm:uAdd'}],
   [28, {ref: 'anm:vAdd'}],
   [29, {ref: 'anm:visible'}], // set_visible
-  [30, {ref: 'anm:scaleTimeLinear'}], //
+  [30, {ref: 'anm:v0-scaleTimeLinear'}], //
   [31, {ref: 'anm:noZBuffer', wip: 1}], // bitflag 12
 ]));
 
@@ -1116,42 +1116,32 @@ mapAssign(byRefId, {
     (note: :ref{r=anm:rotateTime2D} and :ref{r=anm:rotateTime} are tracked separately, but judging from the code, they **are not** meant
     to be used together and their effects do not stack properly)
   `},
-  'alphaTimeLinear': {
+  'v0-alphaTimeLinear': {
     sig: 'SS', args: ['alpha', 't'], md: `
-    **Obsolete.** Use :ref{r=anm:alphaTime} instead.
-
     :tipshow[:wip[UNTESTED:] Linearly changes alpha to \`alpha\` over the next \`t\` frames.]
     Identical to calling :ref{r=anm:alphaTime}\`(t, 0, alpha)\`.
   `},
-  'posTimeLinear': {
+  'v0-posTimeLinear': {
     sig: 'fffS', args: ['x', 'y', 'z', 't'], wip: 1, md: `
-    **Obsolete.** Use :ref{r=anm:posTime} instead.
-
     :tipshow[:wip[UNTESTED:] Linearly changes position to \`(x, y, z)\` over the next \`t\` frames.]
     Identical to calling :ref{r=anm:posTime}\`(t, 0, x, y, z)\`.
   `},
-  'posTimeEaseout': {
+  'v0-posTimeEaseout': {
     sig: 'fffS', args: ['x', 'y', 'z', 't'], wip: 1, md: `
-    **Obsolete.** Use :ref{r=anm:posTime} instead.
-
     :tipshow[:wip[UNTESTED:]
     Changes position to \`(x, y, z)\` over the next \`t\` frames with a sudden burst
     of speed that decelerates over time.]
     Identical to calling :ref{r=anm:posTime}\`(t, 4, x, y, z)\`.
   `},
-  'posTimeEaseout4': {
+  'v0-posTimeEaseout4': {
     sig: 'fffS', args: ['x', 'y', 'z', 't'], wip: 1, md: `
-    **Obsolete.** Use :ref{r=anm:posTime} instead.
-
     :tipshow[:wip[UNTESTED:]
     Changes position to \`(x, y, z)\` over the next \`t\` frames with a sudden burst
     of speed that sharply decelerates as \`t^4\`.]
     Identical to calling :ref{r=anm:posTime}\`(t, 6, x, y, z)\`.
   `},
-  'scaleTimeLinear': {
+  'v0-scaleTimeLinear': {
     sig: 'ffS', args: ['sx', 'sy', 't'], wip: 1, md: `
-    **Obsolete.** Use :ref{r=anm:scaleTime} instead.
-
     :tipshow[:wip[UNTESTED:]
     Linearly changes scale to \`(sx, sy)\` over the next \`t\` frames.]
     Identical to calling :ref{r=anm:scaleTime}\`(t, 0, sx, sy)\`.
@@ -1170,6 +1160,30 @@ mapAssign(byRefId, {
     Looks like a 2D version of :ref{r=anm:posTime}?  (:wip[Is that all? Seems pointless])
   `},
 });
+
+// conditionally add text about these instructions being obsoleted from PCB onwards.
+// (FIXME: ideally this would just use a tag to conditionally display text based on game,
+//         rather than registering these as new names)
+for (const {name, replacement} of [
+  {name: 'alphaTimeLinear', replacement: `alphaTime`},
+  {name: 'posTimeLinear', replacement: `posTime`},
+  {name: 'posTimeEaseout', replacement: `posTime`},
+  {name: 'posTimeEaseout4', replacement: `posTime`},
+  {name: 'scaleTimeLinear', replacement: `scaleTime`},
+]) {
+  const oldName = `v0-${name}`;
+  const newName = `${name}`;
+  byRefId.get(oldName)!.succ = newName;
+
+  const newData = {...byRefId.get(oldName)!};
+  newData.md = `
+    **Obsolete.** Use :ref{r=anm:${replacement}} instead.
+
+${newData.md}
+  `;
+  byRefId.set(newName, newData);
+};
+
 
 // =================
 // ==== DRAWING ====
