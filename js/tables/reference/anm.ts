@@ -1173,7 +1173,6 @@ for (const {name, replacement} of [
 ]) {
   const oldName = `v0-${name}`;
   const newName = `${name}`;
-  byRefId.get(oldName)!.succ = newName;
 
   const newData = {...byRefId.get(oldName)!};
   newData.md = `
@@ -1181,6 +1180,7 @@ for (const {name, replacement} of [
 
 ${newData.md}
   `;
+  byRefId.get(oldName)!.succ = newName;
   byRefId.set(newName, newData);
 };
 
