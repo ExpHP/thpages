@@ -95,7 +95,7 @@
 # 83:  v8 ins 422
 84 texCircle
 # 85:  unknown flag
-# 86:  unknown flag
+86 slowdownImmune
 87 randMode
 
 88 scriptNew
@@ -119,8 +119,8 @@
 103 drawRect
 104 drawPoly
 105 drawPolyBorder
-106 zoomOut
-107 zoomOutTime
+106 scaleUV
+107 scaleUVTime
 108 drawRectGrad
 109 drawRectRot
 110 drawRectRotGrad

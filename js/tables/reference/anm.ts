@@ -259,7 +259,7 @@ refByOpcode.set('095', new Map([
   [83, {ref: 'anm:posAdopt'}],
   [84, {ref: 'anm:textureCircle'}],
   [85, {ref: 'anm:v8-flag-431', wip: 1}], // flag lo:30 (DS: lo:31)
-  [86, {ref: 'anm:v8-flag-432', wip: 1}], // flag lo:31 (DS: hi:0)
+  [86, {ref: 'anm:slowdown-immune', wip: 1}], // flag lo:31 (DS: hi:0)
   [87, {ref: 'anm:v4-randMode'}],
 ]));
 
@@ -412,7 +412,7 @@ refByOpcode.set('13', new Map([
   [429, {ref: 'anm:uvScale'}],
   [430, {ref: 'anm:uvScaleTime'}],
   [431, {ref: 'anm:v8-flag-431'}],
-  [432, {ref: 'anm:v8-flag-432'}],
+  [432, {ref: 'anm:slowdown-immune'}],
   [433, {ref: 'anm:posTime2D'}],
   [434, {ref: 'anm:scale2'}],
   [435, {ref: 'anm:scale2Time'}],
@@ -1182,7 +1182,7 @@ ${newData.md}
   `;
   byRefId.get(oldName)!.succ = newName;
   byRefId.set(newName, newData);
-};
+}
 
 
 // =================
@@ -1576,7 +1576,7 @@ mapAssign(byRefId, {
   'v8-flag-317': {sig: '', args: [], wip: 2, md: `:wip2[Clears the bitflag from :ref{r=anm:v8-flag-316}.]`},
   'v8-flag-419': {sig: 'S', args: ['enable'], wip: 2, md: `:wip2[Sets the state of an unknown bitflag.]`},
   'v8-flag-431': {sig: 'S', args: ['enable'], wip: 2, md: `:wip2[Sets the state of an unknown bitflag.]`},
-  'v8-flag-432': {sig: 'S', args: ['enable'], wip: 2, md: `:wip2[Sets the state of an unknown bitflag. Only used by photo games.]`},
+  'slowdown-immune': {sig: 'S', args: ['enable'], md: `Makes a VM immune to game speed changes. Only used by photo games.`},
   'v4-texCircle2': {sig: '', args: [], wip: 2, md: ':wip2[unidentified member of texCircle family, likely :ref{r=anm:textureArcEven}]'},
   'v4-texCircle3': {sig: '', args: [], wip: 2, md: ':wip2[unidentified member of texCircle family, likely :ref{r=anm:textureArc}]'},
   'vd-imaginary-439': {
