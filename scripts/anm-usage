@@ -30,7 +30,7 @@ ALL_FORMATS = ['anm', 'msg', 'end', 'std']
 def main():
     p = argparse.ArgumentParser()
     p.add_argument('--dir', type=str, help='root directory. defaults to cwd')
-    p.add_argument('format', nargs='*', choices=ALL_FORMATS)
+    p.add_argument('format', nargs='*', action=DefaultListAction(ALL_FORMATS), default=ALL_FORMATS)
     p.add_argument('--compressed', action='store_true')
     args = p.parse_args()
 
@@ -51,10 +51,9 @@ def iter_files(data_root, formats):
 
 def run(root, formats, compressed):
     stats_by_fmt = {fmt: gather_fmt_stats(root, fmt) for fmt in formats}
-    print(json.dumps(stats_by_fmt))
+    old_print_data(stats_by_fmt)
 
 def old_print_data(stats_by_fmt):
-
     # we manually do some of the json printing to get newlines in a small number of key places,
     # while still keeping the total size of the file down to around half a megabyte
     def stringify_fmt_data(d):
@@ -304,4 +303,20 @@ class Usage(UsageBase):
 #         else:
 #             return [tup._asdict() for tup in self.tuples]
 
+
+def DefaultListAction(choices):
+    """ Workaround for a bug in argparse where using ``choices=[...]`` and ``nargs='*'``
+    makes it impossible to supply zero copies of the arg. """
+
+    class DefaultListAction(argparse.Action):
+        def __call__(self, parser, namespace, values, option_string=None):
+            if values:
+                for value in values:
+                    if value not in choices:
+                        choices_str = ', '.join(map(repr, choices))
+                        message = f"invalid choice: {repr(value)} (choose from: {choices_str})"
+
+                        raise argparse.ArgumentError(self, message)
+                setattr(namespace, self.dest, values)
+    return DefaultListAction
 main()
