@@ -206,6 +206,15 @@ refByOpcode.set('18', new Map([...refByOpcode.get('17')!.entries(),
   [23, {ref: 'msg:shake-player'}],
   [36, {ref: 'msg:store'}],
 ]));
+refByOpcode.set('185', new Map([...refByOpcode.get('18')!.entries(),
+  [19, {ref: 'msg:music'}],
+  [37, {ref: 'msg:bm-info-open'}],
+  [38, {ref: 'msg:bm-focus-info'}],
+  [39, {ref: 'msg:bm-info-close'}],
+  [40, {ref: 'msg:bm-funny-text3'}],
+  [41, {ref: 'msg:bm-funny-furi1'}],
+]));
+
 
 // ==========================================================================
 // ==========================================================================
@@ -459,7 +468,7 @@ mapAssign(byRefId, {
   'text-2': {sig: 'm', args: ['text'], md: `Set the second line of text.  Unused.`},
   'text-add-nofuri': {
     sig: 'm', args: ['text'], succ: 'text-add', md: `
-    Sets the next line of text.
+    :tipshow[Sets the next line of text.]  This can be used twice, for 2 lines of text total.
   `},
   'text-add': {
     sig: 'm', args: ['text'], md: `
@@ -468,6 +477,10 @@ mapAssign(byRefId, {
     Beginning in :game[11], this instruction can also be used to set furigana.
     If the first character of the string is \`|\`, then it will set furigana for the next line.
     Each line can have at most one furigana annotation.
+
+    * :game[08]&ndash;:game[18]: There are 2 lines of text total.
+    * :game[185]: There are 4 lines of text total.
+      <!-- NEWHU: 185 -->
 
     :wip[The format of furigana includes some offset information.  The meaning of these numbers is not known.]
     ~~~anm
@@ -482,8 +495,16 @@ mapAssign(byRefId, {
 
     Even though this instruction has existed since :game[10], the first game to use it is :game[13].
   `},
-  'music-boss': {sig: '', args: [], md: `
+  'music-boss': {sig: '', args: [], succ: 'music', md: `
     Initiates boss music and displays its BGM title text.
+  `},
+  'music': {sig: 'S', args: ['arg'], md: `
+    :tipshow[Changes the music to an indexed track for this stage.]
+
+    The index argument was added in :game[185], however, it is always 1 in the game files.
+    Each stage has an array of BGMs that this can select from.
+    (Presumably the index argument was added for the Lunar Black Market, but then an ECL instruction was added
+    and used instead)
   `},
   'intro-single': {sig: '', args: [], succ: 'intro', md: `
     Display the enemy's name and flavor text.
@@ -588,6 +609,36 @@ mapAssign(byRefId, {
   `},
   'store': {
     sig: '', args: [], md: `
-    Opens the ability card store. (:game[18] only)
+    :tipshow[Opens the ability card store.]
+
+    This sets a flag so that the ability card store (:game[18]) or Black Market (:game[185]) will open
+    after the MSG script finishes.  :game[185] does not actually use it, instead preferring to use
+    an instruction from ECL.
+  `},
+  'bm-info-open': {sig: '', args: [], md: `
+    :tipshow[Darkens the screen, to signify informative text.]
+  `},
+  'bm-info-close': {sig: '', args: [], md: `
+    :tipshow[Un-darkens the screen from :ref{r=msg:bm-info-open}.]
+  `},
+  'bm-focus-info': {sig: '', args: [], md: `
+    :tipshow[Indicates that a tutorial (or similar) is speaking.]
+
+    This instruction introduced in :game[185] takes the place of the tutorial image files
+    formerly used by :game[143] and :game[165].
+    It sets the "current speaker" to a special value that causes text to
+    become centered, use a different font, and to not use speech bubbles.
+  `},
+  'bm-funny-text3': {sig: 'm', args: ['text'], wip: 2, md: `
+    :tipshow[Unused instruction added by :game[185].]
+
+    A buggy, unused instruction whose purpose appears to have been to draw some sort of title.
+    It renders a larger-than-normal line of left-aligned text, replacing the third line of text.
+  `},
+  'bm-funny-furi1': {sig: 'm', args: ['text'], wip: 2, md: `
+    :tipshow[Unused instruction added by :game[185].]
+
+    A buggy, unused instruction whose purpose appears to have been to draw some sort of subtitle.
+    It renders a line of left-aligned text, replacing the first line's furigana.
   `},
 });

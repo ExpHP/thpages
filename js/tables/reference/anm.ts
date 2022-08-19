@@ -475,6 +475,10 @@ refByOpcode.set('18', new Map([...refByOpcode.get('17')!.entries(),
   [614, {ref: 'anm:drawArc'}],
 ]));
 
+refByOpcode.set('185', new Map([...refByOpcode.get('18')!.entries(),
+  [440, {ref: 'anm:unflip'}],
+]));
+
 // ==========================================================================
 // ==========================================================================
 // =====================    INSTRUCTION DATA    =============================
@@ -803,15 +807,27 @@ mapAssign(byRefId, {
     sig: '', args: [], md: `
     :tipshow[Toggles mirroring on the x axis.]
 
-    This very simply :tip[just]{tip="It also sets a bitflag but I think only EoSD uses it to keep the sign flipped during interpolation of scale."}
-    flips the sign of \`sx\` in :ref{r=anm:scale}.  Future calls to :ref{r=anm:scale} will thus basically undo it.
+    This flips the sign of \`sx\` in :ref{r=anm:scale}.  Future calls to :ref{r=anm:scale} will thus clobber it.
+
+    (It also toggles a bitflag. This flag is used by :game[06] to keep the sign flipped during interpolation of scale,
+    and is then unused until :game[185] which added :ref{r=anm:unflip}.)
   `},
   'flipY': {
     sig: '', args: [], md: `
     :tipshow[Toggles mirroring on the y axis.]
 
-    This very simply :tip[just]{tip="It also sets a bitflag but I think only EoSD uses it to keep the sign flipped during interpolation of scale."}
-    flips the sign of \`sy\` in :ref{r=anm:scale}.  Future calls to :ref{r=anm:scale} will thus basically undo it.
+    This flips the sign of \`sy\` in :ref{r=anm:scale}.  Future calls to :ref{r=anm:scale} will thus clobber it.
+
+    (It also toggles a bitflag. This flag is used by :game[06] to keep the sign flipped during interpolation of scale,
+    and is then unused until :game[185] which added :ref{r=anm:unflip}.)
+  `},
+  'unflip': {
+    sig: '', args: [], md: `
+    :tipshow[Disables flipping from :ref{r=anm:flipX} and :ref{r=anm:flipY}.]
+
+    If the bitflags set by :ref{r=anm:flipX} and/or :ref{r=anm:flipY} are set, this will negate the corresponding scale
+    factors and then clear the bitflags.  This effectively clears the effects of those instructions, if they were
+    previously used.
   `},
   'resampleMode': {
     sig: 'S', args: ['n'], md: `

@@ -4,8 +4,8 @@
  * This representation is chosen to enable simple lexical comparisons using the built-in &lt; and &gt; operators.
  * Because they look like stringified integers, do not use them as object keys if you care about iteration order (use Maps).
  */
-export type Game = '06' | '07' | '08' | '09' | '095' | '10' | '11' | '12' | '125' | '128' | '13' | '14' | '143' | '15' | '16' | '165' | '17' | '18';
-export const latestGame: Game = '18';
+export type Game = '06' | '07' | '08' | '09' | '095' | '10' | '11' | '12' | '125' | '128' | '13' | '14' | '143' | '15' | '16' | '165' | '17' | '18' | '185';
+export const latestGame: Game = '185';
 export type GameData = {
   thname: string,
   long: string,
@@ -31,6 +31,7 @@ const GAMES = new Map<Game, GameData>([
   ['165', {thname: "TH16.5", long: "Violet Detector", short: "VD"}],
   ['17', {thname: "TH17", long: "Wily Beast and Weakest Creature", short: "WBaWC"}],
   ['18', {thname: "TH18", long: "Unconnected Marketeers", short: "UM"}],
+  ['185', {thname: "TH18.5", long: "100th Black Market", short: "BM"}],
 ]);
 
 /** Iterate over all games, ordered ascendingly by number. */

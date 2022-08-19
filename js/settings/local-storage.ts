@@ -198,8 +198,8 @@ function upgradeLangSettingsToV1(language: LangV0, settings: SavedLangSettingsV0
 // The old config for mapfiles stored one for each "version" of a language.  (a concept that no longer exists on the website)
 type LangV0 = 'anm' | 'std';
 type VersionV0 = string;
-const latestGameForAnmVersionV0: Record<VersionV0, Game> = {'v0': '06', 'v2': '07', 'v3': '09', 'v4': '128', 'v8': '18'};
-const latestGameForStdVersionV0: Record<VersionV0, Game> = {'eosd': '06', 'classic': '09', 'modern': '18'};
+const latestGameForAnmVersionV0: Record<VersionV0, Game> = {'v0': '06', 'v2': '07', 'v3': '09', 'v4': '128', 'v8': '185'};
+const latestGameForStdVersionV0: Record<VersionV0, Game> = {'eosd': '06', 'classic': '09', 'modern': '185'};
 const localStorageKeyForLangV0: Record<LangV0, string> = {'anm': LOCAL_STORAGE_KEY_LEGACY_ANMMAP, 'std': LOCAL_STORAGE_KEY_LEGACY_STDMAP};
 
 function allLangVersionsV0(lang: LangV0): VersionV0[] {

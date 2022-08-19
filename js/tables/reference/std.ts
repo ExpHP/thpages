@@ -118,6 +118,7 @@ refByOpcode.set('17', new Map([...refByOpcode.get('16')!,
   [21, {ref: 'std:fov-time'}],
 ]));
 refByOpcode.set('18', new Map([...refByOpcode.get('17')!.entries()]));
+refByOpcode.set('185', new Map([...refByOpcode.get('18')!.entries()]));
 
 // ==========================================================================
 // ==========================================================================

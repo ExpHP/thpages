@@ -100,6 +100,7 @@ refByOpcode.set('16', new Map([...refByOpcode.get('15')!.entries()]));
 refByOpcode.set('165', new Map([...refByOpcode.get('16')!.entries()]));
 refByOpcode.set('17', new Map([...refByOpcode.get('165')!.entries()]));
 refByOpcode.set('18', new Map([...refByOpcode.get('17')!.entries()]));
+refByOpcode.set('185', new Map([...refByOpcode.get('18')!.entries()]));
 
 // ==========================================================================
 // ==========================================================================

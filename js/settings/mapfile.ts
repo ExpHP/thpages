@@ -151,7 +151,7 @@ function lexSeqmapFile(text: string): LexedLine[] {
 
   return lines.flatMap((line) => {
     if (line.match(/^![a-zA-Z_][a-zA-Z0-9_]*$/)) {
-      return [{type: 'control', data: {key: line.substring(1)}}];
+      return [{type: 'control', data: {key: line.substring(1)}} as LexedLine];
     } else {
       line = line.split('#')[0].trim(); // comment
       let match;
