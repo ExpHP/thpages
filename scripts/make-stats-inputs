@@ -1,0 +1,124 @@
+#!/usr/bin/env python3
+
+import argparse
+import subprocess
+import shutil
+from pathlib import Path
+import sys
+import os
+
+def main():
+    p = argparse.ArgumentParser(description='unpacks th dat files and prepares symlinks for the anm-usage script')
+    p.add_argument('GAMESDIR', help='path to a directory where e.g. GAMES/th09/th09.dat exists.  WSL is recommended so that you can use symlinks.')
+    p.add_argument('--output', '-o', default='th-unpack', help='choose output directory')
+    p.add_argument('--eosd-dat', action='append', default=["紅魔郷??.DAT"], help='add a glob for dat files for EoSD (may use * and ?), default is to only look for "紅魔郷??.dat"')
+    args = p.parse_args()
+    _main(
+        gamesdir = Path(args.GAMESDIR),
+        outdir = Path(args.output),
+        eosd_globs = args.eosd_dat,
+    )
+
+def _main(gamesdir: Path, outdir: Path, eosd_globs):
+    games = list(get_games(gamesdir))
+    assert gamesdir.parent.exists()
+
+    for game in sorted(games):
+        do_unpack(gamesdir, outdir, game, eosd_globs, can_skip=True)
+        do_symlinks(outdir, game)
+
+def do_unpack(gamesdir: Path, outdir: Path, game: str, eosd_globs, can_skip):
+    dat_files = list(get_dats(gamesdir, game, eosd_globs))
+    if not dat_files:
+        advice = ""
+        if game == '06' and len(eosd_globs) == 1:
+            advice = "\nif your files lack the 紅魔郷 prefix, try '--eosd-dat=??.DAT'"
+        die(f'could not find dat files for th{game}{advice}')
+
+    unpack_dir = outdir / game / 'unpack'
+    if unpack_dir.exists() and can_skip:
+        return
+
+    shutil.rmtree(unpack_dir, ignore_errors=True)
+    unpack_dir.mkdir(parents=True)
+    for dat_file in sorted(dat_files):
+        trace(f'th{game}: Unpack {dat_file.name}')
+        subprocess.run(['thdat', '-x', game, dat_file], cwd=unpack_dir, check=True, stdout=open(os.devnull, 'w'))
+
+def do_symlinks(outdir: Path, game: str):
+    for format in GLOBS:
+        files = list(fmt_files(outdir, game, format))
+        if files:
+            print(f'th{game}: Link {len(files)} {format} files')
+            format_dir = outdir / game / format
+            shutil.rmtree(format_dir, ignore_errors=True)
+            format_dir.mkdir(parents=True)
+
+            for dest_path in files:
+                link_path = format_dir / dest_path.name
+                link_path.symlink_to(os.path.relpath(dest_path, link_path.parent))
+
+def get_games(gamesdir: Path):
+    dirs = gamesdir.iterdir()
+    for d in dirs:
+        if d.is_dir() and d.name.startswith('th'):
+            yield d.name[2:]
+
+def get_dats(gamesdir: Path, game, eosd_globs):
+    if game == '06':
+        for glob in eosd_globs:
+            yield from (gamesdir / f'th{game}').glob(glob)
+    for name in [f'th{game}.dat', f'Th{game}.dat']:
+        dat_path = gamesdir / f'th{game}' / name
+        if dat_path.exists():
+            yield dat_path
+            return
+
+GLOBS = {
+    'anm': {'all': ['*.anm']},
+    'ecl': {'all': ['*.ecl']},
+    'std': {'all': ['*.std']},
+    'msg': {
+        '06': ['msg*'],
+        '07': ['msg*'],
+        '08': ['msg*'],
+        '09': ['*.msg'],
+        '095': ['XXXXX'],
+        '10': ['st0*.msg'],
+        '11': ['st0*.msg'],
+        '12': ['st0*.msg'],
+        '125': ['XXXXX'],
+        '128': ['st_*.msg'],
+        '13': ['st0*.msg'],
+        '14': ['st0*.msg'],
+        '143': ['msg*.msg'],
+        '15': ['st0*.msg'],
+        '16': ['st0*.msg'],
+        '165': ['msg*.msg'],
+        '17': ['st0*.msg'],
+        '18': ['st0*.msg'],
+        '185': ['*.msg'],
+        # NEWHU: 185
+    },
+    'end': {
+        'all': ['staff*.msg', 'e*.msg'],
+    },
+}
+
+def fmt_files(outdir: Path, game, format):
+    if 'all' in GLOBS[format]:
+        for glob in GLOBS[format]['all']:
+            yield from (outdir / game / 'unpack').glob(glob)
+    if game in GLOBS[format]:
+        for glob in GLOBS[format][game]:
+            yield from (outdir / game / 'unpack').glob(glob)
+
+def trace(*args):
+    print(*args, file=sys.stderr)
+
+def die(*args):
+    print(*args, file=sys.stderr)
+    sys.exit(1)
+
+if __name__ == '__main__':
+    main()
