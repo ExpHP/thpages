@@ -1,37 +1,40 @@
 import React from 'react';
-import {useFetch} from 'react-async';
+import {useAsync} from 'react-async';
 import clsx from 'clsx';
 import {makeStyles} from '@material-ui/core/styles';
 
-import {Game, allGames, gameData} from './tables/game';
+import {Game, allGames} from './tables/game';
 import {GameTh} from './Game';
 import {InlineRef} from './InlineRef';
 import {Tip} from './Tip';
 import {Ref, TableDef, CommonData, ANM_INS_TABLE, ANM_VAR_TABLE, STD_TABLE, MSG_TABLE} from './tables';
 import {Title, useIncremental} from './XUtil';
-import {unreachable, deepEqual} from '~/js/util';
+import {deepEqual} from '~/js/util';
+import {base64DecToArr} from '~/js/util/base64';
+import {decompressBz2} from '~/js/util/bz2';
 
 type CellData = {
   opcode: number, // opcode in this game
   total: number, // total uses of an instruction in a game, across all anm files
   breakdown: [string, number][], // maps filename to usage count, by descending usage count (no zeros)
 };
-type StatsJson = Record<string, FmtStatsJson>;
-type FmtStatsJson = {
+type StatsJson<Data=StatsForGame> = Record<string, FmtStatsJson<Data>>;
+type FmtStatsJson<Data=StatsForGame> = {
   'num-files': NumFiles,
-  ins: StatsByOpcodeJson,
-  var: StatsByOpcodeJson,
+  ins: StatsByOpcodeJson<Data>,
+  var: StatsByOpcodeJson<Data>,
 };
-type StatsByOpcodeJson = Record<Game, Record<OpcodeStr, Omit<CellData, 'opcode'>>>;
+type StatsByOpcodeJson<Data=StatsForGame> = Record<Game, Data>;
+type CompressedStatsJson = StatsJson<string>;
+
+type StatsForGame = Record<OpcodeStr, Omit<CellData, 'opcode'>>;
 type OpcodeStr = string;
 type NameKey = string;
 type NumFiles = Record<Game, number>;
 type StatsByRef = Map<Ref, Map<Game, CellData>>;
 
 export function StatsPage() {
-  const {data, error, isPending} = useFetch<StatsJson>('content/anm/anm-stats.json', {
-    headers: {accept: "application/json"},
-  });
+  const {data, error, isPending} = useAsync({promiseFn: loadStats});
 
   return <>
     <Title>ANM stats</Title>
@@ -47,6 +50,55 @@ export function StatsPage() {
       return null;
     })()}
   </>;
+}
+
+async function loadStats({}, {signal}: AbortController): Promise<StatsJson> {
+  const res = await fetch('content/anm/anm-stats.json', {
+    signal,
+    headers: {accept: "application/json"},
+  });
+  if (!res.ok) {
+    throw new Error(res.statusText);
+  }
+
+  const compressed: CompressedStatsJson = await res.json();
+  if (signal.aborted) throw signal.reason;
+
+  const decompressed = await decompressStats(compressed);
+  if (signal.aborted) throw signal.reason;
+
+  return decompressed;
+}
+
+function decompressStats(data: CompressedStatsJson): Promise<StatsJson> {
+  console.log(data);
+  // Yes, we're really putting strings representing compressed JSON inside of a JSON file.
+  //
+  // This is a midway compromise between small files for transmission to the user, and small
+  // chunks to store in git. Even with the poor space usage of Base64, this manages about a
+  // factor of 6 space reduction (~700KB to ~110 KB) while still allowing well-placed newlines
+  // to isolate lines added by new formats and new games in diffs.
+  async function decompressStr(b64: string): Promise<StatsForGame> {
+    const compressed = base64DecToArr(b64);
+    const decompressed = await decompressBz2(compressed);
+    return JSON.parse(Buffer.from(decompressed).toString());
+  }
+
+  return mapObjectValuesAsync(data, async (d) => ({
+    "num-files": d["num-files"],
+    "ins": await mapObjectValuesAsync(d["ins"], decompressStr),
+    "var": await mapObjectValuesAsync(d["var"], decompressStr),
+  }));
+}
+
+async function mapObjectValuesAsync<K extends string | number | symbol, In, Out>(
+    obj: Record<K, In>,
+    mapper: (value: In) => Promise<Out>,
+): Promise<Record<K, Out>> {
+  return Object.fromEntries(await Promise.all(
+      Object.entries<In>(obj)
+          .map(async ([key, value]) => ([key, await mapper(value)])),
+  ));
 }
 
 type StatsTableListEntry = {
@@ -79,7 +131,7 @@ export function StatsPageMainContent({data}: {data: StatsJson}) {
     STATS_TABLES_LIST.map(({dataSubkey: [lang, subkey], table}) => (
       getStatsRows(data[lang][subkey], table)
     ))
-  ), [STATS_TABLES_LIST, data]);
+  ), [data]);
 
   // get a possibly shorter list of tables, with rows possibly missing
   const tablesToDisplay = useStatsTableIncrementalization(allRowsOfAllTables);
@@ -170,7 +222,7 @@ function useStatsTableIncrementalization(allRowsOfAllTables: StatsByRef[]): Stat
   // the list to become shorter (i.e. don't show all tables)
   const output = React.useMemo(() => (
     state.displayCounts.map((count, index) => truncateMap(allRowsOfAllTables[index], count))
-  ), [state.displayCounts, allRowsOfAllTables])
+  ), [state.displayCounts, allRowsOfAllTables]);
   return output;
 }
 
@@ -347,7 +399,7 @@ function TipBody({cellData, numFiles, game}: {cellData: CellData, numFiles: NumF
   </>;
 }
 
-function useScrollbarWidth(document: HTMLDocument): number {
+function useScrollbarWidth(document: Document): number {
   return React.useMemo(() => {
     const innerElement = document.createElement('p');
     innerElement.style.width = "100%";
