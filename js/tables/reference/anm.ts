@@ -279,7 +279,7 @@ refByOpcode.set('11', new Map([...refByOpcode.get('10')!.entries(),
   [96, {ref: 'anm:createChildPos'}],
   [97, {ref: 'anm:createRootPos'}],
   [98, {ref: 'anm:v8-418'}],
-  [99, {ref: 'anm:v8-flag-419', wip: 1}],
+  [99, {ref: 'anm:v8-flag-419'}],
 
   [100, {ref: 'anm:posBezier'}],
   [101, {ref: 'anm:v4-texCircle2'}], // type 13 in GFW
@@ -1590,7 +1590,7 @@ mapAssign(byRefId, {
   `},
   'v8-flag-316': {sig: '', args: [], wip: 2, md: `:wip2[Enables an unknown bitflag. Clear with :ref{r=anm:v8-flag-317}.]`},
   'v8-flag-317': {sig: '', args: [], wip: 2, md: `:wip2[Clears the bitflag from :ref{r=anm:v8-flag-316}.]`},
-  'v8-flag-419': {sig: 'S', args: ['enable'], wip: 2, md: `:wip2[Sets the state of an unknown bitflag.]`},
+  'v8-flag-419': {sig: 'S', args: ['enable'], md: `Sets a bitflag which effectively calls :ref{r=anm:v8-418} every frame.`},
   'v8-flag-431': {sig: 'S', args: ['enable'], wip: 2, md: `:wip2[Sets the state of an unknown bitflag.]`},
   'slowdown-immune': {sig: 'S', args: ['enable'], md: `Makes a VM immune to game speed changes. Only used by photo games.`},
   'v4-texCircle2': {sig: '', args: [], wip: 2, md: ':wip2[unidentified member of texCircle family, likely :ref{r=anm:textureArcEven}]'},
