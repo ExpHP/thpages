@@ -178,7 +178,7 @@ Oftentimes, graphics have special animations associated with certain events.  Fo
 For a detailed example, here's one of the scripts for the season gauge.  (this one draws the "Releasable" icon)
 
 ~~~anm
-script script114 {
+script SeasonBarReleasable {
     // ... ignoring the boring stuff at the beginning ...
     :ref{r=anm:pos}(-344.0f, 884.0f, 0.0f);
 
@@ -216,12 +216,17 @@ This script has four interrupts, which are manually triggered by code in the GUI
 > An aside: this actually has a silly bug in that, if the player moves near the season gauge at 0 season power,
 > "Releasable" suddenly appears.  This shows just how difficult it can be to write good interrupts!
 
-The meaning of these interrupt numbers are obviously specific to the season gauge,
-and other parts of the gauge also have interrupts with the same meaning.
-(e.g. the "filled" part of the bar uses labels 2 and 3 to toggle between blue at level 0 and yellow-white at levels 1+).
-That said, there is one interrupt that has a nearly universal meaning:
-Interrupt `1` pretty much always means "disappear forever". I.e. label 1, if it exists, will always be some kind of exit animation like fade-out,
-shrinking, or flyout, and will end in :ref{r=anm:delete}.
+The effect of each interrupt is specific to each script.  (e.g. the "filled" part of the bar uses labels 2 and 3 to toggle
+between blue at level 0 and yellow-white at levels 1+). But there are a few common meanings, some so universal that the
+game has dedicated functions to call an interrupt with that number.
+
+| Interrupt | Description |
+| :---: | ---     |
+| 1 | Pretty much universally means "Go away and die". The sprite does an exit animation (fade, shrink, flyout...) and then it calls :ref[anm:delete].  |
+| 2 | Very commonly means "appear". (undoing whatever 3 did) |
+| 3 | Very commonly means "hide".  Unlike 1, this does NOT usually end in :ref[anm:delete]. |
+| 4 | Commonly means "restore". (undoing whatever 5 did) |
+| 5 | Commonly means... "de-emphasize"? It might darken, maybe partially fade, maybe shrink a bit... |
 
 The vast majority of interrupts are used by hardcoded code in the game, but notably, ECL scripts can invoke :ref{r=anm:case} labels
 on their own sprites by using the `anmSwitch` ECL instruction.
