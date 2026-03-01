@@ -51,14 +51,15 @@ export function getMsgTableText(game: Game) {
     furibug = `:game[20] and onwards additionally have :tip[an unusual quirk]{tip=${furiTip}} near furigana strings.`;
   }
   return dedent(`
-    > **Notice:** END files are (de-)compiled by 'trumsg'.
+    > **Notice:** END files are (de-)compiled by \`trumsg --end\`.
+    >
+    > ...or, they *will* be, once I add the necessary core mapfiles, which so far I have... not.  In the meanwhile
+    > you can run trumsg with a mapfile containing END signatures using the \`-m\` flag.
 
-    Beginning in :game[10], strings are encrypted via the following process:
-
-    * Start with a string encoded in Shift-JIS.
-    * Append a null terminator, then zero-pad up to a multiple of 4 bytes.
-    * Now all of the bytes (including the null padding) are XORed with an accelerating bitmask
-      with initial value \`0x77\`, intial velocity \`0x07\`, and constant acceleration \`0x10\`.
+    * Most strings are null-terminated and null-padded
+      up to a multiple of 4 bytes, and are encoded in Shift-JIS.
+    * For :ref[end:text-add] **only**, the string is also then masked the same as MSG: by XOR with an
+      accelerating bitmask with initial value \`0x77\`, intial velocity \`0x07\`, and constant acceleration \`0x10\`.
       Specifically, the first byte is XORed with \`0x77\`, the second byte is XORed with
       \`0x7e (= 0x77 + 0x07)\`, the third byte is XORed with \`0x95 (= 0x77 + 0x07 + 0x17)\`,
       the fourth byte is XORed with \`0x27 (= 0x77 + 0x07 + 0x17 + 0x27)\`, and so on...
@@ -92,7 +93,7 @@ const SHARED_END_OPCODE_MAP = new Map<number, PartialOpcodeRefData>([
   [17, {ref: 'end:anm-set-slot-lunatic'}],
 ]);
 
-for (const game of ['10', '11', '12', '128', '13', '14', '15', '16', '17', '18', '185'] as const) {
+for (const game of ['10', '11', '12', '128', '13', '14', '15', '16', '17', '18'] as const) {
   refByOpcode.set(game, new Map(SHARED_END_OPCODE_MAP));
 }
 
@@ -110,6 +111,8 @@ mapAssign(byRefId, {
   'text-add': {
     sig: 'm', args: ['text'], md: `
     :tipshow[Sets the next line of text.]
+
+    **Reminder:** This instruction--and only this instruction--masks its string. (see top of page)
 
     <!-- WHEN TH20 is added, uncomment the following:
       Beginning in :game[20], this instruction can also be used to set furigana.
@@ -142,7 +145,7 @@ mapAssign(byRefId, {
   },
   'text-clear': {
     sig: '', args: [], wip: 1, md: `
-    Erases all text.
+    Hides all text.
 
     The "next line" counter does not get reset to 0, making it awkward to use.  The games don't appear to be using it.
 
@@ -168,10 +171,10 @@ mapAssign(byRefId, {
     `,
   },
   'anm-source-load': {
-    sig: 'Sm', args: ['source_index', 'file'], md: ``,
+    sig: 'Sm', args: ['source_index', 'file'], wip: 1, md: ``,
   },
   'anm-set-slot': {
-    sig: 'SSS', args: ['slot', 'source_index', 'script'], md: ``,
+    sig: 'SSS', args: ['slot', 'source_index', 'script'], wip: 1, md: ``,
   },
   'text-color': {
     sig: 'S', args: ['color'], md: `Euh. Color.`,
