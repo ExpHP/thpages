@@ -128,6 +128,8 @@ mapAssign(byRefId, {
 
     During this time, the script timer will be frozen, so you do not need to increment
     the time label by any similar amount.
+
+    Negative arguments are treated as 999.
   `,
   },
   'wait-clear': {
@@ -138,6 +140,8 @@ mapAssign(byRefId, {
     the time label by any similar amount.
 
     The next call to :ref{r=end:text-add} will clear all lines and begin at index 0.
+
+    Unlike :ref{r=end:wait}, negative arguments are NOT treated as 999.
     `,
   },
   'anm-source-load': {
@@ -151,10 +155,11 @@ mapAssign(byRefId, {
   },
   'music': {
     sig: 'm', args: ['file'], md: `
-    :tipshow[Begins playing music and unlocks it in the sound player.] Only a limited set of songs can be played.
+    :tipshow[Begins playing music.]
 
-    * :game[18]: If file is 'bgm/th18_15' it plays track 15 (ending), for anything else it plays track 16 (staff roll).
-    * :wip[Songs available in other games may vary; this is pending research.]
+    You can play any song in the bgm file. It also unlocks a song in the music player, however,
+    the song unlocked is not necessarily the one played.  (e.g. in :game[18], asking for the
+    ending music plays the ending music; and anything else gives the staff roll music.)
   `,
   },
   'music-fade': {
@@ -166,7 +171,23 @@ mapAssign(byRefId, {
   `,
   },
   'switch-to-staff': {
-    sig: 'm', args: ['end_file'], md: `Begin the staff roll.`,
+    sig: 'm', args: ['end_file'], md: `
+    :tipshow[Begin the staff roll.]
+
+    Staff MSG files are the same format as ending files, so this instruction basically
+    reinitializes the entire END script parser.  (in :game[18] at least)
+
+    <!-- WHEN TH20 is added, uncomment:
+    * (:game[10]&ndash;:game[19]) The string argument is ignored. In :game[18], the instruction is hardcoded to
+      pick from four staff roll files based on difficulty (though all four files are identical).
+    * (:game[20]&ndash;) The string argument specifies which staff roll file to load.
+    -->
+    <!-- NEWHU: 185 -->
+
+    * In :game[18], the string argument is ignored. The instruction is hardcoded to pick from four staff roll
+      files based on difficulty (though all four files are identical).
+    * :wip[Behavior in other games is pending research.]
+  `,
   },
   'screen-effect-a': {
     sig: 'S', args: ['unk'], wip: 2, md: `Does. Something.`,
