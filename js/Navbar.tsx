@@ -43,6 +43,7 @@ export const NAVBAR: Entry[] = [
       {url: "#/anm/var", label: "ANM variables"},
       {url: "#/std/ins", label: "STD instructions"},
       {url: "#/msg/ins", label: "MSG instructions"},
+      {url: "#/end/ins", label: "END instructions"},
       {
         label: "Tools",
         children: [

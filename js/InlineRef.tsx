@@ -19,6 +19,14 @@ import {Err} from './Error';
 export const CurrentReferenceTableRowContext = React.createContext<Ref | null>(null);
 
 export function InlineRef({r}: {r: string}) {
+  // Second layer of protection: catch undefined refs
+  if (!r || typeof r !== 'string') {
+    throw new Error(`
+      FATAL: InlineRef received invalid ref value: ${JSON.stringify(r)}.
+      This likely means you used :ref[xxx:yyy] instead of :ref{r=xxx:yyy}.
+      The colon in square brackets gets parsed as a nested directive!
+    `);
+  }
   const nameSettings = useNameSettings();
   const refData = useRefData(r);
   if (!refData) {

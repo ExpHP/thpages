@@ -42,6 +42,8 @@ export function SettingsPage({settings, onSave}: {settings: SavedSettings, onSav
     <SingleLangSettings state={state.std} dispatch={dispatch.std} />
     <h2>msgmap</h2>
     <SingleLangSettings state={state.msg} dispatch={dispatch.msg} />
+    <h2>endmap</h2>
+    <SingleLangSettings state={state.end} dispatch={dispatch.end} />
   </>;
 }
 

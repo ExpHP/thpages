@@ -11,6 +11,7 @@ import * as anmTableModule from './reference/anm';
 import * as anmvarTableModule from './reference/anmvar';
 import * as stdTableModule from './reference/std';
 import * as msgTableModule from './reference/msg';
+import * as endTableModule from './reference/end';
 
 export type Ref = string;
 
@@ -319,8 +320,18 @@ export const MSG_TABLE = new TableDef({
   textBeforeTable: (game: Game) => msgTableModule.getMsgTableText(game),
 });
 
+export const END_TABLE = new TableDef({
+  module: endTableModule,
+  tablePage: '/end/ins',
+  mainPrefix: 'end',
+  nameSettingsPath: {lang: 'end', submap: 'ins'},
+  dataHandlers: INS_HANDLERS,
+  getGroups: () => [{min: 0, max: 1000, title: null}],
+  textBeforeTable: (game: Game) => endTableModule.getEndTableText(game),
+});
+
 export function getAllTables() {
-  return [ANM_INS_TABLE, ANM_VAR_TABLE, STD_TABLE, MSG_TABLE];
+  return [ANM_INS_TABLE, ANM_VAR_TABLE, STD_TABLE, MSG_TABLE, END_TABLE];
 }
 
 export function getTableByPrefix(prefix: string): TableDef<InsData> | TableDef<VarData> | null {

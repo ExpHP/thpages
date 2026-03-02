@@ -1,0 +1,19 @@
+!endmap
+!ins_names
+
+0 end
+3 textAdd
+4 textClear
+5 wait
+6 waitClear
+7 anmSourceLoad
+8 anmSetSlot
+9 textColor
+10 music
+11 musicFade
+12 switchToStaff
+13 screenEffectA
+14 screenEffectB
+15 anmSetSlotNormal
+16 anmSetSlotHard
+17 anmSetSlotLunatic

@@ -6,7 +6,7 @@ import pink from '@material-ui/core/colors/pink';
 import {HashRouter as Router, Switch, Route, Redirect} from 'react-router-dom';
 
 import {useScrollToAnchor} from './ScrollToAnchorHelper';
-import {ANM_INS_TABLE, ANM_VAR_TABLE, STD_TABLE, MSG_TABLE} from './tables';
+import {ANM_INS_TABLE, ANM_VAR_TABLE, STD_TABLE, MSG_TABLE, END_TABLE} from './tables';
 import {CurrentPageProvider} from './UrlTools';
 import {BackgroundProvider, useDarkBg} from './Background';
 import {ErrorBoundary} from './Error';
@@ -117,6 +117,7 @@ function Content({setContentLoaded}: {setContentLoaded: React.Dispatch<boolean>}
       <Route exact path="/anm/var"><ReferenceTablePage table={ANM_VAR_TABLE} setContentLoaded={setContentLoaded} /></Route>
       <Route exact path="/std/ins"><ReferenceTablePage table={STD_TABLE} setContentLoaded={setContentLoaded} /></Route>
       <Route exact path="/msg/ins"><ReferenceTablePage table={MSG_TABLE} setContentLoaded={setContentLoaded} /></Route>
+      <Route exact path="/end/ins"><ReferenceTablePage table={END_TABLE} setContentLoaded={setContentLoaded} /></Route>
       <Route exact path="/anm/stats"><StatsPage /></Route>
       <Route exact path="/anm/layer-viewer"><LayerViewerPage /></Route>
 

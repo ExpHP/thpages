@@ -63,7 +63,8 @@ export function useSettingsPageStateReducer(settings: SavedSettings): [State, Di
   const [anmState, anmDispatch] = useLangStateReducer(settings, 'anm');
   const [stdState, stdDispatch] = useLangStateReducer(settings, 'std');
   const [msgState, msgDispatch] = useLangStateReducer(settings, 'msg');
-  return [{anm: anmState, std: stdState, msg: msgState}, {anm: anmDispatch, std: stdDispatch, msg: msgDispatch}];
+  const [endState, endDispatch] = useLangStateReducer(settings, 'end');
+  return [{anm: anmState, std: stdState, msg: msgState, end: endState}, {anm: anmDispatch, std: stdDispatch, msg: msgDispatch, end: endDispatch}];
 }
 
 function useLangStateReducer(settings: SavedSettings, lang: Lang): [LangState, React.Dispatch<LangAction>] {

@@ -173,7 +173,7 @@ refByOpcode.set('128', new Map([...refByOpcode.get('12')!.entries(),
 ]));
 
 refByOpcode.set('13', new Map([...refByOpcode.get('128')!.entries(),
-  [31, {ref: 'msg:modern-31'}],
+  [31, {ref: 'msg:show-enemy-1'}],
 ]));
 
 refByOpcode.set('14', new Map([...refByOpcode.get('13')!.entries(),
@@ -417,7 +417,17 @@ mapAssign(byRefId, {
   `},
   'hide-player': {sig: 'S', args: ['who'], md: `Hide the player portrait (or any character on the left side).`},
   'hide-enemy': {sig: 'S', args: ['who'], md: `Hide an enemy portrait.`},
-  'hide-textbox': {sig: '', args: [], md: `Hide the text box. (and all text on it)`},
+  'hide-textbox': {sig: '', args: [], md: `
+    :tipshow[Destroy the callout and all text lines.]
+
+    This instruction:
+      * Tells all lines of text to "go away and die" (interrupt 1).
+        * This is where it differs from :ref{r=msg:text-clear}, which only hides them.
+      * It (instantly) deletes the callout sprite.
+      * It **does not** reset the "next line" index.
+
+    It seems awkward to use because it does NOT reset the next line index to 0.  :wip[Bug or feature?? Does ZUN exploit this?]
+  `},
   'focus-player-single': {sig: '', args: [], succ: 'focus-player', md: `Indicates that the player is speaking.`},
   'focus-enemy-single': {sig: '', args: [], succ: 'focus-enemy', md: `Indicates that the enemy is speaking.`},
   'focus-player': {sig: 'S', args: ['who'], md: `Indicates that the player (or another character on the left side) is speaking.`},
@@ -464,11 +474,19 @@ mapAssign(byRefId, {
     :tipshow[Set an enemy's facial expression.]
     The argument will be added to the ANM script index of the enemy's first face graphic.
   `},
-  'text-1': {sig: 'm', args: ['text'], md: `Set the first line of text.  Unused.`},
-  'text-2': {sig: 'm', args: ['text'], md: `Set the second line of text.  Unused.`},
+  'text-1': {sig: 'm', args: ['text'], md: `
+    :tipshow[Set the first line of text.  Unused.]
+    Uses a different font from :ref{r=msg:text-add}...
+  `},
+  'text-2': {sig: 'm', args: ['text'], md: `
+    :tipshow[Set the second line of text.  Unused.]
+    Uses a different font from :ref{r=msg:text-add}...
+  `},
   'text-add-nofuri': {
     sig: 'm', args: ['text'], succ: 'text-add', md: `
     :tipshow[Sets the next line of text.]  This can be used twice, for 2 lines of text total.
+
+    :wip[Does it rollover and clear like :ref{r=msg:text-add}?]
   `},
   'text-add': {
     sig: 'm', args: ['text'], md: `
@@ -482,21 +500,34 @@ mapAssign(byRefId, {
     * :game[185]: There are 4 lines of text total.
       <!-- NEWHU: 185 -->
 
-    :wip[The format of furigana includes some offset information.  The meaning of these numbers is not known.]
+    After writing the last line, the "next line" index wraps to 0 and a flag is set.  The next call to :ref{r=msg:text-add}
+    will clear all lines before writing the first line.
+
+    The format of furigana includes some offset information.
     ~~~anm
     :ref{r=msg:text-add}("|0,11,シーフ");
     :ref{r=msg:text-add}("盗賊だからなぁ");
     ~~~
+    These parameters are \`|xoffset,spacing,\`.
+    (these are standard parameters to the function that draws lines of text;
+    for point of reference, on non-furigana lines they are both 0.)
   `},
   'text-clear': {sig: '', args: [], wip: 1, md: `
-    :tipshow[Erases all text. (at least, that's what it does pre-:game[128])]
+    :tipshow[Hides all text. (at least, that's what it does pre-:game[128])]
 
-    :wip[Beginning with :game[128] it also does something to the callout, so I'm not sure how to differentiate it from :ref{r=msg:hide-textbox}.]
+    This instruction:
+      * Tells all lines of text to disappear (but remain allocated) (interrupt 3).
+        * This is where it differs from :ref{r=msg:hide-textbox}, which calls interrupt 1 ("go away in some manner and then die")
+      * Beginning with :game[128], it (instantly) deletes the callout sprite.
+      * It **does not** reset the "next line" index.
 
     Even though this instruction has existed since :game[10], the first game to use it is :game[13].
+    It seems awkward to use because it does NOT reset the next line index to 0.  :wip[Bug or feature?? Does ZUN exploit this?]
   `},
   'music-boss': {sig: '', args: [], succ: 'music', md: `
-    Initiates boss music and displays its BGM title text.
+    :tipshow[Initiates boss music, displays its BGM title text.]
+
+    Also unlocks this music in the Sound Player.
   `},
   'music': {sig: 'S', args: ['arg'], md: `
     :tipshow[Changes the music to an indexed track for this stage.]
@@ -505,6 +536,8 @@ mapAssign(byRefId, {
     Each stage has an array of BGMs that this can select from.
     (Presumably the index argument was added for the Lunar Black Market, but then an ECL instruction was added
     and used instead)
+
+    It also unlocks this music in the Sound Player.
   `},
   'intro-single': {sig: '', args: [], succ: 'intro', md: `
     Display the enemy's name and flavor text.
@@ -519,6 +552,8 @@ mapAssign(byRefId, {
     :tipshow[Fades music out at the end of the stage.]
 
     The duration of the fade is hardcoded based on stage number.
+    * In :game[18], the fade lasts 8 seconds on stage 6, 2 seconds elsewhere.
+    * :wip[Durations for other games are pending research.]
   `},
   'shake-player-single': {sig: '', args: [], succ: 'shake-player', md: `
     Make the player portrait shake briefly like Nitori.
@@ -537,8 +572,11 @@ mapAssign(byRefId, {
 
     This sets the y-component of [\`pos_2\`](#anm/concepts&a=position).
   `},
-  'modern-26': {sig: '', args: [], wip: 2, md: `
-    :wip2[Sets an unknown bitflag to 1.]
+  'modern-26': {sig: '', args: [], wip: 1, md: `
+    :wip[Enables some bitflag that adjusts font.]
+
+    Specifically, when this bitflag is enabled, 1 is added to the font indices used by
+    :ref{r=msg:text-1}, :ref{r=msg:text-2}, :ref{r=msg:text-add}.
   `},
   'music-fade-custom': {
     sig: 'f', args: ['duration'], md: `
@@ -568,15 +606,18 @@ mapAssign(byRefId, {
 
     In games after :game[128], this is a no-op.  (though :game[13] and :game[14] do "use" it...)
   `},
-  'modern-31': {
-    sig: 'S', args: ['unused'], wip: 2, md: `
-    :wip2[Unknown. Only used in :game[13] stage 4. Argument appears unused.]
+  'show-enemy-1': {
+    sig: 'S', args: ['unused'], md: `
+    :tipshow[Identical to :ref{r=msg:show-enemy}\`(1)\`]
+
+    The lone instruction added in :game[128], and was only ever used in :game[13] stage 4.
   `},
   'modern-32': {
-    sig: 'S', args: ['side'], wip: 2, md: `
-    :tipshow[:wip2[Unknown. Only used in :game[14] Extra.]]
+    sig: 'S', args: ['side'], wip: 1, md: `
+    :tipshow[Sets the active speaker, without changing the highlighted portrait.]
 
-    :wip2[The argument sets the current speaker, similar to :ref{r=msg:focus-player} and :ref{r=msg:focus-enemy}]
+    This changes callout direction and font color, but leaves all portraits alone.
+    Only used in :game[14] Extra.
   `},
   'tutorial': {
     sig: 'S', args: ['id'], md: `
