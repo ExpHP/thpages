@@ -13,6 +13,17 @@ import {VarHeader, InsSiggy} from './InsAndVar';
 
 export function ReferenceTablePage<D extends CommonData>({table, setContentLoaded}: {table: TableDef<D>, setContentLoaded: (x: boolean) => void}) {
   const currentGame = useCurrentPageGame();
+  const history = useHistory();
+
+  // If the current game isn't supported by this table, redirect to the latest supported game
+  React.useEffect(() => {
+    const supportedGames = table.supportedGames();
+    if (!supportedGames.includes(currentGame)) {
+      const latestSupportedGame = supportedGames[supportedGames.length - 1];
+      history.replace({search: `?g=${latestSupportedGame}`});
+    }
+  }, [currentGame, table, history]);
+
   return <>
     <p>
       {"Select game version: "}
@@ -111,10 +122,15 @@ function ReferenceTable<D extends CommonData>({table, currentGame: game, setCont
 
 
 function getInstrCounts<D extends CommonData>(table: TableDef<D>, game: Game) {
-  const map = table.refByOpcode.get(game)!;
+  const map = table.refByOpcode.get(game);
+
+  // If this game isn't supported by the table, return zeros
+  if (!map) {
+    return {total: 0, documented: 0};
+  }
 
   let documented = 0;
-  for (const opcode of table.refByOpcode.get(game)!.keys()) {
+  for (const opcode of map.keys()) {
     const refObj = table.getRefByOpcode(game, opcode)!;
     const data = table.getDataByRef(refObj.ref);
     if (!data) {

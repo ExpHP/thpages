@@ -36,6 +36,7 @@ module.exports = {
     "no-constant-condition": ["error", {'checkLoops': false}],
     "brace-style": ["error", "1tbs", {"allowSingleLine": true}],
     "block-spacing": ["error", "always"],
+    "no-multiple-spaces": ["error", {"ignoreEOLComments": true}],
   },
   "ignorePatterns": ["js/lib/*"],
 

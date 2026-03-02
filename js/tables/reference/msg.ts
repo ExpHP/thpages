@@ -422,7 +422,7 @@ mapAssign(byRefId, {
 
     This instruction:
       * Tells all lines of text to "go away and die" (interrupt 1).
-        * This is where it differs from :ref[msg:text-clear], which only hides them.
+        * This is where it differs from :ref{r=msg:text-clear}, which only hides them.
       * It (instantly) deletes the callout sprite.
       * It **does not** reset the "next line" index.
 
@@ -476,17 +476,17 @@ mapAssign(byRefId, {
   `},
   'text-1': {sig: 'm', args: ['text'], md: `
     :tipshow[Set the first line of text.  Unused.]
-    Uses a different font from :ref[msg:text-add]...
+    Uses a different font from :ref{r=msg:text-add}...
   `},
   'text-2': {sig: 'm', args: ['text'], md: `
     :tipshow[Set the second line of text.  Unused.]
-    Uses a different font from :ref[msg:text-add]...
+    Uses a different font from :ref{r=msg:text-add}...
   `},
   'text-add-nofuri': {
     sig: 'm', args: ['text'], succ: 'text-add', md: `
     :tipshow[Sets the next line of text.]  This can be used twice, for 2 lines of text total.
 
-    :wip[Does it rollover and clear like :ref[msg:text-add]?]
+    :wip[Does it rollover and clear like :ref{r=msg:text-add}?]
   `},
   'text-add': {
     sig: 'm', args: ['text'], md: `
@@ -500,7 +500,7 @@ mapAssign(byRefId, {
     * :game[185]: There are 4 lines of text total.
       <!-- NEWHU: 185 -->
 
-    After writing the last line, the "next line" index wraps to 0 and a flag is set.  The next call to :ref[msg:text-add]
+    After writing the last line, the "next line" index wraps to 0 and a flag is set.  The next call to :ref{r=msg:text-add}
     will clear all lines before writing the first line.
 
     The format of furigana includes some offset information.
@@ -517,7 +517,7 @@ mapAssign(byRefId, {
 
     This instruction:
       * Tells all lines of text to disappear (but remain allocated) (interrupt 3).
-        * This is where it differs from :ref[msg:hide-textbox], which calls interrupt 1 ("go away in some manner and then die")
+        * This is where it differs from :ref{r=msg:hide-textbox}, which calls interrupt 1 ("go away in some manner and then die")
       * Beginning with :game[128], it (instantly) deletes the callout sprite.
       * It **does not** reset the "next line" index.
 
@@ -576,7 +576,7 @@ mapAssign(byRefId, {
     :wip[Enables some bitflag that adjusts font.]
 
     Specifically, when this bitflag is enabled, 1 is added to the font indices used by
-    :ref[msg:text-1], :ref[msg:text-2], :ref[msg:text-add].
+    :ref{r=msg:text-1}, :ref{r=msg:text-2}, :ref{r=msg:text-add}.
   `},
   'music-fade-custom': {
     sig: 'f', args: ['duration'], md: `
@@ -608,7 +608,7 @@ mapAssign(byRefId, {
   `},
   'show-enemy-1': {
     sig: 'S', args: ['unused'], md: `
-    :tipshow[Identical to :ref[msg:show-enemy]\`(1)\`]
+    :tipshow[Identical to :ref{r=msg:show-enemy}\`(1)\`]
 
     The lone instruction added in :game[128], and was only ever used in :game[13] stage 4.
   `},

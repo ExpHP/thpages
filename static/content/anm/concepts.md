@@ -222,9 +222,9 @@ game has dedicated functions to call an interrupt with that number.
 
 | Interrupt | Description |
 | :---: | ---     |
-| 1 | Pretty much universally means "Go away and die". The sprite does an exit animation (fade, shrink, flyout...) and then it calls :ref[anm:delete].  |
+| 1 | Pretty much universally means "Go away and die". The sprite does an exit animation (fade, shrink, flyout...) and then it calls :ref{r=anm:delete}.  |
 | 2 | Very commonly means "appear". (undoing whatever 3 did) |
-| 3 | Very commonly means "hide".  Unlike 1, this does NOT usually end in :ref[anm:delete]. |
+| 3 | Very commonly means "hide".  Unlike 1, this does NOT usually end in :ref{r=anm:delete}. |
 | 4 | Commonly means "restore". (undoing whatever 5 did) |
 | 5 | Commonly means... "de-emphasize"? It might darken, maybe partially fade, maybe shrink a bit... |
 

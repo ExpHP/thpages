@@ -39,7 +39,20 @@ const makeGc = (Component: ((p: {game: Game}) => ReactElement)) => {
 };
 
 type RefProps = {tip?: string, url?: string};
-function Ref({r, ...props}: {r: string} & RefProps) {
+function Ref({r, children, ...props}: {r?: string, children?: ReactNode} & RefProps) {
+  // It is extremely likely that I will accidentally write ":ref[]" in the future instead of the attribute syntax.
+  if (!r || typeof r !== 'string') {
+    if (children) {
+      // If we have children but no r, it means :ref[something] was used instead of :ref{r=something}
+      throw new Error(
+        `SYNTAX ERROR: Found :ref[] with children but no 'r' prop. ` +
+        `You probably wrote :ref[lang:name] but should have written :ref{r=lang:name}. ` +
+        `The colon inside [...] gets parsed as a nested directive!`
+      );
+    } else {
+      throw new Error(`SYNTAX ERROR: :ref directive is missing the required 'r' attribute. Use :ref{r=lang:name} syntax.`);
+    }
+  }
   const allProps = {tip: "1", url: "1", ...props};
   const tip = allProps.tip === "1";
   const url = allProps.url === "1";

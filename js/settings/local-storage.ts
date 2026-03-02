@@ -46,6 +46,7 @@ export function getSavedSettingsFromLocalStorage(): SavedSettings {
         anm: fromLangV0('anm'),
         std: fromLangV0('std'),
         msg: defaultLangSettings(),
+        end: defaultLangSettings(),
       };
     }
 
@@ -56,6 +57,7 @@ export function getSavedSettingsFromLocalStorage(): SavedSettings {
       anm: defaultLangSettings(),
       msg: defaultLangSettings(),
       std: defaultLangSettings(),
+      end: defaultLangSettings(),
     };
   }
 }
@@ -82,6 +84,7 @@ function deserializeSettingsFromString(json: string) {
     anm: data.anm ? parseSavedLangSettingsV1(data.anm) : defaultLangSettings(),
     msg: data.msg ? parseSavedLangSettingsV1(data.msg) : defaultLangSettings(),
     std: data.std ? parseSavedLangSettingsV1(data.std) : defaultLangSettings(),
+    end: data.end ? parseSavedLangSettingsV1(data.end) : defaultLangSettings(),
   };
 }
 

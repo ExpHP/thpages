@@ -11,17 +11,18 @@ export function settingsPreAppInit() {
   fixOldLocalStorageKeys();
 }
 
-export type Lang = 'anm' | 'msg' | 'std';
+export type Lang = 'anm' | 'msg' | 'std' | 'end';
 export type BuiltinNameSet = 'raw' | 'truth';
 export function allBuiltins(): BuiltinNameSet[] { return ['raw', 'truth']; }
 export function defaultBuiltin(): BuiltinNameSet { return 'truth'; }
-export function allLangs(): Lang[] { return ['anm', 'msg', 'std']; }
+export function allLangs(): Lang[] { return ['anm', 'msg', 'std', 'end']; }
 
 const truthMapPath = './mapfile';
 const truthGamemaps: {[L in Lang]: string} = {
   anm: 'any.anmm',
   std: 'any.stdm',
   msg: 'any.msgm',
+  end: 'any.endm',
 };
 
 /** Form of an ECLMap stored in memory. */
@@ -58,6 +59,7 @@ export type SavedSettings = {
   anm: SavedLangSettings,
   std: SavedLangSettings,
   msg: SavedLangSettings,
+  end: SavedLangSettings,
 };
 
 export type SavedLangSettings = {

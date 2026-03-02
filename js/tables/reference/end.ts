@@ -4,41 +4,11 @@ import dedent from '~/js/lib/dedent';
 import type {PartialInsData, PartialOpcodeRefData} from '../tables';
 import {Game} from '../game';
 
-// Info for the AI:
-// Full list of games:
-//    06, 07, 08, 09, 095, 10, 11, 12, 125, 128, 13, 14, 143, 15, 16, 165, 17, 18, 185
-//
-// 06-095, 125, 143, 165 DO NOT HAVE END.
-//
-// zero's instruction mappings:
-// ALL GAMES THAT HAVE AN END FORMAT SHARE THE SAME MAPPINGS.
-//    0 = end_delete()
-//    3 = text_dialogue(string text)
-//    4 = text_clear()
-//    5 = wait(int max)
-//    6 = __wait_clear(int max)
-//    7 = anm_source_load(int source_index, string file)
-//    8 = anm_set_slot(int slot, int source_index, int script)
-//    9 = text_color(int color)
-//    10 = music(string file)
-//    11 = music_fade()
-//    12 = __end_switch_to_staff(string end_file)
-//    13 = __screen_effect_A(int unk)
-//    14 = __screen_effect_B(int unk)
-//    15 = anm_set_slot_normal(int slot, int source_index, int script)
-//    16 = anm_set_slot_hard(int slot, int source_index, int script)
-//    17 = anm_set_slot_lunatic(int slot, int source_index, int script)
-//
-// Format characters:
-//    S = int
-//    f = float
-//    m = string
-
 // ==========================================================================
 // ==========================================================================
 // ===================         INFO TEXT            =========================
 
-export function getMsgTableText(game: Game) {
+export function getEndTableText(game: Game) {
   const furiTip = `"
     After an instruction that contains furigana, the string argument in the NEXT instruction
     will contain extra garbage.  Basically, after applying the XOR mask to the data,
@@ -58,7 +28,7 @@ export function getMsgTableText(game: Game) {
 
     * Most strings are null-terminated and null-padded
       up to a multiple of 4 bytes, and are encoded in Shift-JIS.
-    * For :ref[end:text-add] **only**, the string is also then masked the same as MSG: by XOR with an
+    * For :ref{r=end:text-add} **only**, the string is also then masked the same as MSG: by XOR with an
       accelerating bitmask with initial value \`0x77\`, intial velocity \`0x07\`, and constant acceleration \`0x10\`.
       Specifically, the first byte is XORed with \`0x77\`, the second byte is XORed with
       \`0x7e (= 0x77 + 0x07)\`, the third byte is XORed with \`0x95 (= 0x77 + 0x07 + 0x17)\`,
@@ -124,7 +94,7 @@ mapAssign(byRefId, {
     * :game[18] has 5 lines.
     * :wip[The counts for the other games is pending research.]
 
-    After writing the last line, the "next line" index wraps to 0 and a flag is set.  The next call to :ref[end:text-add]
+    After writing the last line, the "next line" index wraps to 0 and a flag is set.  The next call to :ref{r=end:text-add}
     will clear all lines before writing the first line.
 
     <!-- TH20 and beyond:
@@ -167,7 +137,7 @@ mapAssign(byRefId, {
     During this time, the script timer will be frozen, so you do not need to increment
     the time label by any similar amount.
 
-    The next call to :ref[end:text-add] will clear all lines and begin at index 0.
+    The next call to :ref{r=end:text-add} will clear all lines and begin at index 0.
     `,
   },
   'anm-source-load': {
@@ -206,17 +176,17 @@ mapAssign(byRefId, {
   },
   'anm-set-slot-normal': {
     sig: 'SSS', args: ['slot', 'source_index', 'script'], md: `
-    Identical to :ref[end:anm-set-slot], but only runs on NORMAL difficulty.
+    Identical to :ref{r=end:anm-set-slot}, but only runs on NORMAL difficulty.
   `,
   },
   'anm-set-slot-hard': {
     sig: 'SSS', args: ['slot', 'source_index', 'script'], md: `
-    Identical to :ref[end:anm-set-slot], but only runs on HARD difficulty.
+    Identical to :ref{r=end:anm-set-slot}, but only runs on HARD difficulty.
   `,
   },
   'anm-set-slot-lunatic': {
     sig: 'SSS', args: ['slot', 'source_index', 'script'], md: `
-    Identical to :ref[end:anm-set-slot], but only runs on LUNATIC difficulty.
+    Identical to :ref{r=end:anm-set-slot}, but only runs on LUNATIC difficulty.
   `,
   },
 });
